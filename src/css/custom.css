@@ -1,0 +1,346 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* You can override the default Infima variables here. */
+:root {
+  --ifm-color-primary: #3355ff;
+  --ifm-color-primary-dark: #1a44ff;
+  --ifm-color-primary-darker: #0d3bff;
+  --ifm-color-primary-darkest: #0026da;
+  --ifm-color-primary-light: #4c66ff;
+  --ifm-color-primary-lighter: #5970ff;
+  --ifm-color-primary-lightest: #8090ff;
+  
+  --ifm-color-secondary: #ebedf0;
+  --ifm-color-success: #00c853;
+  --ifm-color-info: #54c7ec;
+  --ifm-color-warning: #ffba00;
+  --ifm-color-danger: #ff4785;
+  
+  --ifm-code-font-size: 95%;
+  --ifm-font-family-base: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --ifm-heading-font-weight: 600;
+  --ifm-navbar-height: 4.5rem;
+  --ifm-navbar-padding-vertical: 0.5rem;
+  --ifm-navbar-padding-horizontal: 1.5rem;
+  --ifm-global-radius: 0.5rem;
+  --ifm-button-border-radius: 0.375rem;
+  
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme='dark'] {
+  --ifm-color-primary: #4d69ff;
+  --ifm-color-primary-dark: #3355ff;
+  --ifm-color-primary-darker: #264cff;
+  --ifm-color-primary-darkest: #0026da;
+  --ifm-color-primary-light: #677dff;
+  --ifm-color-primary-lighter: #7486ff;
+  --ifm-color-primary-lightest: #9da7ff;
+  
+  --ifm-background-color: #0d1117;
+  --ifm-background-surface-color: #161b22;
+  --ifm-navbar-background-color: #161b22;
+  --ifm-footer-background-color: #161b22;
+  
+  --docusaurus-highlighted-code-line-bg: rgba(255, 255, 255, 0.1);
+}
+
+/* Global styles */
+body {
+  font-family: var(--ifm-font-family-base);
+  line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: var(--ifm-heading-font-weight);
+  line-height: 1.3;
+}
+
+/* Navbar styling */
+.navbar {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  height: var(--ifm-navbar-height);
+  padding: 0 var(--ifm-navbar-padding-horizontal);
+}
+
+/* Harness-style navbar */
+.navbar__inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.navbar__logo {
+  display: flex;
+  align-items: center;
+  height: 60px;
+  margin-right: 1rem;
+}
+
+.navbar__logo img {
+  height: 60px;
+  width: 60px;
+  margin-right: 12px;
+}
+
+.navbar__title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ifm-color-emphasis-900);
+}
+
+[data-theme='dark'] .navbar__title {
+  color: var(--ifm-color-emphasis-100);
+}
+
+.navbar__items {
+  align-items: center;
+  height: 100%;
+}
+
+.navbar__items--right {
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.navbar__brand {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  margin-right: 2.5rem;
+}
+
+.navbar__link {
+  font-weight: 500;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  height: 2.25rem;
+  display: flex;
+  align-items: center;
+}
+
+.navbar__link:hover {
+  background-color: var(--ifm-color-emphasis-200);
+  color: var(--ifm-color-primary);
+}
+
+[data-theme='dark'] .navbar__link:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.navbar__link--active {
+  font-weight: 600;
+  color: var(--ifm-color-primary);
+}
+
+.dropdown__menu {
+  border-radius: var(--ifm-global-radius);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  padding: 0.5rem;
+}
+
+[data-theme='dark'] .dropdown__menu {
+  background-color: var(--ifm-background-surface-color);
+  border-color: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.dropdown__link {
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.dropdown__link:hover {
+  background-color: var(--ifm-color-emphasis-200);
+}
+
+[data-theme='dark'] .dropdown__link:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.navbar-sidebar {
+  width: 300px;
+}
+
+.navbar-sidebar__brand {
+  box-shadow: none;
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+}
+
+[data-theme='dark'] .navbar-sidebar__brand {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+.navbar-sidebar__items {
+  padding: 0.5rem;
+}
+
+.navbar-sidebar__item {
+  padding: 0;
+}
+
+.navbar-sidebar__back {
+  background-color: var(--ifm-color-emphasis-200);
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
+}
+
+[data-theme='dark'] .navbar-sidebar__back {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Search bar styling */
+.navbar__search {
+  position: relative;
+}
+
+.navbar__search-input {
+  height: 2.25rem;
+  padding: 0 0.75rem;
+  border-radius: 4px;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  background-color: var(--ifm-color-emphasis-100);
+  font-size: 0.875rem;
+  width: 200px;
+  transition: all 0.2s ease;
+}
+
+.navbar__search-input:focus {
+  outline: none;
+  border-color: var(--ifm-color-primary);
+  box-shadow: 0 0 0 2px rgba(51, 85, 255, 0.2);
+  width: 250px;
+}
+
+[data-theme='dark'] .navbar__search-input {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme='dark'] .navbar__search-input:focus {
+  border-color: var(--ifm-color-primary);
+  box-shadow: 0 0 0 2px rgba(77, 105, 255, 0.2);
+}
+
+/* Button styling */
+.button {
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: none;
+  height: 2.25rem;
+  padding: 0 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+}
+
+.button--primary {
+  background-color: var(--ifm-color-primary);
+  color: white;
+}
+
+.button--primary:hover {
+  background-color: var(--ifm-color-primary-darker);
+  color: white;
+}
+
+.button--secondary {
+  background-color: white;
+  color: var(--ifm-color-primary);
+  border: 1px solid var(--ifm-color-primary);
+}
+
+.button--secondary:hover {
+  background-color: var(--ifm-color-primary-lightest);
+  color: var(--ifm-color-primary-darker);
+}
+
+/* Dark mode button adjustments */
+[data-theme='dark'] .button--secondary {
+  background-color: var(--ifm-background-surface-color);
+  color: var(--ifm-color-primary-lighter);
+  border: 1px solid var(--ifm-color-primary-lighter);
+}
+
+[data-theme='dark'] .button--secondary:hover {
+  background-color: var(--ifm-color-primary-darkest);
+  color: var(--ifm-color-primary-lightest);
+}
+
+/* Card styling for docs */
+.card {
+  border-radius: var(--ifm-global-radius);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Footer styling */
+.footer {
+  padding: 3rem 0;
+}
+
+.footer__title {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.footer__link-item {
+  font-size: 0.9rem;
+}
+
+/* Table of contents */
+.table-of-contents {
+  font-size: 0.85rem;
+}
+
+.table-of-contents__link {
+  padding: 0.25rem 0;
+}
+
+.table-of-contents__link--active {
+  font-weight: 600;
+}
+
+/* Code blocks */
+.prism-code {
+  border-radius: var(--ifm-global-radius);
+}
+
+/* Admonitions */
+.alert {
+  border-radius: var(--ifm-global-radius);
+  border-left-width: 4px;
+}
+
+/* Pagination */
+.pagination-nav__link {
+  border-radius: var(--ifm-global-radius);
+  transition: all 0.2s ease;
+}
+
+.pagination-nav__link:hover {
+  transform: translateY(-2px);
+}
