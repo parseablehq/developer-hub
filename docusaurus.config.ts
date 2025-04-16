@@ -31,6 +31,20 @@ const config: Config = {
     locales: ['en'],
   },
 
+  // Add scripts for Coveo
+  scripts: [
+    {
+      src: 'https://static.cloud.coveo.com/atomic/v2/atomic.esm.js',
+      type: 'module',
+    },
+  ],
+  
+  // Make environment variables available to the client
+  customFields: {
+    coveoOrganizationId: process.env.COVEO_ORGANIZATION_ID,
+    coveoApiKey: process.env.COVEO_API_KEY,
+  },
+  
   presets: [
     [
       'classic',
@@ -66,63 +80,28 @@ const config: Config = {
 
   themeConfig: {
     // Replace with your project's social card
-    image: 'img/parseable-social-card.jpg',
+    image: 'img/docusaurus-social-card.jpg',
     navbar: {
       title: '',
       logo: {
         alt: 'Parseable Logo',
         src: 'img/parseable-logo.svg',
-        srcDark: 'img/parseable-logo.svg',
-        width: 60,
-        height: 60,
+        srcDark: 'img/parseable-logo-white.svg',
+        width: 75,
+        height: 75,
+        style: { marginRight: '0', padding: '2px' },
       },
       items: [
         {
-          type: 'dropdown',
-          label: 'Documentation',
+          type: 'docSidebar',
+          sidebarId: 'docsSidebar',
           position: 'left',
-          items: [
-            {
-              label: 'Introduction',
-              to: '/docs/introduction',
-            },
-            {
-              label: 'Installation',
-              to: '/docs/installation',
-            },
-            {
-              label: 'Concepts',
-              to: '/docs/concepts',
-            },
-            {
-              label: 'Log Ingestion',
-              to: '/docs/log-ingestion',
-            },
-            {
-              label: 'Integrations',
-              to: '/docs/integrations',
-            },
-          ],
-        },
-        {
-          to: '/docs/get-started',
-          label: 'Quick Start',
-          position: 'left',
+          label: 'Docs',
         },
         {
           to: '/blog',
           label: 'Blog',
           position: 'left'
-        },
-        {
-          href: 'https://github.com/parseablehq/developer-hub',
-          label: 'GitHub',
-          position: 'right',
-        },
-        {
-          href: 'https://discord.gg/parseable',
-          label: 'Community',
-          position: 'right',
         },
         {
           href: 'https://demo.parseable.com',
@@ -155,16 +134,16 @@ const config: Config = {
           title: 'Community',
           items: [
             {
-              label: 'Discord',
-              href: 'https://discord.gg/parseable',
+              label: 'Slack',
+              href: 'https://logg.ing/community',
             },
             {
               label: 'Twitter',
-              href: 'https://twitter.com/parseableio',
+              href: 'https://x.com/parseablehq',
             },
             {
               label: 'GitHub',
-              href: 'https://github.com/parseablehq/developer-hub',
+              href: 'https://github.com/parseablehq/parseable',
             },
           ],
         },
