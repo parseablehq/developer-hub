@@ -15,6 +15,8 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@coveo/atomic": "^3.4.1",
+    "@coveo/headless": "^3.4.1",
     "@docusaurus/core": "3.7.0",
     "@docusaurus/preset-classic": "3.7.0",
     "@mdx-js/react": "^3.0.0",
