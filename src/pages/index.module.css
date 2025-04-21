@@ -8,94 +8,194 @@
   background-color: var(--ifm-background-color);
 }
 
+/* Hero Section Styles */
 .heroBanner {
-  padding: 4rem 0;
-  text-align: left;
+  padding: 7rem 0 5rem;
+  text-align: center;
   position: relative;
-  overflow: hidden;
-  background: linear-gradient(to right, #f8f9fa, #f1f3f5);
-  color: var(--ifm-font-color-base);
+  background-color: #0d1117;
+  color: var(--ifm-color-white);
 }
 
 /* Dark mode hero banner */
 [data-theme='dark'] .heroBanner {
-  background: linear-gradient(to right, #161b22, #0d1117);
+  background-color: #0d1117;
+}
+
+/* Light mode hero section overrides */
+[data-theme='light'] .heroBanner {
+  background-color: #0d1117;
   color: var(--ifm-color-white);
 }
 
 .heroContent {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: 2rem;
+  justify-content: center;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .heroText {
-  flex: 1;
-}
-
-.heroImage {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.heroImage img {
-  max-width: 100%;
-  height: auto;
-  max-height: 300px;
-  /* Add a light glow effect in dark mode */
-  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.1));
-}
-
-[data-theme='dark'] .heroImage img {
-  filter: drop-shadow(0 0 15px rgba(77, 105, 255, 0.3));
+  width: 100%;
+  text-align: center;
 }
 
 .heroTitle {
-  font-size: 3rem;
+  font-size: 2.5rem;
   font-weight: 700;
   margin-bottom: 1rem;
-  color: var(--ifm-color-primary);
+  color: var(--ifm-color-white);
 }
 
-.heroSubtitle {
-  font-size: 1.5rem;
-  font-weight: 500;
-  margin-bottom: 1.5rem;
+/* Light mode hero title override */
+[data-theme='light'] .heroTitle {
+  color: var(--ifm-color-white);
 }
 
 .heroDescription {
   font-size: 1.1rem;
-  margin-bottom: 2rem;
-  max-width: 600px;
+  margin-bottom: 2.5rem;
+  max-width: 700px;
   line-height: 1.6;
+  opacity: 0.8;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.buttons {
+/* Light mode hero description override */
+[data-theme='light'] .heroDescription {
+  color: var(--ifm-color-white);
+  opacity: 0.8;
+}
+
+.heroButtons {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.heroButton {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 1.25rem 1.5rem;
+  border-radius: 8px;
+  background-color: #161b22;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--ifm-color-white);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  min-width: 240px;
+  max-width: 320px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Light mode hero button override */
+[data-theme='light'] .heroButton {
+  background-color: #161b22;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--ifm-color-white);
+}
+
+.heroButton:hover {
+  transform: translateY(-2px);
+  background-color: #1c2128;
+  border-color: rgba(255, 255, 255, 0.2);
+  text-decoration: none;
+  color: var(--ifm-color-white);
+}
+
+/* Light mode hero button hover override */
+[data-theme='light'] .heroButton:hover {
+  background-color: #1c2128;
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--ifm-color-white);
+}
+
+.heroButton:first-child {
+  border-color: rgba(77, 105, 255, 0.5);
+}
+
+/* Light mode hero button first child override */
+[data-theme='light'] .heroButton:first-child {
+  border-color: rgba(77, 105, 255, 0.5);
+}
+
+.heroButton:first-child:hover {
+  border-color: rgba(77, 105, 255, 0.8);
+}
+
+/* Light mode hero button first child hover override */
+[data-theme='light'] .heroButton:first-child:hover {
+  border-color: rgba(77, 105, 255, 0.8);
+}
+
+.heroButtonIcon {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  color: var(--ifm-color-primary);
 }
 
+/* Light mode hero button icon override */
+[data-theme='light'] .heroButtonIcon {
+  color: var(--ifm-color-primary);
+}
+
+.heroButtonSubtext {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  margin-top: 0.25rem;
+  font-weight: normal;
+}
+
+/* Light mode hero button subtext override */
+[data-theme='light'] .heroButtonSubtext {
+  opacity: 0.7;
+}
+
+/* Section Styles */
 .section {
   padding: 4rem 0;
+  position: relative;
 }
 
-/* Add a subtle background color to alternate sections in dark mode */
-[data-theme='dark'] .section:nth-child(odd) {
+.section:nth-child(odd) {
   background-color: var(--ifm-background-surface-color);
+}
+
+[data-theme='dark'] .section:nth-child(odd) {
+  background-color: rgba(22, 27, 34, 0.7);
 }
 
 .sectionTitle {
   text-align: center;
-  margin-bottom: 3rem;
-  font-size: 2rem;
-  font-weight: 600;
+  margin-bottom: 1rem;
+  font-size: 2.5rem;
+  font-weight: 700;
   color: var(--ifm-color-primary);
+  position: relative;
 }
 
+.sectionDescription {
+  text-align: center;
+  max-width: 700px;
+  margin: 0 auto 3rem;
+  font-size: 1.2rem;
+  color: var(--ifm-color-emphasis-700);
+}
+
+[data-theme='dark'] .sectionDescription {
+  color: var(--ifm-color-emphasis-600);
+}
+
+/* Card Styles */
 .cardGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -105,35 +205,54 @@
 .card {
   display: flex;
   flex-direction: column;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   background-color: white;
   transition: all 0.3s ease;
   height: 100%;
+  border: 1px solid var(--ifm-color-emphasis-200);
 }
 
 /* Dark mode card styling */
 [data-theme='dark'] .card {
-  background-color: var(--ifm-background-surface-color);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  background-color: rgba(30, 37, 48, 0.8);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
 }
 
 /* Dark mode card hover effect */
 [data-theme='dark'] .card:hover {
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  border-color: rgba(77, 105, 255, 0.3);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  border-color: var(--ifm-color-primary-dark);
 }
 
 .cardContent {
-  padding: 1.5rem;
+  padding: 1.75rem;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.cardIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background-color: var(--ifm-color-primary-lightest);
+  margin-bottom: 1.25rem;
+  color: var(--ifm-color-primary);
+}
+
+[data-theme='dark'] .cardIcon {
+  background-color: rgba(77, 105, 255, 0.2);
 }
 
 .cardTitle {
@@ -145,8 +264,9 @@
 
 .cardDescription {
   font-size: 1rem;
-  line-height: 1.5;
+  line-height: 1.6;
   color: var(--ifm-color-emphasis-700);
+  flex-grow: 1;
 }
 
 /* Dark mode card description */
@@ -155,7 +275,7 @@
 }
 
 .cardFooter {
-  padding: 1rem 1.5rem;
+  padding: 1.25rem 1.75rem;
   border-top: 1px solid var(--ifm-color-emphasis-200);
 }
 
@@ -169,12 +289,13 @@
   font-weight: 500;
   color: var(--ifm-color-primary);
   text-decoration: none;
-  transition: color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .cardLink:hover {
   color: var(--ifm-color-primary-darker);
   text-decoration: none;
+  transform: translateX(4px);
 }
 
 /* Dark mode card link */
@@ -186,32 +307,131 @@
   color: var(--ifm-color-primary-lightest);
 }
 
+/* Community Section Styles */
+.communityCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.communityCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2rem;
+  border-radius: 12px;
+  background-color: white;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  text-decoration: none;
+  color: var(--ifm-font-color-base);
+}
+
+[data-theme='dark'] .communityCard {
+  background-color: rgba(30, 37, 48, 0.8);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--ifm-color-white);
+}
+
+.communityCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  text-decoration: none;
+  color: var(--ifm-font-color-base);
+}
+
+[data-theme='dark'] .communityCard:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  border-color: var(--ifm-color-primary-dark);
+  color: var(--ifm-color-white);
+}
+
+.communityCardIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: var(--ifm-color-primary-lightest);
+  margin-bottom: 1.25rem;
+  color: var(--ifm-color-primary);
+}
+
+[data-theme='dark'] .communityCardIcon {
+  background-color: rgba(77, 105, 255, 0.2);
+}
+
+.communityCard h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--ifm-color-primary);
+}
+
+.communityCard p {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--ifm-color-emphasis-700);
+  margin-bottom: 0;
+}
+
+[data-theme='dark'] .communityCard p {
+  color: var(--ifm-color-emphasis-600);
+}
+
 /* Responsive styles */
 @media screen and (max-width: 996px) {
-  .heroContent {
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .heroText {
-    order: 2;
-  }
-  
-  .heroImage {
-    order: 1;
-    margin-bottom: 2rem;
+  .heroTitle {
+    font-size: 2.25rem;
   }
   
   .heroDescription {
-    margin-left: auto;
-    margin-right: auto;
+    font-size: 1rem;
   }
   
-  .buttons {
-    justify-content: center;
+  .heroButtons {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+  }
+  
+  .heroButton {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .section {
+    padding: 3rem 0;
+  }
+  
+  .sectionTitle {
+    font-size: 2rem;
+  }
+  
+  .sectionDescription {
+    font-size: 1rem;
   }
   
   .cardGrid {
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .heroTitle {
+    font-size: 2rem;
+  }
+  
+  .heroDescription {
+    font-size: 0.95rem;
+  }
+  
+  .communityCards {
+    grid-template-columns: 1fr;
   }
 }
