@@ -6,9 +6,9 @@ sidebar_label: Ingestion
 ---
 
 ## Introduction 
-You can send Log events to Parseable via HTTP POST requests with data as JSON payload. You can use the HTTP output plugins of all the common logging agents like [FluentBit](/docs/docs/features/integrations#fluentbit), [Vector](/docs/docs/features/integrations#vector), [syslog-ng](/docs/docs/features/integrations#syslog-ng), [LogStash](https://www.elastic.co/guide/en/logstash/current/plugins-outputs-http.html), among others to send log events to Parseable.
+You can send Log events to Parseable via HTTP POST requests with data as JSON payload. You can use the HTTP output plugins of all the common logging agents like [FluentBit](https://www.parseable.com/docs/server/log-ingestion/agents/how-to-setup-fluent-bit), [Vector](https://www.parseable.com/docs/server/log-ingestion/agents/how-to-setup-vector), [syslog-ng](https://www.parseable.com/docs/server/log-ingestion/agents/how-to-setup-syslog-ng), [LogStash](https://www.parseable.com/docs/server/log-ingestion/agents/how-to-setup-logstash), among others to send log events to Parseable.
 
-You can also directly integrate Parseable with your application via [REST API](/docs/docs/features/api).
+You can also directly integrate Parseable with your application via [REST API](https://www.parseable.com/docs/api-reference/apireference/put_%2Fapi%2Fv1%2Flogstream%2F%7Bstream_name%7D).
 
 ## Log Streams
 

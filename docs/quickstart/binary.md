@@ -56,4 +56,4 @@ Metadata is primarily used to define extra information for a log event, while ta
 
 To query the data via Console, login at http://localhost:8000 and select the log stream demo and correct time stamp.
 
-For complete Parseable API documentation, refer to [Parseable API Reference](/docs/features/api).
+For complete Parseable API documentation, refer to [Parseable API Ref Docs](https://www.parseable.com/docs/server/api).
