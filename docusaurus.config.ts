@@ -13,7 +13,7 @@ const config: Config = {
   url: 'https://www.parseable.com',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/docs/',
+  baseUrl: '/',
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
@@ -117,16 +117,16 @@ const config: Config = {
           title: 'Docs',
           items: [
             {
-              label: 'Getting Started',
-              to: '/docs/docs/introduction',
+              label: 'Introduction',
+              to: '/docs/introduction',
             },
             {
               label: 'Installation',
-              to: '/docs/docs/installation',
+              to: '/docs/installation',
             },
             {
-              label: 'Concepts',
-              to: '/docs/docs/category/key-concepts',
+              label: 'Key Concepts',
+              to: '/docs/category/key-concepts',
             },
           ],
         },
