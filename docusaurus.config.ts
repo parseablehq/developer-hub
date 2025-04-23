@@ -118,15 +118,15 @@ const config: Config = {
           items: [
             {
               label: 'Getting Started',
-              to: '/docs/get-started',
+              to: '/docs/docs/introduction',
             },
             {
               label: 'Installation',
-              to: '/docs/installation',
+              to: '/docs/docs/installation',
             },
             {
               label: 'Concepts',
-              to: '/docs/concepts',
+              to: '/docs/docs/category/key-concepts',
             },
           ],
         },

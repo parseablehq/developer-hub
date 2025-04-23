@@ -1,0 +1,39 @@
+---
+title: Auto Schema Detection
+description: Auto Schema Detection in Parseable
+sidebar_position: 3
+sidebar_label: Auto Schema Detection
+---
+
+## Introduction
+Schema detection is a powerful enterprise feature in Parseable that automatically identifies the format of the unstructured log data, transforming it into structured columns within ingested events in the JSON format.  This helps in easy and optimized query, search, debug and visualise the data.
+
+## How Schema Detection Works 
+
+Parseable maintains a registry of known log formats with corresponding regex patterns for identification. Parseable requires two headers in order to detect the schema
+
+- `X-P-Log-Source` - Identifies the known log format name - eg. `syslog`, `nginx_access`, `zookeeper` etc.
+
+- `X-P-Extract-Log` - Specifies which field in the incoming JSON contains the unstructured log, this has to be at the root level in the ingested event.
+
+Parseable extracts the log message and applies regex patterns for the specified source type, and validates if all expected fields are present in the event. Without the headers, schema detection is bypassed, and the event is processed as-is.
+
+After successful detection, a custom field `p_format` is added to the log event containing the log source name and the stream info is updated with an array of detected log sources.
+
+Parseable UI (Prism) automatically displays filters on the field `p_format`.
+
+## Use-Case and Benefits
+
+- Pre-defined SQL queries for known log formats help in debugging the data with lesser efforts in writing the queries.
+
+- Automatic dashboard templates to visualise the ingested data without even a need to understand the data and create the dashboard
+
+- Template based alert creation reduces configuration efforts.
+
+- Fixed schema because of the known log formats helps in generating alerts, dashboards, SQL templates, filters and a lot more with the help of AI.
+
+- Parseable recommends to ingest all of your log data (coming from various applications, infra logs, network logs that are of known formats) in a single dataset as it provides a lot of benefits such as:
+
+- Better compression in parquet reduces storage costs
+
+- Ability to analyse and debug the logs from different sources in a unified way

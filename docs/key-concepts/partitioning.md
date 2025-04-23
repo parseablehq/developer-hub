@@ -1,0 +1,63 @@
+---
+title: Partitioning
+description: Partitioning in ParseableDB
+sidebar_position: 3
+sidebar_label: Partitioning
+---
+
+## Introduction
+
+Partitioning in databases generally refers to the splitting of data to achieve goals like high availability, scalability, or performance. Sometimes it is also confused with another data-splitting approach called **Sharding**. Sharding means spreading the data based on a shard key onto separate server instances to spread load.
+
+### Partitioning in Parseable
+
+Partitioning is the splitting of log data based on specific columns and value pairs to improve query performance and storage efficiency. The decision to choose specific columns for partitioning is based on the access patterns of the data. By partitioning log data, you can optimize query performance, reduce the amount of data scanned during queries, and improve storage efficiency.
+
+#### When should you use partitioning?
+
+Partitioning is useful when you have a clear understanding of the most common data access patterns for a given log stream (i.e. dataset). More specifically, when the columns where users are most likely to `filter` or `group by` are well known.
+
+Also, a relatively larger dataset (at least few TBs or more) is better suited for partitioning. For tiny datasets, the overhead of managing partitions might outweigh the benefits.
+
+#### Selecting columns for partitioning
+
+The first step is to find which columns users are most likely to `filter` or `group by`. Once you have this information, it is important to know the variance in the column values (i.e. the number of unique values in the column). For example, if you have a column `log_level` with only 2 unique values - `ERR` and `WARN`, and another column `os` with 3 unique values - `darwin`, `linux` and `windows`. You can select these two columns for partitioning. But if there is a column called `log_message` where each log event has a unique message, partitioning on this column will in fact make things worse.
+
+#### How to set up partitions?
+
+You can specify the columns for partitioning while creating a stream on the Parseable Console (Create Stream >> Custom Partition Field). Here, you can specify up to 3 columns per log stream. Once the stream is created, Parseable will automatically create physical partitions based on the column values.
+
+You can also edit the partitioning columns for an existing stream (Stream >> Manage >> Info >> Custom Partition Field). Note that this will have effect on all the new data that is ingested into the stream, and not the existing data.
+
+#### How does partitioning work?
+
+When a stream is created with partitioning enabled, Parseable will create physical partitions based on the column values. For example, if you have a column `log_level` with the values `ERR` and `WARN`, Parseable will create two physical partitions, one for each value.
+
+When a query is run with a filter on `log_level`, Parseable will only scan the relevant partition(s) and not the entire dataset. This will significantly reduce the amount of data scanned during queries, and improve query performance.
+
+Let's understand this better with an example. Let's say you have log events with columns `timestamp`, `log_level`, `service_name`, `log_message` and `os`. One of the most common data query patterns is to run queries where events are filtered on `log_level` and `os`, i.e. most of the queries are of the form `select * from logs where log_level = '...' and os = '...'`. Note that ... is a placeholder here.
+
+In this case we recommend partitioning the data based on `log_level` and `os` column. This will create physical partitions (prefixes or sub-directories) based on various `log_level` and `os` and its values. Now that data is organized in this way, the query engine, on spotting a query with `log_level` filter, will only scan the relevant partition(s) and not the entire dataset. This will significantly reduce the amount of data scanned during queries, and improve query performance.
+
+Physically on the storage (S3 bucket or disk), you'll see the data organized by columns (that are partitioned) in alphabetical order. For example, if you have partitioning on `log_level` and `os`, you'll see the data organized like this:
+
+```sql
+  log_level=ERR
+    os=darwin
+    os=linux
+    os=windows
+  log_level=WARN
+    os=darwin
+    os=linux
+    os=windows
+```
+
+### Partitioning best practices
+
+- **Choose the right columns:** Choose columns that are most frequently used in queries.
+
+- **Understand the data distribution:** Ensure that the column you choose has a good distribution of values.
+
+- **Avoid over partitioning:** Partitioning on columns with high cardinality (i.e. many unique values) can lead to over partitioning. This can lead to a large number of small partitions, which can be inefficient.
+
+- **Monitor and adjust:** Monitor the query performance and adjust the partitions as needed.
