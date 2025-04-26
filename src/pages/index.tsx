@@ -21,7 +21,7 @@ function HeroSection() {
               reference docs, and video tutorials.
             </p>
             <div className={styles.heroButtons}>
-              <Link to="/docs/get-started" className={styles.heroButton}>
+              <Link to="/docs/introduction" className={styles.heroButton}>
                 <span className={styles.heroButtonIcon}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M13 10V3L4 14h7v7l9-11h-7z"></path>
@@ -105,7 +105,7 @@ function GetStartedSection() {
           <CardSection
             title="Log Ingestion"
             description="Ingest logs, metrics, and traces from any agent and extract value in minutes."
-            link="/docs/log-ingestion"
+            link="/docs/key-concepts/ingestion"
             linkText="Start ingesting"
             icon={
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -119,7 +119,7 @@ function GetStartedSection() {
           <CardSection
             title="Query & Analysis"
             description="Query your observability data using familiar SQL syntax with up to 90% faster performance."
-            link="/docs/concepts/query"
+            link="/docs/key-concepts/query"
             linkText="Learn to query"
             icon={
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -149,7 +149,7 @@ function FeaturesSection() {
           <CardSection
             title="Fast & Scalable"
             description="Built for high-performance log ingestion and querying with exceptional scalability across distributed environments."
-            link="/docs/concepts"
+            link="/docs/category/key-concepts"
             icon={
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="m13 2-2 2.5L13 7"></path>
@@ -164,7 +164,7 @@ function FeaturesSection() {
           <CardSection
             title="Cost-Effective"
             description="Store observability data on S3-compatible object storage at a fraction of the cost of traditional solutions."
-            link="/docs/concepts/architecture"
+            link="/docs/design-choices#highlights"
             icon={
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
@@ -176,7 +176,7 @@ function FeaturesSection() {
           <CardSection
             title="Open Standards"
             description="Built with open standards and formats, ensuring compatibility and avoiding vendor lock-in."
-            link="/docs/concepts/open-standards"
+            link="/docs/category/key-concepts"
             icon={
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path>
@@ -204,7 +204,7 @@ function LearnMoreSection() {
           <CardSection
             title="Key Concepts"
             description="Learn the key concepts of Parseable and how they work together."
-            link="/docs/concepts"
+            link="/docs/category/key-concepts"
             icon={
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"></path>
@@ -216,7 +216,7 @@ function LearnMoreSection() {
           <CardSection
             title="Integrations"
             description="Connect Parseable with 100+ data and observability ecosystem tools."
-            link="/docs/integrations"
+            link="/docs/category/key-concepts"
             icon={
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3.5 19h17"></path>
@@ -229,7 +229,7 @@ function LearnMoreSection() {
           <CardSection
             title="Use Cases"
             description="Discover how organizations use Parseable for their observability needs."
-            link="/docs/introduction#use-cases"
+            link="/docs/category/key-concepts"
             icon={
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>

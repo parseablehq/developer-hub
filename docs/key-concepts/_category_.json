@@ -1,0 +1,12 @@
+{
+  "label": "Key Concepts",
+  "collapsible": true,
+  "collapsed": false,
+  "position": 7,
+  "link": {
+    "type": "generated-index",
+    "title": "Key Concepts",
+    "description": "Key concepts of Parseable."
+  },
+  "customProps": {}
+}
