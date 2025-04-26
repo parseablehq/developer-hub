@@ -1,12 +1,12 @@
 {
-  "label": "Features",
+  "label": "OpenTelemetry",
   "collapsible": true,
   "collapsed": true,
   "position": 8,
   "link": {
     "type": "generated-index",
-    "title": "Features",
-    "description": "Features available in Parseable."
+    "title": "OpenTelemetry",
+    "description": "OpenTelemetry integration in Parseable."
   },
   "customProps": {}
 }
