@@ -33,7 +33,7 @@ This section covers general system and informational endpoints, which are access
 | GetReadiness | HEAD /readiness | ✓ | ✓ | ✓ | ✓ | x |
 | ListCluster | GET /cluster/info | ✓ | x | x | x | x |
 | ListClusterMetrics | GET /cluster/metrics | ✓ | x | x | x | x |
-| DeleteIngestor | DELETE /cluster/{ingestor} | ✓ | x | x | x | x |
+| DeleteIngestor | DELETE /cluster/\{ingestor\} | ✓ | x | x | x | x |
 | Metrics | GET /metrics | ✓ | ✓ | x | x | x |
 
 #### Access Management
@@ -42,17 +42,17 @@ This section deals with endpoints for managing roles and users. Only Admins have
 | Action | Endpoint | Admin | Editor | Writer | Reader | Ingester |
 | --- | --- | --- | --- | --- | --- | --- |
 | PutRole | PUT /role/default | ✓ | x | x | x | x |
-| PutRole | PUT /role/{name} | ✓ | x | x | x | x |
+| PutRole | PUT /role/\{name\} | ✓ | x | x | x | x |
 | GetRole | GET /role/default | ✓ | x | x | x | x |
-| GetRole | GET /role/{name} | ✓ | x | x | x | x |
-| DeleteRole | DELETE /role/{name} | ✓ | x | x | x | x |
+| GetRole | GET /role/\{name\} | ✓ | x | x | x | x |
+| DeleteRole | DELETE /role/\{name\} | ✓ | x | x | x | x |
 | ListRole | GET /role | ✓ | x | x | x | x |
-| PutUser | POST /user/{username} | ✓ | x | x | x | x |
-| PutUser | POST /user/{username}/generate-new-password | ✓ | x | x | x | x |
+| PutUser | POST /user/\{username\} | ✓ | x | x | x | x |
+| PutUser | POST /user/\{username\}/generate-new-password | ✓ | x | x | x | x |
 | ListUser | GET /user | ✓ | x | x | x | x |
-| DeleteUser | DELETE /user/{username} | ✓ | x | x | x | x |
-| PutUserRoles | PUT /user/{username}/role | ✓ | x | x | x | x |
-| GetUserRoles | GET /user/{username}/role | ✓ | ✓ | ✓ | ✓ | x |
+| DeleteUser | DELETE /user/\{username\} | ✓ | x | x | x | x |
+| PutUserRoles | PUT /user/\{username\}/role | ✓ | x | x | x | x |
+| GetUserRoles | GET /user/\{username\}/role | ✓ | ✓ | ✓ | ✓ | x |
 
 #### Resource Management
 This section defines access to resources such as dashboards and filters. While most roles can view and create resources, only Admins and Editors have permission to modify or delete them.
@@ -60,46 +60,44 @@ This section defines access to resources such as dashboards and filters. While m
 | Action | Endpoint | Admin | Editor | Writer | Reader | Ingester |
 | --- | --- | --- | --- | --- | --- | --- |
 | ListDashboard | GET /dashboards | ✓ | ✓ | ✓ | ✓ | x |
-| GetDashboard | GET /dashboards/{dashboard_id} | ✓ | ✓ | ✓ | ✓ | x |
+| GetDashboard | GET /dashboards/\{dashboard_id\} | ✓ | ✓ | ✓ | ✓ | x |
 | CreateDashboard | POST /dashboards | ✓ | ✓ | ✓ | ✓ | x |
-| CreateDashboard | PUT /dashboards/{dashboard_id} | ✓ | ✓ | ✓ | ✓ | x |
-| DeleteDashboard | DELETE /dashboards/{dashboard_id} | ✓ | ✓ | ✓ | ✓ | x |
+| CreateDashboard | PUT /dashboards/\{dashboard_id\} | ✓ | ✓ | ✓ | ✓ | x |
+| DeleteDashboard | DELETE /dashboards/\{dashboard_id\} | ✓ | ✓ | ✓ | ✓ | x |
 | ListFilter | GET /filters | ✓ | ✓ | ✓ | ✓ | x |
-| GetFilter | GET /filters/{filter_id} | ✓ | ✓ | ✓ | ✓ | x |
+| GetFilter | GET /filters/\{filter_id\} | ✓ | ✓ | ✓ | ✓ | x |
 | CreateFilter | POST /filters | ✓ | ✓ | ✓ | ✓ | x |
-| CreateFilter | PUT /filters/{filter_id} | ✓ | ✓ | ✓ | ✓ | x |
-| DeleteFilter | DELETE /filters/{filter_id} | ✓ | ✓ | ✓ | ✓ | x |
+| CreateFilter | PUT /filters/\{filter_id\} | ✓ | ✓ | ✓ | ✓ | x |
+| DeleteFilter | DELETE /filters/\{filter_id\} | ✓ | ✓ | ✓ | ✓ | x |
 
 #### Stream Related
 This section deals with endpoints for managing log streams. Admins and Editors have full access to these endpoints, while other roles have limited or no access to stream management functionalities.
 
 | Action | Endpoint | Admin | Editor | Writer | Reader | Ingester |
 | --- | --- | --- | --- | --- | --- | --- |
-| CreateStream | PUT /logstream/{logstream} | ✓ | ✓ | x | x | x |
-| DeleteStream | DELETE /logstream/{logstream} | ✓ | ✓ | x | x | x |
-| GetSchema | GET /logstream/{logstream}/schema | ✓ | ✓ | ✓ | ✓ | x |
-| GetStats | GET /logstream/{logstream}/stats | ✓ | ✓ | ✓ | ✓ | x |
-| GetStreamInfo | GET /logstream/{logstream}/info | ✓ | ✓ | ✓ | ✓ | x |
+| CreateStream | PUT /logstream/\{logstream\} | ✓ | ✓ | x | x | x |
+| DeleteStream | DELETE /logstream/\{logstream\} | ✓ | ✓ | x | x | x |
+| GetSchema | GET /logstream/\{logstream\}/schema | ✓ | ✓ | ✓ | ✓ | x |
+| GetStats | GET /logstream/\{logstream\}/stats | ✓ | ✓ | ✓ | ✓ | x |
+| GetStreamInfo | GET /logstream/\{logstream\}/info | ✓ | ✓ | ✓ | ✓ | x |
 | ListStream | GET /logstream | ✓ | ✓ | ✓ | ✓ | x |
-| PutAlert | PUT /logstream/{logstream}/alert | ✓ | ✓ | ✓ | x | x |
-| GetAlert | GET /logstream/{logstream}/alert | ✓ | ✓ | ✓ | x | x |
-| PutHotTierEnabled | PUT /logstream/{logstream}/hottier | ✓ | ✓ | ✓ | x | x |
-| GetHotTierEnabled | GET /logstream/{logstream}/hottier | ✓ | ✓ | ✓ | x | x |
-| DeleteHotTierEnabled | DELETE /logstream/{logstream}/hottier | ✓ | ✓ | ✓ | x | x |
-| GetRetention | GET /logstream/{logstream}/retention | ✓ | ✓ | ✓ | x | x |
-| PutRetention | PUT /logstream/{logstream}/retention | ✓ | ✓ | ✓ | x | x |
-
+| PutAlert | PUT /logstream/\{logstream\}/alert | ✓ | ✓ | ✓ | x | x |
+| GetAlert | GET /logstream/\{logstream\}/alert | ✓ | ✓ | ✓ | x | x |
+| PutHotTierEnabled | PUT /logstream/\{logstream\}/hottier | ✓ | ✓ | ✓ | x | x |
+| GetHotTierEnabled | GET /logstream/\{logstream\}/hottier | ✓ | ✓ | ✓ | x | x |
+| DeleteHotTierEnabled | DELETE /logstream/\{logstream\}/hottier | ✓ | ✓ | ✓ | x | x |
+| GetRetention | GET /logstream/\{logstream\}/retention | ✓ | ✓ | ✓ | x | x |
+| PutRetention | PUT /logstream/\{logstream\}/retention | ✓ | ✓ | ✓ | x | x |
 
 #### Query & Ingest Logs Related
 This section highlights endpoints related to querying and ingesting logs. Admins and Editors have full access to these functionalities, while other roles, like Readers and Ingestors, may have restricted access depending on their responsibilities.
 
 | Action | Endpoint | Admin | Editor | Writer | Reader | Ingester |
 | --- | --- | --- | --- | --- | --- | --- |
-| Ingest | POST /logstream/{logstream} | ✓ | ✓ | ✓ | x | ✓ |
+| Ingest | POST /logstream/\{logstream\} | ✓ | ✓ | ✓ | x | ✓ |
 | Ingest | POST /ingest | ✓ | ✓ | ✓ | x | ✓ |
 | Query | POST /query | ✓ | ✓ | ✓ | ✓ | x |
 | QueryLLM | POST /llm | ✓ | ✓ | ✓ | ✓ | x |
-
 
 ### Get started
 Creating a Role
@@ -191,4 +189,3 @@ To delete a user, use the Delete User API. This API will delete the user and all
 
 ### OpenID Connect
 For managing roles for your OAuth2 users, refer to OIDC section. Roles are automatically assigned by matching the role name with group name that is obtained to groups claim in the id token.
-
