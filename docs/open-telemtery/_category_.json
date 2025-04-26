@@ -1,0 +1,12 @@
+{
+  "label": "OpenTelemetry",
+  "collapsible": true,
+  "collapsed": true,
+  "position": 8,
+  "link": {
+    "type": "generated-index",
+    "title": "OpenTelemetry",
+    "description": "OpenTelemetry integration in Parseable."
+  },
+  "customProps": {}
+}

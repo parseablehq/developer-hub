@@ -1,0 +1,51 @@
+---
+title: OpenID Connect
+description: OpenID Connect in Parseable
+sidebar_position: 9
+sidebar_label: OpenID
+---
+
+### How it works
+Parseable supports OpenID Connect (OIDC) authentication for secure access to all its functionality. An OpenID server publishes its metadata at a well-known URL, typically `https://server.com/.well-known/openid-configuration`. Parseable uses OpenID connect discovery mechanism to connect to Identity providers.
+
+### Prerequisites
+Before you begin, make sure you have the following prerequisites:
+
+- A configured OIDC provider which provides group claims for each user. Parseable will map the group name for a user with role created in the instance.
+- Knowledge of your OIDC identity provider and its configuration details.
+- A Parseable instance with admin access and the endpoint to access Parseable should have TLS certfication(`https://parseable-endpoint`)
+- You need to set the redirect uri in the OIDC identity provider to `<parseable-instance-url>/api/v1/o/code`. For example, if Parseable instance is hosted at `https://demo.parseable.com/` then the redirect uri should be `https://demo.parseable.com/api/v1/o/code`.
+- You need to add the encryption key on your OIDC provider used to encrypt the keys.
+- Default OIDC role created on Parseable instance.
+
+
+### Environment Variables
+To use OIDC authentication with Parseable, you need to set the following environment variables:
+
+| Variable Name | Required | Description | Default | Example |
+| --- | --- | --- | --- | --- |
+| P_OIDC_CLIENT_ID | Yes | Your OIDC client identifier provided by your identity provider. | "" | "client-id from the OIDC identity provider" |
+| P_OIDC_CLIENT_SECRET | Yes | Your OIDC client secret provided by your identity provider. | "" | "client-secret from the OIDC identity provider" |
+| P_OIDC_ISSUER | Yes | The OIDC issuer URL, typically provided by your identity provider. It points to the OIDC authorization server. Should support discovery protocol | "" | "https://accounts.google.com" |
+| P_ORIGIN_URI | Yes | The URI where Parseable is hosted or accessible. This should be the base URL of your Parseable instance. | "" | "https://demo.parseable.com/" |
+
+
+### Privilege Management with OIDC  
+You can either setup a default OIDC role on Parseable instance or map a user group from your identity provider to a role on Parseable instance.
+
+#### Assign default role to any new OIDC user
+Users that are not a part of group(s) or are part of group(s) where corresponding role is not created on Parseable, will be assigned a default role.
+
+Follow below steps to set default OIDC role on Parseable instance:
+
+- Login to Parseable with admin access.
+- Click on "Users" from the left pane.
+- Click on "Create Role", provide the name of the role and the privilege to assign.
+
+Once created, Click on "Set Default OIDC Role", select the role just created from the dropdown and click on "Set Default OIDC Role".
+
+#### Map user groups to roles on Parseable
+To map your user group to a role on Parseable you must first create that role on Parseable instance with the same name as the user group from your identity provider. To create roles in Parseable, you can use the Create a role API. This allows you to define custom roles for users, granting them specific privileges and permissions within the application.
+
+Once we have roles setup now your users can login with SSO and all the permissions will be immediately granted. Please note that per user customization is not an option for OIDC users. It is recommended you create a new role if such case arises.
+
