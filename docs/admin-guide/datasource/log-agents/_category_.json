@@ -1,0 +1,12 @@
+{
+  "label": "Log Agents",
+  "collapsible": true,
+  "collapsed": true,
+  "position": 1,
+  "link": {
+    "type": "generated-index",
+    "title": "Log Agents",
+    "description": "Log Agents guide for Parseable."
+  },
+  "customProps": {}
+}
