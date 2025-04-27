@@ -22,7 +22,7 @@ Parseable supports authentication to S3 via
 
   - By default, Parseable uses the standard AWS metadata endpoint. If you’re using a custom metadata endpoint, add the optional environment variable `P_AWS_METADATA_ENDPOINT` to specify a [custom endpoint URL](https://docs.aws.amazon.com/sdkref/latest/guide/feature-imds-credentials.html) for retrieving instance metadata.
 
-- IAM Roles for Service Accounts (IRSA): This is useful for EKS deployments. With IRSA you can associate an IAM role with a Kubernetes service account and configure Parseable to use the service account. To use this method, refer to [Parseable EKS documentation](/admin-guide/installation/standalone/aws-eks).
+- IAM Roles for Service Accounts (IRSA): This is useful for EKS deployments. With IRSA you can associate an IAM role with a Kubernetes service account and configure Parseable to use the service account. To use this method, refer to [Parseable EKS documentation](/docs/admin-guide/installation/standalone/aws-eks).
 
 ### SSE-C Support
 Parseable supports server side encryption for [AWS S3 with customer provided encryption keys (SSE-C)](https://docs.aws.amazon.com/AmazonS3/latest/userguide/ServerSideEncryptionCustomerKeys.html). With SSE-C, you can store your data encrypted with your own encryption keys. Amazon S3 or a compatible service like MinIO manages data encryption and decryption transparently.
