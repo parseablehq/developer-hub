@@ -21,7 +21,7 @@ Refer to the [AWS documentation](https://docs.aws.amazon.com/eks/latest/userguid
 
 #### Create an IAM Policy
 
-Parseable requires the below permissions to run on S3. (replace <bucket-name> with your bucket name). Complete list of S3 actions is available [here](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-actions.html).
+Parseable requires the below permissions to run on S3. (replace `bucket-name` with your bucket name). Complete list of S3 actions is available [here](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-actions.html).
 
 ```bash
 cat >parseable-policy.json <<EOF
@@ -39,8 +39,8 @@ cat >parseable-policy.json <<EOF
                 "s3:ListObjectsV2"
             ],
             "Resource": [
-                "arn:aws:s3:::<bucket-name>",
-                "arn:aws:s3:::<bucket-name>/*"
+                "arn:aws:s3:::bucket-name",
+                "arn:aws:s3:::bucket-name/*"
             ]
         }
     ]
@@ -67,4 +67,3 @@ You can now refer to the standard Kubernetes documentation for Parseable install
 If you're using Parseable Helm Chart, set `serviceAccount.create` to `false` and `serviceAccount.name` to the name of the service account you created above. For example `my-service-account`.
 
 If you're using the Parseable Operator, set `serviceAccountName` under the `k8sConfig` section. Refer to a sample CR example here: https://github.com/parseablehq/operator/blob/main/config/samples/parseable-persistent.yaml.
-
