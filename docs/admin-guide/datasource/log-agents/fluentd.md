@@ -28,7 +28,7 @@ You can now access the Parseable dashboard on `http://localhost:8000`. You shoul
 
 ### Kubernetes
 - Please ensure kubectl and helm installed and configured to access your Kubernetes cluster.
-- Parseable installed on your Kubernetes cluster. Refer the Parseable Kubernetes documentation here: https://www.parseable.com/docs/installation/kubernetes-helm.
+- Parseable installed on your Kubernetes cluster. Refer the Parseable Kubernetes documentation here: /docs/admin-guide/installation/distributed/k8s-helm.
 
 #### Install Fluentd
 We use the official [Fluentd Helm chart](https://github.com/fluent/fluentd-helm). But, we'll use a modified values.yaml file, that contains the configuration for Fluentd to send logs to Parseable.
@@ -101,6 +101,3 @@ kubectl port-forward svc/parseable 8000:80 -n parseable
 You can now check the Parseable server `fluentbitdemo` stream to see the logs from this setup.
 
 Navigate to the Parseable dashboard and verify that logs are being ingested correctly.
-
-
-

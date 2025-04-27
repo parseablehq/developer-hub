@@ -35,7 +35,7 @@ How does Fluent Bit runs in a K8s cluster
 
 ### Pre-Requisites
 - Please ensure `kubectl` and `helm` installed and configured to access your Kubernetes cluster.
-- Parseable installed on your Kubernetes cluster. Refer the [Parseable Kubernetes documentation](https://www.parseable.com/docs/installation/kubernetes-helm).
+- Parseable installed on your Kubernetes cluster. Refer the [Parseable Kubernetes documentation](/docs/admin-guide/installation/distributed/k8s-helm).
 
 ### Install Fluent Bit
 We use the official [Fluent Bit Helm chart](https://github.com/fluent/fluent-bit-helm) to install Fluent Bit. But, we'll use a modified values.yaml file, that contains the configuration for Fluent Bit to send logs to Parseable.

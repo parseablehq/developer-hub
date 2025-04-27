@@ -66,4 +66,6 @@ You can now refer to the standard Kubernetes documentation for Parseable install
 
 If you're using Parseable Helm Chart, set `serviceAccount.create` to `false` and `serviceAccount.name` to the name of the service account you created above. For example `my-service-account`.
 
-If you're using the Parseable Operator, set `serviceAccountName` under the `k8sConfig` section. Refer to a sample CR example here: https://github.com/parseablehq/operator/blob/main/config/samples/parseable-persistent.yaml.
+If you're using the Parseable Operator, set `serviceAccountName` under the `k8sConfig` section. Refer to a sample CR example [here][github-link].
+
+[github-link]: https://github.com/parseablehq/operator/blob/main/config/samples/parseable-persistent.yaml
