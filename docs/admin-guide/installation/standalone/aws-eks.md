@@ -5,7 +5,7 @@ sidebar_position: 4
 sidebar_label: AWS EKS
 ---
 
-This page explains additional EKS specific features and configuration options for Parseable. For general Parseable installation instructions, see [installation documentation](/docs/admin-guide/installation).
+This page explains additional EKS specific features and configuration options for Parseable. For general Parseable installation instructions, see [installation documentation](https://www.parseable.com/docs/server/installation-planning).
 
 ### Setup IAM roles for service accounts (IRSA)
 
