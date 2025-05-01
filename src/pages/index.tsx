@@ -1,46 +1,55 @@
-import React from 'react';
+import React, { useState } from 'react';
 import clsx from 'clsx';
 import Link from '@docusaurus/Link';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
 import Heading from '@theme/Heading';
+import { FaGithub, FaSlack, FaTwitter, FaReddit } from 'react-icons/fa';
 
 import styles from './index.module.css';
 
 function HeroSection() {
+  const [copied, setCopied] = useState(false);
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText('curl -sSf https://get.parseable.com | sh');
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <header className={styles.heroBanner}>
       <div className="container">
         <div className={styles.heroContent}>
           <div className={styles.heroText}>
             <Heading as="h1" className={styles.heroTitle}>
-              Parseable Docs
+              Parseable Documentation
             </Heading>
             <p className={styles.heroDescription}>
-              Learn how to monitor and troubleshoot your applications with Parseable using step-by-step guides, 
-              reference docs, and video tutorials.
+              Learn how to set up fast observability on object store using Parseable
             </p>
+            <div className={styles.commandBox}>
+              <code>curl -sSf https://get.parseable.com | sh</code>
+              <button 
+                className={styles.copyButton} 
+                onClick={copyToClipboard}
+                aria-label="Copy to clipboard"
+              >
+                {copied ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                )}
+              </button>
+            </div>
             <div className={styles.heroButtons}>
               <Link to="/docs/introduction" className={styles.heroButton}>
-                <span className={styles.heroButtonIcon}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                  </svg>
-                </span>
-                Quick Start
-                <span className={styles.heroButtonSubtext}>Setup Monitoring in Minutes</span>
-              </Link>
-              <Link to="/docs/installation" className={styles.heroButton}>
-                <span className={styles.heroButtonIcon}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect width="20" height="8" x="2" y="2" rx="2" ry="2"></rect>
-                    <rect width="20" height="8" x="2" y="14" rx="2" ry="2"></rect>
-                    <line x1="6" x2="6.01" y1="6" y2="6"></line>
-                    <line x1="6" x2="6.01" y1="18" y2="18"></line>
-                  </svg>
-                </span>
-                Install Locally
-                <span className={styles.heroButtonSubtext}>Get started with self-hosted Parseable</span>
+                Read Documentation
               </Link>
             </div>
           </div>
@@ -77,58 +86,41 @@ function CardSection({title, description, link, linkText, icon}: CardSectionProp
   );
 }
 
-function GetStartedSection() {
+function InstallationOptionsSection() {
   return (
     <section className={styles.section}>
       <div className="container">
         <Heading as="h2" className={styles.sectionTitle}>
-          Get Started
+          Installation Options
         </Heading>
         <div className={styles.sectionDescription}>
-          <p>Start your journey with Parseable in just a few minutes</p>
+          <p>Choose the deployment method that works best for your environment</p>
         </div>
-        <div className={styles.cardGrid}>
-          <CardSection
-            title="Installation"
-            description="Deploy Parseable across cloud providers, data centers, or edge infrastructure with minimal effort."
-            link="/docs/installation"
-            linkText="Install Parseable"
-            icon={
+        <div className={styles.installationCards}>
+          <div className={styles.installationCard}>
+            <div className={styles.installationCardIcon}>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect width="20" height="8" x="2" y="2" rx="2" ry="2"></rect>
-                <rect width="20" height="8" x="2" y="14" rx="2" ry="2"></rect>
-                <line x1="6" x2="6.01" y1="6" y2="6"></line>
-                <line x1="6" x2="6.01" y1="18" y2="18"></line>
+                <path d="M21 2H3v16h5v4l4-4h5l4-4V2zM12 10v.01M8 10v.01M16 10v.01"></path>
               </svg>
-            }
-          />
-          <CardSection
-            title="Log Ingestion"
-            description="Ingest logs, metrics, and traces from any agent and extract value in minutes."
-            link="/docs/key-concepts/ingestion"
-            linkText="Start ingesting"
-            icon={
+            </div>
+            <h3>Docker</h3>
+            <p>Deploy Parseable quickly with Docker using our pre-built images from Docker Hub.</p>
+            <Link to="/docs/admin-guide/installation/standalone/docker" className={styles.installationCardLink}>
+              View Docker Guide
+            </Link>
+          </div>
+          <div className={styles.installationCard}>
+            <div className={styles.installationCardIcon}>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M15 12h-5"></path>
-                <path d="M15 8h-5"></path>
-                <path d="M19 17V5a2 2 0 0 0-2-2H4"></path>
-                <path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"></path>
+                <path d="M12 4v16M4 8l16 8M4 16l16-8"></path>
               </svg>
-            }
-          />
-          <CardSection
-            title="Query & Analysis"
-            description="Query your observability data using familiar SQL syntax with up to 90% faster performance."
-            link="/docs/key-concepts/query"
-            linkText="Learn to query"
-            icon={
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 6h18"></path>
-                <path d="M7 12h10"></path>
-                <path d="M10 18h4"></path>
-              </svg>
-            }
-          />
+            </div>
+            <h3>Kubernetes</h3>
+            <p>Run Parseable in your Kubernetes cluster using our Helm chart or operator.</p>
+            <Link to="/docs/admin-guide/installation/standalone/k8s" className={styles.installationCardLink}>
+              View Kubernetes Guide
+            </Link>
+          </div>
         </div>
       </div>
     </section>
@@ -140,102 +132,76 @@ function FeaturesSection() {
     <section className={styles.section}>
       <div className="container">
         <Heading as="h2" className={styles.sectionTitle}>
-          Key Features
+          Features
         </Heading>
         <div className={styles.sectionDescription}>
-          <p>Discover what makes Parseable the ideal choice for your observability needs</p>
+          <p>Discover what makes Parseable the best choice for log analytics</p>
         </div>
         <div className={styles.cardGrid}>
           <CardSection
-            title="Fast & Scalable"
-            description="Built for high-performance log ingestion and querying with exceptional scalability across distributed environments."
-            link="/docs/category/key-concepts"
-            icon={
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m13 2-2 2.5L13 7"></path>
-                <path d="M10 2h8.5L19 7"></path>
-                <path d="m19 22-2-2.5 2-2.5"></path>
-                <path d="M5 22h8.5L13 17"></path>
-                <path d="M5 7v10"></path>
-                <path d="M19 7v10"></path>
-              </svg>
-            }
-          />
-          <CardSection
-            title="Cost-Effective"
-            description="Store observability data on S3-compatible object storage at a fraction of the cost of traditional solutions."
-            link="/docs/design-choices#highlights"
-            icon={
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path>
-                <path d="M12 18V6"></path>
-              </svg>
-            }
-          />
-          <CardSection
-            title="Open Standards"
-            description="Built with open standards and formats, ensuring compatibility and avoiding vendor lock-in."
-            link="/docs/category/key-concepts"
-            icon={
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path>
-                <path d="m7.5 12.5 3 3 6-6"></path>
-              </svg>
-            }
-          />
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function LearnMoreSection() {
-  return (
-    <section className={styles.section}>
-      <div className="container">
-        <Heading as="h2" className={styles.sectionTitle}>
-          Learn More
-        </Heading>
-        <div className={styles.sectionDescription}>
-          <p>Explore our documentation and resources to get the most out of Parseable</p>
-        </div>
-        <div className={styles.cardGrid}>
-          <CardSection
-            title="Key Concepts"
-            description="Learn the key concepts of Parseable and how they work together."
-            link="/docs/category/key-concepts"
+            title="Log Ingestion"
+            description="Fast and efficient log ingestion from various sources with support for multiple protocols and formats."
+            link="/docs/key-concepts/ingestion"
             icon={
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"></path>
-                <path d="M8 11h8"></path>
-                <path d="M8 7h6"></path>
               </svg>
             }
           />
           <CardSection
-            title="Integrations"
-            description="Connect Parseable with 100+ data and observability ecosystem tools."
-            link="/docs/category/key-concepts"
+            title="Visualization & Query"
+            description="Powerful query interface with real-time data exploration and visualization capabilities."
+            link="/docs/key-concepts/query"
             icon={
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3.5 19h17"></path>
-                <path d="M14 5a2 2 0 0 1 2-2h1a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2V5Z"></path>
-                <path d="M5 15a2 2 0 0 1 2-2h1a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-2Z"></path>
-                <path d="M10 8a2 2 0 0 1 2-2h1a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2V8Z"></path>
+                <path d="M3 6h18"></path>
+                <path d="M7 12h10"></path>
+                <path d="M10 18h4"></path>
               </svg>
             }
           />
           <CardSection
-            title="Use Cases"
-            description="Discover how organizations use Parseable for their observability needs."
-            link="/docs/category/key-concepts"
+            title="Alerting"
+            description="Set up real-time alerts with customizable triggers and notification channels."
+            link="/docs/features/alerts"
             icon={
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            }
+          />
+          <CardSection
+            title="LLMS"
+            description="Built-in language model processing for advanced log analysis and pattern recognition."
+            link="/docs/category/admin-guide"
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 16v-4"></path>
+                <path d="M12 8h.01"></path>
+              </svg>
+            }
+          />
+          <CardSection
+            title="Storage"
+            description="Efficient log storage with optimized compression and retention policies."
+            link="/docs/category/storage"
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2 20h20"></path>
+                <path d="M5 20V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"></path>
+              </svg>
+            }
+          />
+          <CardSection
+            title="OTEL"
+            description="Full OpenTelemetry compatibility for seamless integration with modern observability stacks."
+            link="/docs/category/opentelemetry"
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path>
+                <path d="M7.5 12.5 3 3 8.5 8"></path>
               </svg>
             }
           />
@@ -265,14 +231,14 @@ function CommunitySection() {
             <h3>GitHub</h3>
             <p>Star us on GitHub and contribute to the project</p>
           </a>
-          <a href="https://discord.gg/parseablehq" className={styles.communityCard}>
+          <a href="https://logg.ing/community" className={styles.communityCard}>
             <div className={styles.communityCardIcon}>
               <svg viewBox="0 0 24 24" width="24" height="24">
-                <path fill="currentColor" d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z" />
+                <path fill="currentColor" d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.687 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.687a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.522h-6.313z"/>
               </svg>
             </div>
-            <h3>Discord</h3>
-            <p>Join our Discord server for real-time discussions</p>
+            <h3>Slack</h3>
+            <p>Join our Slack community for real-time discussions</p>
           </a>
           <a href="https://twitter.com/parseablehq" className={styles.communityCard}>
             <div className={styles.communityCardIcon}>
@@ -283,6 +249,153 @@ function CommunitySection() {
             <h3>Twitter</h3>
             <p>Follow us for the latest updates and announcements</p>
           </a>
+          <a href="https://www.reddit.com/r/parseable/" className={styles.communityCard}>
+            <div className={styles.communityCardIcon}>
+              <FaReddit size={24} />
+            </div>
+            <h3>Reddit</h3>
+            <p>Engage with the community on Reddit</p>
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function IntegrationsSection() {
+  return (
+    <section className={styles.section}>
+      <div className="container">
+        <Heading as="h2" className={styles.sectionTitle}>
+          Integrations
+        </Heading>
+        <div className={styles.sectionDescription}>
+          <p>Connect your systems and start analyzing your data</p>
+        </div>
+
+        <div className={styles.integrationCategory}>
+          <h3 className={styles.integrationCategoryTitle}>Data Sources</h3>
+          <div className={styles.integrationGrid}>
+            <div className={styles.integrationItem}>
+              <div className={styles.integrationIcon}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                  <path d="M2 17l10 5 10-5"></path>
+                  <path d="M2 12l10 5 10-5"></path>
+                </svg>
+              </div>
+              <span>Send Traces</span>
+              <p>Automatic instrumentation for popular frameworks</p>
+            </div>
+            <div className={styles.integrationItem}>
+              <div className={styles.integrationIcon}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                  <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                  <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                  <line x1="6" y1="18" x2="6.01" y2="18"></line>
+                </svg>
+              </div>
+              <span>Send Logs</span>
+              <p>Configure log collection and analysis</p>
+            </div>
+            <div className={styles.integrationItem}>
+              <div className={styles.integrationIcon}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 3v18"></path>
+                  <path d="M18 12V8"></path>
+                  <path d="M13 12V5"></path>
+                  <path d="M8 12v-3"></path>
+                </svg>
+              </div>
+              <span>Send Metrics</span>
+              <p>Configure metrics collection and visualization</p>
+            </div>
+          </div>
+          <div className={styles.integrationPlatforms}>
+            <div className={styles.platformTag}>
+              <span>JavaScript</span>
+            </div>
+            <div className={styles.platformTag}>
+              <span>Python</span>
+            </div>
+            <div className={styles.platformTag}>
+              <span>Kubernetes</span>
+            </div>
+            <div className={styles.platformTag}>
+              <span>Docker</span>
+            </div>
+            <div className={styles.platformTag}>
+              <span>Prometheus</span>
+            </div>
+            <div className={styles.platformTag}>
+              <span>Node.JS</span>
+            </div>
+          </div>
+          <div className={styles.viewAllLink}>
+            <Link to="/docs/category/datasource">View all options →</Link>
+          </div>
+        </div>
+
+        <div className={styles.integrationCategory}>
+          <h3 className={styles.integrationCategoryTitle}>Monitoring</h3>
+          <div className={styles.integrationGrid}>
+            <div className={styles.integrationItem}>
+              <div className={styles.integrationIcon}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                  <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                  <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                  <line x1="6" y1="18" x2="6.01" y2="18"></line>
+                </svg>
+              </div>
+              <span>Infrastructure</span>
+              <p>Monitor your infrastructure and resources</p>
+            </div>
+            <div className={styles.integrationItem}>
+              <div className={styles.integrationIcon}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 10h-1.26A8 8 0 0 0 9 20h9a5 5 0 0 0 0-10z"></path>
+                </svg>
+              </div>
+              <span>Cloud Services</span>
+              <p>Track your cloud resources and services</p>
+            </div>
+            <div className={styles.integrationItem}>
+              <div className={styles.integrationIcon}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="3" y1="9" x2="21" y2="9"></line>
+                  <line x1="9" y1="21" x2="9" y2="9"></line>
+                </svg>
+              </div>
+              <span>Applications</span>
+              <p>Monitor specialized services and applications</p>
+            </div>
+          </div>
+          <div className={styles.integrationPlatforms}>
+            <div className={styles.platformTag}>
+              <span>Docker</span>
+            </div>
+            <div className={styles.platformTag}>
+              <span>Kubernetes</span>
+            </div>
+            <div className={styles.platformTag}>
+              <span>AWS</span>
+            </div>
+            <div className={styles.platformTag}>
+              <span>Azure</span>
+            </div>
+            <div className={styles.platformTag}>
+              <span>Frontend</span>
+            </div>
+            <div className={styles.platformTag}>
+              <span>Terraform</span>
+            </div>
+          </div>
+          <div className={styles.viewAllLink}>
+            <Link to="/docs/category/admin-guide">View all options →</Link>
+          </div>
         </div>
       </div>
     </section>
@@ -297,9 +410,9 @@ export default function Home() {
       description="Fast observability on S3: deploy anywhere in minutes, 10x cheaper, extremely scalable and built with open standards.">
       <main className={styles.main}>
         <HeroSection />
-        <GetStartedSection />
+        <InstallationOptionsSection />
         <FeaturesSection />
-        <LearnMoreSection />
+        <IntegrationsSection />
         <CommunitySection />
       </main>
     </Layout>
