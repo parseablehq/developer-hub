@@ -99,7 +99,7 @@ const config: Config = {
           label: 'Docs',
         },
         {
-          to: '/blog',
+          href: 'https://www.parseable.com/blog',
           label: 'Blog',
           position: 'left'
         },
@@ -152,7 +152,7 @@ const config: Config = {
           items: [
             {
               label: 'Blog',
-              to: '/blog',
+              href: 'https://www.parseable.com/blog',
             },
             {
               label: 'Demo',
