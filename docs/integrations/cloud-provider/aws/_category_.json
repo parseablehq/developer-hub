@@ -1,0 +1,12 @@
+{
+  "label": "AWS",
+  "collapsible": true,
+  "collapsed": true,
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "title": "AWS",
+    "description": "AWS Integrations for Parseable."
+  },
+  "customProps": {}
+}

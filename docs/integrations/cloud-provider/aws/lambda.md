@@ -1,0 +1,61 @@
+---
+title: "AWS Lambda"
+description: "AWS Lambda integration for Parseable"
+sidebar_position: 3
+---
+### Overview
+Parseable AWS Lambda extension is a Lambda extension that allows you to send logs from your Lambda functions to your Parseable instance.
+
+### Usage
+To use the parseable-lambda-extension with a lambda function, it must be configured as a layer. There are two variants of the extension available: one for x86_64 architecture and one for arm64 architecture.
+
+You can add the extension as a layer with the AWS CLI tool:
+
+
+```bash
+$ aws lambda update-code-configuration \
+  --function-name MyAwesomeFunction
+  --layers "<layer version ARN>"
+```
+The extension's layer version ARN follows the pattern below.
+
+
+```bash
+# Layer Version ARN Pattern
+arn:aws:lambda:<AWS_REGION>:724973952305:layer:parseable-lambda-extension-<ARCH>-<VERSION>:1
+```
+
+- AWS_REGION - This must match the region of the Lambda function to which you are adding the extension.
+
+- ARCH - `x86_64` or `arm64`.
+
+- VERSION - The version of the extension you want to use. Current version is v1.0. For current latest release `v1.0`, use the value `v1-0`.
+
+### Configuration
+The extension is configurable via environment variables set for your lambda function.
+
+- `PARSEABLE_LOG_URL` - Parseable endpoint URL. It should be set to `https://<parseable-url>/api/v1/ingest`. Change `<parseable-url>` to your Parseable instance URL. (required)
+
+- `PARSEABLE_USERNAME` - Username set for your Parseable instance. (required)
+
+- `PARSEABLE_PASSWORD` - Password set for your Parseable instance. (required)
+
+- `PARSEABLE_LOG_STREAM` - Parseable stream name where you want to ingest logs. (default: `Lambda Function Name`).
+
+Refer [Parseable installation documentation](https://www.parseable.com/docs/installation) for more details.
+
+### Container image lambda
+In case if you deploy your lambda as container image, to inject extension as part of your function just copy it to your image:
+
+
+```bash
+FROM parseable/aws-lambda-extension:latest AS parseable-extension
+FROM public.ecr.aws/lambda/python:3.8
+# Layer code
+WORKDIR /opt
+COPY --from=parseable-extension /opt/ .
+# Function code
+WORKDIR /var/task
+COPY app.py .
+CMD app.lambda_handler 
+```

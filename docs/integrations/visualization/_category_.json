@@ -1,0 +1,12 @@
+{
+  "label": "Visualization",
+  "collapsible": true,
+  "collapsed": true,
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "title": "Visualization",
+    "description": "Visualization guide for Parseable."
+  },
+  "customProps": {}
+}

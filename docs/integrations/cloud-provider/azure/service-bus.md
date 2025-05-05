@@ -1,0 +1,40 @@
+---
+title: "Azure Service Bus"
+description: "Azure Service Bus integration for Parseable"
+sidebar_position: 2
+---
+
+### Service Bus Messages
+Azure Service Bus is a fully managed enterprise integration message broker. Service Bus is most commonly used to decouple applications and services from each other, and is a reliable and secure platform for asynchronous data and state transfer.    
+
+Service Bus is used to decouple applications and services from each other, providing the following benefits:
+
+- Load-balancing work across competing workers
+
+- Safely routing and transferring data and control across service and application boundaries
+
+- Coordinating transactional work that requires a high-degree of reliability
+
+### Overview
+You can send messages published to Azure Service Bus Queue to Parseable [Azure Logic Apps](https://docs.microsoft.com/en-us/azure/logic-apps/logic-apps-overview) service.
+
+We'll use the Azure Logic Apps trigger "When a message is received in a queue" to send message to Parseable.
+
+### Prerequisites
+Before you begin, you will need the following:
+
+- Parseable deployed and running in your environment. Refer the [installation guide](https://www.parseable.com/docs/installation) for more information.
+
+- Active Azure subscription with Service Bus namespace and queue created. Refer the [Azure Service Bus documentation](https://docs.microsoft.com/en-us/azure/service-bus-messaging/service-bus-messaging-overview) for more information.
+
+
+
+### Use Azure Logic Apps to send Service Bus messages to Parseable
+- Navigate to the Azure Logic Apps in the Azure portal.
+
+- Click on the `+ Add` button to create a new Logic App.
+
+- Configure the Logic App to trigger when an message is available in the Message queue. Refer the image below for more information. We have used the `When a message is received in a queue` trigger to start the Logic App.
+
+
+

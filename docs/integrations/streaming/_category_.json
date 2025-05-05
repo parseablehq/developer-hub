@@ -1,0 +1,12 @@
+{
+  "label": "Streaming",
+  "collapsible": true,
+  "collapsed": true,
+  "position": 5,
+  "link": {
+    "type": "generated-index",
+    "title": "Streaming",
+    "description": "Streaming guide for Parseable."
+  },
+  "customProps": {}
+}

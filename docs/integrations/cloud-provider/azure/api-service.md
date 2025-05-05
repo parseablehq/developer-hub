@@ -1,0 +1,45 @@
+---
+title: "Azure API Service"
+description: "Azure API Service integration for Parseable"
+sidebar_position: 1
+---
+### API Management Service Logs
+Azure API Management (APIM) is a hybrid, multi cloud management platform for APIs across all environments. It provides a scalable, multi-cloud API management platform for securing, publishing, and analyzing APIs.
+
+Azure API Management helps customers:
+
+- Abstract backend architecture diversity and complexity from API consumers
+
+- Securely expose services hosted on and outside of Azure as APIs
+
+- Protect, accelerate, and observe APIs
+
+- Enable API discovery and consumption by internal and external users
+
+Azure API Management is made up of an API gateway, a management plane, and a developer portal. These components are Azure-hosted and fully managed by default.
+
+### Overview
+You can send Azure API Management Service logs to Parseable via Azure Event Hub & Azure Logic Apps. Once logs are unified in Parseable, you can easily monitor and analyze the logs in real-time, and get insights into the performance and usage of your APIs.
+
+Most importantly, you have full ownership and control over this data, so you can use it to improve your API management and security, without cost or privacy concerns.
+
+### Pre-requisites
+Before you begin, you will need the following:
+
+- Parseable deployed and running in your environment. Refer the [installation guide](https://www.parseable.com/docs/installation) for more information.
+
+- Active Azure subscription with APIM service created. Refer the [Azure API Management documentation](https://docs.microsoft.com/en-us/azure/api-management/api-management-overview) for more information.
+
+- Azure Event Hub created. Refer the [Create an event hub using Azure portal documentation](https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-create-portal) for more information.
+
+### Send Azure APIM Service Logs to Event Hub
+- Navigate to the Azure API Management Service in the Azure portal.
+- Click on the `Diagnostics settings` under the `Monitoring` section.
+- Configure the APIM service to send logs to the Event Hub. Refer the image below for more information.
+
+### Use Azure Logic Apps to send events to Parseable
+- Navigate to the Azure Logic Apps in the Azure portal.
+- Click on the `+ Add` button to create a new Logic App.
+- Configure the Logic App to trigger when an event is received in the Event Hub. Refer the image below for more information. We have used the `When events are available in Event Hub` trigger to start the Logic App.
+
+With this, you should now be able to see the APIM service logs in Parseable. You can now monitor and analyze the logs in real-time, and get insights into the performance and usage of your APIs. You have a detailed view of the API management and security, without cost or privacy concerns.
