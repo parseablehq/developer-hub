@@ -1,0 +1,230 @@
+---
+title: "JavaScript"
+description: JavaScript application for Parseable
+sidebar_position: 3
+---
+
+### Parseable Bunyan Plugin
+The Parseable Bunyan plugin is developed by our community champion Jacques-Yves Bleau. Refer to the plugin here:
+
+NPM page: https://www.npmjs.com/package/parseable-bunyan
+Repo page: https://github.com/jybleau/parseable-node-loggers/tree/main/packages/bunyan#parseable-bunyan
+Installation
+
+```bash
+npm install parseable-bunyan
+yarn add parseable-bunyan
+```
+
+#### Using the Plugin
+
+```javascript
+const { ParseableBunyan } = require('parseable-bunyan')
+const bunyan = require('bunyan')
+
+const parseableStream = new ParseableBunyan({
+    // highlight-start 
+    url: process.env.PARSEABLE_URL, // Ex: 'https://parsable.myserver.local/api/v1/logstream'
+    username: process.env.PARSEABLE_USERNAME,
+    password: process.env.PARSEABLE_PASSWORD,
+    logstream: process.env.PARSEABLE_LOGSTREAM, // The logstream name
+    // highlight-end
+    tags: { tag1: 'tagValue' } // optional tags to be added with each ingestion
+    disableTLSCerts: true, // Optional: Default to false. Set to true to ignore invalid certificate
+    http2: true, // Optional: Default to true. Set to false to use HTTP/1.1 instead of HTTP/2.0
+    buffer: { maxEntries: 100, flushInterval: 5000 }, // Optional: Tune the default buffering options
+    onError: error => console.error(error), // Optional: handle an error by yourself
+    onRecord: record => { // optional onRecord event
+        // Examples of what could be done here: exclude routes, methods, IPs and UAs
+        const excludeMethods = 'HEAD,OPTIONS'
+        const excludeRoutes = '/check,/test1'
+        const excludeIPs = '192.168.1.1,192.168.1.2'
+        const excludeUAs = 'UptimeRobot,AnnoyingUA'
+
+        if (record.req) {
+        if (excludeRoutes.includes(record.req.path)) {
+            return false
+        }
+        if (excludeMethods.includes(record.req.method)) {
+            return false
+        }
+        if (record.remoteAddress) {
+            if (excludeIPs.some(ip => record.remoteAddress.includes(ip))) {
+            return false
+            }
+        }            
+        if (record.req.headers['user-agent']) {
+            const _ua = record.req.headers['user-agent'].toLowerCase()
+            if (excludeUAs.some(ua => _ua.includes(ua.toLowerCase()))) {
+            return false
+            }
+        }
+        }
+    // You can also apply custom serialization here and return the serialized record.
+  }
+})
+
+const bunyanLogger = bunyan.createLogger({
+    name: 'logger',
+    serializers, // optionally set your own serializers
+    streams: [parseableStream]
+  })
+```
+
+### Parseable Winston Plugin
+The Parseable Winston plugin is developed by our community champion Jacques-Yves Bleau. Refer to the plugin here:
+
+NPM page: https://www.npmjs.com/package/parseable-winston
+Repo page: https://github.com/jybleau/parseable-node-loggers/tree/main/packages/winston#parseable-winston
+
+#### Installation
+
+```bash
+npm install parseable-winston
+yarn add parseable-winston
+```
+
+#### Using the Plugin
+
+```javascript
+// Using cjs
+const { ParseableTransport } = require('parseable-winston')
+const winston = require('winston')
+// highlight-start 
+const parseable = new ParseableTransport({
+  url: process.env.PARSEABLE_LOGS_URL, // Ex: 'https://parsable.myserver.local/api/v1/logstream'
+  username: process.env.PARSEABLE_LOGS_USERNAME,
+  password: process.env.PARSEABLE_LOGS_PASSWORD,
+  logstream: process.env.PARSEABLE_LOGS_LOGSTREAM, // The logstream name
+  tags: { tag1: 'tagValue' } // optional tags to be added with each ingestion
+})
+// highlight-end
+
+const logger = winston.createLogger({
+  levels: winston.config.syslog.levels,
+  transports: [parseable],
+  defaultMeta: { instance: 'app', hostname: 'app1' }
+})
+
+logger.info('User took the goggles', { userid: 1, user: { name: 'Rainier Wolfcastle' } })
+logger.warning('The goggles do nothing', { userid: 1 })
+```
+
+#### To turn off default buffering option:
+
+```javascript
+const parseable = new ParseableTransport({
+  url: process.env.PARSEABLE_LOGS_URL,
+  username: process.env.PARSEABLE_LOGS_USERNAME,
+  password: process.env.PARSEABLE_LOGS_PASSWORD,
+  logstream: process.env.PARSEABLE_LOGS_LOGSTREAM,
+  buffer: { maxEntries: 100, flushInterval: 5000 }
+})
+```
+
+### Using plain JavaScript
+
+#### Create a log stream
+First, we'll need to create a log stream. This is a one time operation, and we recommend storing log entries with same schema in a single log stream. So, for example, you can use one log stream per application (given that all logs from that application have the same schema).
+
+
+```javascript
+var myHeaders = new Headers();
+// highlight-start 
+// TODO: Replace the basic auth credentials with your Parseable credentials
+myHeaders.append("Authorization", "Basic YWRtaW46YWRtaW4=");
+// highlight-end
+
+var requestOptions = {
+    method: 'PUT',
+    headers: myHeaders,
+    redirect: 'follow'
+};
+// highlight-start 
+// TODO: Replace the url with your Parseable URL and stream name
+fetch("https://<parseable-url>/api/v1/logstream/<stream-name>", requestOptions)
+    // highlight-end
+    .then(response => response.text())
+    .then(result => console.log(result))
+    .catch(error => console.log('error', error));
+```
+
+#### Send logs to the log stream
+After log stream is created, you can start sending logs to the log stream using HTTP POST requests.
+
+
+```javascript
+var myHeaders = new Headers();
+// highlight-start
+// INFO: Use X-P-META-<key>:<value> to add custom metadata to the log event
+myHeaders.append("X-P-META-Host", "192.168.1.3");
+// INFO: Use X-P-TAG-<key>:<value> to add tags to the log event
+myHeaders.append("X-P-TAG-Language", "javascript");
+// TODO: Replace the basic auth credentials with your Parseable credentials
+myHeaders.append("Authorization", "Basic YWRtaW46YWRtaW4=");
+// highlight-end
+myHeaders.append("Content-Type", "application/json");
+
+var raw = JSON.stringify([{
+    "id": "434a5f5e-2f5f-11ed-a261-asdasdafgdfd",
+    "datetime": "24/Jun/2022:14:12:15 +0000",
+    "host": "153.10.110.81",
+    "user-identifier": "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:64.0) Gecko/20100101 Firefox/64.0",
+    "method": "PUT",
+    "status": 500,
+    "referrer": "http://www.google.com/"
+}]);
+
+var requestOptions = {
+    method: 'POST',
+    headers: myHeaders,
+    body: raw,
+    redirect: 'follow'
+};
+
+// highlight-start
+// TODO: Replace the url with your Parseable URL and stream name
+fetch("https://<parseable-url>/api/v1/logstream/<stream-name>", requestOptions)
+    // highlight-end
+    .then(response => response.text())
+    .then(result => console.log(result))
+    .catch(error => console.log('error', error));
+```
+
+#### Querying a log stream
+Once you have started sending logs to a log stream, you can query the logs using standard SQL.
+
+
+```javascript
+var myHeaders = new Headers();
+// highlight-start
+// TODO: Replace the basic auth credentials with your Parseable credentials
+myHeaders.append("Authorization", "Basic YWRtaW46YWRtaW4=");
+// highlight-end
+myHeaders.append("Content-Type", "application/json");
+
+var raw = JSON.stringify({
+    // highlight-start
+    // TODO: Replace the stream name with your log stream name
+    "query": "select * from <stream-name>",
+    // TODO: Replace the time range with your desired time range
+    "startTime": "2022-09-10T08:20:00+00:00",
+    "endTime": "2022-09-10T08:20:31+00:00"
+    // highlight-end
+});
+
+var requestOptions = {
+    method: 'POST',
+    headers: myHeaders,
+    body: raw,
+    redirect: 'follow'
+};
+
+// highlight-start
+// TODO: Replace the url with your Parseable URL
+fetch("https://<parseable-url>/api/v1/query", requestOptions)
+    // highlight-end
+    .then(response => response.text())
+    .then(result => console.log(result))
+    .catch(error => console.log('error', error));
+```
