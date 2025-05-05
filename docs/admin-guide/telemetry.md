@@ -1,0 +1,70 @@
+---
+title: "Telemetry"
+description: Telemetry for Parseable
+sidebar_position: 8
+---
+
+### Overview
+Parseable collects anonymized usage statistics from users in order to improve the server. You can deactivate at any time by setting `P_SEND_ANONYMOUS_USAGE_DATA=false`.
+
+Any data that has already been collected can be deleted on request.
+
+### Why is data collected?
+Parseable is a young project and we want to make it fast, reliable and resource efficient. While we perform several benchmarks internally, it is impossible to capture all the scenarios, hardware and software combinations that Parseable is used in.
+
+In order to identify performance characteristics and improve Parseable, we need to collect information about how it is used.
+
+### What data is collected?
+Broadly, there are two types of data collected:
+
+- System information - general information about the system, such as CPU, RAM, and disk type. As well as the configuration of the Parseable instance.
+- Usage - information about data stored and compressed.
+
+We do not collect any data that can be used to identify the user or the user’s organization. This includes:
+
+- Any data that can be used to identify the user or the user’s organization
+- Any data stored in the log stream
+- Any names of the log stream
+- Any URLs
+
+### Sample JSON data
+
+This is a sample data received by our servers, when a Parseable installation reports anonymous telemetry.
+
+
+```json
+{
+	"commit_hash": "f053d2f",
+	"cpu_count": 8,
+	"deployment_id": "01GTB8PGHM5AK9XQXPMTTCBQ0S",
+	"memory_total_bytes": 16287862784,
+	"metrics": {
+		"cpu_cpu0_usage_percent": 1.5296164751052856,
+		"cpu_cpu1_usage_percent": 1.6184406280517578,
+		"cpu_cpu2_usage_percent": 2.738511800765991,
+		"cpu_cpu3_usage_percent": 2.094792366027832,
+		"cpu_cpu4_usage_percent": 2.183173179626465,
+		"cpu_cpu5_usage_percent": 1.5540571212768557,
+		"cpu_cpu6_usage_percent": 1.4056124687194824,
+		"cpu_cpu7_usage_percent": 1.449198842048645,
+		"memory_free_bytes": 349634560,
+		"memory_in_use_bytes": 6138183680,
+		"stream_count": 7,
+		"total_events_count": 864611,
+		"total_json_bytes": 396726688,
+		"total_parquet_bytes": 311480071
+	},
+	"mode": "S3 bucket",
+	"os_name": "Debian GNU/Linux",
+	"os_version": "11",
+	"platform": "Docker",
+	"report_created_at": "2023-04-25T10:00:10.000638350Z",
+	"uptime_secs": 12469729,
+	"version": "0.4.0"
+}
+```
+
+### Request data deletion
+To request data deletion, send an email to [hi@parseable.com](mailto:hi@parseable.com) containing the unique `Deployment UID` generated for your Parseable installation.
+
+You can find this identifier in the server startup banner under the field `Deployment UID`.
