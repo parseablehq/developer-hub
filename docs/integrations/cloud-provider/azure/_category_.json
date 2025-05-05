@@ -1,0 +1,12 @@
+{
+  "label": "Azure",
+  "collapsible": true,
+  "collapsed": true,
+  "position": 1,
+  "link": {
+    "type": "generated-index",
+    "title": "Azure",
+    "description": "Azure Integrations for Parseable."
+  },
+  "customProps": {}
+}

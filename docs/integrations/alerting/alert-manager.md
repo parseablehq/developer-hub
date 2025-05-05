@@ -1,0 +1,38 @@
+---
+title: "Alertmanager"
+description: "Alertmanager integration for Parseable"
+sidebar_position: 1
+---
+
+### Overview
+[Alertmanager](https://github.com/prometheus/alertmanager) handles alerts sent by client applications such as the Parseable server. Alertmanager takes care of deduplicating, grouping, and routing them to the correct receiver integration such as email, PagerDuty, or OpsGenie.
+
+Parseable alerts can be sent to Alertmanager to allow advanced alert management and notification routing.
+
+### Prerequisites
+- Parseable server installed and running. See [installation guide](https://www.parseable.com/docs/installation) for more details.
+- Alertmanager installed and running. See [installation and setup guide](https://github.com/prometheus/alertmanager) for more details.
+
+### Configuration
+To configure Parseable alerts to be sent to Alertmanager, use the alertmanager [target type](https://www.parseable.com/docs/alerts#alertmanager) in Parseable alert configuration.
+
+This is a snippet of Parseable alert configuration, to demonstrate the fields required to send alerts to Alertmanager.
+
+```json
+{
+	"type": "alertmanager",
+	"endpoint": "http://localhost:9093/api/v2/alerts",
+	"username": "admin",
+	"password": "admin",
+	"skip_tls_check": false,
+	"repeat": {
+		"interval": "30s",
+		"times": 5
+	}
+}
+```
+
+The `endpoint` field is the URL of the Alertmanager API endpoint. The `username` and `password` fields are the credentials for basic authentication. The `skip_tls_check` field is a boolean to skip TLS certificate verification. The `repeat` field is used to repeat the alert. If it is not set, Parseable will keep sending the alert (with 200s interval) till it is resolved (i.e. the alert is no longer firing).
+
+Once Parseable alerts are configured to be sent to Alertmanager, you can use Alertmanager to manage the alerts. For example, you can use Alertmanager to route alerts to different receivers, such as email, PagerDuty, or OpsGenie. You can also use Alertmanager to silence alerts.
+
