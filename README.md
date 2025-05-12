@@ -1,74 +1,53 @@
-# Parseable Documentation Site
+# Fumadocs Documentation Site
 
-This repository contains the official documentation for [Parseable](https://parseable.io), providing fast observability on S3. The documentation is built using [Docusaurus](https://docusaurus.io/), a modern static website generator.
+This is a documentation site built with [Fumadocs](https://fumadocs.dev/) and Next.js. Fumadocs is a modern documentation framework that provides a beautiful, responsive, and feature-rich documentation experience.
 
-## About Parseable
+## Features
 
-Parseable is a cloud-native observability platform designed for high performance and scalability on S3. It enables you to ingest, store, and query observability data at scale using familiar SQL syntax directly on S3. For more information about Parseable, visit the [official website](https://parseable.io) or the [GitHub repository](https://github.com/parseablehq/parseable).
+- Built on Next.js App Router
+- MDX support for rich content
+- Built-in search functionality
+- Responsive navigation
+- Dark/light mode
+- Code highlighting
 
-## Contributing to the Documentation
+## Getting Started
 
-We welcome contributions to improve the Parseable documentation! Here's how you can help:
-
-1. Fork this repository
-2. Make your changes
-3. Submit a pull request
-
-Please ensure your contributions follow our documentation style guide and are accurate.
-
-## Local Development
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org/) version 18 or above
-- [npm](https://www.npmjs.com/) or [Yarn](https://yarnpkg.com/)
-
-### Installation
+Run the development server:
 
 ```bash
-# Using npm
-npm install
-
-# Using Yarn
-yarn
+npm run dev
+# or
+pnpm dev
+# or
+yarn dev
 ```
 
-### Running the Development Server
+Open http://localhost:3000 with your browser to see the documentation site.
 
-```bash
-# Using npm
-npm start
+## Project Structure
 
-# Using Yarn
-yarn start
-```
+- `lib/source.ts`: Code for content source adapter, [`loader()`](https://fumadocs.dev/docs/headless/source-api) provides the interface to access your content.
+- `app/layout.config.tsx`: Shared options for layouts, optional but preferred to keep.
 
-This command starts a local development server and opens up a browser window. Most changes are reflected live without having to restart the server.
+| Route                     | Description                                            |
+| ------------------------- | ------------------------------------------------------ |
+| `app/(home)`              | The route group for your landing page and other pages. |
+| `app/docs`                | The documentation layout and pages.                    |
+| `app/api/search/route.ts` | The Route Handler for search.                          |
 
-### Building for Production
+### Fumadocs MDX
 
-```bash
-# Using npm
-npm run build
+A `source.config.ts` config file has been included, you can customise different options like frontmatter schema.
 
-# Using Yarn
-yarn build
-```
+Read the [Introduction](https://fumadocs.dev/docs/mdx) for further details.
 
-This command generates static content into the `build` directory and can be served using any static contents hosting service.
+## Learn More
 
-## Deployment
+To learn more about Next.js and Fumadocs, take a look at the following
+resources:
 
-The documentation is automatically deployed when changes are merged to the main branch. If you need to deploy manually:
-
-```bash
-# Using npm
-npm run deploy
-
-# Using Yarn
-yarn deploy
-```
-
-## License
-
-This documentation is licensed under the same license as Parseable. See the [LICENSE](LICENSE) file for details.
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js
+  features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- [Fumadocs](https://fumadocs.vercel.app) - learn about Fumadocs
