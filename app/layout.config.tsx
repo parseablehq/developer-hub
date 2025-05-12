@@ -1,5 +1,4 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
-import Link from 'next/link';
 
 /**
  * Shared layout configurations
