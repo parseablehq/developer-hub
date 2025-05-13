@@ -1,0 +1,16 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "introduction",
+    "design-choices",
+    "architecture",
+    "quickstart",
+    "benchmarks",
+    "installation",
+    "key-concepts",
+    "features",
+    "open-telemtery",
+    "admin-guide",
+    "integrations"
+  ]
+}

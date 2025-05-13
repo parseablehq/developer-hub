@@ -1,0 +1,52 @@
+---
+title: AWS S3
+description: AWS S3 storage guide for Parseable
+sidebar_position: 1
+sidebar_label: AWS S3
+---
+
+This document is a deep dive into Parseable and AWS S3 setup
+
+### Prerequisites
+- New Parseable cluster requires a fully empty S3 bucket.
+- For optimum performance, please ensure the S3 bucket is in the same region as the compute (EC2, EKS, ECS, Lightsail or others) instances.
+
+### Authentication
+Parseable supports authentication to S3 via
+
+- Access Key and Secret Key: The AWS access key and the secret key can be used to authenticate to AWS S3 bucket. To use this method, set the environment variables `P_S3_ACCESS_KEY` and `P_S3_SECRET_KEY` before starting the Parseable server(s).
+
+- Instance Metadata Service (IMDS): For Parseable instances running on EC2, AWS credentials can be sourced from the Instance Metadata Service (IMDS), avoiding the need for explicit `P_S3_ACCESS_KEY` and `P_S3_SECRET_KEY`. To use this method,
+
+  - Ensure that `Instance Metadata Service (IMDS)` is enabled when creating the EC2 instance (under Advanced details section). Select the Metadata version to `V1` and `V2` (token optional). Please refer to the [metadata service docs](https://docs.aws.amazon.com/sdkref/latest/guide/feature-imds-credentials.html) for more. You set `P_AWS_IMDSV1_FALLBACK` to true if you want to use the V1 method.
+
+  - By default, Parseable uses the standard AWS metadata endpoint. If you’re using a custom metadata endpoint, add the optional environment variable `P_AWS_METADATA_ENDPOINT` to specify a [custom endpoint URL](https://docs.aws.amazon.com/sdkref/latest/guide/feature-imds-credentials.html) for retrieving instance metadata.
+
+- IAM Roles for Service Accounts (IRSA): This is useful for EKS deployments. With IRSA you can associate an IAM role with a Kubernetes service account and configure Parseable to use the service account. To use this method, refer to [Parseable EKS documentation](/docs/admin-guide/installation/standalone/aws-eks).
+
+### SSE-C Support
+Parseable supports server side encryption for [AWS S3 with customer provided encryption keys (SSE-C)](https://docs.aws.amazon.com/AmazonS3/latest/userguide/ServerSideEncryptionCustomerKeys.html). With SSE-C, you can store your data encrypted with your own encryption keys. Amazon S3 or a compatible service like MinIO manages data encryption and decryption transparently.
+
+Note that SSE-C requires HTTPS and Amazon S3 or compatible service might reject any requests made over HTTP when using SSE-C.
+
+### Setting up
+The encryption key must be a 256-bit key for AES-256 encryption. To add SSE-C encryption key, add the environment variable `P_S3_SSEC_ENCRYPTION_KEY` before starting the server. The value should be in the format `- SSE-C:AES256:<base64_encryption_key>`. Here is example of adding the SSE-C encryption key to Parseable
+
+Generate a 256-bit AES key and `Base64` encode it
+
+```bash
+ENCRYPTION_KEY=$(openssl rand -base64 32)
+echo "Encryption Key: $ENCRYPTION_KEY"
+```
+
+Add the `Base64` encoded encryption key to the environment variable
+
+```bash
+P_S3_SSEC_ENCRYPTION_KEY=SSE-C:AES256:$ENCRYPTION_KEY
+```
+
+For distributed deployments, the environment variable `P_S3_SSEC_ENCRYPTION_KEY` needs to be set for Query as well as Ingestor nodes.
+
+<Callout type="info">
+If you lose the encryption key, you’ll lose access to the log data. Hence, we recommend secure storage for the encryption key such as [AWS Secrets Manager](https://aws.amazon.com/secrets-manager/) or similar.
+</Callout>
