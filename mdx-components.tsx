@@ -1,10 +1,24 @@
 import defaultMdxComponents from 'fumadocs-ui/mdx';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Card, Cards } from 'fumadocs-ui/components/card';
 import type { MDXComponents } from 'mdx/types';
 
-// use this function to get MDX components, you will need it for rendering MDX
+// This function provides MDX components for rendering MDX content
 export function getMDXComponents(components?: MDXComponents): MDXComponents {
   return {
+    // Include all default Fumadocs MDX components
     ...defaultMdxComponents,
+    
+    // Explicitly include the components we need
+    Callout,
+    Card,
+    Cards,
+    
+    // Override any components if needed
+    // For example, you could customize the appearance of certain HTML elements
+    h1: ({ children }) => <h1 className="text-3xl font-bold mt-8 mb-4">{children}</h1>,
+    
+    // Include any custom components passed in
     ...components,
   };
 }
