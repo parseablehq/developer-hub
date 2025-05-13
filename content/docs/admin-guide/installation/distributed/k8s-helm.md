@@ -14,9 +14,9 @@ This page explains the steps required to setup Parseable in a distributed mode o
 
 ### Set up object store
 
-:::info
+<Callout type="info">
 The MinIO installation steps below are for testing purposes only. For production level deployment please refer to the [MinIO documentation](https://min.io/docs/minio).
-:::
+</Callout>
 
 This step is required only if you want to setup MinIO as the backend for Parseable. Please skip this step if you have another object store, like S3, already available.
 Make sure you configure `storageClass` in the helm install command.
@@ -62,9 +62,9 @@ helm repo add parseable https://charts.parseable.com/
 helm install parseable parseable/parseable -n parseable --set "parseable.highAvailability.enabled=true" --set "parseable.store=s3-store" --set "parseable.s3ModeSecret.enabled=true"
 ```
 
-:::info
+<Callout type="info">
 Note that `parseable.highAvailability.enabled=true` flag enables high availability mode. By default, the helm chart installs 3 Parseable ingest services and 1 Parseable query service. It also creates a ClusterIP service for Parseable ingestors.
-:::
+</Callout>
 
 #### Access Parseable
 

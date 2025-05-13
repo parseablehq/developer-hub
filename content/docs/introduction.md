@@ -31,6 +31,6 @@ Parseable combines a purpose built OLAP, diskless database [Parseable DB](https:
 - Efficient compute utilization, compression and utilizing object storage like S3 offers up to 70% cost reduction compared to Elasticsearch or up to 90% compared to DataDog.
 
 
-:::info
+<Callout type="info">
 Want to use a LLM to ask questions on Parseable docs? Copy the docs text from http://parseable.com/llms.txt and paste into the LLM.
-:::
+</Callout>

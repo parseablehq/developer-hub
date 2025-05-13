@@ -47,6 +47,6 @@ P_S3_SSEC_ENCRYPTION_KEY=SSE-C:AES256:$ENCRYPTION_KEY
 
 For distributed deployments, the environment variable `P_S3_SSEC_ENCRYPTION_KEY` needs to be set for Query as well as Ingestor nodes.
 
-:::info
+<Callout type="info">
 If you lose the encryption key, you’ll lose access to the log data. Hence, we recommend secure storage for the encryption key such as [AWS Secrets Manager](https://aws.amazon.com/secrets-manager/) or similar.
-:::
+</Callout>

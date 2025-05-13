@@ -17,10 +17,10 @@ Once the `P_OPENAI_API_KEY` variable is set, Parseable will automatically detect
 ## Data Mapping to Ensure Valid SQL
 To generate SQL that matches your table structure accurately, Parseable includes your table schema in the query sent to the LLM. This schema includes just th column names and their data types. This ensures that the SQL generated is valid and aligns with your table definition. No other data is shared to the LLM used.
 
-:::info
+<Callout type="info">
 - The LLM only generates the SQL. It doesn't run the query until you manually hit the Run button.
 - You have the option to tweak the SQL generated further to your liking before finally running it.
-:::
+</Callout>
 
 ## Roadmap
 In addition to supporting OpenAI, we aim to integrate with other popular LLMs, including open-source and self-hostable LLMs like LLaMa. Stay tuned for more updates!

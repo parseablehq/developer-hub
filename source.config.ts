@@ -4,6 +4,7 @@ import {
   frontmatterSchema,
   metaSchema,
 } from 'fumadocs-mdx/config';
+import { remarkAdmonition } from 'fumadocs-core/mdx-plugins';
 
 // Define the documentation collection
 export const docs = defineDocs({
@@ -20,7 +21,7 @@ export const docs = defineDocs({
 // Configure MDX options
 export default defineConfig({
   mdxOptions: {
-    remarkPlugins: [],
+    remarkPlugins: [remarkAdmonition],
     rehypePlugins: [],
   },
 });

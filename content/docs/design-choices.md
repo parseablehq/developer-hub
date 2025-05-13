@@ -7,9 +7,9 @@ sidebar_label: Design Choices
 
 This document outlines our key design choices, ensuring durability, scalability, and efficiency for modern observability workloads. This page also covers the technical trade offs in Parseable.
 
-:::info
+<Callout type="info">
 If you have a specific use case or need a feature tailored to your observability needs, let us know at [sales@parseable.com](mailto:sales@parseable.com). We ship fast and most of such requests can be done in a matter of days.
-:::
+</Callout>
 
 ### Highlights
 

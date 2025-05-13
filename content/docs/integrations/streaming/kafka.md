@@ -61,9 +61,9 @@ For more details, refer to [Kafka's official documentation](https://kafka.apache
 For more details, refer to [Kafka's official documentation on consumer configurations](https://kafka.apache.org/documentation#consumerconfigs).
 
 ### Producer Configuration
-:::info
+<Callout type="info">
 Producer configuration is not necessary at this moment. When DLT is implemented, these settings will be required.
-:::
+</Callout>
 
 | Parameter | Environment Variable | Default Value | Description | Usage |
 | --- | --- | --- | --- | --- |

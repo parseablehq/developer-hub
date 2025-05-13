@@ -45,9 +45,9 @@ docker run \
   parseable s3-store
 ```
 
-:::info
+<Callout type="info">
 Since Parseable runs as user parseable inside the container, you'll need to make sure that the local path /data/parseable is owned by user parseable (`uid: 10001`). You can do that by running `chown -R 10001:10001 /data/parseable` on the host machine.
-:::
+</Callout>
 
 ### Access Parseable
 Once Parseable is up and running, you can access it at `http://localhost:8000` (assuming you've set `P_ADDR` to `:8000` in the env file). Credentials to login to Parseable are set via `P_USERNAME` and `P_PASSWORD` fields in the env file.

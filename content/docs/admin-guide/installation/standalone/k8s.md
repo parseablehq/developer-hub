@@ -54,9 +54,9 @@ kubectl port-forward svc/minio-console -n minio 9001:9001
 You can now access the MinIO console on http://localhost:9001. You should see a bucket called `parseable` created.
 
 
-:::info
+<Callout type="info">
 MinIO installation steps above are for testing purposes only. For production, please refer to the [MinIO documentation](https://min.io/docs/minio).
-:::
+</Callout>
 
 #### Create configuration secret
 Create a secret file with the configuration for Parseable. Note that the values set below are based on the MinIO installation above. If you are using a different object store, please update the values accordingly.

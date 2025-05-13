@@ -26,9 +26,9 @@ The Query server primarily serves as a reader server, barring a few metadata fil
 
 If you're already running Parseable in standalone mode, and want to migrate to distributed mode, you can start the Parseable server(s) in distributed mode, and the server will automatically migrate the metadata and other relevant manifest files to the distributed mode. There is no additional step involved.
 
-:::info
+<Callout type="info">
 This is a one way and one time process. It is not possible to move from a distributed deployment to a standalone deployment.
-:::
+</Callout>
 
 ## High Availability in Parseable Enterprise (New Feature)
 
@@ -103,11 +103,9 @@ If you're currently running Parseable OSS in distributed mode, the migration pro
 
 Your existing OSS nodes will automatically be incorporated into the Enterprise cluster with no additional configuration required.
 
-:::info
-
+<Callout type="info">
 Prism and Index nodes are Enterprise-only features and cannot be deployed with OSS versions.
-
-:::
+</Callout>
 
 #### Migrating from Enterprise to OSS
 

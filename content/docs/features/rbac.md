@@ -15,9 +15,9 @@ There are five entities in Parseable Access Control model - **Action**, **Privil
 - **Users**: Users refer to human or machine entities that can perform actions on a Parseable server instance. Each user has a unique username and password. A user can be assigned one or more roles.
 
 
-:::info
+<Callout type="info">
 User passwords are hashed and stored in Parseable metadata file. Parseable does not store the password in plain text.
-:::
+</Callout>
 
 ### Overview of Roles & Access
 Each role—Admin, Editor, Writer, Reader, and Ingestor—has varying access to different endpoints, categorized into six sections: General, Access Management, Resource Based, Stream Related, and Query & Ingest Logs Related. Access permissions are denoted with either `✓` (allowed) or `x` (denied).

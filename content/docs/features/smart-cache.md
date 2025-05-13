@@ -5,9 +5,9 @@ sidebar_position: 6
 sidebar_label: Smart Cache
 ---
 
-:::info
+<Callout type="info">
 Smart cache is only available to be set-up through API and not natively supported in the UI from Release `v2.0.0` onwards. We are working on adding this feature to Prism UI and it will be available soon.
-:::
+</Callout>
 
 ### How it works
 Tiering in Parseable allows keeping a copy of log data on the query node (in addition to the object store). You can create storage tiers on query node disks, allowing hot/recent data on SSD and older data backed by S3/object storage. This architecture allows for much faster query response, while keeping costs very low because data is always backed on object store.

@@ -28,9 +28,9 @@ Log streams by default have dynamic schema. This means you don't need to define 
 
 Log data formats evolve over time, and users prefer a dynamic schema approach, where they don't have to worry about schema changes, and they are still able to ingest events to a given stream.
 
-:::note
+<Callout type="note">
 For dynamic schema, Parseable doesn't allow changing the type of an existing column whose type is already set. For example, if a column is detected as string in the first event, it can't be changed to int or timestamp in a later event. If you'd like to force a specific schema, you can set the schema while creating the stream.
-:::
+</Callout>
 
 ### Static
 

@@ -17,9 +17,9 @@ curl -fsSL https://logg.ing/install | bash
 parseable local-store
 ```
 
-:::info
+<Callout type="info">
 Parseable listens on the port 8000. You can access Parseable UI at http://localhost:8000. The default credentials are admin and admin.
-:::
+</Callout>
 
 ### Ingest log data
 

@@ -43,9 +43,9 @@ P_ORIGIN_URI → Parseable host URL.
 
 After setting the environment variables, restart the Parseable server instance. For more details on environment variables, refer to [Parseable OIDC documentation](https://www.parseable.com/docs/server/features/oidc-openid-connect#environment-variables).
 
-:::info
+<Callout type="info">
 If you’re running a distributed Parseable set up, please ensure to set these environment variables across all the Parseable instances.
-:::
+</Callout>
 
 ### Configure OIDC Role in Parseable
 Once the environment variables are setup,
@@ -59,9 +59,9 @@ Once the environment variables are setup,
     - Select the newly created role from the dropdown.
     - Click Set Default OIDC Role.
 
-:::info
+<Callout type="info">
 The option to set a default OIDC role will appear only if the OIDC provider is correctly configured.
-:::
+</Callout>
 
 ### Login using SSO
 Now logout of Parseable and the next time you try to login using OAuth you'll be redirected to Authentik to login to Parseable
