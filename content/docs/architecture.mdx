@@ -9,6 +9,8 @@ This document outlines the overall architecture of the Parseable Observability P
 
 This document is organiszed into specific sections for each sub-system like ingestion, query, search, and index. To understand the specific decisions and trade-offs, refer the [design choices document](./design-choices.mdx).
 
+![Parseable Architecture](./static/architecture-overview.png)
+
 ## Overview
 
 Parseable is shipped as a single unified binary (or container image if you prefer). This includes the Prism UI and Parseable DB. There is no additional dependency to run Parseable.
@@ -29,6 +31,8 @@ To ensure data durability during staging, we recommend attaching a small, reliab
 
 A background job then reads the staged Arrow files, converts them into highly compressed Parquet files, and uploads them to S3 or any configured object store. During this transformation, the ingestion node also generates query metadata, which significantly enhances performance during log searches and queries.
 
+![Parseable Ingestion Architecture](./static/ingestion-architecture.png)
+
 ## Query
 
 Query node is primarily responsible responding to query API. This node also serves as the leader node in a Parseable cluster and hence it also responds to other API. 
@@ -37,4 +41,6 @@ The query workflow starts when someone calls the query API with (a PostgreSQL co
 
 Based on metadata, the node identifies the relevant parquet files and uses the object store API to get these files. Here again, this only happens if the files are not already present locally. If the files are to be downloaded from object storage - this adds to latency and hence the occasional cold queries. 
 
-Another node called Prism node responds to all the role, user management, dataset management API. 
+Another node called Prism node responds to all the role, user management, dataset management API.   
+
+![Parseable Query Architecture](./static/query-architecture.png)

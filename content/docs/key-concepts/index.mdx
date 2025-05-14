@@ -1,0 +1,49 @@
+---
+title: Key Concepts
+description: Core concepts and principles behind Parseable
+sidebar_position: 1
+sidebar_label: Key Concepts
+---
+# Key Concepts
+
+Parseable combines a purpose built OLAP, diskless database Parseable DB and Prism UI. These components are designed from first principles to work together, enabling efficient and fast ingestion, search, and correlation of MELT (Metrics, Events, Logs, and Traces) data.
+
+<Callout type="info">
+Each concept is explained in detail in its own section. Use the sidebar navigation to explore each topic.
+</Callout>
+
+![Parseable Architecture](./static/architecture.png)
+
+## Differentiators
+
+### Resource Efficiency
+
+Parseable consumes 50% less CPU and 80% less memory than traditional JVM-based solutions like Elasticsearch under similar workloads.
+
+Built-in compression to compress observability and telemetry data by up to 90%.
+
+### Performance
+
+Performance: With Rust based design, modern query techniques, and intelligent caching on SSDs / NVMe and memory, Parseable offers extremely fast query experience for end users.
+
+### Flexible Data Handling
+
+Flexible Data Handling: Ingest logs, metrics, and traces in OpenTelemetry format, supporting structured and unstructured data. It employs an index-free approach, enabling high throughput ingestion with low latency for queries.
+
+### Easy Setup & Deploy Anywhere Securely
+
+Supports deployment across public or private clouds, containers, VMs, or bare metal environments with complete data ownership, data security and privacy. Single binary with a built-in UI (PRISM) allows setup within minutes.
+
+### Cost-Effective
+
+Cost-Effective: Efficient compute utilization, compression and utilizing object storage like S3 offers up to 70% cost reduction compared to Elasticsearch or up to 90% compared to DataDog.
+
+<Callout type="info">
+Want to use a LLM to ask questions on Parseable docs? Copy the docs text from http://parseable.com/llms.txt and paste into the LLM.
+</Callout>
+
+## Getting Started
+
+If you're new to Parseable, we recommend starting with the [Ingestion](./ingestion.mdx) concept to understand how data flows into the system, followed by [Query](./query.mdx) to learn how to retrieve and analyze your data.
+
+For those concerned with scaling and reliability, the [Partitioning](./partitioning.mdx) and [High Availability](./high-availability.mdx) sections provide valuable insights into Parseable's architecture.
