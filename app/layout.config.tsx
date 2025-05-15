@@ -12,19 +12,15 @@ export const baseOptions: BaseLayoutProps = {
     title: (
       <>
         <span className="flex items-center gap-2">
-          <span className="font-bold text-xl">Parseable</span>
+          <span className="font-bold text-xl">Parseable Docs</span>
         </span>
       </>
     ),
   },
   links: [
     {
-      text: 'Documentation',
-      url: '/docs',
-    },
-    {
-      text: 'GitHub',
-      url: 'https://github.com/parseablehq/parseable',
+      text: 'Parseable Playground',
+      url: 'https://demo.parseable.com/login?q=eyJ1c2VybmFtZSI6ImFkbWluIiwicGFzc3dvcmQiOiJhZG1pbiJ9',
       external: true,
     },
   ],

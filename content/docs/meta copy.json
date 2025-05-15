@@ -12,19 +12,7 @@
     "features",
     "open-telemtery",
     "---Admin Guide---",
-    "env-variables",
-    "installation",
-    "storage",
-    "datasource",
-    "parseable-metrics",
-    "telemetry",
-    "---Integrations---",
-    "alerting",
-    "cloud-provider",
-    "eBPF",
-    "llm",
-    "oauth",
-    "streaming",
-    "visualization"
+    
+    "---Integrations---"
   ]
 }
