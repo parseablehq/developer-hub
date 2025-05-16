@@ -1,6 +1,34 @@
 ---
-title: Documentation
-description: Welcome to the documentation
+title: Parseable Documentation
+description: Welcome to the Parseable documentation
 ---
+import { IconEmpathize,IconHandClick,IconGeometry,IconBrandSpeedtest,IconBrandInertia,IconFileTypeSql,IconArrowMergeBoth
+ } from '@tabler/icons-react';
 
-Welcome to the documentation site! You can start writing documents in `/content/docs`.
+<Cards>
+
+<Card href="/docs/introduction" icon={<IconEmpathize className="text-purple-600" />} title='Introduction'>
+Get introduced to Parseable, its features, and how it can help you with observability and telemetry data.
+</Card>
+
+<Card href="/docs/quickstart/binary" icon={<IconHandClick className="text-purple-600" />} title='Quick Start'>
+Get started with Parseable in just two commands. Follow the quick start guide to set up Parseable and ingest your telemetry data.
+</Card>
+
+<Card href="/docs/architecture" icon={<IconGeometry className="text-purple-600" />} title='Architecture'>
+Fast query response with Rust based design, modern query techniques, and intelligent caching on SSDs / NVMe and memory.
+</Card>
+
+<Card icon={<IconBrandSpeedtest className="text-purple-600" />} title='Benchmarks'>
+Excellent storage efficiency and cost with object stores like S3, GCS, Azure Blob as the primary storage layer.
+</Card>
+
+<Card icon={<IconBrandInertia className="text-purple-600" />} title='Ingestion'>
+Ingest, manage and query OpenTelemetry logs, metrics or traces natively. Zero configuration needed. 
+</Card>
+
+<Card icon={<IconFileTypeSql className="text-purple-600" />} title='Querying'>
+Deploy across public or private clouds, containers, VMs, or bare metal environments with complete data security and privacy.
+</Card>
+
+</Cards>
