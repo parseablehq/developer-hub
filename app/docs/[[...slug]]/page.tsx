@@ -8,7 +8,7 @@ import {
 import { notFound } from 'next/navigation';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { getMDXComponents } from '@/mdx-components';
-import { EditOnGitHub, LLMCopyButton } from './page.client';
+import { EditOnGitHub } from './page.client';
 
 const owner = 'parseablehq';
 const repo = 'developer-hub';

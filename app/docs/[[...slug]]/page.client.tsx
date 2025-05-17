@@ -1,11 +1,11 @@
 'use client';
-import { useState } from 'react';
-import { Check, Copy } from 'lucide-react';
-import { useCopyButton } from 'fumadocs-ui/utils/use-copy-button';
+// import { useState } from 'react';
+// import { Check, Copy } from 'lucide-react';
+// import { useCopyButton } from 'fumadocs-ui/utils/use-copy-button';
 import { buttonVariants } from '../components/ui/button';
 import Link from 'fumadocs-core/link';
 
-const cache = new Map<string, string>();
+// const cache = new Map<string, string>();
 
 // export function LLMCopyButton({ slug }: { slug: string[] }) {
 //   const [isLoading, setLoading] = useState(false);
