@@ -18,4 +18,3 @@ export const openapi = createOpenAPI({
   // Use default configuration
   // We'll add code samples directly in the OpenAPI schema
 });
-``
