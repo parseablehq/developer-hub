@@ -175,8 +175,8 @@ paths:
         }
         ```
       x-codeSamples:
-        - lang: curl
-          label: cURL
+        - lang: bash
+          label: Bash
           source: |
             curl -X POST "https://demo.parseable.com/api/v1/query" \
               -H "Content-Type: application/json" \
