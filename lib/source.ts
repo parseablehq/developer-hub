@@ -15,5 +15,7 @@ export const source = loader({
 
 // Create OpenAPI instance for the Parseable API
 export const openapi = createOpenAPI({
-  // options can be added here if needed later
+  // Use default configuration
+  // We'll add code samples directly in the OpenAPI schema
 });
+``
