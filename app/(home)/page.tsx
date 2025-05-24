@@ -83,7 +83,7 @@ export default function HomePage() {
               <p className="text-slate-400 mb-6 text-sm">
                 Scalable, secure, and supported log management for demanding production environments. Includes advanced features, dedicated support, and SLAs.
               </p>
-              <Link href="/enterprise" className="inline-flex items-center text-blue-400 hover:text-blue-300 hover:underline transition-colors font-medium">
+              <Link href="https://www.parseable.com/blog/announcing-parseable-20" className="inline-flex items-center text-blue-400 hover:text-blue-300 hover:underline transition-colors font-medium">
                 Learn about Enterprise <span className="ml-1" style={{ fontSize: '0.875rem' }}><ArrowForwardIcon fontSize="inherit" /></span>
               </Link>
             </div>
@@ -97,7 +97,7 @@ export default function HomePage() {
               <p className="text-slate-400 mb-6 text-sm">
                 The powerful open-source core of Parseable. Perfect for getting started, development, and smaller deployments. Community-supported.
               </p>
-              <Link href="/oss" className="inline-flex items-center text-blue-400 hover:text-blue-300 hover:underline transition-colors font-medium">
+              <Link href="https://github.com/parseablehq/parseable" className="inline-flex items-center text-blue-400 hover:text-blue-300 hover:underline transition-colors font-medium">
                 Learn about OSS <span className="ml-1" style={{ fontSize: '0.875rem' }}><ArrowForwardIcon fontSize="inherit" /></span>
               </Link>
             </div>
@@ -116,9 +116,9 @@ export default function HomePage() {
                 title: 'Getting Started',
                 description: 'Installation guides, initial setup, and basic configuration for Parseable.',
                 links: [
-                  { text: 'Quick Start Guide', href: '/docs/quickstart' },
+                  { text: 'Quick Start Guide', href: '/docs/quickstart/binary' },
                   { text: 'Installation Options', href: '/docs/installation' },
-                  { text: 'Basic Configuration', href: '/docs/configuration' },
+                  { text: 'Basic Configuration', href: '/docs/architecture' },
                 ]
               },
               {
@@ -127,9 +127,9 @@ export default function HomePage() {
                 title: 'Data Ingestion',
                 description: 'Learn how to send logs from various sources to your Parseable instance.',
                 links: [
-                  { text: 'Fluent Bit Integration', href: '/docs/integrations/fluent-bit' },
-                  { text: 'Vector Setup', href: '/docs/integrations/vector' },
-                  { text: 'API Endpoints', href: '/docs/api/ingestion' },
+                  { text: 'Fluent Bit Integration', href: '/docs/datasource/log-agents/fluent-bit' },
+                  { text: 'Vector Setup', href: '/docs/datasource/log-agents/vector' },
+                  { text: 'API Endpoints', href: '/docs/api/v1/logstream/stream_name/put' },
                 ]
               },
               {
@@ -138,9 +138,9 @@ export default function HomePage() {
                 title: 'Querying & Visualization',
                 description: 'Master Parseable\'s query language and integrate with visualization tools.',
                 links: [
-                  { text: 'Query Syntax', href: '/docs/query-syntax' },
-                  { text: 'Grafana Integration', href: '/docs/integrations/grafana' },
-                  { text: 'Parseable UI Guide', href: '/docs/ui-guide' },
+                  { text: 'Query Syntax', href: '/docs/key-concepts/query' },
+                  { text: 'Grafana Integration', href: '/docs/visualization/grafana' },
+                  { text: 'Parseable UI Guide', href: 'https://www.parseable.com/blog/prism-unified-observability-on-parseable' },
                 ]
               },
               {
@@ -149,9 +149,9 @@ export default function HomePage() {
                 title: 'Administration',
                 description: 'Manage users, permissions, and system settings for your Parseable deployment.',
                 links: [
-                  { text: 'User Management', href: '/docs/administration/users' },
-                  { text: 'Security', href: '/docs/administration/security' },
-                  { text: 'Monitoring', href: '/docs/administration/monitoring' },
+                  { text: 'User Management', href: '/docs/features/rbac' },
+                  { text: 'Alerts', href: '/docs/features/alerts' },
+                  { text: 'Monitoring', href: '/docs/features/dashboards' },
                 ]
               },
               {
@@ -160,9 +160,9 @@ export default function HomePage() {
                 title: 'Storage & Archival',
                 description: 'Configure storage backends and manage data retention policies.',
                 links: [
-                  { text: 'S3 Configuration', href: '/docs/storage/s3' },
-                  { text: 'GCS Setup', href: '/docs/storage/gcs' },
-                  { text: 'Retention Policies', href: '/docs/storage/retention' },
+                  { text: 'S3 Configuration', href: '/docs/storage/awss3' },
+                  { text: 'Azure Setup', href: '/docs/cloud-provider/azure/api-service' },
+                  { text: 'Retention Policies', href: '/docs/features/retention' },
                 ]
               },
               {
@@ -171,9 +171,9 @@ export default function HomePage() {
                 title: 'API Reference',
                 description: 'Comprehensive API documentation for integrating with Parseable programmatically.',
                 links: [
-                  { text: 'Authentication', href: '/docs/api/authentication' },
-                  { text: 'Ingestion API', href: '/docs/api/ingestion' },
-                  { text: 'Query API', href: '/docs/api/query' },
+                  { text: 'Authentication', href: '/docs/api#authentication' },
+                  { text: 'Ingestion API', href: '/docs/api#log-ingestion' },
+                  { text: 'Query API', href: '/docs/api#query-api' },
                 ]
               },
             ].map((card, index) => (
@@ -207,7 +207,7 @@ export default function HomePage() {
               <p className="text-slate-400 mb-4 text-sm">
                 Ask questions, share your knowledge, and connect with other Parseable users.
               </p>
-              <Link href="/community" className="text-blue-400 hover:text-blue-300 hover:underline transition-colors text-sm">
+              <Link href="https://logg.ing/community" className="text-blue-400 hover:text-blue-300 hover:underline transition-colors text-sm">
                 Visit the Forums
               </Link>
             </div>
@@ -216,7 +216,7 @@ export default function HomePage() {
               <p className="text-slate-400 mb-4 text-sm">
                 Parseable Enterprise customers can access dedicated support channels.
               </p>
-              <Link href="/enterprise/support" className="text-blue-400 hover:text-blue-300 hover:underline transition-colors text-sm">
+              <Link href="mailto:sales@parseable.com" className="text-blue-400 hover:text-blue-300 hover:underline transition-colors text-sm">
                 Contact Support
               </Link>
             </div>
@@ -230,33 +230,30 @@ export default function HomePage() {
             <div>
               <h5 className="text-white font-semibold mb-3">Editions</h5>
               <ul className="space-y-2">
-                <li><Link href="/enterprise" className="text-slate-400 hover:text-slate-200 transition-colors text-sm">Parseable Enterprise</Link></li>
+                <li><Link href="https://www.parseable.com/blog/announcing-parseable-20" className="text-slate-400 hover:text-slate-200 transition-colors text-sm">Parseable Enterprise</Link></li>
                 <li><Link href="/docs" className="text-slate-400 hover:text-slate-200 transition-colors text-sm">Parseable OSS</Link></li>
-                <li><Link href="/pricing" className="text-slate-400 hover:text-slate-200 transition-colors text-sm">Pricing</Link></li>
+                <li><Link href="https://www.parseable.com/pricing" className="text-slate-400 hover:text-slate-200 transition-colors text-sm">Pricing</Link></li>
               </ul>
             </div>
             <div>
               <h5 className="text-white font-semibold mb-3">Resources</h5>
               <ul className="space-y-2">
                 <li><Link href="/docs" className="text-slate-400 hover:text-slate-200 transition-colors text-sm">Documentation</Link></li>
-                <li><Link href="/blog" className="text-slate-400 hover:text-slate-200 transition-colors text-sm">Blog</Link></li>
-                <li><Link href="/community" className="text-slate-400 hover:text-slate-200 transition-colors text-sm">Community</Link></li>
+                <li><Link href="https://www.parseable.com/blog" className="text-slate-400 hover:text-slate-200 transition-colors text-sm">Blog</Link></li>
+                <li><Link href="https://logg.ing/community" className="text-slate-400 hover:text-slate-200 transition-colors text-sm">Community</Link></li>
                 <li><Link href="https://github.com/parseablehq/parseable" className="text-slate-400 hover:text-slate-200 transition-colors text-sm">GitHub</Link></li>
               </ul>
             </div>
             <div>
               <h5 className="text-white font-semibold mb-3">Company</h5>
               <ul className="space-y-2">
-                <li><Link href="/about" className="text-slate-400 hover:text-slate-200 transition-colors text-sm">About Us</Link></li>
-                <li><Link href="/careers" className="text-slate-400 hover:text-slate-200 transition-colors text-sm">Careers</Link></li>
-                <li><Link href="/contact" className="text-slate-400 hover:text-slate-200 transition-colors text-sm">Contact</Link></li>
+                <li><Link href="https://www.parseable.com/about" className="text-slate-400 hover:text-slate-200 transition-colors text-sm">About Us</Link></li>
+                <li><Link href="mailto:sales@parseable.com" className="text-slate-400 hover:text-slate-200 transition-colors text-sm">Contact</Link></li>
               </ul>
             </div>
             <div>
               <h5 className="text-white font-semibold mb-3">Legal</h5>
               <ul className="space-y-2">
-                <li><Link href="/terms" className="text-slate-400 hover:text-slate-200 transition-colors text-sm">Terms of Service</Link></li>
-                <li><Link href="/privacy" className="text-slate-400 hover:text-slate-200 transition-colors text-sm">Privacy Policy</Link></li>
                 <li><Link href="https://github.com/parseablehq/parseable/blob/main/LICENSE" className="text-slate-400 hover:text-slate-200 transition-colors text-sm">License (OSS)</Link></li>
               </ul>
             </div>
