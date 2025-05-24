@@ -1,0 +1,638 @@
+openapi: 3.0.0
+info:
+  title: Log Stream Management
+  version: 1.0.0
+  description: |-
+    The schema contains API for Parseable OSS and Enterprise few of the API end points are only limited to enterprise version. 
+servers:
+  - url: https://demo.parseable.com/
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+security:
+  - basicAuth: []
+paths:
+  /api/v1/logstream/{stream_name}:
+    put:
+      tags:
+        - Dataset Management
+      summary: Create a log stream
+      operationId: createLogStream
+      description: |
+        This endpoint is used to create a new log stream within Parseable.  
+        A **log stream** is a group of similar logs. For example, you can create a log stream for a specific application's logs, another log stream for your database logs, and so on. You can create as many log streams as needed to organize and manage logs efficiently.  
+      security:
+        - basicAuth: []
+      parameters:
+        - name: stream_name
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - Dataset Management
+      summary: Delete a log stream
+      operationId: deleteLogStream
+      security:
+        - basicAuth: []
+      parameters:
+        - name: stream_name
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - Dataset Management
+      summary: Send logs to a log stream URL
+      operationId: sendLogsToStream
+      description: |
+        **Log Ingestion API via Stream Endpoint**  
+        In this approach, you need to create a stream first using the **Create Stream API**.  
+        Once the stream is created, you can send logs to the stream ingestion API endpoint:  
+        **http://demo.parseable.com/api/v1/logstream/otellogs**  
+        This API does not require any headers for specifying the stream name.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                - id: 434a5f5e-2f5f-11ed-a261-asdasdafgdfd
+                  datetime: 24/Jun/2022:14:12:15 +0000
+                  host: 153.10.110.81
+                  user-identifier: >-
+                    Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:64.0)
+                    Gecko/20100101 Firefox/64.0
+                  method: PUT
+                  status: 500
+                  referrer: http://www.google.com/
+      security:
+        - basicAuth: []
+      parameters:
+        - name: stream_name
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/logstream:
+    get:
+      tags:
+        - Dataset Management
+      summary: List all log streams
+      operationId: listLogStreams
+      security:
+        - basicAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/logstream/{stream_name}/schema:
+    get:
+      tags:
+        - Dataset Management
+      summary: Get Schema from the Stream
+      operationId: getStreamSchema
+      security:
+        - basicAuth: []
+      parameters:
+        - name: stream_name
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/logstream/{stream_name}/stats:
+    get:
+      tags:
+        - Dataset Management
+      summary: Get storage stats for a stream
+      operationId: getStreamStats
+      security:
+        - basicAuth: []
+      parameters:
+        - name: stream_name
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/query:
+    post:
+      tags:
+        - Query
+      summary: Query a log stream
+      operationId: queryLogStream
+      description: |
+        **Parseable Log Query API**  
+        The Parseable log query API allows you to query logs in real-time using **standard PostgreSQL syntax**.  
+        To retrieve logs, the API requires **startTime** and **endTime** parameters. 
+
+        #### Timezone and Format
+        All timestamps are considered in UTC timezone.  
+        The timestamp format should be: **YYYY-MM-DD HH:MM:SS.ffffff**  
+
+        #### Request Body Parameters
+        - **query**: The query string (mandatory).
+        - **startTime**: Start time for the query (mandatory).
+        - **endTime**: End time for the query (mandatory).
+        - **streamName**: Name of the log stream (mandatory).
+
+        #### Example Request
+        ```json
+        {
+          "query": "SELECT * FROM log WHERE log ILIKE '%error%';",
+          "startTime": "2023-01-01 00:00:00.000000",
+          "endTime": "2023-01-01 23:59:59.999999",
+          "streamName": "example-stream"
+        }
+        ```
+      x-codeSamples:
+        - lang: bash
+          label: Bash
+          source: |
+            curl -X POST "https://demo.parseable.com/api/v1/query" \
+              -H "Content-Type: application/json" \
+              -H "Authorization: Basic <base64-encoded-credentials>" \
+              -d '{
+                "query": "SELECT * FROM log WHERE log ILIKE \'%error%\'",
+                "startTime": "2023-01-01 00:00:00.000000",
+                "endTime": "2023-01-01 23:59:59.999999",
+                "streamName": "example-stream"
+              }'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                startTime:
+                  type: string
+                endTime:
+                  type: string
+                streamName:
+                  type: string
+      security:
+        - basicAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/ingest:
+    post:
+      tags:
+        - Dataset Management
+      summary: Ingest logs using custom headers
+      operationId: ingestLogsWithHeaders
+      description: |
+        **Log Ingestion API via Custom Headers**  
+        This is another API for log ingestion where the stream name is passed as a custom header.  
+        **Header Name:** `X-PBL-Stream`  
+        **Endpoint:** `http://demo.parseable.com/api/v1/ingest`  
+
+        #### Example Request
+        You can send log data as a JSON array in the request body.  
+        ```json
+        [
+            {
+                "id": "434a5f5e-2f5f-11ed-a261-asdasdafgdfd",
+                "datetime": "24/Jun/2022:14:12:15 +0000",
+                "host": "153.10.110.81",
+                "user-identifier": "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:64.0) Gecko/20100101 Firefox/64.0",
+                "method": "PUT",
+                "status": 500,
+                "referrer": "http://www.google.com/"
+            }
+        ]
+        ```
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+      security:
+        - basicAuth: []
+      parameters:
+        - name: X-PBL-Stream
+          in: header
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/logstream/{stream_name}/retention:
+    get:
+      tags:
+        - Dataset Management
+      summary: Get retention policy for a stream
+      operationId: getStreamRetention
+      description: |
+        This endpoint is used to get the retention policy for a specific log stream.  
+        **Note:** This API endpoint is only available in the Parseable Enterprise version.
+      security:
+        - basicAuth: []
+      parameters:
+        - name: stream_name
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - Dataset Management
+      summary: Update retention policy for a stream
+      operationId: updateStreamRetention
+      description: |
+        This endpoint is used to update the retention policy for a specific log stream.  
+        **Note:** This API endpoint is only available in the Parseable Enterprise version.  
+
+        #### Request Body Parameters
+        - **retention_days**: The number of days to retain logs.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                retention_days:
+                  type: integer
+      security:
+        - basicAuth: []
+      parameters:
+        - name: stream_name
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/user/{user_to_create}:
+    post:
+      tags:
+        - User Management
+      summary: Creates a user for login
+      operationId: createUser
+      description: |
+        This endpoint is used to create a new user for Parseable.  
+        **Note:** This API endpoint is only available in the Parseable Enterprise version.  
+
+        #### Request Body Parameters
+        - **password**: The password for the new user.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+      security:
+        - basicAuth: []
+      parameters:
+        - name: user_to_create
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - User Management
+      summary: Deletes a user
+      operationId: deleteUser
+      description: |
+        This endpoint is used to delete an existing user.  
+        **Note:** This API endpoint is only available in the Parseable Enterprise version.
+      security:
+        - basicAuth: []
+      parameters:
+        - name: user_to_create
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - User Management
+      summary: Updates a user's password
+      operationId: updateUserPassword
+      description: |
+        This endpoint is used to update an existing user's password.  
+        **Note:** This API endpoint is only available in the Parseable Enterprise version.  
+
+        #### Request Body Parameters
+        - **password**: The new password for the user.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+      security:
+        - basicAuth: []
+      parameters:
+        - name: user_to_create
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/user/{user_to_create}/generate-new-password:
+    put:
+      tags:
+        - User Management
+      summary: Generates a new password for a user
+      operationId: generateNewUserPassword
+      description: |
+        This endpoint is used to generate a new password for an existing user.  
+        **Note:** This API endpoint is only available in the Parseable Enterprise version.
+      security:
+        - basicAuth: []
+      parameters:
+        - name: user_to_create
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/user:
+    get:
+      tags:
+        - User Management
+      summary: List all users
+      operationId: listUsers
+      description: |
+        This endpoint is used to list all users.  
+        **Note:** This API endpoint is only available in the Parseable Enterprise version.
+      security:
+        - basicAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/user/{user_to_create}/role:
+    get:
+      tags:
+        - User Management
+      summary: Gets user role for login
+      operationId: getUserRole
+      description: |
+        This endpoint is used to get the role of an existing user.  
+        **Note:** This API endpoint is only available in the Parseable Enterprise version.
+      security:
+        - basicAuth: []
+      parameters:
+        - name: user_to_create
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - User Management
+      summary: Updates a user's role
+      operationId: updateUserRole
+      description: |
+        This endpoint is used to update the role of an existing user.  
+        **Note:** This API endpoint is only available in the Parseable Enterprise version.  
+
+        #### Request Body Parameters
+        - **role**: The new role for the user.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role:
+                  type: string
+      security:
+        - basicAuth: []
+      parameters:
+        - name: user_to_create
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/role/{rolename}:
+    get:
+      tags:
+        - Role Management
+      summary: Get details of a role
+      operationId: getRoleDetails
+      description: |
+        This endpoint is used to get the details of a specific role.  
+        **Note:** This API endpoint is only available in the Parseable Enterprise version.
+      security:
+        - basicAuth: []
+      parameters:
+        - name: rolename
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - Role Management
+      summary: Create or update a role
+      operationId: createOrUpdateRole
+      description: |
+        This endpoint is used to create a new role or update an existing role.  
+        **Note:** This API endpoint is only available in the Parseable Enterprise version.  
+
+        #### Request Body Parameters
+        - **permissions**: A list of permissions for the role.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                permissions:
+                  type: array
+                  items:
+                    type: string
+      security:
+        - basicAuth: []
+      parameters:
+        - name: rolename
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - Role Management
+      summary: Deletes a role
+      operationId: deleteRole
+      description: |
+        This endpoint is used to delete an existing role.  
+        **Note:** This API endpoint is only available in the Parseable Enterprise version.
+      security:
+        - basicAuth: []
+      parameters:
+        - name: rolename
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/role:
+    get:
+      tags:
+        - Role Management
+      summary: List all roles
+      operationId: listRoles
+      description: |
+        This endpoint is used to list all roles.  
+        **Note:** This API endpoint is only available in the Parseable Enterprise version.
+      security:
+        - basicAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/v1/role/{rolename}/dataset management:
+    get:
+      tags:
+        - Role Management
+      summary: Gets role permissions for dataset management
+      operationId: getRoleDatasetPermissions
+      description: |
+        This endpoint is used to get the dataset management permissions for a specific role.  
+        **Note:** This API endpoint is only available in the Parseable Enterprise version.
+      security:
+        - basicAuth: []
+      parameters:
+        - name: rolename
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - Role Management
+      summary: Updates role permissions for dataset management
+      operationId: updateRoleDatasetPermissions
+      description: |
+        This endpoint is used to update the dataset management permissions for a specific role.  
+        **Note:** This API endpoint is only available in the Parseable Enterprise version.  
+
+        #### Request Body Parameters
+        - **permissions**: A list of dataset management permissions.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                permissions:
+                  type: array
+                  items:
+                    type: string
+      security:
+        - basicAuth: []
+      parameters:
+        - name: rolename
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}

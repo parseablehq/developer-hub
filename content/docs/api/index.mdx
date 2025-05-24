@@ -1,0 +1,70 @@
+---
+title: Parseable API Documentation
+description: Complete API reference for Parseable
+---
+
+# Parseable API Documentation
+
+Welcome to the Parseable API documentation. This section provides detailed information about the Parseable REST API endpoints, request/response formats, and authentication methods.
+
+## API Endpoints
+
+### Log Stream Management
+
+Parseable organizes logs into streams, which are collections of similar logs. The following endpoints allow you to manage log streams:
+
+- [Create a log stream](/docs/api/v1/logstream/stream_name/put) - Create a new log stream
+- [Delete a log stream](/docs/api/v1/logstream/stream_name/delete) - Delete an existing log stream
+- [Send logs to a stream](/docs/api/v1/logstream/stream_name/post) - Send logs to a specific stream
+- [List all log streams](/docs/api/v1/logstream) - Get a list of all available log streams
+- [Get stream schema](/docs/api/v1/logstream/stream_name/schema) - Retrieve the schema for a specific stream
+- [Get stream stats](/docs/api/v1/logstream/stream_name/stats) - Get storage statistics for a stream
+- [Get retention policy](/docs/api/v1/logstream/stream_name/retention/get) - Get the retention policy for a stream
+- [Update retention policy](/docs/api/v1/logstream/stream_name/retention/put) - Update the retention policy for a stream
+
+### Query API
+
+- [Query a log stream](/docs/api/v1/query) - Query logs using PostgreSQL syntax
+
+### Log Ingestion
+
+- [Ingest logs with headers](/docs/api/v1/ingest) - Ingest logs using custom headers
+
+### User Management
+
+- [Create a user](/docs/api/v1/user/user_to_create/post) - Create a new user
+- [Delete a user](/docs/api/v1/user/user_to_create/delete) - Delete an existing user
+- [Update user password](/docs/api/v1/user/user_to_create/put) - Update a user's password
+- [Generate new password](/docs/api/v1/user/user_to_create/generate-new-password) - Generate a new password for a user
+- [List all users](/docs/api/v1/user) - Get a list of all users
+- [Get user role](/docs/api/v1/user/user_to_create/role/get) - Get the role of a user
+- [Update user role](/docs/api/v1/user/user_to_create/role/put) - Update a user's role
+
+### Role Management
+
+- [Get role details](/docs/api/v1/role/rolename/get) - Get details of a role
+- [Create or update role](/docs/api/v1/role/rolename/put) - Create or update a role
+- [Delete a role](/docs/api/v1/role/rolename/delete) - Delete an existing role
+- [List all roles](/docs/api/v1/role) - Get a list of all roles
+- [Get role permissions](/docs/api/v1/role/rolename/dataset%20management/get) - Get dataset management permissions for a role
+- [Update role permissions](/docs/api/v1/role/rolename/dataset%20management/put) - Update dataset management permissions for a role
+
+## Authentication
+
+All API endpoints require basic authentication. Include an `Authorization` header with your requests:
+
+```
+Authorization: Basic <base64-encoded-credentials>
+```
+
+Where `<base64-encoded-credentials>` is the Base64 encoding of `username:password`.
+
+## API Base URL
+
+The base URL for all API endpoints is:
+
+```
+https://demo.parseable.com
+```
+
+Replace this with your Parseable instance URL in production.
