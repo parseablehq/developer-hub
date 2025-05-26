@@ -18,6 +18,18 @@ export const docs = defineDocs({
   },
 });
 
+// Define the release notes collection
+export const releaseNotes = defineDocs({
+  // The root directory for release notes
+  dir: 'content/release-notes',
+  docs: {
+    schema: frontmatterSchema,
+  },
+  meta: {
+    schema: metaSchema,
+  },
+});
+
 // Configure MDX options
 export default defineConfig({
   mdxOptions: {

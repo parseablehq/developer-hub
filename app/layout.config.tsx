@@ -24,6 +24,11 @@ export const baseOptions: BaseLayoutProps = {
       external: false, // Internal link
     },
     {
+      text: 'Release Notes',
+      url: '/release-notes',
+      external: false, // Internal link
+    },
+    {
       text: 'Parseable Playground',
       url: 'https://demo.parseable.com/login?q=eyJ1c2VybmFtZSI6ImFkbWluIiwicGFzc3dvcmQiOiJhZG1pbiJ9',
       external: true,

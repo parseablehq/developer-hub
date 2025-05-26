@@ -1,4 +1,4 @@
-import { docs } from '@/.source';
+import { docs, releaseNotes } from '@/.source';
 import { loader } from 'fumadocs-core/source';
 import { createOpenAPI, attachFile } from 'fumadocs-openapi/server';
 
@@ -9,6 +9,15 @@ export const source = loader({
   source: docs.toFumadocsSource(),
   pageTree: {
     // adds a badge to each page item in page tree
+    attachFile,
+  },
+});
+
+// Create a separate loader for release notes
+export const releaseNotesSource = loader({
+  baseUrl: '/release-notes',
+  source: releaseNotes.toFumadocsSource(),
+  pageTree: {
     attachFile,
   },
 });
