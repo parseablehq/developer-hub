@@ -38,9 +38,6 @@ export default async function ReleaseNotesPage() {
   const latestVersion = latestReleaseMatch ? latestReleaseMatch[1] : 'Latest Version';
   const latestDate = latestReleaseMatch ? latestReleaseMatch[2] : '';
   
-  // Extract the description of the latest release
-  const latestReleaseContent = content.split(/## Version [0-9.]+/)[1] || '';
-  
   // We'll just use the version and date for the overview
 
   return (
