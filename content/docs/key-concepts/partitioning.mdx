@@ -15,7 +15,7 @@ Partitioning is the splitting of log data based on specific columns and value pa
 
 #### When should you use partitioning?
 
-Partitioning is useful when you have a clear understanding of the most common data access patterns for a given log stream (i.e. dataset). More specifically, when the columns where users are most likely to `filter` or `group by` are well known.
+Partitioning is useful when you have a clear understanding of the most common data access patterns for a given log dataset. More specifically, when the columns where users are most likely to `filter` or `group by` are well known.
 
 Also, a relatively larger dataset (at least few TBs or more) is better suited for partitioning. For tiny datasets, the overhead of managing partitions might outweigh the benefits.
 
@@ -25,9 +25,9 @@ The first step is to find which columns users are most likely to `filter` or `gr
 
 #### How to set up partitions?
 
-You can specify the columns for partitioning while creating a stream on the Parseable Console (Create Stream >> Custom Partition Field). Here, you can specify up to 3 columns per log stream. Once the stream is created, Parseable will automatically create physical partitions based on the column values.
+You can specify the columns for partitioning while creating a dataset on the Parseable Console (Create Dataset >> Custom Partition Field). Here, you can specify up to 3 columns per dataset. Once the dataset is created, Parseable will automatically create physical partitions based on the column values.
 
-You can also edit the partitioning columns for an existing stream (Stream >> Manage >> Info >> Custom Partition Field). Note that this will have effect on all the new data that is ingested into the stream, and not the existing data.
+You can also edit the partitioning columns for an existing dataset (Dataset >> Manage >> Info >> Custom Partition Field). Note that this will have effect on all the new data that is ingested into the dataset, and not the existing data.
 
 #### How does partitioning work?
 

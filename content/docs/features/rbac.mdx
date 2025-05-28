@@ -71,7 +71,7 @@ This section defines access to resources such as dashboards and filters. While m
 | DeleteFilter | DELETE /filters/\{filter_id\} | ✓ | ✓ | ✓ | ✓ | x |
 
 #### Stream Related
-This section deals with endpoints for managing log streams. Admins and Editors have full access to these endpoints, while other roles have limited or no access to stream management functionalities.
+This section deals with endpoints for managing datasets. Admins and Editors have full access to these endpoints, while other roles have limited or no access to stream management functionalities.
 
 | Action | Endpoint | Admin | Editor | Writer | Reader | Ingester |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -121,7 +121,7 @@ Role JSON with Editor Privilege
     }
 ]
 ```
-Role JSON with Writer Privilege: The Writer privilege is resource specific. A user with above role json, will be able to call the Writer specific API only on the specified resource. In the above example, the user will be able to call Writer specific API on backend and frontend log streams only.
+Role JSON with Writer Privilege: The Writer privilege is resource specific. A user with above role json, will be able to call the Writer specific API only on the specified resource. In the above example, the user will be able to call Writer specific API on backend and frontend datasets only.
 
 ```json
 [
@@ -140,7 +140,7 @@ Role JSON with Writer Privilege: The Writer privilege is resource specific. A us
 ]
 ```
 
-Role JSON with Ingester Privilege: The Ingester privilege is resource specific. A user with above role json, will be able to call the Ingester specific API only on the specified resource. In the above example, the user will be able to call Ingester specific API on backend and frontend log streams only. This privilege is useful to be set in log agents, forwarders, and other log ingestion tools.
+Role JSON with Ingester Privilege: The Ingester privilege is resource specific. A user with above role json, will be able to call the Ingester specific API only on the specified resource. In the above example, the user will be able to call Ingester specific API on backend and frontend datasets only. This privilege is useful to be set in log agents, forwarders, and other log ingestion tools.
 
 ```json
 [
@@ -159,7 +159,7 @@ Role JSON with Ingester Privilege: The Ingester privilege is resource specific. 
 ]
 ```
 
-Role JSON with Reader Privilege: The Reader privilege is resource specific. A user with above role json, will be able to call the Reader specific API only on the specified resources. In the above example, the user will be able to call Reader specific API on frontend log stream, and only on events with tag source=web.
+Role JSON with Reader Privilege: The Reader privilege is resource specific. A user with above role json, will be able to call the Reader specific API only on the specified resources. In the above example, the user will be able to call Reader specific API on frontend dataset, and only on events with tag source=web.
 
 ```json
 [
