@@ -5,7 +5,7 @@ info:
   description: |-
     Core APIs for Parseable - a simplified version of the API schema with only essential endpoints.
 servers:
-  - url: https://demo.parseable.com/
+  - url: https://demo.parseable.com
 components:
   securitySchemes:
     basicAuth:
