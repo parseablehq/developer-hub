@@ -24,6 +24,39 @@ export const releaseNotesSource = loader({
 
 // Create OpenAPI instance for the Parseable API
 export const openapi = createOpenAPI({
-  // Use default configuration
-  // We'll add code samples directly in the OpenAPI schema
+  // Point to the correct schema file
+  generateCodeSamples(endpoint: { method: string; path?: string }) {
+    const method = endpoint.method?.toUpperCase() || 'GET';
+    const path = endpoint.path || '';
+    const url = `https://demo.parseable.com${path}`;
+    
+    return [
+      {
+        lang: 'bash',
+        label: 'cURL',
+        source: `
+curl -X ${method} \\
+  '${url}' \\
+  -H 'Content-Type: application/json' \\
+  -H 'Authorization: Bearer YOUR_API_KEY'
+  
+`,
+      },
+      {
+        lang: 'javascript',
+        label: 'JavaScript',
+        source: false
+      },
+      {
+        lang: 'python',
+        label: 'Python',
+        source: false
+      },
+      {
+        lang: 'go',
+        label: 'Go',
+        source: false
+      },
+    ];
+  },
 });

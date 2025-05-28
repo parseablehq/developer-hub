@@ -121,19 +121,6 @@ paths:
           "streamName": "example-stream"
         }
         ```
-      x-codeSamples:
-        - lang: bash
-          label: Bash
-          source: |
-            curl -X POST "https://demo.parseable.com/api/v1/query" \
-              -H "Content-Type: application/json" \
-              -H "Authorization: Basic YWRtaW46YWRtaW4=" \
-              -d '{
-                "query": "SELECT * FROM log WHERE log ILIKE '\''%error%'\'';",
-                "startTime": "2023-01-01 00:00:00.000000",
-                "endTime": "2023-01-01 23:59:59.999999",
-                "streamName": "example-stream"
-              }'
       requestBody:
         content:
           application/json:
