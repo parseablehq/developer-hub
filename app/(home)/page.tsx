@@ -70,7 +70,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-semibold text-white mb-8">Explore Parseable Editions</h2>
           <p className="text-slate-300 mb-10 text-lg max-w-4xl">
-            Parseable offers flexible editions to suit your specific log management and observability requirements, from open-source flexibility to enterprise-grade scalability and support.
+            Parseable offers flexible editions to suit your specific telemetry data management and observability requirements, from open-source flexibility to enterprise-grade scalability and support.
           </p>
           <div className="grid md:grid-cols-2 gap-8">
             <div className="bg-slate-800 p-8 rounded-lg shadow-lg hover:shadow-blue-500/30 transition-shadow">
@@ -81,9 +81,9 @@ export default function HomePage() {
                 <h3 className="text-2xl font-semibold text-white">Parseable Enterprise</h3>
               </div>
               <p className="text-slate-400 mb-6 text-sm">
-                Scalable, secure, and supported log management for demanding production environments. Includes advanced features, dedicated support, and SLAs.
+                Scalable, secure, and supported telemetry data management for demanding production environments. Includes advanced features, dedicated support, and SLAs.
               </p>
-              <Link href="https://www.parseable.com/blog/announcing-parseable-20" className="inline-flex items-center text-blue-400 hover:text-blue-300 hover:underline transition-colors font-medium">
+              <Link href="/docs/enterprise" className="inline-flex items-center text-blue-400 hover:text-blue-300 hover:underline transition-colors font-medium">
                 Learn about Enterprise <span className="ml-1" style={{ fontSize: '0.875rem' }}><ArrowForwardIcon fontSize="inherit" /></span>
               </Link>
             </div>
