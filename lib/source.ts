@@ -25,7 +25,7 @@ export const releaseNotesSource = loader({
 // Create OpenAPI instance for the Parseable API
 export const openapi = createOpenAPI({
   // Point to the correct schema file
-  generateCodeSamples(endpoint) {
+  generateCodeSamples() {
     return [
       {
         lang: 'javascript',
