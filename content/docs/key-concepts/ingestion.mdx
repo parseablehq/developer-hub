@@ -10,31 +10,31 @@ You can send Log events to Parseable via HTTP POST requests with data as JSON pa
 
 You can also directly integrate Parseable with your application via [REST API](https://www.parseable.com/docs/api-reference/apireference/put_%2Fapi%2Fv1%2Flogstream%2F%7Bstream_name%7D).
 
-## Log Streams
+## Dataset
 
-Log streams are logical (and physical) collections of related log events. For example, in a Kubernetes cluster, you can have a log stream for each application or a log stream for each namespace - depending on how you want to query the data. A log stream is identified by a unique name, and role based access control, alerts, and notifications are supported at the log stream level.
+Dataset are logical (and physical) collections of related log events. For example, in a Kubernetes cluster, you can have a dataset for each application or a dataset for each namespace - depending on how you want to query the data. A dataset is identified by a unique name, and role based access control, alerts, and notifications are supported at the dataset level.
 
-To start sending logs, you'll need to create a log stream first, via the Console `Create Log Stream` button.
+To start sending logs, you'll need to create a dataset first, via the Console `Create Dataset` button.
 
 ## Schema
 
-Schema is the structure of the log event. It defines the fields and their types. Parseable supports two types of schema - dynamic and static. You can choose the schema type while creating the log stream. Additionally, if you want to enforce a specific schema, you'll need to send that schema at the time of creating the log stream.
+Schema is the structure of the log event. It defines the fields and their types. Parseable supports two types of schema - dynamic and static. You can choose the schema type while creating the dataset. Additionally, if you want to enforce a specific schema, you'll need to send that schema at the time of creating the dataset.
 
-At any point in time, you can fetch the schema of a log stream on the Console or the [Get Schema API](https://www.parseable.com/docs/api-reference/apireference/get_%2Fapi%2Fv1%2Flogstream%2F%7Bstream_name%7D%2Fschema).
+At any point in time, you can fetch the schema of a dataset on the Console or the [Get Schema API](https://www.parseable.com/docs/api-reference/apireference/get_%2Fapi%2Fv1%2Flogstream%2F%7Bstream_name%7D%2Fschema).
 
 ### Dynamic
 
-Log streams by default have dynamic schema. This means you don't need to define a schema for a log stream. The Parseable server detects the schema from first event. If there are subsequent events (with new schema), it updates internal schema accordingly.
+Datasets by default have dynamic schema. This means you don't need to define a schema for a dataset. The Parseable server detects the schema from first event. If there are subsequent events (with new schema), it updates internal schema accordingly.
 
 Log data formats evolve over time, and users prefer a dynamic schema approach, where they don't have to worry about schema changes, and they are still able to ingest events to a given stream.
 
 <Callout type="note">
-For dynamic schema, Parseable doesn't allow changing the type of an existing column whose type is already set. For example, if a column is detected as string in the first event, it can't be changed to int or timestamp in a later event. If you'd like to force a specific schema, you can set the schema while creating the stream.
+For dynamic schema, Parseable doesn't allow changing the type of an existing column whose type is already set. For example, if a column is detected as string in the first event, it can't be changed to int or timestamp in a later event. If you'd like to force a specific schema, you can set the schema while creating the dataset.
 </Callout>
 
 ### Static
 
-In some cases, you may want to enforce a specific schema for a log stream. You can do this by setting the static schema flag while creating the log stream. This schema will be enforced for all the events ingested to the stream. You'll need to provide the schema in the form of a JSON object with field names and their types, with the create stream API call. The following types are supported in the schema: `string`, `int`, `float`, `timestamp`, `boolean`.
+In some cases, you may want to enforce a specific schema for a dataset. You can do this by setting the static schema flag while creating the dataset. This schema will be enforced for all the events ingested to the dataset. You'll need to provide the schema in the form of a JSON object with field names and their types, with the create dataset API call. The following types are supported in the schema: `string`, `int`, `float`, `timestamp`, `boolean`.
 
 ## Partitioning
 

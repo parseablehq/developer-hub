@@ -16,7 +16,7 @@ import {
   Storage as StorageIcon,
 } from "@mui/icons-material";
 
-export default function HomePage() {
+export function HomepageContent() {
   const [copied, setCopied] = useState(false);
   const installCommand = "curl -fsSL https://logg.ing/install | bash";
 

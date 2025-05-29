@@ -124,8 +124,8 @@ const parseable = new ParseableTransport({
 
 ### Using plain JavaScript
 
-#### Create a log stream
-First, we'll need to create a log stream. This is a one time operation, and we recommend storing log entries with same schema in a single log stream. So, for example, you can use one log stream per application (given that all logs from that application have the same schema).
+#### Create a dataset
+First, we'll need to create a dataset. This is a one time operation, and we recommend storing log entries with same schema in a single dataset. So, for example, you can use one dataset per application (given that all logs from that application have the same schema).
 
 
 ```javascript
@@ -149,8 +149,8 @@ fetch("https://<parseable-url>/api/v1/logstream/<stream-name>", requestOptions)
     .catch(error => console.log('error', error));
 ```
 
-#### Send logs to the log stream
-After log stream is created, you can start sending logs to the log stream using HTTP POST requests.
+#### Send logs to the dataset
+After dataset is created, you can start sending logs to the dataset using HTTP POST requests.
 
 
 ```javascript
@@ -191,8 +191,8 @@ fetch("https://<parseable-url>/api/v1/logstream/<stream-name>", requestOptions)
     .catch(error => console.log('error', error));
 ```
 
-#### Querying a log stream
-Once you have started sending logs to a log stream, you can query the logs using standard SQL.
+#### Querying a dataset
+Once you have started sending logs to a dataset, you can query the logs using standard SQL.
 
 
 ```javascript
@@ -205,8 +205,8 @@ myHeaders.append("Content-Type", "application/json");
 
 var raw = JSON.stringify({
     // highlight-start
-    // TODO: Replace the stream name with your log stream name
-    "query": "select * from <stream-name>",
+    // TODO: Replace the dataset name with your dataset name
+    "query": "select * from <dataset-name>",
     // TODO: Replace the time range with your desired time range
     "startTime": "2022-09-10T08:20:00+00:00",
     "endTime": "2022-09-10T08:20:31+00:00"

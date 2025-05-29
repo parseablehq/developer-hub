@@ -1,44 +1,85 @@
 ---
-title: API Documentation
-description: Parseable API Reference
+title: API Reference
+description: Parseable API Reference Documentation
 ---
 
-# Parseable API Documentation
+import { Card, Cards } from 'fumadocs-ui/components/card';
 
-Welcome to the Parseable API documentation. This section provides detailed information about the core APIs available in Parseable.
+# Parseable API Reference
 
-## Core APIs
+Welcome to the Parseable API documentation. This section provides detailed information about the available API endpoints for interacting with Parseable.
 
-Parseable provides the following core APIs:
+## Getting Started
 
-### Log Stream Management
+Before you begin, make sure you have:
+- A running instance of Parseable
+- The base URL of your Parseable server
+- Required authentication credentials (if authentication is enabled)
 
-- [Create a log stream](/docs/api/v1/logstream/stream_name/put) - Create a new log stream
-- [Delete a log stream](/docs/api/v1/logstream/stream_name/delete) - Delete an existing log stream
-- [Send logs to a stream](/docs/api/v1/logstream/stream_name/post) - Send logs to a specific stream
+## API Endpoints
 
-### Query API
+<Cards>
+  <Card 
+    href="/docs/api/v1/logstream/stream_name/post"
+    title="Create dataset"
+  >
+    Create a new dataset with the specified name and configuration.
+  </Card>
 
-- [Query a log stream](/docs/api/v1/query) - Query logs using PostgreSQL syntax
+  <Card 
+    href="/docs/api/v1/logstream/stream_name/put"
+    title="Update dataset"
+  >
+    Update the configuration of an existing dataset.
+  </Card>
 
-### Log Ingestion
+  <Card 
+    href="/docs/api/v1/logstream/stream_name/delete"
+    title="Delete dataset"
+  >
+    Delete an existing dataset and all its associated data.
+  </Card>
 
-- [Ingest logs with headers](/docs/api/v1/ingest) - Ingest logs using custom headers
+  <Card 
+    href="/docs/api/v1/ingest"
+    title="Ingest data"
+  >
+    Send log data to a specific dataset in Parseable.
+  </Card>
+
+  <Card 
+    href="/docs/api/v1/query"
+    title="Query data"
+  >
+    Query data from your Parseable instance using SQL-like syntax.
+  </Card>
+</Cards>
 
 ## Authentication
 
-All API endpoints require basic authentication. You need to provide your username and password in the Authorization header.
+All API requests require authentication. Include your API key in the `Authorization` header:
 
-## API Base URL
-
-The base URL for all API endpoints is:
-
-```
-https://your-parseable-instance.com/api/v1
+```bash
+Authorization: Bearer YOUR_API_KEY
 ```
 
-For the demo instance:
+## Rate Limiting
 
+API requests are subject to rate limiting. The default rate limit is 100 requests per minute per IP address.
+
+## Error Handling
+
+All error responses follow a standard format:
+
+```json
+{
+  "error": {
+    "code": "error_code",
+    "message": "Human-readable error message"
+  }
+}
 ```
-https://demo.parseable.com/api/v1
-```
+
+## Need Help?
+
+If you have any questions or run into issues, please refer to our [GitHub repository](https://github.com/parseablehq/parseable) or [join our community](https://discord.gg/parseable).

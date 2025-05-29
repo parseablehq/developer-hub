@@ -1,5 +1,5 @@
 ---
-title: Query a log stream
+title: Query a dataset
 full: true
 _openapi:
   method: POST
@@ -16,7 +16,7 @@ _openapi:
           - **query**: The SQL query to execute (required)
           - **startTime**: The start time for the query range (optional)
           - **endTime**: The end time for the query range (optional)
-          - **streamName**: The name of the log stream to query (required)
+          - **streamName**: The name of the dataset to query (required)
 
           Example request body:
           ```json
@@ -38,7 +38,7 @@ The query API accepts the following parameters:
 - **query**: The SQL query to execute (required)
 - **startTime**: The start time for the query range (optional)
 - **endTime**: The end time for the query range (optional)
-- **streamName**: The name of the log stream to query (required)
+- **streamName**: The name of the dataset to query (required)
 
 Example request body:
 ```json

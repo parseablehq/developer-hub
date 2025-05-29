@@ -13,10 +13,19 @@ import { EditOnGitHub } from './page.client';
 const owner = 'parseablehq';
 const repo = 'developer-hub';
 
+import { HomepageContent } from './homepage.client';
+
 export default async function Page(props: {
   params: Promise<{ slug?: string[] }>;
 }) {
   const params = await props.params;
+  
+  // If we're at the root /docs path, show the homepage content
+  if (!params.slug || params.slug.length === 0) {
+    return <HomepageContent />;
+  }
+  
+  // Otherwise, show the regular docs page
   const page = source.getPage(params.slug);
   if (!page) notFound();
   const path = `content/docs/${page.file.path}`;
@@ -44,6 +53,8 @@ export default async function Page(props: {
     </DocsPage>
   );
 }
+
+
 
 export async function generateStaticParams() {
   return source.generateParams();

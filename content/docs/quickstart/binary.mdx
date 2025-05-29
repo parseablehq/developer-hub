@@ -19,7 +19,7 @@ Parseable listens on the port 8000. You can access Parseable UI at http://localh
 
 ## Ingest data
 
-Send your first log event to the log stream demo using below command.
+Send your first log event to the dataset demo using below command.
 
 ```sh
 curl --location --request POST \
@@ -40,10 +40,10 @@ curl --location --request POST \
 ]'
 
 ```
-Parseable uses log streams to organize log data. Here we posted a sample log data to the log stream demo, by adding the header `X-P-Stream: demo` in the request.
+Parseable uses datasets to organize log data. Here we posted a sample log data to the dataset demo, by adding the header `X-P-Stream: demo` in the request.
 
 ## Query data
 
-To query the data via Console, login at http://localhost:8000 and select the log stream demo and correct time stamp.
+To query the data via Console, login at http://localhost:8000 and select the dataset demo and correct time stamp.
 
 For complete Parseable API documentation, refer to [Parseable API Ref Docs](https://www.parseable.com/docs/server/api).
