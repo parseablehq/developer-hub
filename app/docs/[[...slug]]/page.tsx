@@ -9,6 +9,7 @@ import { notFound } from 'next/navigation';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { getMDXComponents } from '@/mdx-components';
 import { EditOnGitHub } from './page.client';
+import { EnterpriseBadge } from '@/components/EnterpriseBadge';
 
 const owner = 'parseablehq';
 const repo = 'developer-hub';
