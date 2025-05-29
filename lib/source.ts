@@ -24,6 +24,24 @@ export const releaseNotesSource = loader({
 
 // Create OpenAPI instance for the Parseable API
 export const openapi = createOpenAPI({
-  // Use default configuration
-  // We'll add code samples directly in the OpenAPI schema
+  // Point to the correct schema file
+  generateCodeSamples() {
+    return [
+      {
+        lang: 'javascript',
+        label: 'JavaScript',
+        source: false
+      },
+      {
+        lang: 'python',
+        label: 'Python',
+        source: false
+      },
+      {
+        lang: 'go',
+        label: 'Go',
+        source: false
+      },
+    ];
+  },
 });
