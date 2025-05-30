@@ -1,8 +1,6 @@
 ---
 title: Architecture
-description: Architecture of Parseable
-sidebar_position: 3
-sidebar_label: Architecture
+description: Understanding the Parseable architecture
 ---
 
 This document outlines the overall architecture of the Parseable Observability Platform, detailing the flow of MELT data from ingestion to storage and querying. 
@@ -56,4 +54,14 @@ Refer to the benchmark results here: [ParseableDB Benchmark](https://benchmark.c
 
 Steps on how to run the benchmarks are available in the [ClickBench documentation](https://github.com/ClickHouse/ClickBench/tree/main/parseable).
 
+![Parseable Benchmark](./static/benchmark.png)
+
 ## Limitations
+
+- ParseableDB is not an OLTP database. It is designed specifically for observability signals and may not be suitable for other use cases that require complex transactions or relationships.
+
+- ParseableDB requires JSON or Kafka as the input format. Other formats may not be supported or may require additional processing.
+
+- ParseableDB is not a full-fledged SQL database. It is designed for high-performance querying and may not support all SQL features or functions.
+
+- 
