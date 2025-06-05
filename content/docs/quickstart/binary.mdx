@@ -1,7 +1,6 @@
 ---
 title: Executable Binary
 sidebar_position: 1
-description: Get started with Parseable using the executable binary
 ---
 
 ## Start Parseable
@@ -13,9 +12,7 @@ curl -fsSL https://logg.ing/install | bash
 parseable local-store
 ```
 
-<Callout type="info">
-Parseable listens on the port 8000. You can access Parseable UI at http://localhost:8000. The default credentials are admin and admin.
-</Callout>
+This will start Parseable on port 8000. You can access the Parseable Console at [http://localhost:8000](http://localhost:8000).
 
 ## Ingest data
 
@@ -44,6 +41,4 @@ Parseable uses datasets to organize log data. Here we posted a sample log data t
 
 ## Query data
 
-To query the data via Console, login at http://localhost:8000 and select the dataset demo and correct time stamp.
-
-For complete Parseable API documentation, refer to [Parseable API Ref Docs](https://www.parseable.com/docs/server/api).
+To query the data via Console, login at http://localhost:8000. Default username and password is `admin:admin`. Then select the dataset demo and correct time stamp.

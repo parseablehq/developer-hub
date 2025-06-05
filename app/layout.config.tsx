@@ -19,6 +19,11 @@ export const baseOptions: BaseLayoutProps = {
   },
   links: [
     {
+      text: 'Parseable Playground',
+      url: 'https://demo.parseable.com/login?q=eyJ1c2VybmFtZSI6ImFkbWluIiwicGFzc3dvcmQiOiJhZG1pbiJ9',
+      external: true,
+    },
+    {
       text: 'API Documentation',
       url: '/docs/api',
       external: false, // Internal link
@@ -27,11 +32,6 @@ export const baseOptions: BaseLayoutProps = {
       text: 'Release Notes',
       url: '/release-notes',
       external: false, // Internal link
-    },
-    {
-      text: 'Parseable Playground',
-      url: 'https://demo.parseable.com/login?q=eyJ1c2VybmFtZSI6ImFkbWluIiwicGFzc3dvcmQiOiJhZG1pbiJ9',
-      external: true,
     },
   ],
   // Footer will be added in the layout component
