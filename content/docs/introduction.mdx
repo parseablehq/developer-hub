@@ -1,16 +1,21 @@
 ---
 title: What is Parseable?
-description: Parseable is built for fast, efficient observability.
 ---
 import { IconCpu2,IconSortDescendingSmallBig,IconBolt,IconTelescope,IconCloudDataConnection,IconFileTextShield } from '@tabler/icons-react';
 
-Parseable is a modern observability platform, built for unifying observability signals.
+<Callout type="info">
+Want to use a LLM to ask questions on Parseable docs? Copy the docs text from http://parseable.com/llms.txt and paste into the LLM.
+</Callout>
 
-At the core of Parseable is purpose built, disk-less database [Parseable DB](https://github.com/parseablehq/parseable). ParseableDB is built ground up on the principles of simplicity, performance and efficiency. It is designed to handle large volumes of telemetry data, like logs, metrics, and traces, with a focus on efficient data ingestion, storage and fast querying.
+Parseable is fast, efficient, unified observability platform.
+
+At the core of Parseable is purpose built, disk-less database [ParseableDB](https://github.com/parseablehq/parseable). ParseableDB is built ground up on the principles of simplicity, performance and efficiency. It is designed to handle large volumes of telemetry data, like logs, metrics, and traces, with a focus on efficient data ingestion, storage and fast querying.
 
 ParseableDB integrates natively with the observability first frontend called Prism. Combined, ParseableDB and Prism provide a powerful platform for observability and telemetry data.
 
 ![](./static/intro-image.png)
+
+## Key Value Drivers
 
 <Cards>
 
@@ -40,7 +45,9 @@ Deploy across public or private clouds, containers, VMs, or bare metal environme
 
 </Cards>
 
+## Glossary
 
-<Callout type="info">
-Want to use a LLM to ask questions on Parseable docs? Copy the docs text from http://parseable.com/llms.txt and paste into the LLM.
-</Callout>
+- **ParseableDB**: The core, open source database engine of Parseable, designed for high performance and efficiency in handling telemetry data.
+- **Prism**: The proprietary observability frontend for ParseableDB. Provides a unified interface for managing and querying telemetry data.
+- **Ingestion**: The process of collecting and storing telemetry data into ParseableDB.
+- **Query**: The action of retrieving and analyzing data stored in ParseableDB using its PostgreSQL compatible SQL.

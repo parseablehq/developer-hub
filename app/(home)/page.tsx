@@ -30,13 +30,11 @@ export default function HomePage() {
     <main className="flex-1 bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100">
       <section className="py-16 text-center">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-4xl sm:text-5xl font-bold dark:text-white leading-tight mb-6">
-            Parseable Documentation
+          <h1 className="text-xl sm:text-4xl font-bold dark:text-white leading-tight mb-6">
+            Welcome to Parseable Documentation
           </h1>
           <p className="text-lg dark:text-slate-300 text-slate-500 mb-10 max-w-3xl mx-auto">
-            Discover how to leverage Parseable for optimal log management and
-            data observability. Ingest, store, and analyze logs from any source
-            on cost-effective S3-compatible storage.
+            Parseable is a unified observability platform. It is built to handle large volumes of O11Y data, with a focus on efficient data ingestion, storage and fast querying.
           </p>
           <div className="max-w-2xl mx-auto">
             <div className="relative flex items-center bg-slate-800 rounded-lg overflow-hidden">
@@ -68,79 +66,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="py-16 dark:bg-slate-900">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-semibold dark:text-white mb-8">
-            Explore Parseable Editions
-          </h2>
-          <p className="dark:text-slate-300 text-slate-500 mb-10 text-lg max-w-4xl">
-            Parseable offers flexible editions to suit your specific telemetry
-            data management and observability requirements, from open-source
-            flexibility to enterprise-grade scalability and support.
-          </p>
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-slate-800 p-8 rounded-lg shadow-lg hover:shadow-blue-500/30 transition-shadow">
-              <div className="flex items-center mb-4">
-                <div
-                  className="text-blue-500 mr-4"
-                  style={{ fontSize: "2.25rem" }}
-                >
-                  <CloudQueueIcon fontSize="inherit" />
-                </div>
-                <h3 className="text-2xl font-semibold text-white">
-                  Parseable Enterprise
-                </h3>
-              </div>
-              <p className="text-slate-400 mb-6 text-sm">
-                Scalable, secure, and supported telemetry data management for
-                demanding production environments. Includes advanced features,
-                dedicated support, and SLAs.
-              </p>
-              <Link
-                href="/docs/enterprise"
-                className="inline-flex items-center text-blue-400 hover:text-blue-300 hover:underline transition-colors font-medium"
-              >
-                Learn about Enterprise{" "}
-                <span className="ml-1" style={{ fontSize: "0.875rem" }}>
-                  <ArrowForwardIcon fontSize="inherit" />
-                </span>
-              </Link>
-            </div>
-            <div className="bg-slate-800 p-8 rounded-lg shadow-lg hover:shadow-green-500/30 transition-shadow">
-              <div className="flex items-center mb-4">
-                <div
-                  className="text-green-500 mr-4"
-                  style={{ fontSize: "2.25rem" }}
-                >
-                  <StorageIcon fontSize="inherit" />
-                </div>
-                <h3 className="text-2xl font-semibold text-white">
-                  Parseable OSS
-                </h3>
-              </div>
-              <p className="text-slate-400 mb-6 text-sm">
-                The powerful open-source core of Parseable. Perfect for getting
-                started, development, and smaller deployments.
-                Community-supported.
-              </p>
-              <Link
-                href="https://github.com/parseablehq/parseable"
-                className="inline-flex items-center text-blue-400 hover:text-blue-300 hover:underline transition-colors font-medium"
-              >
-                Learn about OSS{" "}
-                <span className="ml-1" style={{ fontSize: "0.875rem" }}>
-                  <ArrowForwardIcon fontSize="inherit" />
-                </span>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section className="py-16">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-semibold dark:text-white mb-8">
-            Key Documentation Areas
+            Explore Documentation
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
@@ -272,6 +201,75 @@ export default function HomePage() {
                 </ul>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 dark:bg-slate-900">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-semibold dark:text-white mb-8">
+            Explore Parseable Editions
+          </h2>
+          <p className="dark:text-slate-300 text-slate-500 mb-10 text-lg max-w-4xl">
+            Parseable offers flexible editions to suit your specific telemetry
+            data management and observability requirements, from open-source
+            flexibility to enterprise-grade scalability and support.
+          </p>
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="bg-slate-800 p-8 rounded-lg shadow-lg hover:shadow-blue-500/30 transition-shadow">
+              <div className="flex items-center mb-4">
+                <div
+                  className="text-blue-500 mr-4"
+                  style={{ fontSize: "2.25rem" }}
+                >
+                  <CloudQueueIcon fontSize="inherit" />
+                </div>
+                <h3 className="text-2xl font-semibold text-white">
+                  Parseable Enterprise
+                </h3>
+              </div>
+              <p className="text-slate-400 mb-6 text-sm">
+                Scalable, secure, and supported telemetry data management for
+                demanding production environments. Includes advanced features,
+                dedicated support, and SLAs.
+              </p>
+              <Link
+                href="/docs/enterprise"
+                className="inline-flex items-center text-blue-400 hover:text-blue-300 hover:underline transition-colors font-medium"
+              >
+                Learn about Enterprise{" "}
+                <span className="ml-1" style={{ fontSize: "0.875rem" }}>
+                  <ArrowForwardIcon fontSize="inherit" />
+                </span>
+              </Link>
+            </div>
+            <div className="bg-slate-800 p-8 rounded-lg shadow-lg hover:shadow-green-500/30 transition-shadow">
+              <div className="flex items-center mb-4">
+                <div
+                  className="text-green-500 mr-4"
+                  style={{ fontSize: "2.25rem" }}
+                >
+                  <StorageIcon fontSize="inherit" />
+                </div>
+                <h3 className="text-2xl font-semibold text-white">
+                  Parseable OSS
+                </h3>
+              </div>
+              <p className="text-slate-400 mb-6 text-sm">
+                The powerful open-source core of Parseable. Perfect for getting
+                started, development, and smaller deployments.
+                Community-supported.
+              </p>
+              <Link
+                href="https://github.com/parseablehq/parseable"
+                className="inline-flex items-center text-blue-400 hover:text-blue-300 hover:underline transition-colors font-medium"
+              >
+                Learn about OSS{" "}
+                <span className="ml-1" style={{ fontSize: "0.875rem" }}>
+                  <ArrowForwardIcon fontSize="inherit" />
+                </span>
+              </Link>
+            </div>
           </div>
         </div>
       </section>
