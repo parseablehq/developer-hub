@@ -27,20 +27,20 @@ export function HomepageContent() {
   };
 
   return (
-    <main className="flex-1 bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+    <main className="flex-1 bg-[#F5F5F5] text-slate-900 dark:bg-slate-900 dark:text-slate-100">
       <section className="py-16 text-center">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-4xl sm:text-5xl font-bold dark:text-white leading-tight mb-6">
-            Parseable Documentation
+          <h1 className="text-xl sm:text-4xl font-bold dark:text-white leading-tight mb-6">
+            Welcome to Parseable Documentation
           </h1>
           <p className="text-lg dark:text-slate-300 text-slate-500 mb-10 max-w-3xl mx-auto">
-            Discover how to leverage Parseable for optimal log management and
-            data observability. Ingest, store, and analyze logs from any source
-            on cost-effective S3-compatible storage.
+            Parseable is a unified observability platform. It is built to handle
+            large volumes of O11Y data, with a focus on efficient data
+            ingestion, storage and fast querying.
           </p>
           <div className="max-w-2xl mx-auto">
-            <div className="relative flex items-center bg-slate-800 rounded-lg overflow-hidden">
-              <code className="flex-1 px-4 py-3 text-slate-200 text-sm sm:text-base overflow-x-auto whitespace-nowrap">
+            <div className="relative flex items-center bg-white dark:bg-slate-800 rounded-lg overflow-hidden">
+              <code className="flex-1 px-4 py-3 text-black dark:text-slate-200 text-sm sm:text-base overflow-x-auto whitespace-nowrap">
                 {installCommand}
               </code>
               <button
@@ -68,79 +68,10 @@ export function HomepageContent() {
         </div>
       </section>
 
-      <section className="py-16 dark:bg-slate-900">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-semibold dark:text-white mb-8">
-            Explore Parseable Editions
-          </h2>
-          <p className="dark:text-slate-300 text-slate-500 mb-10 text-lg max-w-4xl">
-            Parseable offers flexible editions to suit your specific telemetry
-            data management and observability requirements, from open-source
-            flexibility to enterprise-grade scalability and support.
-          </p>
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-slate-800 p-8 rounded-lg shadow-lg hover:shadow-blue-500/30 transition-shadow">
-              <div className="flex items-center mb-4">
-                <div
-                  className="text-blue-500 mr-4"
-                  style={{ fontSize: "2.25rem" }}
-                >
-                  <CloudQueueIcon fontSize="inherit" />
-                </div>
-                <h3 className="text-2xl font-semibold text-white">
-                  Parseable Enterprise
-                </h3>
-              </div>
-              <p className="text-slate-400 mb-6 text-sm">
-                Scalable, secure, and supported telemetry data management for
-                demanding production environments. Includes advanced features,
-                dedicated support, and SLAs.
-              </p>
-              <Link
-                href="/docs/enterprise"
-                className="inline-flex items-center text-blue-400 hover:text-blue-300 hover:underline transition-colors font-medium"
-              >
-                Learn about Enterprise{" "}
-                <span className="ml-1" style={{ fontSize: "0.875rem" }}>
-                  <ArrowForwardIcon fontSize="inherit" />
-                </span>
-              </Link>
-            </div>
-            <div className="bg-slate-800 p-8 rounded-lg shadow-lg hover:shadow-green-500/30 transition-shadow">
-              <div className="flex items-center mb-4">
-                <div
-                  className="text-green-500 mr-4"
-                  style={{ fontSize: "2.25rem" }}
-                >
-                  <StorageIcon fontSize="inherit" />
-                </div>
-                <h3 className="text-2xl font-semibold text-white">
-                  Parseable OSS
-                </h3>
-              </div>
-              <p className="text-slate-400 mb-6 text-sm">
-                The powerful open-source core of Parseable. Perfect for getting
-                started, development, and smaller deployments.
-                Community-supported.
-              </p>
-              <Link
-                href="https://github.com/parseablehq/parseable"
-                className="inline-flex items-center text-blue-400 hover:text-blue-300 hover:underline transition-colors font-medium"
-              >
-                Learn about OSS{" "}
-                <span className="ml-1" style={{ fontSize: "0.875rem" }}>
-                  <ArrowForwardIcon fontSize="inherit" />
-                </span>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section className="py-16">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-semibold dark:text-white mb-8">
-            Key Documentation Areas
+            Explore Documentation
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
@@ -243,7 +174,7 @@ export function HomepageContent() {
             ].map((card, index) => (
               <div
                 key={index}
-                className="bg-slate-800 rounded-lg p-6 hover:bg-slate-750 transition-colors"
+                className="bg-white dark:bg-slate-800 rounded-lg p-6 hover:bg-slate-750 transition-colors"
               >
                 <div
                   className={`${card.color} mb-3`}
@@ -251,10 +182,10 @@ export function HomepageContent() {
                 >
                   {card.icon}
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-3">
+                <h3 className="text-xl font-semibold text-black dark:text-white mb-3">
                   {card.title}
                 </h3>
-                <p className="text-slate-300 mb-4">{card.description}</p>
+                <p className="text-slate-400 mb-4">{card.description}</p>
                 <ul className="space-y-2">
                   {card.links.map((link, linkIndex) => (
                     <li key={linkIndex}>
@@ -276,12 +207,83 @@ export function HomepageContent() {
         </div>
       </section>
 
-      <section className="py-16 bg-slate-950">
+      <section className="py-16 dark:bg-slate-900">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-semibold text-white mb-8">Need Help?</h2>
+          <h2 className="text-3xl font-semibold dark:text-white mb-8">
+            Explore Parseable Editions
+          </h2>
+          <p className="dark:text-slate-300 text-slate-500 mb-10 text-lg max-w-4xl">
+            Parseable offers flexible editions to suit your specific telemetry
+            data management and observability requirements, from open-source
+            flexibility to enterprise-grade scalability and support.
+          </p>
           <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-slate-800 p-6 rounded-lg shadow-lg">
-              <h3 className="text-xl font-semibold text-white mb-2">
+            <div className="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-lg hover:shadow-blue-500/30 transition-shadow">
+              <div className="flex items-center mb-4">
+                <div
+                  className="text-blue-500 mr-4"
+                  style={{ fontSize: "2.25rem" }}
+                >
+                  <CloudQueueIcon fontSize="inherit" />
+                </div>
+                <h3 className="text-2xl font-semibold text-black dark:text-white">
+                  Parseable Enterprise
+                </h3>
+              </div>
+              <p className="text-slate-400 mb-6 text-sm">
+                Scalable, secure, and supported telemetry data management for
+                demanding production environments. Includes advanced features,
+                dedicated support, and SLAs.
+              </p>
+              <Link
+                href="/docs/enterprise"
+                className="inline-flex items-center text-blue-400 hover:text-blue-300 hover:underline transition-colors font-medium"
+              >
+                Learn about Enterprise{" "}
+                <span className="ml-1" style={{ fontSize: "0.875rem" }}>
+                  <ArrowForwardIcon fontSize="inherit" />
+                </span>
+              </Link>
+            </div>
+            <div className="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-lg hover:shadow-green-500/30 transition-shadow">
+              <div className="flex items-center mb-4">
+                <div
+                  className="text-green-500 mr-4"
+                  style={{ fontSize: "2.25rem" }}
+                >
+                  <StorageIcon fontSize="inherit" />
+                </div>
+                <h3 className="text-2xl font-semibold dark:text-white text-black">
+                  Parseable OSS
+                </h3>
+              </div>
+              <p className="text-slate-400 mb-6 text-sm">
+                The powerful open-source core of Parseable. Perfect for getting
+                started, development, and smaller deployments.
+                Community-supported.
+              </p>
+              <Link
+                href="https://github.com/parseablehq/parseable"
+                className="inline-flex items-center text-blue-400 hover:text-blue-300 hover:underline transition-colors font-medium"
+              >
+                Learn about OSS{" "}
+                <span className="ml-1" style={{ fontSize: "0.875rem" }}>
+                  <ArrowForwardIcon fontSize="inherit" />
+                </span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 dark:bg-slate-950">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-semibold dark:text-white mb-8">
+            Need Help?
+          </h2>
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-lg">
+              <h3 className="text-xl font-semibold dark:text-white mb-2 text-black">
                 Community Forums
               </h3>
               <p className="text-slate-400 mb-4 text-sm">
@@ -295,8 +297,8 @@ export function HomepageContent() {
                 Visit the Forums
               </Link>
             </div>
-            <div className="bg-slate-800 p-6 rounded-lg shadow-lg">
-              <h3 className="text-xl font-semibold text-white mb-2">
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-lg">
+              <h3 className="text-xl font-semibold dark:text-white mb-2 text-black">
                 Enterprise Support
               </h3>
               <p className="text-slate-400 mb-4 text-sm">
