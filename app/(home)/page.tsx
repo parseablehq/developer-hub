@@ -185,7 +185,7 @@ export default function HomePage() {
                 <h3 className="text-xl font-semibold text-black dark:text-white mb-3">
                   {card.title}
                 </h3>
-                <p className="text-slate-300 mb-4">{card.description}</p>
+                <p className="text-slate-400 mb-4">{card.description}</p>
                 <ul className="space-y-2">
                   {card.links.map((link, linkIndex) => (
                     <li key={linkIndex}>
