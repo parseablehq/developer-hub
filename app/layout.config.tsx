@@ -30,7 +30,7 @@ export const baseOptions: BaseLayoutProps = {
     },
     {
       text: 'Release Notes',
-      url: '/release-notes',
+      url: '/docs/release-notes',
       external: false, // Internal link
     },
   ],
