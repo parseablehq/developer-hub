@@ -11,7 +11,7 @@ import Link from "next/link";
 export const baseOptions: BaseLayoutProps = {
   nav: {
     title: (
-      <Link href="/" className="flex items-center gap-2">
+      <Link href="/docs" className="flex items-center gap-2">
         <span className="font-bold text-xl">Parseable Docs</span>
       </Link>
     ),
@@ -24,12 +24,12 @@ export const baseOptions: BaseLayoutProps = {
     },
     {
       text: "API Documentation",
-      url: "/api",
+      url: "/docs/api",
       external: false, // Internal link
     },
     {
       text: "Release Notes",
-      url: "/release-notes",
+      url: "/docs/release-notes",
       external: false, // Internal link
     },
   ],
