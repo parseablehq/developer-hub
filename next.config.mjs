@@ -1,14 +1,13 @@
-import { createMDX } from 'fumadocs-mdx/next';
-
 const withMDX = createMDX();
 
-/** @type {import('next').NextConfig} */
 const config = {
   reactStrictMode: true,
+  basePath: "/docs",
+  assetPrefix: "/docs",
   images: {
-    domains: ['lh3.googleusercontent.com'], // Add other domains as needed
+    domains: ["lh3.googleusercontent.com"],
     dangerouslyAllowSVG: true,
-    contentDispositionType: 'attachment',
+    contentDispositionType: "attachment",
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 };
