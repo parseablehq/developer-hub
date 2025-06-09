@@ -8,6 +8,8 @@ const config = {
   images: {
     domains: ['lh3.googleusercontent.com'], // Add other domains as needed
     dangerouslyAllowSVG: true,
+    basePath: '/docs',
+    assetsPrefix: '/docs',
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
