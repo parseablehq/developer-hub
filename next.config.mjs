@@ -5,6 +5,7 @@ const withMDX = createMDX();
 /** @type {import('next').NextConfig} */
 const config = {
   reactStrictMode: true,
+  assetPrefix: "/docs",
   images: {
     domains: ["lh3.googleusercontent.com"], // Add other domains as needed
     dangerouslyAllowSVG: true,
