@@ -17,7 +17,7 @@ import {
 export default function MainPage() {
   const [copied, setCopied] = useState(false);
   const installCommand = "curl -fsSL https://logg.ing/install | bash";
-  const baseUrl = process.env.NEXT_PUBLIC_ENV === "production" ? "/docs/" : "/";
+  const baseUrl = process.env.NEXT_PUBLIC_ENV === "development" ? "/" : "/docs/";
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(installCommand);
