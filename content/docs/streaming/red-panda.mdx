@@ -4,42 +4,48 @@ description: "Redpanda integration for Parseable"
 sidebar_position: 1
 ---
 
-### Overview
+## Overview
+
 [Redpanda](https://redpanda.com/) is a Kafka compatible streaming data platform. It is a drop-in replacement for Apache Kafka.
 
 This document explains how to set up Redpanda, along with [Redpanda Connect](https://redpanda.com/docs/redpanda-connect) to send logs to Parseable using Docker Compose as the deployment platform. We assume here that you have producer applications that are sending logs/events to Redpanda.
 
-### Prerequisites
+## Prerequisites
 Please ensure [Docker Compose](https://docs.docker.com/compose/) is installed on your machine.
 
-### Docker Compose
+## Docker Compose
 Then run the following commands to start the Docker Compose. It will deploy Redpanda, Redpanda Console, and Parseable (standalone).
 
 ```bash
 mkdir redpanda-parseable
-wget https://www.parseable.com/docs/redpanda/docker-compose.yaml
+wget https://www.parseable.com/redpanda/docker-compose.yaml
 docker-compose up -d
 ```
 
-#### Using the Redpanda Connect
+### Using the Redpanda Connect
+
 Exec into the Redpanda instance by using the command:
 
 ```bash
 docker exec -u root -it redpanda-0 /bin/bash
 ```
+
 Once you are logged in, download the connect file using:
 
 ```bash
-curl https://www.parseable.com/docs/redpanda/connect.yaml > connect.yaml
+curl https://www.parseable.com/redpanda/connect.yaml > connect.yaml
 ```
+
 The `connect.yaml` file contains `input` and `output` configurations. Here Kafka is the input, i.e. we listen to a Kafka topic using Redpanda connect. The output is an HTTP Connector that will send data to Parseable. Execute the configuration setup in the Redpanda instance now using the command below:
 
 ```bash
 rpk connect run connect.yaml
 ```
+
 If correctly implemented, your terminal should show that the http_client is active and running! Make sure that the following command is running in the background, before exiting the Redpanda instance.
 
-#### Send data to Redpanda topic
+### Send data to Redpanda topic
+
 This step helps you test if everything is working as expected. In a production scenario, you'll have a log agent sending logs to the Redpanda topic.
 
 Run the following commands to start a bash shell in the Redpanda container and post some sample data.
@@ -60,5 +66,3 @@ The rpk command will open up a console, ready to accept events. Then paste the b
 {"reporterId": 4790, "reportId": 7790, "content": "The Tottenham road spending has", "reportDate": "2018-04-22T23:30:14"}   
 ```
 You can now check the Parseable dashboard at `http://localhost:8000`, you should see this data in the dashboard.
-
-

@@ -42,6 +42,7 @@ export default async function Page(props: {
           url={`https://github.com/${owner}/${repo}/tree/main/${path}`}
         />
       </div>
+      <hr/>
       <DocsBody>
         <MDXContent
           components={getMDXComponents({
