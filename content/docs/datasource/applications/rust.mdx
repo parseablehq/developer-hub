@@ -1,10 +1,8 @@
 ---
 title: "Rust"
-description: Rust application for Parseable
-sidebar_position: 5
 ---
 
-### Create a dataset
+## Create a dataset
 First, we'll need to create a dataset. This is a one time operation, and we recommend storing log entries with same schema in a single dataset. So, for example, you can use one dataset per application (given that all logs from that application have the same schema).
 
 
@@ -26,7 +24,8 @@ async fn main() {
         .unwrap();
 }
 ```
-### Send logs to the dataset
+
+## Send logs to the dataset
 After dataset is created, you can start sending logs to the dataset using HTTP POST requests.
 
 
@@ -64,7 +63,8 @@ async fn main() {
         .unwrap();
 }
 ```
-### Querying a dataset
+
+## Querying a dataset
 Once you have started sending logs to a dataset, you can query the logs using standard SQL.
 
 

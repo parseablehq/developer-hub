@@ -1,17 +1,14 @@
 ---
 title: "Authentik"
-description: "Authentik integration for Parseable"
-sidebar_position: 1
 ---
 
-### Overview
 Authentik is an open source, multi-tenant authentication and authorization server. It is a drop-in replacement for Okta, Keycloak, and other identity providers. This document offers step-by-step guide to set up Authentik with Parseable using OpenID Connect (OIDC)
 
-### Pre-requisites
+## Pre-requisites
 - Parseable server setup and receiving logs from your application. Follow the installation guide to set it up.
 - Authentik installed and running. Refer their docs here.
 
-### Configure Authentik
+## Configure Authentik
 - Browse to your Authentik instance and sign in.
 - Create an OAuth2 Provider
 - Navigate to Applications → Providers.
@@ -28,7 +25,7 @@ For example, if your Parseable instance is hosted at `https://demo.parseable.com
 https://demo.parseable.com/api/v1/o/code
 ```
 
-### Setting up OIDC in Parseable
+## Setting up OIDC in Parseable
 Set up requires configuring the OIDC provider via environment variables. Please add these environment variables to your Parseable instance.
 
 ```sh
@@ -47,7 +44,7 @@ After setting the environment variables, restart the Parseable server instance. 
 If you’re running a distributed Parseable set up, please ensure to set these environment variables across all the Parseable instances.
 </Callout>
 
-### Configure OIDC Role in Parseable
+## Configure OIDC Role in Parseable
 Once the environment variables are setup,
 
 - Login with admin access.
@@ -63,10 +60,10 @@ Once the environment variables are setup,
 The option to set a default OIDC role will appear only if the OIDC provider is correctly configured.
 </Callout>
 
-### Login using SSO
+## Login using SSO
 Now logout of Parseable and the next time you try to login using OAuth you'll be redirected to Authentik to login to Parseable
 
-### Troubleshooting
+## Troubleshooting
 In case of 401 error check for one of the following:
 
 - Incorrect client_id or client_secret

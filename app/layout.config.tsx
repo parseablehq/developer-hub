@@ -1,6 +1,6 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 import Link from "next/link";
-import { IconMonkeybar,IconBracketsAngle,IconMapShare } from '@tabler/icons-react';
+import { IconMonkeybar,IconApi,IconMapShare } from '@tabler/icons-react';
 
 /**
  * Shared layout configurations
@@ -34,7 +34,7 @@ export const baseOptions: BaseLayoutProps = {
       text: "API Documentation",
       url: "/docs/api",
       external: false, // Internal link
-      icon: <IconBracketsAngle />, // Icon for the link
+      icon: <IconApi />, // Icon for the link
     },
   ],
   // Footer will be added in the layout component

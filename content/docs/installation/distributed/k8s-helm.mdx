@@ -1,18 +1,15 @@
 ---
 title: Kubernetes
-description: Kubernetes distributed installation guide for Parseable
-sidebar_position: 3
-sidebar_label: Kubernetes
 ---
 
 This page explains the steps required to setup Parseable in a distributed mode on Kubernetes via Helm.
 
-### Prerequisites
+## Prerequisites
 
 - `kubectl` and `helm` installed and configured to point to relevant Kubernetes cluster.
 - Use S3 or a compatible object store such as MinIO to store logs.
 
-### Set up object store
+## Set up object store
 
 <Callout type="info">
 The MinIO installation steps below are for testing purposes only. For production level deployment please refer to the [MinIO documentation](https://min.io/docs/minio).
@@ -29,7 +26,7 @@ kubectl port-forward svc/minio-console -n minio 9001:9001
 
 You can now access the MinIO console at `http://localhost:9001`. You should see a bucket called `parseable` created.
 
-#### Create configuration secret
+### Create configuration secret
 
 Create a secret file with the configuration for Parseable. Note that the values set below are based on the MinIO installation above. If you are using a different object store, please update the values accordingly.
 
@@ -55,7 +52,7 @@ kubectl create ns parseable
 kubectl create secret generic parseable-env-secret --from-env-file=parseable-env-secret -n parseable
 ```
 
-#### Install Parseable
+### Install Parseable
 
 ```bash
 helm repo add parseable https://charts.parseable.com/
@@ -66,7 +63,7 @@ helm install parseable parseable/parseable -n parseable --set "parseable.highAva
 Note that `parseable.highAvailability.enabled=true` flag enables high availability mode. By default, the helm chart installs 3 Parseable ingest services and 1 Parseable query service. It also creates a ClusterIP service for Parseable ingestors.
 </Callout>
 
-#### Access Parseable
+### Access Parseable
 
 Since we're running Parseable in a distributed mode, the ingestor service and querier services are different. Any log agent or client should send events to the `parseable-ingestor-service` service. To expose the ingress service, you can use the following command:
 
@@ -82,7 +79,7 @@ kubectl port-forward svc/parseable-querier-service 8001:80 -n parseable
 
 You should now be able to point your browser to `http://localhost:8001` and see the Parseable login page. You can login with the values set in `username` and `password` fields in the `parseable-env-secret` file above.
 
-### Migration
+## Migration
 
 This section is for users using Parseable helm chart version `1.3.1` or previous. Parseable release `v1.4.0` introduced a hot-tier mechanism for query nodes. Accordingly, the query nodes in the helm chart are now deployed as a StatefulSet instead of a Deployment. The helm chart version `1.4.0` and above removes the Deployment and creates a StatefulSet for query nodes.
 

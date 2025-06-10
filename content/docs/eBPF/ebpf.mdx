@@ -1,10 +1,6 @@
 ---
 title: eBPF
-description: eBPF guide for Parseable
-sidebar_position: 6
 ---
-
-## Overview
 
 [Tetragon](https://github.com/cilium/tetragon) is an open-source project from Cilium that provides runtime security, deep observability, and kernel-level transparency using eBPF. Tetragon monitors processes, syscalls, file and network activity in the kernel, correlating threats with network data to identify responsible binaries. It shares insights via JSON logs and a gRPC endpoint.
 
@@ -12,12 +8,12 @@ This Document will walk you through how to set up Tetragon Connector to extract 
 
 ![Tetragon](./static/tZ4KeWbHe.png)
 
-### Prerequisites
+## Prerequisites
 
 - A Kubernetes with admin accesss.
 - Kubectl installed on your machine.
 
-### Step 1: Deploy Tetragon
+### Deploy Tetragon
 
 You can deploy Tetragon using Helm on your Kubernetes cluster using the commands:
 
@@ -37,7 +33,7 @@ sudo mv tetra /usr/local/bin
 ```
 
 
-### Step 2: Deploy Vector
+### Deploy Vector
 
 You can deploy Vector using Helm on your Kubernetes cluster. We have created a vector-tetragon-values.yaml file to configure Vector to collect logs from Tetragon and send them to Parseable.
 
@@ -46,7 +42,6 @@ helm repo add vector https://helm.vector.dev
 wget https://www.parseable.com/blog/vector/vector-tetragon-values.yaml
 helm install vector vector/vector --namespace vector --create-namespace --values vector-tetragon-values.yaml
 ```
-
 
 It will take some time to deploy Vector. You can check the status using the command:
 
