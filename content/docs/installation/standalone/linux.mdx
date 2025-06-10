@@ -1,20 +1,18 @@
 ---
 title: Linux
-description: Linux standalone installation guide for Parseable
-sidebar_position: 2
-sidebar_label: Linux
 ---
 
 This page explains the steps required to setup a systemd service for Parseable server in both S3 and local store mode.
 
-## Setup Parseable with Local Storage
-
+<Callout type="warn">
 The local store mode is recommended for testing purposes only. For production use, we recommend using S3 storage.
+</Callout>
 
-### Prerequisites
-- Parseable binary is available at `/usr/local/bin/`. Download the relevant binary from the release page.
+## Prerequisites
 
-### Create configuration
+Parseable binary is available at `/usr/local/bin/`. Download the relevant binary from the release page.
+
+## Create configuration
 
 ```bash
 cat <<EOT >> /etc/default/parseable
@@ -61,13 +59,13 @@ If you want to disable / uninstall Parseable, run the below command.
 systemctl disable parseable.local.service
 ```
 
-### Setup Parseable with S3 Storage
+## Setup Parseable with S3 Storage
 
 Prerequisites
 - Parseable binary is available at `/usr/local/bin/`. Download the relevant binary from the [release page](https://github.com/parseablehq/parseable/releases).
 - S3 or compatible object store URL, access key, secret key, and bucket name to be used as storage.
 
-### Create configuration
+## Create configuration
 
 Please ensure to replace the placeholders with the relevant values.
 

@@ -1,12 +1,10 @@
 ---
 title: "AWS Lambda"
-description: "AWS Lambda integration for Parseable"
-sidebar_position: 3
 ---
-### Overview
+
 Parseable AWS Lambda extension is a Lambda extension that allows you to send logs from your Lambda functions to your Parseable instance.
 
-### Usage
+## Usage
 To use the parseable-lambda-extension with a lambda function, it must be configured as a layer. There are two variants of the extension available: one for x86_64 architecture and one for arm64 architecture.
 
 You can add the extension as a layer with the AWS CLI tool:
@@ -31,7 +29,8 @@ arn:aws:lambda:<AWS_REGION>:724973952305:layer:parseable-lambda-extension-<ARCH>
 
 - VERSION - The version of the extension you want to use. Current version is v1.0. For current latest release `v1.0`, use the value `v1-0`.
 
-### Configuration
+## Configuration
+
 The extension is configurable via environment variables set for your lambda function.
 
 - `PARSEABLE_LOG_URL` - Parseable endpoint URL. It should be set to `https://<parseable-url>/api/v1/ingest`. Change `<parseable-url>` to your Parseable instance URL. (required)
@@ -44,9 +43,9 @@ The extension is configurable via environment variables set for your lambda func
 
 Refer [Parseable installation documentation](/docs/installation/) for more details.
 
-### Container image lambda
-In case if you deploy your lambda as container image, to inject extension as part of your function just copy it to your image:
+## Container image lambda
 
+In case if you deploy your lambda as container image, to inject extension as part of your function just copy it to your image:
 
 ```bash
 FROM parseable/aws-lambda-extension:latest AS parseable-extension

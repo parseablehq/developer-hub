@@ -20,15 +20,17 @@ Partition section is an optional field. If you want to partition the dataset bas
 
 ### Mapping sources to datasets
 
-A source here can be anything that generates observability data, i.e. agents like FluentBit, FluentD, Vector, agents from the OTel ecosystem or the application itself.
+A source is anything that generates data, i.e. agents like FluentBit, FluentD, Vector, LogStash, agents from the OTel ecosystem, or the application itself. While ingesting data, you'll need to specify the dataset name to which the data should be sent. This allows mapping sources to datasets.
 
-It is important to critically think about how to map your data sources to datasets. This is a key design decision that can impact the performance and usability of your observability data. Technically it is possible to map any number of data sources to a single dataset, or create multiple datasets for different data sources. 
+It is important to critically think about how to map your data sources to datasets. This is a key design decision that can impact the performance and usability of your observability data. Technically it is possible to map any number of data sources to a single dataset, or create multiple datasets for different data sources.
 
-However, we recommend ideally keeping sources with similar schema in a single dataset, and sources with different schemas in separate datasets. This allows lesser variations in the schema, which in turn allows for better compression and faster query performance.
+<Callout type="info">
+We recommend keeping sources with similar schema in a single dataset, and sources with different schemas in separate datasets. This allows lesser variations in the schema, which in turn allows for better compression and faster query performance.
+</Callout>
 
-Let's take a look at some of the common scenarios:
+Let's understand this with some examples:
 
-- **Kubernetes infrastructure logs**: Kubernetes infrastructure logs (e.g. kubelet, kube-proxy, etc.) can be mapped to a single dataset. This allows you to query the logs across all the Kubernetes components easily. Since these logs have similar schema, 
+- **Kubernetes infrastructure logs**: Kubernetes infrastructure logs (e.g. kubelet, kube-proxy, etc.) can be mapped to a single dataset. This allows you to query the logs across all the Kubernetes components easily. Since these logs have similar schema, they fit well into a single dataset.
 
 - **Application logs with similar schema**: If you have logs from multiple applications that are related, you can create a single dataset for all of them. This allows you to query the logs across applications easily.
 
@@ -37,6 +39,8 @@ Let's take a look at some of the common scenarios:
 - **Aggregated data**: If you have aggregated data (e.g. metrics, traces) that you want to store, you can create a separate dataset for that. This allows you to query the aggregated data separately from the raw logs.
 
 ## Dataset vs index
+
+Traditional indices in systems like Elasticsearch are build to dump textual data, 
 
 ## Dataset schema
 

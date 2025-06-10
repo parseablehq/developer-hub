@@ -1,10 +1,9 @@
 ---
 title: "JavaScript"
-description: JavaScript application for Parseable
-sidebar_position: 3
 ---
 
-### Parseable Bunyan Plugin
+## Parseable Bunyan Plugin
+
 The Parseable Bunyan plugin is developed by our community champion Jacques-Yves Bleau. Refer to the plugin here:
 
 NPM page: https://www.npmjs.com/package/parseable-bunyan
@@ -16,7 +15,7 @@ npm install parseable-bunyan
 yarn add parseable-bunyan
 ```
 
-#### Using the Plugin
+### Using the Plugin
 
 ```javascript
 const { ParseableBunyan } = require('parseable-bunyan')
@@ -71,20 +70,21 @@ const bunyanLogger = bunyan.createLogger({
   })
 ```
 
-### Parseable Winston Plugin
-The Parseable Winston plugin is developed by our community champion Jacques-Yves Bleau. Refer to the plugin here:
+## Parseable Winston Plugin
+
+This is a community plugin, refer to the plugin here:
 
 NPM page: https://www.npmjs.com/package/parseable-winston
 Repo page: https://github.com/jybleau/parseable-node-loggers/tree/main/packages/winston#parseable-winston
 
-#### Installation
+### Installation
 
 ```bash
 npm install parseable-winston
 yarn add parseable-winston
 ```
 
-#### Using the Plugin
+### Using the Plugin
 
 ```javascript
 // Using cjs
@@ -110,7 +110,7 @@ logger.info('User took the goggles', { userid: 1, user: { name: 'Rainier Wolfcas
 logger.warning('The goggles do nothing', { userid: 1 })
 ```
 
-#### To turn off default buffering option:
+### To turn off default buffering option:
 
 ```javascript
 const parseable = new ParseableTransport({
@@ -122,9 +122,9 @@ const parseable = new ParseableTransport({
 })
 ```
 
-### Using plain JavaScript
+## Using plain JavaScript
 
-#### Create a dataset
+### Create a dataset
 First, we'll need to create a dataset. This is a one time operation, and we recommend storing log entries with same schema in a single dataset. So, for example, you can use one dataset per application (given that all logs from that application have the same schema).
 
 
@@ -149,7 +149,7 @@ fetch("https://<parseable-url>/api/v1/logstream/<stream-name>", requestOptions)
     .catch(error => console.log('error', error));
 ```
 
-#### Send logs to the dataset
+### Send logs to the dataset
 After dataset is created, you can start sending logs to the dataset using HTTP POST requests.
 
 
@@ -191,7 +191,7 @@ fetch("https://<parseable-url>/api/v1/logstream/<stream-name>", requestOptions)
     .catch(error => console.log('error', error));
 ```
 
-#### Querying a dataset
+### Querying a dataset
 Once you have started sending logs to a dataset, you can query the logs using standard SQL.
 
 

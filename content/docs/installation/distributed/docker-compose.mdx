@@ -1,16 +1,13 @@
 ---
 title: Docker Compose
-description: Docker Compose distributed installation guide for Parseable
-sidebar_position: 1
-sidebar_label: Docker Compose
 ---
 
 This document explains how to set up Parseable in **high availability mode** with Docker Compose, with `s3-store` mode. This mode is used to store logs on S3 or compatible object storage.
 
-### Prerequisites
+## Prerequisites
 Docker and Docker Compose, installed on your machine. Refer to this doc to install Docker if you haven't already.
 
-### Download Docker Compose File
+## Download Docker Compose File
 Download the Docker Compose file.
 
 ```bash
@@ -19,7 +16,7 @@ cd parseable
 wget https://www.parseable.com/parseable/docker-compose.yaml
 ```
 
-### Run Parseable
+## Run Parseable
 This Compose file contains the configuration for Parseable, along with the required environment variables. You can modify the environment variables in the file as needed. It also includes a [MinIO](https://min.io/) service for S3 compatible storage. This compose creates 4 Parseable ingest services and 1 Parseable query service.
 
 Once you've setup the env as per your requirements, you can start Parseable cluster using the following command:
@@ -28,7 +25,7 @@ Once you've setup the env as per your requirements, you can start Parseable clus
 docker compose up 
 ```
 
-### Access Parseable
+## Access Parseable
 Once Parseable is up and running, you can access it at `http://localhost:8000` (assuming you've set `P_ADDR` to `:8000` in the env file). Credentials to login to Parseable are set via `P_USERNAME` and `P_PASSWORD` fields in the compose file.
 
 ### Troubleshoot

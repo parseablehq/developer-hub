@@ -1,11 +1,7 @@
 ---
 title: Role Based Access Control
-description: Role Based Access Control in Parseable
-sidebar_position: 7
-sidebar_label: Role Based Access Control
 ---
 
-### How it works
 There are five entities in Parseable Access Control model - **Action**, **Privilege**, **Resource**, **Role** and **User**. Below section explains each of these entities in detail.
 
 - **Actions**: Each API corresponds to an Action on the Parseable server.
@@ -19,10 +15,10 @@ There are five entities in Parseable Access Control model - **Action**, **Privil
 User passwords are hashed and stored in Parseable metadata file. Parseable does not store the password in plain text.
 </Callout>
 
-### Overview of Roles & Access
+## Overview of Roles & Access
 Each role—Admin, Editor, Writer, Reader, and Ingestor—has varying access to different endpoints, categorized into six sections: General, Access Management, Resource Based, Stream Related, and Query & Ingest Logs Related. Access permissions are denoted with either `✓` (allowed) or `x` (denied).
 
-#### General
+### General
 This section covers general system and informational endpoints, which are accessible to most roles for actions such as viewing the system's status or metrics.
 
 | Action | Endpoint | Admin | Editor | Writer | Reader | Ingester |
@@ -36,7 +32,7 @@ This section covers general system and informational endpoints, which are access
 | DeleteIngestor | DELETE /cluster/\{ingestor\} | ✓ | x | x | x | x |
 | Metrics | GET /metrics | ✓ | ✓ | x | x | x |
 
-#### Access Management
+### Access Management
 This section deals with endpoints for managing roles and users. Only Admins have access to critical actions like creating, updating, and deleting roles or users, ensuring proper control over access management in the system.
 
 | Action | Endpoint | Admin | Editor | Writer | Reader | Ingester |
@@ -54,7 +50,7 @@ This section deals with endpoints for managing roles and users. Only Admins have
 | PutUserRoles | PUT /user/\{username\}/role | ✓ | x | x | x | x |
 | GetUserRoles | GET /user/\{username\}/role | ✓ | ✓ | ✓ | ✓ | x |
 
-#### Resource Management
+### Resource Management
 This section defines access to resources such as dashboards and filters. While most roles can view and create resources, only Admins and Editors have permission to modify or delete them.
 
 | Action | Endpoint | Admin | Editor | Writer | Reader | Ingester |
@@ -70,7 +66,7 @@ This section defines access to resources such as dashboards and filters. While m
 | CreateFilter | PUT /filters/\{filter_id\} | ✓ | ✓ | ✓ | ✓ | x |
 | DeleteFilter | DELETE /filters/\{filter_id\} | ✓ | ✓ | ✓ | ✓ | x |
 
-#### Stream Related
+### Stream Related
 This section deals with endpoints for managing datasets. Admins and Editors have full access to these endpoints, while other roles have limited or no access to stream management functionalities.
 
 | Action | Endpoint | Admin | Editor | Writer | Reader | Ingester |
@@ -89,7 +85,7 @@ This section deals with endpoints for managing datasets. Admins and Editors have
 | GetRetention | GET /logstream/\{logstream\}/retention | ✓ | ✓ | ✓ | x | x |
 | PutRetention | PUT /logstream/\{logstream\}/retention | ✓ | ✓ | ✓ | x | x |
 
-#### Query & Ingest Logs Related
+### Query & Ingest Logs Related
 This section highlights endpoints related to querying and ingesting logs. Admins and Editors have full access to these functionalities, while other roles, like Readers and Ingestors, may have restricted access depending on their responsibilities.
 
 | Action | Endpoint | Admin | Editor | Writer | Reader | Ingester |
@@ -100,7 +96,9 @@ This section highlights endpoints related to querying and ingesting logs. Admins
 | QueryLLM | POST /llm | ✓ | ✓ | ✓ | ✓ | x |
 
 ### Get started
-Creating a Role
+
+#### Creating a Role
+
 This is the first step in setting up Role Based Access Control (RBAC) for Parseable. Use the Create Role API to create a role. The Create Role API request body requires the role definition in JSON format. Below examples demonstrate sample JSON for different types of role and privileges.
 
 Role JSON with Admin Privilege
@@ -121,6 +119,7 @@ Role JSON with Editor Privilege
     }
 ]
 ```
+
 Role JSON with Writer Privilege: The Writer privilege is resource specific. A user with above role json, will be able to call the Writer specific API only on the specified resource. In the above example, the user will be able to call Writer specific API on backend and frontend datasets only.
 
 ```json

@@ -1,11 +1,7 @@
 ---
 title: OpenTelemetry Traces
-description: Ingesting OpenTelemetry traces in Parseable
-sidebar_position: 2
-sidebar_label: OpenTelemetry Traces
 ---
 
-## Introduction
 Parseable enables ingesting the OpenTelemetry traces sent from the OTEL collectors in the JSON format. In order to do so, Parseable exposes default endpoint /v1/traces at which the OTEL collector sends the span data.
 
 Below is the sample configuration of the OTEL collector to send the traces to Parseable
@@ -29,7 +25,7 @@ service:
       exporters: [otlphttp/parseabletraces]
 ```
 
-### Data Flattening
+## Data Flattening
 The OpenTelemetry traces that are in the form of a nested JSON. When the log event is received at `/v1/traces` endpoint, Parseable will flatten the nested JSON to a flat JSON object. This is done to make the data more queryable and filterable. Here's a quick comparison of the nested JSON and the flattened JSON:
 
 OTEL JSON format sample:
@@ -193,7 +189,7 @@ OTEL JSON format sample:
 }   
 ```
 
-#### Flattened JSON:
+## Flattened JSON
 
 ```json
 [

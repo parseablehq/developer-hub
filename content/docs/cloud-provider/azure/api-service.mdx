@@ -1,9 +1,8 @@
 ---
 title: "Azure API Service"
-description: "Azure API Service integration for Parseable"
-sidebar_position: 1
 ---
-### API Management Service Logs
+
+## API Management Service Logs
 Azure API Management (APIM) is a hybrid, multi cloud management platform for APIs across all environments. It provides a scalable, multi-cloud API management platform for securing, publishing, and analyzing APIs.
 
 Azure API Management helps customers:
@@ -18,12 +17,12 @@ Azure API Management helps customers:
 
 Azure API Management is made up of an API gateway, a management plane, and a developer portal. These components are Azure-hosted and fully managed by default.
 
-### Overview
+## Overview
 You can send Azure API Management Service logs to Parseable via Azure Event Hub & Azure Logic Apps. Once logs are unified in Parseable, you can easily monitor and analyze the logs in real-time, and get insights into the performance and usage of your APIs.
 
 Most importantly, you have full ownership and control over this data, so you can use it to improve your API management and security, without cost or privacy concerns.
 
-### Pre-requisites
+## Pre-requisites
 Before you begin, you will need the following:
 
 - Parseable deployed and running in your environment. Refer the [installation guide](/docs/installation/) for more information.
@@ -32,12 +31,12 @@ Before you begin, you will need the following:
 
 - Azure Event Hub created. Refer the [Create an event hub using Azure portal documentation](https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-create-portal) for more information.
 
-### Send Azure APIM Service Logs to Event Hub
+## Send Azure APIM Service Logs to Event Hub
 - Navigate to the Azure API Management Service in the Azure portal.
 - Click on the `Diagnostics settings` under the `Monitoring` section.
 - Configure the APIM service to send logs to the Event Hub. Refer the image below for more information.
 
-### Use Azure Logic Apps to send events to Parseable
+## Use Azure Logic Apps to send events to Parseable
 - Navigate to the Azure Logic Apps in the Azure portal.
 - Click on the `+ Add` button to create a new Logic App.
 - Configure the Logic App to trigger when an event is received in the Event Hub. Refer the image below for more information. We have used the `When events are available in Event Hub` trigger to start the Logic App.

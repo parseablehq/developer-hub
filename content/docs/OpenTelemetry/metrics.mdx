@@ -1,11 +1,6 @@
 ---
 title: OpenTelemetry Metrics
-description: Ingesting OpenTelemetry metrics in Parseable
-sidebar_position: 3
-sidebar_label: OpenTelemetry Metrics
 ---
-
-## Introduction
 
 Parseable enables ingesting the OpenTelemetry metrics sent from the OTEL collectors in the JSON format. In order to do so, Parseable exposes default endpoint `/v1/metrics` at which the OTEL collector sends the metric data.
 
@@ -30,7 +25,8 @@ service:
       exporters: [otlphttp/parseablemetrics]
 ```
 
-### Data Flattening
+## Data Flattening
+
 The OpenTelemetry metrics that are in the form of a nested JSON. When the metric event is received at `/v1/metrics` endpoint, Parseable will flatten the nested JSON to a flat JSON object. This is done to make the data more queryable and filterable. Here's a quick comparison of the nested JSON and the flattened JSON:
 
 OTEL JSON format sample:

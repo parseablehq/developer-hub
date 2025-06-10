@@ -1,19 +1,16 @@
 ---
 title: Linux
-description: Linux distributed installation guide for Parseable
-sidebar_position: 2
-sidebar_label: Linux
 ---
 
 This page explains the steps required to setup systemd service for Parseable distributed cluster in S3 storage mode.
 
-### Prerequisites
+## Prerequisites
 
 - Parseable binary is available at `/usr/local/bin/`. Download the relevant binary from the release page.
 - S3 or compatible object store URL, access key, secret key, and bucket name to be used as storage.
 - Identify at least two servers to run Parseable ingestor and query services.
 
-### Set up Parseable query server
+## Set up Parseable query server
 
 Log on to the query node and create a configuration file for the query. Please ensure to replace the placeholders with the relevant values.
 
@@ -39,7 +36,8 @@ cd /etc/systemd/system/
 curl -O https://raw.githubusercontent.com/parseablehq/parseable/main/systemd/parseable.s3.service
 ```
 
-#### Start/Stop the query service
+### Start/Stop the query service
+
 Once the service file is created, reload the systemd daemon and start the service.
 
 ```bash
@@ -68,6 +66,7 @@ systemctl disable parseable.s3.service
 ```
 
 ### Set up Parseable ingestor server
+
 Log on to each ingestor node and create a configuration file for the ingestor. Please make sure to replace the placeholders with the appropriate values.
 
 ```bash
