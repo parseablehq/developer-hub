@@ -187,15 +187,15 @@ Apart from above common parameters, there are few `target` specific parameters t
 
 ### Alertmanager 
 
-The alertmanager target can be used to send notifications to [Alertmanager](https://prometheus.io/docs/guides/Alertmanager/). Note that by default if you don't provide repeat configuration for this then Parseable will continue to send alerts to Alertmanager while it is active.
+The alertmanager target can be used to send notifications to [Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/). Note that by default if you don't provide repeat configuration for this then Parseable will continue to send alerts to Alertmanager while it is active.
 
 Note that Alertmanager expects clients to continuously re-send alerts as long as they are still active (usually on the order of 30 seconds to 3 minutes). Avoid specifying `repeat.times` in configuration unless you want Parseable to stop re-sending alerts after specified number of times.
 
 | Variable Name | Required | Description |
 | --- | --- | --- |
 | endpoint | Yes | The URL of the Alertmanager api to send notifications to. Compatible with Alertmanager API V2 |
-| username | No | Username for basic auth. See [Prometheus Docs](https://prometheus.io/docs/guides/Alertmanager/#basic-auth) on how to setup basic auth |
-| password | No | Password for basic auth. See [Prometheus Docs](https://prometheus.io/docs/guides/Alertmanager/#basic-auth) on how to setup basic auth |
+| username | No | Username for basic auth. See [Prometheus Docs](https://prometheus.io/docs/alerting/latest/https/) on how to setup basic auth |
+| password | No | Password for basic auth. See [Prometheus Docs](https://prometheus.io/docs/alerting/latest/https/) on how to setup basic auth |
 | skip_tls_check | No | Whether to skip TLS verification when sending the alert to Alertmanager |
 
 
