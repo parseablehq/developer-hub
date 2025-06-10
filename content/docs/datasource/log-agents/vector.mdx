@@ -7,10 +7,10 @@ This document explains how to set up [Vector](https://vector.dev) to ship logs t
 ## Kubernetes
 Please ensure kubectl and helm installed and configured to access your Kubernetes cluster.
 
-Parseable installed on your Kubernetes cluster. Refer the [Parseable Kubernetes documentation](/docs/admin-guide/installation/distributed/k8s-helm).
+Parseable installed on your Kubernetes cluster. Refer the [Parseable Kubernetes documentation](https://www.parseable.com/docs/installation/distributed/k8s-helm).
 
-### Install Vector
-We use the official [Vector Helm chart](https://github.com/helm/charts/tree/master/stable/vector). But, we'll use a modified values.yaml file, that contains the configuration for Vector to send logs to Parseable.
+### Install Vector  
+We use the official [Vector Helm chart](https://github.com/vectordotdev/helm-charts). But, we'll use a modified values.yaml file, that contains the configuration for Vector to send logs to Parseable.
 
 ```bash
 wget https://www.parseable.com/vector/values.yaml
