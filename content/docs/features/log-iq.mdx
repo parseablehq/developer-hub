@@ -1,19 +1,18 @@
 ---
-title: Auto Schema Detection
+title: Log IQ
 ---
 
-<callout type="info">
+<Callout type="info">
   <EnterpriseBadge /> This feature requires an Enterprise license.
-</callout>
+</Callout>
 
-Schema detection is a powerful enterprise feature in Parseable that automatically identifies the format of the unstructured log data, transforming it into structured columns within ingested events in the JSON format.  This helps in easy and optimized query, search, debug and visualise the data.
+Log IQ allows automatically identifying the format of the unstructured log data, transforming it into structured columns within ingested events in the JSON format.  This helps in easy and optimized query, search, debug and visualise the data.
 
-## How Schema Detection Works 
+## How Log IQ works 
 
-Parseable maintains a registry of known log formats with corresponding regex patterns for identification. Parseable requires two headers in order to detect the schema
+To enable Log IQ, Parseable requires two headers in the HTTP request while ingesting the log data:
 
 - `X-P-Log-Source` - Identifies the known log format name - eg. `syslog`, `nginx_access`, `zookeeper` etc.
-
 - `X-P-Extract-Log` - Specifies which field in the incoming JSON contains the unstructured log, this has to be at the root level in the ingested event.
 
 Parseable extracts the log message and applies regex patterns for the specified source type, and validates if all expected fields are present in the event. Without the headers, schema detection is bypassed, and the event is processed as-is.
@@ -37,3 +36,13 @@ Parseable UI (Prism) automatically displays filters on the field `p_format`.
 - Better compression in parquet reduces storage costs
 
 - Ability to analyse and debug the logs from different sources in a unified way
+
+## Roadmap
+
+Awareness of the log formats via Log IQ opens up a whole lot of possibilities. In the future, Parseable will be able to:
+
+- Provide pre-built dashboards.
+- Provide pre-built SQL queries.
+- Provide pre-built alerts.
+
+for all the known log formats. This will help users to quickly get started with their log data and gain insights without needing to write complex queries or create dashboards from scratch.
