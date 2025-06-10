@@ -17,6 +17,7 @@ import {
 export default function MainPage() {
   const [copied, setCopied] = useState(false);
   const installCommand = "curl -fsSL https://logg.ing/install | bash";
+  const baseUrl = process.env.NEXT_PUBLIC_ENV === "production" ? "/docs/" : "/";
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(installCommand);
@@ -82,10 +83,16 @@ export default function MainPage() {
                 links: [
                   {
                     text: "Quick Start Guide",
-                    href: "/docs/quickstart/binary",
+                    href: `${baseUrl}quickstart/binary`,
                   },
-                  { text: "Installation Options", href: "/docs/installation" },
-                  { text: "Basic Configuration", href: "/docs/architecture" },
+                  {
+                    text: "Installation Options",
+                    href: `${baseUrl}installation`,
+                  },
+                  {
+                    text: "Basic Configuration",
+                    href: `${baseUrl}architecture`,
+                  },
                 ],
               },
               {
@@ -97,15 +104,15 @@ export default function MainPage() {
                 links: [
                   {
                     text: "Fluent Bit Integration",
-                    href: "/docs/datasource/log-agents/fluent-bit",
+                    href: `${baseUrl}datasource/log-agents/fluent-bit`,
                   },
                   {
                     text: "Vector Setup",
-                    href: "/docs/datasource/log-agents/vector",
+                    href: `${baseUrl}datasource/log-agents/vector`,
                   },
                   {
                     text: "API Endpoints",
-                    href: "/docs/api/v1/logstream/stream_name/put",
+                    href: `${baseUrl}api/v1/logstream/stream_name/put`,
                   },
                 ],
               },
@@ -116,10 +123,13 @@ export default function MainPage() {
                 description:
                   "Master Parseable's query language and integrate with visualization tools.",
                 links: [
-                  { text: "Query Syntax", href: "/docs/key-concepts/query" },
+                  {
+                    text: "Query Syntax",
+                    href: `${baseUrl}key-concepts/query`,
+                  },
                   {
                     text: "Grafana Integration",
-                    href: "/docs/visualization/grafana",
+                    href: `${baseUrl}visualization/grafana`,
                   },
                   {
                     text: "Parseable UI Guide",
@@ -134,9 +144,15 @@ export default function MainPage() {
                 description:
                   "Manage users, permissions, and system settings for your Parseable deployment.",
                 links: [
-                  { text: "User Management", href: "/docs/features/rbac" },
-                  { text: "Alerts", href: "/docs/features/alerts" },
-                  { text: "Monitoring", href: "/docs/features/dashboards" },
+                  {
+                    text: "User Management",
+                    href: `${baseUrl}features/rbac`,
+                  },
+                  { text: "Alerts", href: `${baseUrl}features/alerts` },
+                  {
+                    text: "Monitoring",
+                    href: `${baseUrl}features/dashboards`,
+                  },
                 ],
               },
               {
@@ -146,14 +162,17 @@ export default function MainPage() {
                 description:
                   "Configure storage backends and manage data retention policies.",
                 links: [
-                  { text: "S3 Configuration", href: "/docs/storage/awss3" },
+                  {
+                    text: "S3 Configuration",
+                    href: `${baseUrl}storage/awss3`,
+                  },
                   {
                     text: "Azure Setup",
-                    href: "/docs/cloud-provider/azure/api-service",
+                    href: `${baseUrl}cloud-provider/azure/api-service`,
                   },
                   {
                     text: "Retention Policies",
-                    href: "/docs/features/retention",
+                    href: `${baseUrl}features/retention`,
                   },
                 ],
               },
@@ -164,9 +183,18 @@ export default function MainPage() {
                 description:
                   "Comprehensive API documentation for integrating with Parseable programmatically.",
                 links: [
-                  { text: "Authentication", href: "/docs/api#authentication" },
-                  { text: "Ingestion API", href: "/docs/api#log-ingestion" },
-                  { text: "Query API", href: "/docs/api#query-api" },
+                  {
+                    text: "Authentication",
+                    href: `${baseUrl}api#authentication`,
+                  },
+                  {
+                    text: "Ingestion API",
+                    href: `${baseUrl}api#log-ingestion`,
+                  },
+                  {
+                    text: "Query API",
+                    href: `${baseUrl}api#query-api`,
+                  },
                 ],
               },
             ].map((card, index) => (
@@ -233,8 +261,9 @@ export default function MainPage() {
                 demanding production environments. Includes advanced features,
                 dedicated support, and SLAs.
               </p>
+
               <Link
-                href="/docs/enterprise"
+                href={`${baseUrl}enterprise`}
                 className="inline-flex items-center text-blue-400 hover:text-blue-300 hover:underline transition-colors font-medium"
               >
                 Learn about Enterprise{" "}
@@ -330,7 +359,7 @@ export default function MainPage() {
                 </li>
                 <li>
                   <Link
-                    href="/docs"
+                    href={`${baseUrl}`}
                     className="text-slate-400 hover:text-slate-200 transition-colors text-sm"
                   >
                     Parseable OSS
@@ -351,7 +380,7 @@ export default function MainPage() {
               <ul className="space-y-2">
                 <li>
                   <Link
-                    href="/docs"
+                    href={`${baseUrl}`}
                     className="text-slate-400 hover:text-slate-200 transition-colors text-sm"
                   >
                     Documentation
@@ -417,29 +446,9 @@ export default function MainPage() {
                 </li>
               </ul>
             </div>
-            <div className="col-span-2 md:col-span-4 lg:col-span-1">
-              <h5 className="text-white font-semibold mb-3">Stay Updated</h5>
-              <p className="text-slate-400 text-sm mb-3">
-                Get the latest news and updates from Parseable.
-              </p>
-              <form className="flex">
-                <input
-                  className="bg-slate-700 text-slate-300 placeholder-slate-500 px-3 py-2 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 flex-grow text-sm"
-                  placeholder="Enter your email"
-                  type="email"
-                />
-                <button
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-r-md text-sm font-medium transition-colors"
-                  type="submit"
-                >
-                  Subscribe
-                </button>
-              </form>
-            </div>
           </div>
           <div className="border-t border-slate-700 pt-8 flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center mb-4 md:mb-0">
-              <span className="text-blue-500 font-bold text-xl mr-2">P</span>
               <span className="text-slate-400 text-sm">
                 © {new Date().getFullYear()} Parseable. All rights reserved.
               </span>
