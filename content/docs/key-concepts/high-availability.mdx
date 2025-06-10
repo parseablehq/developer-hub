@@ -1,12 +1,6 @@
 ---
 title: High Availability
-description: High availability in Parseable
-sidebar_position: 4
-sidebar_label: High Availability
 ---
-
-
-## Introduction
 
 From the release v1.0.0 and onwards, Parseable supports a distributed, high-availability mode for production use cases where downtime is not an option. The distributed setup is designed to ensure fault tolerance and high availability for log ingestion.
 
@@ -30,7 +24,11 @@ If you're already running Parseable in standalone mode, and want to migrate to d
 This is a one way and one time process. It is not possible to move from a distributed deployment to a standalone deployment.
 </Callout>
 
-## High Availability in Parseable Enterprise (New Feature)
+## High Availability
+
+<Callout type="info">
+  <EnterpriseBadge /> This feature requires an Enterprise license.
+</Callout>
 
 Parseable Enterprise builds upon the distributed architecture of Parseable OSS, enhancing it with an even more robust high availability framework. This feature allows you to independently scale the query nodes along with the independently scalable ingest nodes.
 
@@ -45,7 +43,7 @@ The high availability architecture in Parseable Enterprise consists of four spec
 | Ingest | Processes incoming log event | Independently scalable | P_INGESTOR_ENDPOINT |
 | Index | Manages indexing and search | Single Node (multi node planned) | P_INDEXER_ENDPOINT |
 
-Details of the environment variables are available in the [Environment Variables](https://www.parseable.com/docs/server/environment-variables).
+Details of the environment variables are available in the [Environment Variables](/docs/env-variables).
 
 Each node in the cluster generates and maintains its own NodeMetadata file containing:
 

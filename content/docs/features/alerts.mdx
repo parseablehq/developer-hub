@@ -13,7 +13,7 @@ Parseable offers realtime alerting based on contents of incoming events. Each st
 
 Alerts work in stream processing manner. For each alert configured for a stream, the server maintains an internal state machine that keeps track of the number of times the rule has been true. When the rule evaluates to true for the threshold specified (in the rule), the internal alert state changes to `firing` and the target is notified. When the rule evaluates to false, the alert state changes to `resolved` and the target is notified again with the resolved message.
 
-Alerts can be set via the Parseable Console or via the [API](https://www.parseable.com/docs/api/alerts) for details.
+Alerts can be set via the Parseable UI.
 
 ## Alert types
 

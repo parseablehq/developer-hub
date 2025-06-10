@@ -1,5 +1,6 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 import Link from "next/link";
+import { IconMonkeybar,IconBracketsAngle,IconMapShare } from '@tabler/icons-react';
 
 /**
  * Shared layout configurations
@@ -21,16 +22,19 @@ export const baseOptions: BaseLayoutProps = {
       text: "Parseable Playground",
       url: "https://demo.parseable.com/login?q=eyJ1c2VybmFtZSI6ImFkbWluIiwicGFzc3dvcmQiOiJhZG1pbiJ9",
       external: true,
-    },
-    {
-      text: "API Documentation",
-      url: "/docs/api",
-      external: false, // Internal link
+      icon: <IconMonkeybar/>, // Icon for the link
     },
     {
       text: "Release Notes",
       url: "/docs/release-notes",
       external: false, // Internal link
+      icon: <IconMapShare />, // Icon for the link
+    },
+    {
+      text: "API Documentation",
+      url: "/docs/api",
+      external: false, // Internal link
+      icon: <IconBracketsAngle />, // Icon for the link
     },
   ],
   // Footer will be added in the layout component

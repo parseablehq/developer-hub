@@ -1,11 +1,8 @@
 ---
 title: Release Notes
-description: Latest updates and improvements to Parseable
 ---
 
-# Release Notes
-
-## Version 2.3.2 (June 3, 2025)
+## v2.3.2 (June 3, 2025)
 
 ### New Features
 
@@ -91,3 +88,57 @@ What this means for you:
 - **Visualized Right Where You Need It**: Forecasts appear directly in the Parseable Explore UI, so you can compare historical and predicted loads at a glance.
 
 Whether you're scaling infrastructure or just want to avoid surprises, forecasting helps you move from reactive to proactive.
+
+## v2.3.1
+
+### Highlights
+
+- Global search datasets, saved filters, SQL snippets… anything Parseable tracks.
+- 𝗣_𝗠𝗔𝗫_𝗙𝗟𝗔𝗧𝗧𝗘𝗡_𝗟𝗘𝗩𝗘𝗟 env var to configure nested lists; default depth is 10, but you call configure as per your use-case.
+
+## v2.3.0
+
+### Enhancements
+
+- SQL editor visualisation - SQL editor page allows slicing and dicing data exactly as you wish. We now added visualisation capabilities to the SQL editor. After running a query, you can either inspect the raw rows or quickly switch to a visual chart for better pattern recognition.
+
+- Home chart improvements - Landing page shows a high level overview of your Parseable instance. We have now enhanced the overview section with deeper insights into total ingestion, compression and storage details.
+
+- We’ve also improved the search API response in the sidebar, so you can quickly look up saved filters, alerts, datasets among others.
+
+- Streaming response - We have now added support for streaming response for query. This improves responsiveness for queries that involve downloading larger data chunks. This is available as a flag for the query API. Refer to the Parseable docs on how to use this API.
+
+### Enterprise updates
+
+- Schema detection improvements: Parseable Enterprise edition supports automatic schema detection. The server identifies formats sent by a client when a header is set. Server also validates if the format is actually the same as set by header. This allows a consistent experience on the server side - so users can reliably build dashboards, alerts and other visualisations without being concerned about an offending client.
+
+- In some cases where the format doesn’t match the header specified, we now added support for a column that marks this result. You can now decide to use the mismatched data or not based on the value of p_format_verified.
+
+- LLM configuration across roles - As we proceed our journey of adding native Large Language Model (LLM) support to improve MTTR and leverage user’s time better. We have now added user specific actions to add LLM config.
+
+- This means every user can have a separate LLM key and related config and use their config for their tasks with complete isolation from other user’s actions, history etc.
+
+### Bug Fixes
+
+- Timezone handling explore page - Fix timezone management on log explore page ensuring accurate log display aligned to user-selected timezones.
+
+- Settings page access - Ensured the Settings page is consistently accessible to all users, addressing previous visibility inconsistencies.
+
+- Loaders & error states - Added loading indicators and improved error messaging on user and dataset pages, resulting in a clearer user experience during data fetching and error scenarios.
+
+- Distinct SQL query in Datasets API - Corrected SQL queries to accurately fetch distinct values, improving dataset API responses.
+
+- Date stats deletion fix - Fixed deletion issues in date-level statistics, enhancing data consistency.
+
+- Date level stats fix - Addressed inaccuracies in date-level statistics calculation, ensuring reliable data insights.
+
+- Reject events when the dataset has too many fields - Implemented validation to reject events with more than 250 fields, improving platform stability.
+
+- Allow invalid certificates - Allowed intra-cluster communication using invalid certificates, easing integration scenarios.
+
+### Enterprise fixes
+
+- ALB Log Regex Fix - Resolved regex parsing issues for ALB logs, ensuring accurate log ingestion.
+
+- Create Index Form Validation - Fixed validation logic in the Create Index form, resolving form submission issues and improving user feedback during index creation.
+

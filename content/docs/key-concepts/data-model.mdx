@@ -1,0 +1,84 @@
+---
+title: Modelling Data
+---
+
+import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
+
+It is important to understand how to model the observability data effectively in Parseable. This helps in optimal storage, compression and faster query performance. This section will cover the key concepts of data modelling in Parseable.
+
+## Dataset
+
+At the core of Parseable is the concept of dataset. A dataset is a logical collection of data designed to ensure optimal storage compression and fast retrieval via query. Datasets are identified by a unique name. Each dataset has its schema, which includes the fields and their types. Role based access control, alerts, retention and notifications are all supported at the dataset level granularity.
+
+### Creating a dataset
+
+You can create a dataset using the "Create Dataset" button on Datasets page. You'll be prompted to enter the dataset name, schema type, and partition column. 
+
+You can set the schema type to be [static](#static) (schema has to be explicitly provided at the time of creation of dataset) or [dynamic](#dynamic) (let server infer the schema from the incoming data). Once set, the schema type cannot be changed later. Read more about schema types in the [Dataset Schema](#dataset-schema) section.
+
+Partition section is an optional field. If you want to partition the dataset based on a specific field, you can specify that field here. If you don't specify a partition field, Parseable will use the internal `p_timestamp` field as the partition field. Read more about partitioning in the [Partitioning](/docs/key-concepts/partitioning) section.
+
+### Mapping sources to datasets
+
+A source here can be anything that generates observability data, i.e. agents like FluentBit, FluentD, Vector, agents from the OTel ecosystem or the application itself.
+
+It is important to critically think about how to map your data sources to datasets. This is a key design decision that can impact the performance and usability of your observability data. Technically it is possible to map any number of data sources to a single dataset, or create multiple datasets for different data sources. 
+
+However, we recommend ideally keeping sources with similar schema in a single dataset, and sources with different schemas in separate datasets. This allows lesser variations in the schema, which in turn allows for better compression and faster query performance.
+
+Let's take a look at some of the common scenarios:
+
+- **Kubernetes infrastructure logs**: Kubernetes infrastructure logs (e.g. kubelet, kube-proxy, etc.) can be mapped to a single dataset. This allows you to query the logs across all the Kubernetes components easily. Since these logs have similar schema, 
+
+- **Application logs with similar schema**: If you have logs from multiple applications that are related, you can create a single dataset for all of them. This allows you to query the logs across applications easily.
+
+- **Application logs with different schemas**: If you have logs from multiple applications that have different schemas, you can create a separate dataset for each application. This allows you to enforce a specific schema for each dataset and query them independently.
+
+- **Aggregated data**: If you have aggregated data (e.g. metrics, traces) that you want to store, you can create a separate dataset for that. This allows you to query the aggregated data separately from the raw logs.
+
+## Dataset vs index
+
+## Dataset schema
+
+Schema defines the fields in an event and their types. Parseable supports two types of schema - dynamic and static. You can choose the schema type while creating the dataset. Additionally, if you want to enforce a specific schema, you'll need to send that schema at the time of creating the dataset.
+
+### Dynamic
+
+Datasets by default have dynamic schema. This means you don't need to define a schema for a dataset. The Parseable server detects the schema from first event. If there are subsequent events (with new schema), it updates internal schema accordingly.
+
+Log data formats evolve over time, and users prefer a dynamic schema approach, where they don't have to worry about schema changes, and they are still able to ingest events to a given stream.
+
+<Callout type="info">
+For dynamic schema, Parseable doesn't allow changing the type of an existing column whose type is already set. For example, if a column is detected as string in the first event, it can't be changed to int or timestamp in a later event. If you'd like to enforce a specific schema, please use static schema.
+</Callout>
+
+### Static
+
+In some cases, you may want to enforce a specific schema for a dataset. You can do this by setting the static schema type while creating the dataset. This schema will be enforced for all the events ingested to the dataset. You'll need to provide the schema in the form of a JSON object with field names and their types, with the create dataset API call. The following types are supported in the schema: `string`, `int`, `float`, `timestamp`, `boolean`.
+
+## FAQ
+
+Some of common questions related to datasets are answered below. If you have any other questions, please reach out to us on [Slack](http://logg.ing/community) or [GitHub Discussions](http://github.com/parseablehq/parseable/discussions).
+
+<Accordions>
+    <Accordion id='dataset-vs-index' title="Is a dataset equivalent to an index in Elasticsearch?">
+
+    </Accordion>
+
+    <Accordion id='aggregate-data' title="How should I aggregate events in a dataset?">
+
+    </Accordion>
+
+    <Accordion id='new-vs-old-dataset' title='How do I decide between creating a new dataset or using an existing one?'>
+
+    </Accordion>
+
+    <Accordion id='static-vs-dynamic-schema' title="How do I decide static vs dynamic schema?">
+
+    </Accordion>
+
+    <Accordion id='when-to-use-partitions' title="When should I use partitioning?">
+
+    </Accordion>
+
+</Accordions>
