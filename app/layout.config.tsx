@@ -1,5 +1,4 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
-import Link from "next/link";
 import { IconMonkeybar, IconApi, IconMapShare } from "@tabler/icons-react";
 
 /**
