@@ -1,6 +1,5 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
-import Link from "next/link";
-import { IconMonkeybar,IconApi,IconMapShare } from '@tabler/icons-react';
+import { IconMonkeybar, IconApi, IconMapShare } from "@tabler/icons-react";
 
 /**
  * Shared layout configurations
@@ -11,18 +10,14 @@ import { IconMonkeybar,IconApi,IconMapShare } from '@tabler/icons-react';
  */
 export const baseOptions: BaseLayoutProps = {
   nav: {
-    title: (
-      <Link href="/docs" className="flex items-center gap-2">
-        <span className="font-bold text-xl">Parseable Docs</span>
-      </Link>
-    ),
+    title: <span className="font-bold text-xl">Parseable Docs</span>,
   },
   links: [
     {
       text: "Parseable Playground",
       url: "https://demo.parseable.com/login?q=eyJ1c2VybmFtZSI6ImFkbWluIiwicGFzc3dvcmQiOiJhZG1pbiJ9",
       external: true,
-      icon: <IconMonkeybar/>, // Icon for the link
+      icon: <IconMonkeybar />, // Icon for the link
     },
     {
       text: "Release Notes",
