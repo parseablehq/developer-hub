@@ -1,18 +1,30 @@
-// filepath: middleware.js (or middleware.ts)
 import { NextRequest, NextResponse } from 'next/server'
 
 export function middleware(request: NextRequest) {
-    // Handle CORS
+    const origin = request.headers.get('origin') || ''
+
+
+    // CORS Headers
+    const corsHeaders = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    }
+
+    // Handle preflight OPTIONS request
+    if (request.method === 'OPTIONS') {
+        return new Response(null, {
+            status: 200,
+            headers: corsHeaders,
+        })
+    }
+
+    // For actual requests, append headers to response
     const response = NextResponse.next()
 
-    response.headers.set('Access-Control-Allow-Origin', 'https://parseable-website-git-fixsearch-parseable-project.vercel.app')
-    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-
-    // Handle preflight requests
-    if (request.method === 'OPTIONS') {
-        return new Response(null, { status: 200, headers: response.headers })
-    }
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+        response.headers.set(key, value)
+    })
 
     return response
 }
