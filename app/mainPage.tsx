@@ -17,7 +17,8 @@ import {
 export default function MainPage() {
   const [copied, setCopied] = useState(false);
   const installCommand = "curl -fsSL https://logg.ing/install | bash";
-  const baseUrl = process.env.NEXT_PUBLIC_ENV === "development" ? "/" : "/docs/";
+  const baseUrl =
+    process.env.NEXT_PUBLIC_ENV === "development" ? "/" : "/docs/";
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(installCommand);
@@ -26,9 +27,9 @@ export default function MainPage() {
   };
 
   return (
-    <main className="flex-1 bg-[#F5F5F5] text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+    <main className="flex-1 bg-[#F5F5F5] text-slate-900 dark:bg-slate-900 dark:text-slate-100 overflow-x-hidden">
       <section className="py-16 text-center">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-screen-xl">
           <h1 className="text-xl sm:text-4xl font-bold dark:text-white leading-tight mb-6">
             Welcome to Parseable Documentation
           </h1>
@@ -38,9 +39,9 @@ export default function MainPage() {
             ingestion, storage and fast querying.
           </p>
           <div className="max-w-2xl mx-auto">
-            <div className="relative flex items-center bg-white dark:bg-slate-800 rounded-lg overflow-hidden">
+            <div className="relative flex flex-col sm:flex-row items-stretch sm:items-center bg-white dark:bg-slate-800 rounded-lg overflow-hidden">
               <code className="flex-1 px-4 py-3 text-black dark:text-slate-200 text-sm sm:text-base overflow-x-auto whitespace-nowrap">
-                {installCommand}
+                curl -fsSL https://logg.ing/install | bash
               </code>
               <button
                 onClick={copyToClipboard}
@@ -68,11 +69,11 @@ export default function MainPage() {
       </section>
 
       <section className="py-16">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-screen-xl">
           <h2 className="text-3xl font-semibold dark:text-white mb-8">
             Explore Documentation
           </h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               {
                 icon: <RocketLaunchIcon fontSize="inherit" />,
@@ -234,16 +235,15 @@ export default function MainPage() {
       </section>
 
       <section className="py-16 dark:bg-slate-900">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-screen-xl">
           <h2 className="text-3xl font-semibold dark:text-white mb-8">
             Explore Parseable Editions
           </h2>
           <p className="dark:text-slate-300 text-slate-500 mb-10 text-lg max-w-4xl">
             Parseable offers flexible editions to suit your specific telemetry
-            data management and observability requirements, from open-source
-            flexibility to enterprise-grade scalability and support.
+            data management and observability requirements...
           </p>
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
             <div className="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-lg hover:shadow-blue-500/30 transition-shadow">
               <div className="flex items-center mb-4">
                 <div
@@ -304,11 +304,11 @@ export default function MainPage() {
       </section>
 
       <section className="py-16 dark:bg-slate-950">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-screen-xl">
           <h2 className="text-3xl font-semibold dark:text-white mb-8">
             Need Help?
           </h2>
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
             <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-lg">
               <h3 className="text-xl font-semibold dark:text-white mb-2 text-black">
                 Community Forums
@@ -344,8 +344,8 @@ export default function MainPage() {
       </section>
 
       <footer className="bg-slate-800 border-t border-slate-700">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-8">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-screen-xl">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-8">
             <div>
               <h5 className="text-white font-semibold mb-3">Editions</h5>
               <ul className="space-y-2">
@@ -447,15 +447,14 @@ export default function MainPage() {
               </ul>
             </div>
           </div>
-          <div className="border-t border-slate-700 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center mb-4 md:mb-0">
-              <span className="text-slate-400 text-sm">
-                © {new Date().getFullYear()} Parseable. All rights reserved.
-              </span>
+          <div className="border-t border-slate-700 pt-8 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+            <div className="text-slate-400 text-sm">
+              © 2025 Parseable. All rights reserved.
             </div>
             <div className="flex space-x-4">
               <Link
                 href="https://github.com/parseablehq"
+                aria-label="Parseable on GitHub"
                 className="text-slate-400 hover:text-slate-200 transition-colors"
               >
                 <svg
@@ -473,6 +472,7 @@ export default function MainPage() {
               </Link>
               <Link
                 href="https://x.com/parseablehq"
+                aria-label="Parseable on X (Twitter)"
                 className="text-slate-400 hover:text-slate-200 transition-colors"
               >
                 <svg
@@ -486,6 +486,7 @@ export default function MainPage() {
               </Link>
               <Link
                 href="https://www.linkedin.com/company/parseable"
+                aria-label="Parseable on LinkedIn"
                 className="text-slate-400 hover:text-slate-200 transition-colors"
               >
                 <svg
