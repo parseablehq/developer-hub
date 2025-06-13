@@ -1,4 +1,4 @@
-import { docs, releaseNotes } from '@/.source';
+import { docs, releaseNotes, blog } from '@/.source';
 import { loader } from 'fumadocs-core/source';
 import { createOpenAPI, attachFile } from 'fumadocs-openapi/server';
 
@@ -17,6 +17,15 @@ export const source = loader({
 export const releaseNotesSource = loader({
   baseUrl: '/release-notes',
   source: releaseNotes.toFumadocsSource(),
+  pageTree: {
+    attachFile,
+  },
+});
+
+// Create a separate loader for blog posts
+export const blogSource = loader({
+  baseUrl: '/blog',
+  source: blog.toFumadocsSource(),
   pageTree: {
     attachFile,
   },

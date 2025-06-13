@@ -1,5 +1,5 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
-import { IconMonkeybar, IconApi, IconMapShare } from "@tabler/icons-react";
+import { IconMonkeybar, IconApi, IconMapShare, IconArticle } from "@tabler/icons-react";
 
 /**
  * Shared layout configurations
@@ -18,6 +18,12 @@ export const baseOptions: BaseLayoutProps = {
       url: "https://demo.parseable.com/login?q=eyJ1c2VybmFtZSI6ImFkbWluIiwicGFzc3dvcmQiOiJhZG1pbiJ9",
       external: true,
       icon: <IconMonkeybar />, // Icon for the link
+    },
+    {
+      text: "Blog",
+      url: "/blog",
+      external: false, // Internal link
+      icon: <IconArticle />, // Icon for the link
     },
     {
       text: "Release Notes",

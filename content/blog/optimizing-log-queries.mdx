@@ -1,0 +1,81 @@
+---
+title: Optimizing Log Queries in Parseable
+description: Tips and techniques for writing efficient log queries
+date: "2023-07-20"
+author: deb
+---
+
+# Optimizing Log Queries in Parseable
+
+Effective log analysis depends on your ability to write efficient queries. In this post, we'll explore techniques to optimize your Parseable log queries for better performance and insights.
+
+## Understanding Parseable's Query Engine
+
+Parseable uses a powerful SQL-based query engine built on Apache Arrow. This architecture provides several advantages:
+
+- Column-oriented storage for faster analytical queries
+- Vectorized query execution
+- Predicate pushdown for efficient filtering
+- Parallel query processing
+
+## Query Optimization Techniques
+
+### 1. Use Time-Based Filtering
+
+Always include time constraints in your queries to limit the data scanned:
+
+```sql
+SELECT * FROM logs 
+WHERE timestamp >= '2023-07-01T00:00:00Z' 
+AND timestamp < '2023-07-02T00:00:00Z'
+```
+
+### 2. Select Only Needed Columns
+
+Instead of using `SELECT *`, specify only the columns you need:
+
+```sql
+SELECT timestamp, level, message, service_name
+FROM logs
+WHERE level = 'error'
+```
+
+### 3. Leverage Indexed Fields
+
+Parseable automatically indexes certain fields. Use these for faster filtering:
+
+```sql
+SELECT * FROM logs
+WHERE service_name = 'api-gateway'
+AND level = 'error'
+```
+
+### 4. Use Aggregations Wisely
+
+Aggregations can help summarize large volumes of data:
+
+```sql
+SELECT 
+  service_name,
+  COUNT(*) as error_count
+FROM logs
+WHERE level = 'error'
+GROUP BY service_name
+ORDER BY error_count DESC
+```
+
+## Monitoring Query Performance
+
+Parseable provides query execution statistics to help you understand and optimize performance:
+
+- Query execution time
+- Bytes scanned
+- Rows processed
+
+Use these metrics to identify and refine slow-performing queries.
+
+## Conclusion
+
+By following these optimization techniques, you can significantly improve the performance of your log queries in Parseable, enabling faster troubleshooting and more efficient log analysis.
+
+Stay tuned for more advanced query techniques in our upcoming posts!
