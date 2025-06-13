@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function BlogLayout({
   children,
 }: {
@@ -12,7 +14,7 @@ export default function BlogLayout({
               <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 4H17.3334V17.3334H30.6666V30.6666H44V44H4V4Z" fill="currentColor"></path></svg>
             </div>
             <h2 className="text-[#0e141b] text-lg font-bold leading-tight tracking-[-0.015em]">
-              <a href="/blog" className="hover:text-blue-600">Parseable Blog</a>
+              <Link href="/blog" className="hover:text-blue-600">Parseable Blog</Link>
             </h2>
           </div>
           <div className="flex flex-1 justify-end gap-8">

@@ -22,8 +22,7 @@ export default function BlogPage() {
   // Recent posts (next 4 or all available)
   const recentPosts = sortedPages.slice(0, 4);
   
-  // Popular posts (all posts for now, could be based on other metrics later)
-  const popularPosts = sortedPages.slice(0, 3);
+  // We'll use the same posts for featured and recent sections
 
   return (
     <div className="layout-content-container flex flex-col max-w-[960px] flex-1 mx-auto">
