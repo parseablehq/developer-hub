@@ -2,6 +2,22 @@
 title: Release Notes
 ---
 
+## v2.3.3 (June 17, 2025)
+
+### Performance Improvements
+
+- **Optimized Conversion Task Assignment**: Improved the conversion task system to assign a definite set of arrow files for each conversion task, preventing multiple tasks from processing the same files during heavy loads.
+
+- **Parallel Object Store Sync**: Enhanced object store synchronization to run in parallel for each dataset, significantly improving performance under heavy loads compared to the previous sequential approach.
+
+- **Full Core Utilization**: Increased thread allocation for conversion and sync task handlers from 2 threads to utilizing all available server cores, resulting in better overall performance of conversion and sync workflows.
+
+- **Startup Recovery Process**: Added a conversion and sync task that runs at server startup to process any pending files that weren't processed due to unplanned server shutdowns, improving system resilience.
+
+### Bug Fixes
+
+- **Fixed Poison Errors**: Resolved issues with poison errors that occurred when write locks acquired by ingestion threads panicked.
+
 ## v2.3.2 (June 3, 2025)
 
 ### New Features
