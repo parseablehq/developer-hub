@@ -2,6 +2,81 @@
 title: Release Notes
 ---
 
+## v2.3.4 (June 26, 2025)
+
+We’re excited to roll out Parseable **v2.3.4**, a release packed with features that make exploring, debugging, and managing your observability data simpler and more powerful than ever. Here’s everything new:
+
+### 1. **Filters & Group By: Slice, Dice, and Save Your Logs**
+
+**What’s new?**
+You can now filter and group logs directly from the log explorer using a flexible, built-in filter panel. Not only can you **filter logs by any field** (e.g., `service=payments`, `env=prod`), you can also **group them by any field** to spot patterns and outliers fast.
+
+![](./static/filter.png)
+
+**How it works:**
+
+* **Build a filter:** Type in the filter panel just like a search box—e.g., `status=error AND region=us-west-2`.
+* **Add a group by:** Instantly group results by `error_code` or `user_id` to see which issues are most frequent or which users are affected.
+![](./static/group-by.png)
+* **Save filter views:** Liked what you built? Click “Save to Library” and name the view (e.g., `Payments Errors Last Week`). Next time, just apply it from the Library to debug similar issues—no more rebuilding filters from scratch.
+![](./static/library.png)
+
+**Example:**
+Troubleshooting an incident in the `payments` service?
+
+* Filter: `service=payments AND status=error`
+* Group by: `error_code`
+* Result: A quick tally of error types, so you can spot if a particular error is spiking.
+
+**Benefits:**
+
+* Saved filters help you build a library of ready-to-use “debug recipes.”
+* The panel is as easy as typing, no complex query syntax required.
+* Perfect for SREs and devs who want fast, repeatable root cause analysis.
+
+### 2. **AI-Powered Forecasts—Now Available for Filters**
+
+We’ve extended our **AI-based ingestion forecasting** to work with *any* filter you apply. This means you can select a filtered view (e.g., just logs for a specific team or region) and get **automatic predictions** for future log volumes based on your selection.
+
+**Benefits:**
+
+* Filter logs to `env=prod AND region=eu-central-1`
+* Instantly see a chart forecasting ingestion volume for just those logs
+* Plan ahead for traffic spikes, storage needs, or incident response
+* No more guessing how much your filtered logs will grow over time!
+
+### 3. **Field Stats: Occurrence Counts & Drill Down Made Easy**
+
+You can now see detailed stats for any field in your telemetry, right in the UI. For every field (like `status`, `endpoint`, `customer_id`), Parseable shows:
+
+* **Count of unique values** (e.g., how many different status codes?)
+* **Frequency/occurrence** of each value (e.g., how many times did `status=error` appear?)
+* **Order and drill down**: Click any value to instantly filter logs to just that slice.
+
+![](./static/stats.png)
+
+**Example:**
+Investigating API failures?
+
+* Click `status` → see all possible values (e.g., `200`, `404`, `500`) and how often each occurred
+* Click on `500` → now you’re only seeing server errors, ready to debug further
+* Combine with group by `endpoint` to see which routes are most affected
+
+Here's a demo video showcasing the filters feature: 
+
+<YouTubeEmbed videoId="btme5j9kzKY" />
+
+### 4. **Multi-Role Support for OIDC Users**
+
+Teams often need flexible, fine-grained access control—now Parseable’s OIDC integration supports **assigning multiple roles to a single user**.
+
+**Benefits:**
+
+* Give a DevOps engineer both `admin` and `reader` roles for different datasets
+* Grant a user `editor` + `reader` permissions, so they can review logs across datasets without manual role shuffling
+* All roles are respected in UI and API, just assign them in your OIDC provider and Parseable does the rest
+
+
 ## v2.3.3 (June 17, 2025)
 
 ### Performance Improvements
