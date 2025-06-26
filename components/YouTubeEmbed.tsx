@@ -3,15 +3,11 @@ import React from 'react';
 interface YouTubeEmbedProps {
   videoId: string;
   title?: string;
-  width?: number;
-  height?: number;
 }
 
 export function YouTubeEmbed({
   videoId,
   title = 'YouTube video player',
-  width = 560,
-  height = 315,
 }: YouTubeEmbedProps) {
   return (
     <div className="youtube-embed-container" style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', maxWidth: '100%', marginBottom: '1.5rem' }}>
