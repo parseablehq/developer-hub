@@ -19,7 +19,8 @@ _openapi:
 
           **http://INGESTION_ENDPOINT/api/v1/logstream/`stream_name`**  
 
-          This API does not require any headers for specifying the stream name.
+          This API does not require any headers for specifying the stream name,
+          as the stream name is included in the URL path.
 ---
 {/* Define variables for path parameters */}
 export const stream_name = "stream_name";
@@ -30,7 +31,7 @@ export const stream_name = "stream_name";
 In this approach, you need to create a stream first using the **Create Stream API**.  
 Once the stream is created, you can send logs to the stream ingestion API endpoint:  
 **http://INGESTION_ENDPOINT/api/v1/logstream/`stream_name`**  
-This API does not require any headers for specifying the stream name.
+This API does not require any headers for specifying the stream name, as the stream name is included in the URL path.
 
 
 <APIPage document={"public/parseable-api-schema-cleaned.yaml"} operations={[{"path":"/api/v1/logstream/{stream_name}","method":"post"}]} webhooks={[]} hasHead={false} />

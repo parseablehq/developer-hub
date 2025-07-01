@@ -22,7 +22,11 @@ paths:
       operationId: createLogStream
       description: |
         This endpoint is used to create a new log stream within Parseable.  
-        A **log stream** is a group of similar logs. For example, you can create a log stream for a specific application's logs, another log stream for your database logs, and so on. You can create as many log streams as needed to organize and manage logs efficiently.  
+        A **log stream** is a group of similar logs. For example, you can create a log stream for a specific application's logs, another log stream for your database logs, and so on. You can create as many log streams as needed to organize and manage logs efficiently.
+
+        **Optional Headers:**
+        - **X-P-Custom-Partition**: Define custom partitioning for the log stream
+        - **X-P-Update-Stream**: Set to `true` to update an existing stream, `false` to create a new one
       security:
         - basicAuth: []
       parameters:
@@ -31,6 +35,19 @@ paths:
           schema:
             type: string
           required: true
+        - name: X-P-Custom-Partition
+          in: header
+          schema:
+            type: string
+          required: false
+          description: Define custom partitioning for the log stream
+        - name: X-P-Update-Stream
+          in: header
+          schema:
+            type: string
+            enum: ["true", "false"]
+          required: false
+          description: Set to true to update an existing stream, false to create a new one
       responses:
         '200':
           description: Successful response
@@ -67,7 +84,7 @@ paths:
         In this approach, you need to create a stream first using the **Create Stream API**.  
         Once the stream is created, you can send logs to the stream ingestion API endpoint:  
         **http://INGESTION_ENDPOINT/api/v1/logstream/{stream_name}**  
-        This API does not require any headers for specifying the stream name.
+        This API does not require any headers for specifying the stream name, as the stream name is included in the URL path.
       requestBody:
         content:
           application/json:
