@@ -27,6 +27,38 @@ paths:
         **Optional Headers:**
         - **X-P-Custom-Partition**: Define custom partitioning for the log stream
         - **X-P-Update-Stream**: Set to `true` to update an existing stream, `false` to create a new one
+      x-code-samples:
+        - lang: bash
+          source: |
+            curl -X PUT "http://localhost:8000/api/v1/logstream/my-stream" \
+              -H "Authorization: Basic dXNlcjpwYXNzd29yZA==" \
+              -H "X-P-Custom-Partition: timestamp" \
+              -H "Content-Type: application/json"
+        - lang: python
+          source: |
+            import requests
+            
+            url = "http://localhost:8000/api/v1/logstream/my-stream"
+            headers = {
+                "Authorization": "Basic dXNlcjpwYXNzd29yZA==",
+                "X-P-Custom-Partition": "timestamp",
+                "Content-Type": "application/json"
+            }
+            
+            response = requests.put(url, headers=headers)
+            print(response.status_code)
+        - lang: javascript
+          source: |
+            fetch("http://localhost:8000/api/v1/logstream/my-stream", {
+              method: "PUT",
+              headers: {
+                "Authorization": "Basic dXNlcjpwYXNzd29yZA==",
+                "X-P-Custom-Partition": "timestamp",
+                "Content-Type": "application/json"
+              }
+            })
+            .then(response => console.log(response.status))
+            .catch(error => console.error("Error:", error));
       security:
         - basicAuth: []
       parameters:
@@ -61,6 +93,32 @@ paths:
       description: |
         This endpoint is used to delete an existing log stream.
         When a log stream is deleted, all associated data is permanently removed.
+      x-code-samples:
+        - lang: bash
+          source: |
+            curl -X DELETE "http://localhost:8000/api/v1/logstream/my-stream" \
+              -H "Authorization: Basic dXNlcjpwYXNzd29yZA=="
+        - lang: python
+          source: |
+            import requests
+            
+            url = "http://localhost:8000/api/v1/logstream/my-stream"
+            headers = {
+                "Authorization": "Basic dXNlcjpwYXNzd29yZA=="
+            }
+            
+            response = requests.delete(url, headers=headers)
+            print(response.status_code)
+        - lang: javascript
+          source: |
+            fetch("http://localhost:8000/api/v1/logstream/my-stream", {
+              method: "DELETE",
+              headers: {
+                "Authorization": "Basic dXNlcjpwYXNzd29yZA=="
+              }
+            })
+            .then(response => console.log(response.status))
+            .catch(error => console.error("Error:", error));
       security:
         - basicAuth: []
       parameters:
@@ -85,6 +143,48 @@ paths:
         Once the stream is created, you can send logs to the stream ingestion API endpoint:  
         **http://INGESTION_ENDPOINT/api/v1/logstream/{stream_name}**  
         This API does not require any headers for specifying the stream name, as the stream name is included in the URL path.
+      x-code-samples:
+        - lang: bash
+          source: |
+            curl -X POST "http://localhost:8000/api/v1/logstream/my-stream" \
+              -H "Authorization: Basic dXNlcjpwYXNzd29yZA==" \
+              -H "Content-Type: application/json" \
+              -d '[{"level":"info","message":"User logged in","timestamp":"2023-01-01T12:00:00Z"}]'
+        - lang: python
+          source: |
+            import requests
+            import json
+            
+            url = "http://localhost:8000/api/v1/logstream/my-stream"
+            headers = {
+                "Authorization": "Basic dXNlcjpwYXNzd29yZA==",
+                "Content-Type": "application/json"
+            }
+            
+            data = [{
+                "level": "info",
+                "message": "User logged in",
+                "timestamp": "2023-01-01T12:00:00Z"
+            }]
+            
+            response = requests.post(url, headers=headers, data=json.dumps(data))
+            print(response.status_code)
+        - lang: javascript
+          source: |
+            fetch("http://localhost:8000/api/v1/logstream/my-stream", {
+              method: "POST",
+              headers: {
+                "Authorization": "Basic dXNlcjpwYXNzd29yZA==",
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify([{
+                "level": "info",
+                "message": "User logged in",
+                "timestamp": "2023-01-01T12:00:00Z"
+              }])
+            })
+            .then(response => console.log(response.status))
+            .catch(error => console.error("Error:", error));
       requestBody:
         content:
           application/json:
@@ -138,6 +238,56 @@ paths:
           "streamName": "example-stream"
         }
         ```
+      x-code-samples:
+        - lang: bash
+          source: |
+            curl -X POST "http://localhost:8000/api/v1/query" \
+              -H "Authorization: Basic dXNlcjpwYXNzd29yZA==" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "query": "SELECT * FROM log WHERE log ILIKE \"%error%\";",
+                "startTime": "2023-01-01 00:00:00.000000",
+                "endTime": "2023-01-01 23:59:59.999999",
+                "streamName": "example-stream"
+              }'
+        - lang: python
+          source: |
+            import requests
+            import json
+            
+            url = "http://localhost:8000/api/v1/query"
+            headers = {
+                "Authorization": "Basic dXNlcjpwYXNzd29yZA==",
+                "Content-Type": "application/json"
+            }
+            
+            data = {
+                "query": "SELECT * FROM log WHERE log ILIKE '%error%';",
+                "startTime": "2023-01-01 00:00:00.000000",
+                "endTime": "2023-01-01 23:59:59.999999",
+                "streamName": "example-stream"
+            }
+            
+            response = requests.post(url, headers=headers, data=json.dumps(data))
+            print(response.json())
+        - lang: javascript
+          source: |
+            fetch("http://localhost:8000/api/v1/query", {
+              method: "POST",
+              headers: {
+                "Authorization": "Basic dXNlcjpwYXNzd29yZA==",
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                "query": "SELECT * FROM log WHERE log ILIKE '%error%';",
+                "startTime": "2023-01-01 00:00:00.000000",
+                "endTime": "2023-01-01 23:59:59.999999",
+                "streamName": "example-stream"
+              })
+            })
+            .then(response => response.json())
+            .then(data => console.log(data))
+            .catch(error => console.error("Error:", error));
       requestBody:
         content:
           application/json:
@@ -174,6 +324,51 @@ paths:
         
         Required headers:
         - **X-P-Stream**: The name of the stream to ingest logs into
+      x-code-samples:
+        - lang: bash
+          source: |
+            curl -X POST "http://localhost:8000/api/v1/ingest" \
+              -H "Authorization: Basic dXNlcjpwYXNzd29yZA==" \
+              -H "X-P-Stream: my-stream" \
+              -H "Content-Type: application/json" \
+              -d '[{"level":"info","message":"User logged in","timestamp":"2023-01-01T12:00:00Z"}]'
+        - lang: python
+          source: |
+            import requests
+            import json
+            
+            url = "http://localhost:8000/api/v1/ingest"
+            headers = {
+                "Authorization": "Basic dXNlcjpwYXNzd29yZA==",
+                "X-P-Stream": "my-stream",
+                "Content-Type": "application/json"
+            }
+            
+            data = [{
+                "level": "info",
+                "message": "User logged in",
+                "timestamp": "2023-01-01T12:00:00Z"
+            }]
+            
+            response = requests.post(url, headers=headers, data=json.dumps(data))
+            print(response.status_code)
+        - lang: javascript
+          source: |
+            fetch("http://localhost:8000/api/v1/ingest", {
+              method: "POST",
+              headers: {
+                "Authorization": "Basic dXNlcjpwYXNzd29yZA==",
+                "X-P-Stream": "my-stream",
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify([{
+                "level": "info",
+                "message": "User logged in",
+                "timestamp": "2023-01-01T12:00:00Z"
+              }])
+            })
+            .then(response => console.log(response.status))
+            .catch(error => console.error("Error:", error));
         
         The API accepts logs in JSON format. You can send single log entries or arrays of log entries.
         
