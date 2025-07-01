@@ -5,7 +5,7 @@ info:
   description: |-
     Core APIs for Parseable - a simplified version of the API schema with only essential endpoints.
 servers:
-  - url: https://demo.parseable.com
+  - url: http://ENDPOINT
 components:
   securitySchemes:
     basicAuth:
@@ -66,7 +66,7 @@ paths:
         **Log Ingestion API via Stream Endpoint**  
         In this approach, you need to create a stream first using the **Create Stream API**.  
         Once the stream is created, you can send logs to the stream ingestion API endpoint:  
-        **http://demo.parseable.com/api/v1/logstream/otellogs**  
+        **http://INGESTION_ENDPOINT/api/v1/logstream/{stream_name}**  
         This API does not require any headers for specifying the stream name.
       requestBody:
         content:
@@ -156,7 +156,7 @@ paths:
         This approach allows you to send logs to Parseable using custom headers to specify the target stream.  
         
         Required headers:
-        - **X-PBL-Stream**: The name of the stream to ingest logs into
+        - **X-P-Stream**: The name of the stream to ingest logs into
         
         The API accepts logs in JSON format. You can send single log entries or arrays of log entries.
         
@@ -195,7 +195,7 @@ paths:
       security:
         - basicAuth: []
       parameters:
-        - name: X-PBL-Stream
+        - name: X-P-Stream
           in: header
           schema:
             type: string

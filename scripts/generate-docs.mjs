@@ -25,13 +25,23 @@ async function generateDocs() {
     // Customize the document path in the generated MDX
     transform: (content) => {
       return content.replace(
-        /document={"([^"]+)"}/g,
+        /document=\{"([^"]+)"\}/g,
         'document={"public/parseable-api-schema-cleaned.yaml"}'
       );
     },
   });
 
   console.log('API documentation generated successfully');
+  
+  // Run the fix-api-docs script to handle path parameters
+  const { execSync } = await import('child_process');
+  try {
+    console.log('Fixing API documentation path parameters...');
+    execSync('node scripts/fix-api-docs.mjs', { stdio: 'inherit' });
+  } catch (error) {
+    console.error('Error fixing API documentation:', error);
+    process.exit(1);
+  }
 }
 
 generateDocs().catch(error => {
