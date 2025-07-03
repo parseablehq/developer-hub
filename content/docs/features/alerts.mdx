@@ -2,17 +2,17 @@
 title: Alerts
 ---
 
-Parseable offers realtime alerting based on contents of incoming events. Each stream can have several alerts and each alert is evaluated independently.
+Parseable offers realtime alerting based on contents of incoming events. Each dataset can have several alerts and each alert is evaluated independently.
 
 ## How it works
 
-Alerts work in stream processing manner. For each alert configured for a stream, the server maintains an internal state machine that keeps track of the number of times the rule has been true. When the rule evaluates to true for the threshold specified (in the rule), the internal alert state changes to `firing` and the target is notified. When the rule evaluates to false, the alert state changes to `resolved` and the target is notified again with the resolved message.
+For each alert configured for a dataset, the server maintains an internal state machine that keeps track of the number of times the rule has been true. When the rule evaluates to true for the threshold specified (in the rule), the internal alert state changes to `firing` and the target is notified. When the rule evaluates to false, the alert state changes to `resolved` and the target is notified again with the resolved message.
 
-Alerts can be set via the Parseable UI.
+Alerts can be set via Prism or via direct API calls. The Prism provides a user-friendly interface to configure alerts, while the API allows for programmatic configuration and management of alerts.
 
 ## Alert types
 
-You can configure any number of alerts for any stream. The alert evaluation rule can be configured to scan a single column or multiple columns.
+You can configure any number of alerts for any dataset. The alert evaluation rule can be configured to scan a single column or multiple columns.
 
 - Single column: Scan events for values in a single column, e.g. alerts like `send an alert when the status code is 500 for 3 consecutive times` or `send an alert when the message field contains 'fatal'`.
 
@@ -24,7 +24,7 @@ Parseable supports sending alerts to `Webhook`, `Slack`, and `Alertmanager` targ
 
 ### Configuration
 
-You can configure alerts via the Prism UI. Navigate to the stream for which you want to set alerts and click on the `Manage` section. Then navigate to `Alerts` section on the bottom right corner. You can add, edit, or delete alerts from this page.
+You can configure alerts via the Prism. Navigate to the dataset for which you want to set alerts and click on the `Manage` section. Then navigate to `Alerts` section on the bottom right corner. You can add, edit, or delete alerts from this page.
 
 If you need to use the API calls instead, this section explains how to craft the alert configuration JSON. The configuration JSON has two top level fields, `version` and `alerts`. The version field specifies the version of alert specification to use. This is currently `v1`.
 
@@ -186,7 +186,7 @@ Example json sent by Parseable to Alertmanager. Note that `rule_config_*` may di
         "rule_config_value": "500",
         "rule_type": "column",
         "status": "firing",
-        "stream": "app"
+        "dataset": "app"
     },
     "annotations": {
         "message": "message that was set for this alert",
