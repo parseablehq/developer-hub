@@ -49,37 +49,9 @@ Here is sample alert configuration, with all the available options. Read the sec
                 }
             },
             "targets": [
-                {
-                    "type": "alertmanager",
-                    "endpoint": "http://localhost:9093/api/v2/alerts",
-                    "username": "admin",
-                    "password": "admin",
-                    "skip_tls_check": false,
-                    "repeat": {
-                        "interval": "30s",
-                        "times": 5
-                    }
-                },
-                {
-                    "type": "webhook",
-                    "endpoint": "https://example.com/",
-                    "headers": {
-                        "Authorization": "Basic dXNlcjpwYXNz"
-                    },
-                    "skip_tls_check": false,
-                    "repeat": {
-                        "interval": "3m 20s",
-                        "times": 5
-                    }
-                },
-                {
-                    "type": "slack",
-                    "endpoint": "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX",
-                    "repeat": {
-                        "interval": "3m 20s",
-                        "times": 5
-                    }
-                }
+                "01JZ81YB5PXNDBA9Q9G3MM67Q3",
+                "01JZ81Y70HARPQFR3M7KGYH8NW",
+                "01JZ824D7ZVJ6NWPF21X1KNXP1"
             ]
         }
     ]
@@ -94,7 +66,7 @@ These are the fields available in the alert configuration:
 | name | Yes | Unique name to identify the alert. |
 | message | Yes | Message to be sent to the targets. See [message section](#message) |
 | rule | Yes | Condition that has to be true to trigger the alert. See [rules section](#rule) |
-| targets | Yes | An array of multiple targets. This means each alert can be configured to be sent to multiple targets. See [target section](#targets) |
+| targets | Yes | An array of multiple target IDs. This means each alert can be configured to be sent to multiple targets. See [target section](#targets) |
 
 ### Message
 
@@ -163,23 +135,25 @@ Targets are the destinations where notifications are sent when an alert is trigg
 
 | Variable Name | Required | Description |
 | --- | --- | --- |
+| name | Yes | The name of target. |
 | type | Yes | The type of target. Can be alertmanager, webhook, or slack. |
 | endpoint | Yes | The URL of the target. |
-| repeat | No | Specify the frequency of sending the alert to the target. By default the repeat field has interval set to 200s and times set to 5. The timeout is specified in the Go duration format. For example, if you want to repeat the alert every 30 seconds, you can set repeat to 30s. If you want to repeat the alert every 5 minutes, you can set repeat to 5m. |
+| notificationConfig | No | Specify the frequency of sending the alert to the target. By default the `notificationConfig` field has interval set to 1 (minute) and times set to 1. `interval` accepts a `u64` and `times` accepts a `usize`. If you want the notification to be sent 5 times, once every minute, you would set `interval` to 1 and `times` to 5. |
 
 Sample target configuration:
 ```json
 {
-    "type": "alertmanager",
-    "endpoint": "http://localhost:9093/api/v2/alerts",
-    "username": "admin",
-    "password": "admin",
-    "skip_tls_check": false,
-    "repeat": {
-        "interval": "30s",
-        "times": 5
+    "name":"AlertManagerTarget",
+    "type": "alertManager",
+    "endpoint": "https://some.webhook.com",
+    "username": "username",
+    "password":"password",
+    "skipTlsCheck": true,
+    "notificationConfig": {
+        "interval": 3,
+        "times": 7
     }
-},
+}
 ...
 ```
 
@@ -196,7 +170,7 @@ Note that Alertmanager expects clients to continuously re-send alerts as long as
 | endpoint | Yes | The URL of the Alertmanager api to send notifications to. Compatible with Alertmanager API V2 |
 | username | No | Username for basic auth. See [Prometheus Docs](https://prometheus.io/docs/alerting/latest/https/) on how to setup basic auth |
 | password | No | Password for basic auth. See [Prometheus Docs](https://prometheus.io/docs/alerting/latest/https/) on how to setup basic auth |
-| skip_tls_check | No | Whether to skip TLS verification when sending the alert to Alertmanager |
+| skipTlsCheck | No | Whether to skip TLS verification when sending the alert to Alertmanager |
 
 
 Example json sent by Parseable to Alertmanager. Note that `rule_config_*` may differ depending on the type of rule that triggered the alert.
@@ -230,7 +204,7 @@ The webhook target can be used to send notifications to a webhook URL. The targe
 | --- | --- | --- |
 | endpoint | Yes | The URL of the webhook to send notifications to. |
 | headers | No | Any custom headers to include in the webhook request. |
-| skip_tls_check | No | Whether to skip TLS verification when sending the webhook request. |
+| skipTlsCheck | No | Whether to skip TLS verification when sending the webhook request. |
 
 ### Slack
 

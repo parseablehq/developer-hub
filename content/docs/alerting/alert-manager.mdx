@@ -20,19 +20,20 @@ This is a snippet of Parseable alert configuration, to demonstrate the fields re
 
 ```json
 {
-	"type": "alertmanager",
-	"endpoint": "http://localhost:9093/api/v2/alerts",
-	"username": "admin",
-	"password": "admin",
-	"skip_tls_check": false,
-	"repeat": {
-		"interval": "30s",
-		"times": 5
-	}
+    "name":"AlertManagerTarget",
+    "type": "alertManager",
+    "endpoint": "https://some.webhook.com",
+    "username": "username",
+    "password":"password",
+    "skipTlsCheck": true,
+    "notificationConfig": {
+        "interval": 3,
+        "times": 7
+    }
 }
 ```
 
-The `endpoint` field is the URL of the Alertmanager API endpoint. The `username` and `password` fields are the credentials for basic authentication. The `skip_tls_check` field is a boolean to skip TLS certificate verification. The `repeat` field is used to repeat the alert. If it is not set, Parseable will keep sending the alert (with 200s interval) till it is resolved (i.e. the alert is no longer firing).
+The `endpoint` field is the URL of the Alertmanager API endpoint. The `username` and `password` fields are the credentials for basic authentication. The `skipTlsCheck` field is a boolean to skip TLS certificate verification. The `notificationConfig` field is used to repeat the alert notification. If it is not set, Parseable will send the notification just once.
 
 Once Parseable alerts are configured to be sent to Alertmanager, you can use Alertmanager to manage the alerts. For example, you can use Alertmanager to route alerts to different receivers, such as email, PagerDuty, or OpsGenie. You can also use Alertmanager to silence alerts.
 
