@@ -2,204 +2,203 @@
 title: Alerts
 ---
 
-Parseable offers realtime alerting based on contents of incoming events. Each stream can have several alerts and each alert is evaluated independently.
+Parseable offers realtime alerting based on contents of incoming events. Each dataset can have several alerts and each alert is evaluated independently.
 
 ## How it works
 
-Alerts work in stream processing manner. For each alert configured for a stream, the server maintains an internal state machine that keeps track of the number of times the rule has been true. When the rule evaluates to true for the threshold specified (in the rule), the internal alert state changes to `firing` and the target is notified. When the rule evaluates to false, the alert state changes to `resolved` and the target is notified again with the resolved message.
+Alerts in Parseable work by monitoring your log data in real-time and triggering notifications when specific conditions are met. Here's how it works in simple terms:
 
-Alerts can be set via the Parseable UI.
+1. **Define conditions**: You set up rules that specify what to look for in your logs (like error codes, specific text patterns, or threshold values)
+2. **Automatic monitoring**: Parseable continuously checks incoming logs against these rules
+3. **Notification**: When a rule condition is met, Parseable sends notifications to your configured targets (like Slack or a webhook)
 
-## Alert types
+You can easily set up alerts through Parseable's user interface called Prism, which provides a simple way to configure all aspects of your alerts without writing complex code.
 
-You can configure any number of alerts for any stream. The alert evaluation rule can be configured to scan a single column or multiple columns.
+### What are targets?
 
-- Single column: Scan events for values in a single column, e.g. alerts like `send an alert when the status code is 500 for 3 consecutive times` or `send an alert when the message field contains 'fatal'`.
+Targets in Parseable alerts are the destinations where notifications are sent when an alert is triggered. Each alert can be configured to send notifications to multiple targets simultaneously. A target can be a notification service like Slack, a webhook endpoint, or an alert management system like Alertmanager.
 
-- Multiple columns: Scan events for values in several columns, e.g. alerts like `send an alert when the status code is 500 and the message field contains 'fatal'`.
-
-### Supported targets
-
-Parseable supports sending alerts to `Webhook`, `Slack`, and `Alertmanager` targets. You can configure multiple targets for each alert.
+When an alert condition is met, Parseable sends the alert message to all the targets specified in the alert configuration. Each target has its own configuration parameters, such as endpoint URLs, authentication credentials, and notification frequency settings.
 
 ### Configuration
 
-You can configure alerts via the Prism UI. Navigate to the stream for which you want to set alerts and click on the `Manage` section. Then navigate to `Alerts` section on the bottom right corner. You can add, edit, or delete alerts from this page.
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
 
-If you need to use the API calls instead, this section explains how to craft the alert configuration JSON. The configuration JSON has two top level fields, `version` and `alerts`. The version field specifies the version of alert specification to use. This is currently `v1`.
+<Tabs items={['Prism', 'API']}>
+  <Tab value="Prism">
+    You can configure alerts via the Prism UI. Follow these steps:
+    
+    1. Navigate to the Alerts page from the side navigation menu
+    2. Click on "Create Alert" to set up a new alert
+    3. Fill in the required fields (name, message, rule conditions, and targets)
+    4. Save your configuration
+  </Tab>
+  <Tab value="API">
+When configuring alerts via API, you'll need to understand how to use the `aggregates` key properly. This key is essential for defining the conditions that trigger your alerts based on aggregated data.  
 
-The `alerts` field contains an array of alert configurations. Each alert configuration has `name`, `message`, `rule`, and `targets` sections. See alert section for details on each field.
+#### Understanding Aggregation Configuration
 
-Here is sample alert configuration, with all the available options. Read the sections below for details on each field.
+The `aggregates` key describes the aggregations to be applied to the result of the SQL in `query`. Each aggregation consists of these components:
+
+| Component | Description |
+| --- | --- |
+| `aggregateFunction` | The function to apply (`avg`, `sum`, `count`, `min`, `max`) |
+| `column` | The column to apply the function to |
+| `operator` | Comparison operator (`>`, `<`, `=`, `!=`, `>=`, `<=`) |
+| `value` | The threshold value to compare against |
+| `conditions` | Additional filtering conditions (similar to SQL WHERE clauses) |
+
+#### Condition Limits
+
+Parseable imposes these limits on aggregation conditions:
+
+- Maximum of two conditions per aggregate config object
+- Conditions must be joined by either `AND` or `OR` (specified in the `operator` field)
+- Each condition can only compare a single column to a single value
+
+#### Example 1: Single Condition
+
+Consider this base query:
+
+```sql
+SELECT * FROM backend_logs
+```
+
+To create an alert when the average latency exceeds 200ms for successful calls (status=200):
 
 ```json
-{
-    "version": "v1",
-    "alerts": [
+"aggregateConfig":[
+  {
+    "aggregateFunction": "avg",
+    "column": "latency",
+    "operator": ">",
+    "value": "200",
+    "conditions": {
+      "operator": null,
+      "conditionConfig": [
         {
-            "name": "Alert: Server side error",
-            "message": "server reporting status as 500",
-            "rule": {
-                "type": "column",
-                "config": {
-                    "column": "status",
-                    "operator": "=",
-                    "value": 500,
-                    "repeats": 2
-                }
-            },
-            "targets": [
-                {
-                    "type": "alertmanager",
-                    "endpoint": "http://localhost:9093/api/v2/alerts",
-                    "username": "admin",
-                    "password": "admin",
-                    "skip_tls_check": false,
-                    "repeat": {
-                        "interval": "30s",
-                        "times": 5
-                    }
-                },
-                {
-                    "type": "webhook",
-                    "endpoint": "https://example.com/",
-                    "headers": {
-                        "Authorization": "Basic dXNlcjpwYXNz"
-                    },
-                    "skip_tls_check": false,
-                    "repeat": {
-                        "interval": "3m 20s",
-                        "times": 5
-                    }
-                },
-                {
-                    "type": "slack",
-                    "endpoint": "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX",
-                    "repeat": {
-                        "interval": "3m 20s",
-                        "times": 5
-                    }
-                }
-            ]
+          "column": "status",
+          "operator": "=",
+          "value": "200"
         }
-    ]
-}
-
-```
-
-These are the fields available in the alert configuration:
-
-| Variable Name | Required | Description |
-| --- | --- | --- |
-| name | Yes | Unique name to identify the alert. |
-| message | Yes | Message to be sent to the targets. See [message section](#message) |
-| rule | Yes | Condition that has to be true to trigger the alert. See [rules section](#rule) |
-| targets | Yes | An array of multiple targets. This means each alert can be configured to be sent to multiple targets. See [target section](#targets) |
-
-### Message
-
-The message field can be a static string or can be configured to dynamically populate the value of a certain column (in the event that triggered the alert). This is useful when you want to send the value of a certain column in the alert message. You can specify as many placeholders as you want in the message field.
-
-For example, if you want to send the value of the `status` column in the alert message, you can configure the message field as follows:
-
-```json
-"message": "{host} server reporting status as {status}"
-```
-
-Here `{host}` and `{status}` are placeholders that will be replaced with the value of the columns `host` and `status` in the event that triggered the alert.
-
-### Rule
-
-A rule specifies the condition under which an alert should be triggered. The rule field contains the following parameters:
-
-type: Specifies the rule type. Can be column or composite. Column type means scanning a single column, Composite types means scanning several columns per event.
-
-config: JSON object with details on rule configuration.
-
-
-#### Column Rule
-
-| Variable Name | Required | Description |
-| --- | --- | --- |
-| column | Yes | Column name to be evaluated. |
-| value | Yes | The value to compare against. |
-| operator | Yes | The operator field supports dynamic values based on the field data type selected under column section. For Numerical types, operator field can be one of the following: `=`, `!=`, `>`, `>=`, `<`, `<=`, `~`. Where ~ is for regex pattern match. For String types, operator field can be one of the following: `=`, `!=`, `=%`, `!%`, `~`. Where `=`, `!=` are for matching entire string, `%` is for checking if a string contains the value as substring and similarly `!%` is for checking that string does not contains value, `~` is for regex value. |
-| repeats | Yes | The number of times the rule has to be true before triggering the alert. This is useful to avoid false positives. For example, if you want to trigger an alert when the status code is 500 for 3 consecutive times, you can set repeats to 3. |
-| ignore_case | No | This is an optional field and is only applicable if the column specified under column section is of string type. If this field is set to true, the string comparison is case insensitive. |
-
-
-Sample column rule:
-
-```json
-"rule": {
-    "type": "column",
-    "config": {
-        "column": "status",
-        "operator": "=",
-        "value": 500,
-        "repeats": 2
+      ]
     }
-}
+  }
+]
 ```
 
-#### Composite Rule
+#### Example 2: Multiple Conditions with AND
 
-| Variable Name | Required | Description |
-| --- | --- | --- |
-| config | Yes | String format description for fields to track. Supports following operators for string columns: `=`, for equals, `!=` for not equal, `=%` for contains, `!%` for doesn't contain, `~` for regex. For numeric columns: `<=`, `>=`, `!=`, `<`, `>`, `=`. Rule expression can be combined using conditions such as `and` and `or`. Parentheses `()` can be used to explicitly define the order of evaluation for the rules. You can also surround any rule/expression with `!()` to negate it. |
-
-Sample composite rule:
+To alert when average latency exceeds 200ms for successful calls (status=200) AND a specific user:
 
 ```json
-"rule": {
-    "type": "composite",
-    "config": "(verb =% \"list\" or verb =% \"get\") and (objectRef_resource = \"secrets\" and user_username !% \"test\")"
-}
+"aggregateConfig": [
+  {
+    "aggregateFunction": "avg",
+    "column": "latency",
+    "operator": ">",
+    "value": "200",
+    "conditions": {
+      "operator": "and",
+      "conditionConfig": [
+        {
+          "column": "status",
+          "operator": "=",
+          "value": "200"
+        },
+        {
+          "column": "user_id",
+          "operator": "=",
+          "value": "someUserID"
+        }
+      ]
+    }
+  }
+]
 ```
 
-### Targets
+#### Example 3: Multiple Conditions with OR
+
+To alert when the count of errors exceeds 5 for either 4xx or 5xx status codes:
+
+```json
+"aggregateConfig": [
+  {
+    "aggregateFunction": "count",
+    "column": "*",
+    "operator": ">",
+    "value": "5",
+    "conditions": {
+      "operator": "or",
+      "conditionConfig": [
+        {
+          "column": "status",
+          "operator": "like",
+          "value": "4%"
+        },
+        {
+          "column": "status",
+          "operator": "like",
+          "value": "5%"
+        }
+      ]
+    }
+  }
+]
+```
+  </Tab>
+</Tabs>
+
+
+
+### **Supported targets**
+
+Parseable supports sending alerts to Webhook, Slack, and Alertmanager targets. You can configure multiple targets for each alert.
+
+#### **Target Configuration**
 
 Targets are the destinations where notifications are sent when an alert is triggered. The targets field is an array of target objects, each with the following common parameters:
 
 | Variable Name | Required | Description |
 | --- | --- | --- |
+| name | Yes | The name of target. |
 | type | Yes | The type of target. Can be alertmanager, webhook, or slack. |
 | endpoint | Yes | The URL of the target. |
-| repeat | No | Specify the frequency of sending the alert to the target. By default the repeat field has interval set to 200s and times set to 5. The timeout is specified in the Go duration format. For example, if you want to repeat the alert every 30 seconds, you can set repeat to 30s. If you want to repeat the alert every 5 minutes, you can set repeat to 5m. |
+| notificationConfig | No | Specify the frequency of sending the alert to the target. By default the `notificationConfig` field has interval set to 1 (minute) and times set to 1. `interval` accepts a `u64` and `times` accepts a `usize`. If you want the notification to be sent 5 times, once every minute, you would set `interval` to 1 and `times` to 5. |
 
 Sample target configuration:
+
 ```json
 {
-    "type": "alertmanager",
-    "endpoint": "http://localhost:9093/api/v2/alerts",
-    "username": "admin",
-    "password": "admin",
-    "skip_tls_check": false,
-    "repeat": {
-        "interval": "30s",
-        "times": 5
+    "name":"AlertManagerTarget",
+    "type": "alertManager",
+    "endpoint": "https://some.webhook.com",
+    "username": "username",
+    "password":"password",
+    "skipTlsCheck": true,
+    "notificationConfig": {
+        "interval": 3,
+        "times": 7
     }
-},
-...
+}
 ```
 
-Apart from above common parameters, there are few `target` specific parameters that can be configured. Refer the sections below for details.
+Apart from above common parameters, there are target-specific parameters that can be configured. Refer to the sections below for details.
 
-### Alertmanager 
+#### **Alertmanager**
 
-The alertmanager target can be used to send notifications to [Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/). Note that by default if you don't provide repeat configuration for this then Parseable will continue to send alerts to Alertmanager while it is active.
+The alertmanager target can be used to send notifications to [Alertmanager](https://github.com/prometheus/alertmanager) instance. Note that by default if you don't provide repeat configuration for this then Parseable will continue to send alerts to Alertmanager while it is active.
 
 Note that Alertmanager expects clients to continuously re-send alerts as long as they are still active (usually on the order of 30 seconds to 3 minutes). Avoid specifying `repeat.times` in configuration unless you want Parseable to stop re-sending alerts after specified number of times.
 
 | Variable Name | Required | Description |
 | --- | --- | --- |
 | endpoint | Yes | The URL of the Alertmanager api to send notifications to. Compatible with Alertmanager API V2 |
-| username | No | Username for basic auth. See [Prometheus Docs](https://prometheus.io/docs/alerting/latest/https/) on how to setup basic auth |
-| password | No | Password for basic auth. See [Prometheus Docs](https://prometheus.io/docs/alerting/latest/https/) on how to setup basic auth |
-| skip_tls_check | No | Whether to skip TLS verification when sending the alert to Alertmanager |
+| username | No | Username for basic auth. See [Prometheus Docs](https://prometheus.io/docs/alerting/latest/https/#http-traffic) on how to setup basic auth. |
+| password | No | Password for basic auth. |
+| skipTlsCheck | No | Whether to skip TLS verification when sending the alert to Alertmanager. |
 
-
-Example json sent by Parseable to Alertmanager. Note that `rule_config_*` may differ depending on the type of rule that triggered the alert.
+Example JSON sent by Parseable to Alertmanager. Note that `rule_config_*` may differ depending on the type of rule that triggered the alert.
 
 ```json
 {
@@ -217,26 +216,44 @@ Example json sent by Parseable to Alertmanager. Note that `rule_config_*` may di
     "annotations": {
         "message": "message that was set for this alert",
         "reason": "status column was equal to 500, 2 times"
-    },
-    ...
+    }
 }
 ```
 
-### Webhook
+#### **Webhook**
 
 The webhook target can be used to send notifications to a webhook URL. The target object contains the following parameters:
 
 | Variable Name | Required | Description |
 | --- | --- | --- |
 | endpoint | Yes | The URL of the webhook to send notifications to. |
-| headers | No | Any custom headers to include in the webhook request. |
-| skip_tls_check | No | Whether to skip TLS verification when sending the webhook request. |
+| headers | No | Any custom headers to include in the webhook request |
+| skipTlsCheck | No | Whether to skip TLS verification when sending the webhook request. |
 
-### Slack
+#### **Slack**
 
 The slack target can be used to send notifications to a Slack channel. The target object contains the following parameters:
 
 | Variable Name | Required | Description |
 | --- | --- | --- |
-| endpoint | Yes | The URL of the [Slack webhook](https://api.slack.com/messaging/webhooks) to send notifications to. |
+| endpoint | Yes | Slack webhook URL. Refer [Slack docs for details](https://api.slack.com/messaging/webhooks). |
 
+#### **Alert Configuration Fields**
+
+| Field | Description |
+| --- | --- |
+| `version` | Should be `v1` for now |
+| `severity` | Either `low`, `medium`, `high`, `critical` |
+| `title` | The title of the alert |
+| `stream` | The dataset on which the alert is being configured |
+| `alertType` | Should be `threshold` for now |
+| `targets` | An array of target IDs to which the notification will be sent |
+
+#### **Evaluation Configuration**
+
+`evalConfig` - For now the `evalConfig` is set to `rollingWindow`
+
+* `rollingWindow` - This is the only supported evaluation type for now. The start time and end time keep moving constantly
+  * `evalStart` - The start time for evaluation. Should be of `humantime` type
+  * `evalEnd` - Should be `now`
+  * `evalFrequency` - An integer describing after how many minutes should an evaluation be run
