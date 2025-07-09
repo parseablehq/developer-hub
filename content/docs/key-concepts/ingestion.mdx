@@ -6,6 +6,18 @@ You can send Log events to Parseable via HTTP POST requests with data as JSON pa
 
 You can also directly integrate Parseable with your application via [REST API](/docs/api/v1/ingest).
 
+<Callout type="info">
+Parseable supports custom HTTP headers with the following conventions:
+
+- Headers with the format `X-P-*` are automatically stored as columns in your dataset
+- The `X-P-` prefix is removed when creating the column name
+- Up to 10 custom header fields are supported per request
+- Column names are limited to 100 characters maximum (longer names will be automatically truncated)
+
+Example: A header `X-P-Environment: production` will create a column named `Environment` with the value `production`.
+</Callout>
+
+
 ## Flattening
 
 Nested JSON objects are automatically flattened. For example, the following JSON object
@@ -22,11 +34,11 @@ will be flattened to
 
 ```json
 {
-  "foo.bar": "baz"
+  "foo_bar": "baz"
 }
 ```
 
-before it gets stored. While querying, this field should be referred to as foo.bar. For example, select `foo.bar` from `<stream-name>`. The flattened field will be available in the schema as well.
+before it gets stored. While querying, this field should be referred to as foo_bar. For example, select `foo_bar` from `<stream-name>`. The flattened field will be available in the schema as well.
 
 ## Batching and Compression
 
