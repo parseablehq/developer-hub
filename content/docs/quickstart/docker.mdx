@@ -23,7 +23,7 @@ This will start Parseable on port 8000. You can access the Parseable Console at 
 
 ## Ingest data
 
-You can post log data to the dataset demo using a POST call to the dataset endpoint.
+You can post log data to the demo dataset using a POST call to the dataset endpoint.
 
 ```sh
 curl --location --request POST \
@@ -44,8 +44,10 @@ curl --location --request POST \
 ]'
 ```
 
-Parseable uses datasets to organize log data. Here we posted a sample log data to the dataset demo, by adding the header `X-P-Stream: demo` in the request.
+Parseable uses datasets to organize log data. Here we posted a sample log data to the demo dataset, by adding the header `X-P-Stream: demo` in the request.
 
 ## Query data
 
-To query the data via Console, login at http://localhost:8000. Default username and password is `admin:admin`. Then select the dataset demo and correct time stamp.
+To query the data via Console, login at http://localhost:8000. Default username and password is `admin:admin`. Then select the demo dataset under the log explorer page.
+
+![Query data](./static/log-explorer.png)
