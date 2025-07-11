@@ -1,0 +1,83 @@
+---
+title: Quickstart Guide
+---
+import { IconChartCohort, IconDirections, IconCloudDataConnection, IconBrandInertia, IconFileTypeSql, IconServerBolt,
+ IconSchema, IconFileDigitFilled, IconCloudComputing } from '@tabler/icons-react';
+
+Get Parseable up and running in minutes with our recommended Docker setup. This guide will help you quickly deploy Parseable and start ingesting logs.
+
+## Prerequisites
+
+- **Docker**: Docker Engine (version 20.10.0 or later)
+- **System Requirements**: Minimum 2 CPU cores and 4GB RAM
+
+## Deploy with Docker
+
+### 1. Start Parseable with Docker run
+
+```bash
+docker run -p 8000:8000 \
+-p 8001:8001 \
+-p 8002:8002 \
+-v /tmp/parseable/data:/parseable/data \
+-v /tmp/parseable/staging:/parseable/staging \
+-e P_FS_DIR=/parseable/data \
+-e P_STAGING_DIR=/parseable/staging \
+containers.parseable.com/parseable/parseable:latest \
+parseable local-store
+```
+
+### 2. Access the Parseable UI
+
+Open your browser and navigate to [http://localhost:8000](http://localhost:8000)
+
+Login with the default credentials:
+- Username: `admin`
+- Password: `admin`
+
+> ⚠️ **Warning**: Remember to change the default credentials in a production environment!
+
+### 3. Send Your First Logs
+
+Once Parseable is running, you can create a log stream and send your first logs:
+
+// TODO: Add Script
+
+### 4. Query your logs
+
+Navigate to the Parseable UI at [http://localhost:8000](http://localhost:8000) and select your `my-first-stream` to view your logs.
+
+## Other Installation Options
+
+While Docker is the quickest way to get started, Parseable supports multiple deployment options:
+
+<Cards>
+<Card href="/installation/standalone/k8s" icon={<IconSchema className="text-purple-600" />} title='Kubernetes (Helm)'>
+You can use Helm charts on Kubernetes.
+</Card>
+
+<Card href="/installation/standalone/linux" icon={<IconFileDigitFilled className="text-purple-600" />} title='Binary'>
+You can use the Parseable binary.
+</Card>
+
+<Card href="/installation/distributed/k8s-helm" icon={<IconCloudComputing className="text-purple-600" />} title='Distributed'>
+We recommend using Parseable distributed mode for production deployments.
+</Card>
+</Cards>
+
+
+## Next Steps
+
+<Cards>
+<Card href="/key-concepts/data-model" icon={<IconChartCohort className="text-purple-600" />} title='Modelling Data'>
+Learn when to create datasets, how to aggregate observability data, use schemas, and manage your data effectively.
+</Card>
+
+<Card href="/key-concepts/ingestion" icon={<IconDirections className="text-purple-600" />} title='Ingestion'>
+Learn how to ingest, manage and query OpenTelemetry logs, metrics or traces natively. Zero configuration needed. 
+</Card>
+
+<Card href="/key-concepts/high-availability" icon={<IconServerBolt className="text-purple-600" />} title='High Availability'>
+Learn how to set up Parseable for high availability.
+</Card>
+</Cards>
