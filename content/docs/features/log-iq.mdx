@@ -41,6 +41,61 @@ Log IQ requires specific HTTP headers when ingesting data to properly identify a
 
 > **Note:** Even if your unstructured data doesn't match any of the supported formats listed below, you must still specify both headers. Choose the format that most closely aligns with your log structure.
 
+### Example: Processing a Syslog Entry
+
+Let's walk through a practical example of how Log IQ processes a syslog entry:
+
+**1. Original log sent by an agent (e.g., FluentBit):**
+
+```json
+{
+    "log": "2025-07-11T14:57:33.000111+05:30 node01 exporter[9012]: [2025/07/11 14:57:33] [error] [output:http:http.8] Failed to push metrics to endpoint /metrics"
+}
+```
+
+**2. HTTP headers used when sending to Parseable:**
+
+```
+X-P-Log-Source: syslog_log
+X-P-Extract-Log: log
+```
+
+**3. Parseable's processed output:**
+
+```json
+{
+  "body": "[2025/07/11 14:57:33] [error] [output:http:http.8] Failed to push metrics to endpoint /metrics",
+  "log": "2025-07-11T14:57:33.000111+05:30 node01 exporter[9012]: [2025/07/11 14:57:33] [error] [output:http:http.8] Failed to push metrics to endpoint /metrics",
+  "log_hostname": "node01",
+  "log_pid": "9012",
+  "log_procname": "exporter",
+  "log_syslog_tag": "exporter[9012]",
+  "p_format": "syslog_log",
+  "p_format_verified": "true",
+  "p_src_ip": "127.0.0.1",
+  "p_timestamp": "2025-07-11T09:20:23.019",
+  "p_user_agent": "PostmanRuntime/7.44.1",
+  "timestamp": "2025-07-11T09:27:33"
+}
+```
+
+In this example:
+
+1. The agent (like FluentBit) collects the log and places it in the `log` field
+2. Parseable receives this with the appropriate headers
+3. The system identifies it as a syslog format and extracts structured fields:
+   - `log_hostname`: The host that generated the log ("node01")
+   - `log_pid`: The process ID ("9012")
+   - `log_procname`: The process name ("exporter")
+   - `log_syslog_tag`: The syslog tag ("exporter[9012]")
+   - `body`: The actual message content
+4. Parseable adds its metadata fields:
+   - `p_format`: The detected format ("syslog_log")
+   - `p_format_verified`: Confirmation that the format was successfully detected
+   - Other `p_` prefixed fields with request metadata
+
+This structured data is now ready for efficient querying and analysis.
+
 ### Supported Formats
 
 Parseable Log IQ supports a wide range of log formats. You can specify these formats using the `X-P-Log-Source` header when ingesting logs. The currently supported formats include:
