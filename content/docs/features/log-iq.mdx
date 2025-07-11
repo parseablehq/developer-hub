@@ -10,18 +10,36 @@ Log IQ allows identifying the format of the unstructured log data, transforming 
 
 ## How Log IQ works
 
-To enable Log IQ, Parseable requires two headers in the HTTP request while ingesting the log data:
+Log IQ requires specific HTTP headers when ingesting data to properly identify and parse log formats:
 
-- `X-P-Log-Source` - Identifies the known log format name - eg. `syslog`, `nginx_access`, `zookeeper` etc. 
-- `X-P-Extract-Log` - Specifies which field in the incoming JSON contains the unstructured log, this has to be at the root level in the ingested event. The field name is usually `log`.
+### Required Headers
 
-Parseable extracts the log message and applies regex patterns for the specified source type, and validates if all expected fields are present in the event. Without the headers, schema detection is bypassed, and the event is processed as-is.
+- `X-P-Log-Source` - **Mandatory** - Identifies the log format name (e.g., `syslog`, `nginx_access`, `zookeeper`)
+- `X-P-Extract-Log` - **Required for unstructured data** - Specifies which field in the incoming JSON contains the raw log text (typically `log`)
 
-After successful detection, a custom field `p_format` is added to the log event containing the log source name and the stream info is updated with an array of detected log sources.
+### Processing Logic
 
-Parseable UI (Prism) automatically displays filters on the field `p_format`.
+**For structured data:**
+- Only `X-P-Log-Source` is required
+- Parseable assumes the data is already in a structured format
+- The specified format is used for validation and additional processing
 
-If only `X-P-Log-Source` is present then we assume your data is structured. If log format is not detected then we add `p_format_verified=false` to the event. Data is still ingested.
+**For unstructured data:**
+- Both `X-P-Log-Source` and `X-P-Extract-Log` are required
+- Parseable extracts the raw log text from the field specified in `X-P-Extract-Log`
+- The system applies regex patterns based on the format specified in `X-P-Log-Source`
+- If the content matches the format, it's parsed into structured fields
+- If the content doesn't match the format, the original value is retained in the specified field
+
+### Outcome
+
+- After successful format detection, a `p_format` field is added to the log event containing the log source name
+- The stream info is updated with an array of detected log sources
+- Parseable UI (Prism) automatically displays filters on the `p_format` field
+- If the log format is not detected, `p_format_verified=false` is added to the event
+- Data is always ingested, regardless of format detection success
+
+> **Note:** Even if your unstructured data doesn't match any of the supported formats listed below, you must still specify both headers. Choose the format that most closely aligns with your log structure.
 
 ### Supported Formats
 
