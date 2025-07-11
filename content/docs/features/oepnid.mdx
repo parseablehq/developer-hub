@@ -40,6 +40,16 @@ Follow below steps to set default OIDC role on Parseable instance:
 
 Once created, Click on "Set Default OIDC Role", select the role just created from the dropdown and click on "Set Default OIDC Role".
 
+### Multi-Role Support
+
+Parseable's OIDC integration supports **assigning multiple roles to a single user**, providing flexible, fine-grained access control for your team.
+
+**Benefits:**
+
+* Give a DevOps engineer both `admin` and `reader` roles for different datasets
+* Grant a user `editor` + `reader` permissions, so they can review logs across datasets without manual role shuffling
+* All roles are respected in UI and API, just assign them in your OIDC provider and Parseable does the rest
+
 ### Map user groups to roles on Parseable
 To map your user group to a role on Parseable you must first create that role on Parseable instance with the same name as the user group from your identity provider. To create roles in Parseable, you can use the Create a role API. This allows you to define custom roles for users, granting them specific privileges and permissions within the application.
 
