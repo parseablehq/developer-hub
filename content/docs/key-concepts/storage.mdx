@@ -2,14 +2,113 @@
 title: Storage
 ---
 
-### Overview
+Parseable is fundamentally **object store-first**: every byte that flows through the platform is persisted in cloud storage, enabling infinite scalability and cost-effective long-term retention.
 
-Parseable is object store–first: every byte that flows through the platform is persisted in inexpensive, infinitely scalable commodity storage such as Amazon S3, Google Cloud Storage, Azure Blob, or any S3‑compatible service (MinIO, Wasabi, DigitalOcean Spaces, etc.).
+## Storage Architecture
 
-We lean on two community crates:
+Parseable uses Apache Arrow and Parquet as its underlying data structures, optimized for analytical workloads. This columnar format provides:
 
-`objectstore` – a vendor‑agnostic Rust SDK that abstracts away the quirks of each provider (authentication, region handling, presigned URLs, retry semantics).
+- **Compression efficiency**: Significantly reduced storage costs
+- **Query performance**: Fast analytical queries over compressed data
+- **Schema evolution**: Flexible data structure changes over time
+- **Cross-platform compatibility**: Standard format readable by many tools
 
-`limitstore` – a thin wrapper that throttles concurrent calls so we never overwhelm the remote API or your network egress budget.
+## Supported Storage Providers
 
-Together they give us uniform APIs, predictable throughput, and consistent error handling across clouds.
+Parseable supports multiple cloud storage providers and S3-compatible services:
+
+### Cloud Providers
+- **AWS S3**: Native integration with all AWS regions
+- **Azure Blob Storage**: Full support for Azure storage accounts
+- **Google Cloud Storage**: Compatible through S3 API
+
+### S3-Compatible Services
+- **MinIO**: Self-hosted object storage
+- **Wasabi**: Cost-optimized cloud storage
+- **DigitalOcean Spaces**: Developer-friendly object storage
+- **Backblaze B2**: Affordable cloud storage
+
+## Authentication Models
+
+Parseable supports multiple authentication mechanisms to fit different deployment scenarios:
+
+### Static Credentials
+- Access keys and secret keys for direct authentication
+- Suitable for development and simple deployments
+- Requires careful credential management
+
+### Dynamic Credentials
+- **IAM Roles**: For AWS EC2/ECS deployments
+- **Instance Metadata Service (IMDS)**: Automatic credential rotation
+- **Container Credentials**: For containerized environments
+- **Azure AD Integration**: Service principal authentication
+
+### Security Features
+- **Encryption at Rest**: Support for server-side encryption (SSE)
+- **Customer-Managed Keys**: SSE-C for custom encryption keys
+- **TLS in Transit**: Secure data transmission
+- **Access Control**: Fine-grained permissions through cloud IAM
+
+## Data Organization
+
+Parseable organizes data in object storage using a hierarchical structure:
+
+```
+bucket/
+├── streams/
+│   ├── app-logs/
+│   │   ├── year=2024/
+│   │   │   ├── month=01/
+│   │   │   │   ├── day=15/
+│   │   │   │   │   └── data.parquet
+│   └── system-logs/
+└── metadata/
+    └── schemas/
+```
+
+### Partitioning Strategy
+- **Time-based partitioning**: Efficient querying by time ranges
+- **Stream isolation**: Separate storage per log stream
+- **Metadata separation**: Schema and configuration data stored separately
+
+## Performance Characteristics
+
+### Throughput Management
+- **Connection pooling**: Efficient resource utilization
+- **Concurrent uploads**: Parallel data ingestion
+- **Rate limiting**: Prevents overwhelming storage APIs
+- **Retry mechanisms**: Automatic handling of transient failures
+
+### Cost Optimization
+- **Compression**: Parquet format reduces storage costs by 80-90%
+- **Lifecycle policies**: Automatic data archiving and deletion
+- **Regional optimization**: Data stored in optimal regions
+- **Bandwidth efficiency**: Minimal data transfer overhead
+
+## Reliability and Durability
+
+### Built-in Resilience
+- **Multi-region replication**: Available through cloud provider features
+- **Automatic backups**: Leverages cloud storage durability (99.999999999%)
+- **Consistency guarantees**: Strong consistency for all operations
+- **Error handling**: Comprehensive retry and fallback mechanisms
+
+### Monitoring and Observability
+- **Storage metrics**: Track usage, costs, and performance
+- **Health checks**: Continuous storage connectivity monitoring
+- **Alerting**: Proactive notification of storage issues
+
+## Integration Benefits
+
+### Ecosystem Compatibility
+- **Analytics tools**: Direct querying with tools like Apache Spark, Presto
+- **Data lakes**: Seamless integration with existing data infrastructure
+- **Backup solutions**: Standard formats enable easy data migration
+- **Compliance**: Leverage cloud provider compliance certifications
+
+### Operational Advantages
+- **Zero maintenance**: No storage infrastructure to manage
+- **Infinite scale**: Automatic scaling with usage
+- **Global availability**: Deploy anywhere with cloud presence
+- **Cost transparency**: Pay only for what you store and transfer
+
