@@ -2,6 +2,40 @@
 title: Release Notes
 ---
 
+## v2.4.0 (July 22, 2025)
+
+It's time for a major release we are upgrading from v2.3.x to v2.4.0.
+
+### 1. AI Powered Summarization 
+
+With v2.4.0, we are excited to introduce AI-powered summarization to Parseable. This feature allows you to generate summaries of your dataset using AI, making it easier to understand and analyze your data.
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/mKjn_uNLZV0?si=J2A1SmWiQERsalMs" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+### 2. User Groups
+
+We have introduced new User Groups feature to Parseable. This feature allows you to group users and assign them roles (Admin, Editor, Writer, Reader, Ingestor) together.Everything else in RBAC stays the same, Admin/Editor are platform-wide, Writer/Reader are per resource, Ingestor is dataset-only.
+
+![](./static/rbac.png)
+
+### 3. Dashboards 
+
+We have introduced dashboards to Parseable. This feature allows you to create dashboards of types `time series`, `bar`, `line` and `area` for your dataset. 
+
+![](./static/dashboards.png)
+
+### 4. New Onboarding flows
+
+With this release, we've completely redesigned the first-time user experience. Now, when you download and install Parseable, you'll be greeted with an onboarding wizard to try demo data. The wizard takes just 3 minutes to complete and provisions your environment with pre-configured Alerts, interactive Dashboards, practical Saved Filters, and example SQL queries, all built on a dataset of 5,000 events. 
+
+![](./static/onboarding.png)
+![](./static/onboarding-complete.png)
+
+### 5. Other Enhancements
+
+- Added vendor specific support for GCP, the environment variable `TBA` can be used to set the object store to GCS. 
+- We now detect schema before creation of dataset. 
+
 ## v2.3.5 (June 26, 2025)
 
 We’re excited to roll out Parseable **v2.3.5**, a release packed with features that make exploring, debugging, and managing your observability data simpler and more powerful than ever. Here’s everything new:
