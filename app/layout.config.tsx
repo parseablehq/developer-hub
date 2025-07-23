@@ -1,5 +1,5 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
-import { IconMonkeybar, IconApi, IconMapShare } from "@tabler/icons-react";
+import { IconMonkeybar, IconApi, IconMapShare, IconAi } from "@tabler/icons-react";
 
 /**
  * Shared layout configurations

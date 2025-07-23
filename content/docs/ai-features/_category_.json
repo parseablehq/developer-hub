@@ -1,0 +1,12 @@
+{
+  "label": "AI Features",
+  "collapsible": true,
+  "collapsed": false,
+  "position": 5,
+  "link": {
+    "type": "generated-index",
+    "title": "AI Features",
+    "description": "AI Features available in Parseable."
+  },
+  "customProps": {}
+}
