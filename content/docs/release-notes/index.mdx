@@ -2,6 +2,190 @@
 title: Release Notes
 ---
 
+## v2.4.0 (July 22, 2025)
+
+It’s that time again, a new Parseable release, and this one’s big. We’re moving up from v2.3.x to v2.4.0. Read on for all the highlights, new features, and tips to get the most out of v2.4.0
+
+### 1. AI Powered Summarization
+
+<Callout type="info">
+  <EnterpriseBadge /> This feature requires an Enterprise license.
+</Callout>
+
+We're excited to introduce AI-powered summarization, a powerful new feature designed to simplify data analysis and debugging in Parseable.
+
+**How It Works:**
+
+- Select any dataset within Parseable.
+
+- Click on `Summarize my data` to automatically generate a concise overview of your data.
+
+![](./static/summarize-homepage.png)
+
+- The AI identifies key patterns, anomalies, and potential faults in your dataset.
+
+- Receive actionable recommendations and SQL queries to drill deeper into specific issues directly from the summary.
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/mKjn_uNLZV0?si=J2A1SmWiQERsalMs" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+**Benefits:**
+
+- Quickly gain insights without manually combing through extensive datasets.
+
+- Reduce troubleshooting time by pinpointing anomalies and root causes effortlessly.
+
+- Simplify collaboration by sharing clear, concise summaries across your team.
+
+- Leverage AI-driven recommendations to proactively address issues before they escalate.
+
+**Example:**
+
+Imagine you’re troubleshooting elevated error rates in your logs. With AI-powered summarization, Parseable instantly highlights:
+
+- An unusual spike in errors between specific timestamps.
+
+- Affected services and hosts.
+
+- Suggested SQL queries to drill down further, such as:
+
+```sql
+SELECT host, COUNT(*) as error_count
+FROM logs
+WHERE status='error' AND timestamp BETWEEN '2025-07-20T00:00:00' AND '2025-07-20T06:00:00'
+GROUP BY host
+ORDER BY error_count DESC;
+```
+
+### 2. User Groups
+
+<Callout type="info">
+  <EnterpriseBadge /> This feature requires an Enterprise license.
+</Callout>
+
+We’ve added **User Groups** to Parseable’s RBAC system to make access management enterprise ready.
+
+![User Groups](./static/groups.png)  
+
+**How It Works:**
+
+- Create groups for teams, projects, or any logical set of users.
+
+- Assign roles (Admin, Editor, Writer, Reader, Ingestor) to the entire group in one go.
+
+- Users in a group instantly inherit all permissions assigned to that group.
+
+**All previous RBAC rules remain unchanged:**
+
+- Admin/Editor: Roles apply platform-wide (Editor is owner of all datasets but can’t manage users/groups or see cluster details).
+
+- Writer/Reader: Assignable at the resource level—fine-grained access for specific datasets or resources.
+
+- Ingestor: Can only be assigned at the dataset level (for managing ingest operations).
+
+![](./static/rbac.png)
+
+
+**Benefits:**
+
+- No more repetitive, user-by-user role assignments.
+
+- Simplifies audits and permission reviews.
+
+**Example:**
+
+Say your SRE team needs full write access to all logs, while support staff should only view error logs:
+
+- Create an “SRE” group and give it Writer on all datasets.
+
+- Create a “Support” group with Reader on the errors dataset.
+
+- Onboard a new SRE? Just add them to the group—done.
+
+### 3. Introducing Dashboards in Parseable
+
+Dashboards are here! Now you can visualize your data in Parseable, your way.
+
+![](./static/dashboards.png)
+
+**How It Works:**
+
+- **Start from the Side Nav:** Head over to Dashboards in the sidebar and hit Create New.
+
+- **Name & Tag:** Give your dashboard a name and a tag (for easy organizing), then click Create Dashboard.
+
+- **Build Your Canvas:** Select your new dashboard to land on the dashboard canvas. Click Add Tiles to start building charts.
+
+- **Chart Builder Flow:** Choose your chart type: Timeseries, Line, Bar, or Area.
+
+![](./static/chart-builder.png)
+
+  - Select the dataset you want to visualize.
+
+  - See a live preview as you build.
+
+  - Pick the plot fields from your dataset, aggregate/group/sort on the x-axis, and set your y-axis (typically count, time, or number).
+
+  - Want a quick table instead? Just click Table in the top right, skip the chart setup!
+
+  - Style your chart as you like, then hit Create.
+
+- **Save and Favorite:** Add as many tiles as you need, then save your dashboard. You can also mark dashboards as favorites for quick access later.
+
+**Benefits:**
+
+- Instantly visualize logs and metrics, no need to export or use external tools.
+
+- Flexible charting with live previews and quick customization.
+
+- Organize dashboards by tags, share them with your team, and pin your favorites.
+
+**Example:**
+
+- Want to monitor API error rates over time?
+
+- Create a dashboard called “API Health,” tag it “ops.”
+
+- Add a Timeseries chart for error counts from your logs.
+
+- Save it, mark as favorite—and you’ve got a live, auto-updating view for your team.
+
+
+### 4. All-New Onboarding Wizard 
+
+Getting started with Parseable just got a whole lot easier. With this release, we’ve overhauled the first-time user experience:
+![](./static/onboarding.png)
+![](./static/onboarding-complete.png)
+
+**How It Works:**
+
+- Right after installation, you’re greeted by an onboarding wizard.
+
+- In just 3 minutes, the wizard sets up everything you need to explore Parseable:
+
+  - **Demo Data:** A ready-made dataset of 5,000 events.
+
+  - **Pre-configured Alerts:** See how to catch spikes and anomalies out of the box.
+
+  - **Interactive Dashboards:** Instantly visualize and play with your sample data.
+
+  - **Practical Saved Filters:** Jump straight into real-world troubleshooting examples.
+
+  - **Example SQL Queries:** Learn how to slice and dice your data with practical queries.
+
+### 5. Native GCP Object Store Support
+
+Parseable now supports Google Cloud Storage (GCS) as a native object store backend.
+
+**How It Works:**
+
+- Set the following environment variables when starting Parseable:
+
+```bash
+GOOGLE_APPLICATION_CREDENTIALS=/parseable/svc/${GCS_CREDENTIALS_FILE:-key.json}
+P_GCS_BUCKET=<your-bucket-name>
+```
+- Parseable will use your specified GCS bucket for all data storage.
+
 ## v2.3.5 (June 26, 2025)
 
 We’re excited to roll out Parseable **v2.3.5**, a release packed with features that make exploring, debugging, and managing your observability data simpler and more powerful than ever. Here’s everything new:
@@ -35,6 +219,10 @@ Troubleshooting an incident in the `payments` service?
 * Perfect for SREs and devs who want fast, repeatable root cause analysis.
 
 ### 2. **AI-Powered Forecasts—Now Available for Filters**
+
+<Callout type="info">
+  <EnterpriseBadge /> This feature requires an Enterprise license.
+</Callout>
 
 We’ve extended our **AI-based ingestion forecasting** to work with *any* filter you apply. This means you can select a filtered view (e.g., just logs for a specific team or region) and get **automatic predictions** for future log volumes based on your selection.
 
