@@ -33,7 +33,7 @@ With this release, we've completely redesigned the first-time user experience. N
 
 ### 5. Other Enhancements
 
-- Added vendor specific support for GCP, the environment variable `TBA` can be used to set the object store to GCS. 
+- Added vendor specific support for GCP, the environment variable `GOOGLE_APPLICATION_CREDENTIALS=/parseable/svc/${GCS_CREDENTIALS_FILE:-key.json}` and `P_GCS_BUCKET=<bucket name>` can be used to set the object store to GCS. 
 - We now detect schema before creation of dataset. 
 
 ## v2.3.5 (June 26, 2025)
