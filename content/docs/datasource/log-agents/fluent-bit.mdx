@@ -427,3 +427,43 @@ Why use a parser?
 - Extracts structured fields from JSON logs.
 - Converts timestamps into a standard format.
     
+### Ingesting Prometheus Metrics in Parseable
+Fluent Bit can also be used to collect logs and metrics from a Prometheus-based endpoint into Parseable. This is useful for monitoring and alerting purposes. You can use the [Prometheus scrape Metrics Input plugin](https://docs.fluentbit.io/manual/data-pipeline/inputs/prometheus-scrape-metrics) to scrape metrics from Prometheus endpoints and send them to Parseable using the [OpenTelemetry Output plugin](https://docs.fluentbit.io/manual/data-pipeline/outputs/opentelemetry).
+The opentelemetry output plugin allows you to submit Logs, Metrics, or Traces to Parseable's OpenTelemetry endpoint using the OpenTelemetry Protocol (OTLP).
+Here is an example configuration to scrape metrics from a Prometheus endpoint and send them to Parseable:
+
+```ini
+[SERVICE]
+    Flush         1
+    Log_level     info
+    Daemon        Off
+
+[INPUT]
+    Name          prometheus_scrape
+    Tag           parseable.demo.metrics
+    Host          demo.parseable.com
+    Port          443
+    Tls           On
+    Tls.Verify    Off
+    Metrics_path  /api/v1/metrics
+    Http_User     admin
+    Http_Passwd   admin
+    Scrape_interval 10
+
+[OUTPUT]
+    Name          opentelemetry
+    Match         parseable.demo.metrics
+    Host          13.217.53.213
+    Port          8010
+    Metrics_uri   /v1/metrics
+    Log_response_payload True
+    Tls           Off
+    Http_User     admin
+    Http_Passwd   admin
+    Header        X-P-Stream parseablemetrics
+    Header        X-P-Log-Source otel-metrics
+    add_label     app fluent-bit
+    add_label     source_host demo.parseable.com
+    add_label     environment demo
+
+This example configuration scrapes metrics from a Prometheus endpoint and sends them to another Parseable endpoint using the OpenTelemetry output plugin.
