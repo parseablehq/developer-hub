@@ -48,7 +48,7 @@ Wherever applicable, we recommend enabling the log agent's compression and batch
 
 Correct time is critical to understand the proper sequence of events. Timestamps are important for debugging, analytics, and deriving transactions. We recommend that you include a timestamp in your log events formatted in RFC3339 format.
 
-Parseable uses the event-received timestamp and adds it to the log event in the field `p_timestamp`. This ensures there is a time reference in the log event, even if the original event doesn't have a timestamp. If you'd like to use your own timestamp instead for partitioning of data, please refer the documentation here.
+Parseable uses the event-received timestamp and adds it to the log event in the field `p_timestamp`. This ensures there is a time reference in the log event, even if the original event doesn't have a timestamp.
 
 ## Staging
 

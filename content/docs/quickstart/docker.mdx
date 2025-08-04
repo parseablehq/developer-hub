@@ -3,9 +3,9 @@ title: Docker Image
 sidebar_position: 2
 ---
 
-## Start Parseable
+Ensure Docker is installed on your machine. Refer to [this doc](https://www.docker.com/products/docker-desktop/) to install Docker.
 
-If you don't have the Docker installed already, refer to [this doc](https://www.docker.com/products/docker-desktop/) to install Docker on your machine.
+## Start Parseable
 
 ```sh
 docker run -p 8000:8000 \
@@ -15,7 +15,7 @@ docker run -p 8000:8000 \
 -v /tmp/parseable/staging:/parseable/staging \
 -e P_FS_DIR=/parseable/data \
 -e P_STAGING_DIR=/parseable/staging \
-containers.parseable.com/parseable/parseable:latest \
+parseable/parseable:latest \
 parseable local-store
 ```
 

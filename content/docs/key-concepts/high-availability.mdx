@@ -3,7 +3,7 @@ title: High Availability
 ---
 
 <Callout type="info">
-  <EnterpriseBadge /> Prism, Distributed Query and Indexor nodes are Enterprise-only features and cannot be deployed with OSS versions.
+  <EnterpriseBadge /> Prism, Distributed Query and Indexer nodes are Enterprise-only features and cannot be deployed with OSS versions.
 </Callout>
 
 Parseable supports a distributed, high-availability mode for production use cases where downtime is not an option. The distributed setup is designed to ensure fault tolerance and high availability for log ingestion.
@@ -12,21 +12,7 @@ The distributed setup consists of multiple ingestion and query server and a S3 (
 
 The Query servers use metadata stored in the object store to query the data. The query server uses the Parseable manifest file and the Parquet footers in tandem to ensure that the data is read in fewest possible object store API calls.
 
-## Architecture
-
-Parseable distributed mode is based on a completely decoupled design with clear segregation between the compute and storage. Different components like the ingestor and querier, are on independent paths, and can be scaled independently.
-
-### Minimum Requirements
-
-A production-ready high availability deployment requires at minimum:
-- 1 Prism node
-- 1 Querier node
-- 1 Ingestor node
-- 1 Indexor node (for search functionality)
-
-It's recommended to keep at least one ingestor node live at all times to ensure continuous data ingestion, even during maintenance or upgrades.
-
-### Node Functions
+## Node Functions
 
 - **Prism Node**: Handles the Parseable UI and all user requests except for query and search operations. The Prism node is designed to be as compute efficient as the querier node.
 
@@ -34,7 +20,7 @@ It's recommended to keep at least one ingestor node live at all times to ensure 
 
 - **Ingestor Node**: Processes incoming log events. Each ingestor creates its own set of metadata and data files in the object storage system, allowing for simple scaling as workloads change.
 
-- **Indexor Node**: Manages indexing and search functionality.
+- **Indexer Node**: Manages indexing and search functionality.
 
 ## High Availability
 
@@ -64,31 +50,4 @@ For optimal performance, we recommend the following specifications for each node
 | Ingest | 8 | 16 GiB |
 | Index | 16 | 32 GiB |
 
-> **Prism Node**: The Prism node requires similar compute and storage resources as the querier node because it handles all user interface operations and administrative requests. 
-
-## Migration Paths
-
-### Standalone to Distributed
-
-If you're already running Parseable in standalone mode and want to migrate to distributed mode, follow these steps:
-
-1. Stop the existing standalone server
-2. Add the environment variable `P_MODE=Prism` to configure the node as a Prism node
-3. Start the server in distributed mode
-
-The server will automatically migrate the metadata and other relevant manifest files to the distributed mode. After setting up the Prism node, you can add additional nodes (querier, ingestor, indexor) to complete your distributed deployment.
-
-### Parseable OSS to Enterprise
-
-If you're currently running Parseable OSS in distributed mode, the migration process is straightforward:
-
-1. Deploy a new Prism node using the Parseable Enterprise image/binary
-2. Configure the Prism node to use the same S3 bucket as your existing deployment
-3. Start the Prism node
-4. Start an Index node for search capabilities
-
-Your existing OSS nodes will automatically be incorporated into the Enterprise cluster with no additional configuration required.
-
-<Callout type="info">
-This is a one-way and one-time process. It is not possible to move from a distributed deployment back to a standalone deployment.
-</Callout>
+The Prism node requires similar compute and storage resources as the querier node because it handles all user interface operations and administrative requests. 
