@@ -34,9 +34,7 @@ export default function MainPage() {
             Welcome to Parseable Documentation
           </h1>
           <p className="text-lg dark:text-slate-300 text-slate-500 mb-10 max-w-3xl mx-auto">
-            Parseable is a unified observability platform. It is built to handle
-            large volumes of O11Y data, with a focus on efficient data
-            ingestion, storage and fast querying.
+            Parseable is a unified observability platform, built to extract insights from telemetry data.
           </p>
           <div className="max-w-2xl mx-auto">
             <div className="relative flex flex-col sm:flex-row items-stretch sm:items-center bg-white dark:bg-slate-800 rounded-lg overflow-hidden">
