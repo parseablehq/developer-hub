@@ -20,7 +20,7 @@ export default function DebugEnvPage() {
       
       <h2>Instructions</h2>
       <div style={{ background: '#fff3cd', padding: '15px', borderRadius: '5px' }}>
-        <p>If variables show as 'undefined' on Vercel:</p>
+        <p>If variables show as &apos;undefined&apos; on Vercel:</p>
         <ol>
           <li>Go to Vercel Dashboard → Your Project → Settings → Environment Variables</li>
           <li>Add/check these variables:
@@ -29,7 +29,7 @@ export default function DebugEnvPage() {
               <li><code>NEXT_PUBLIC_KOALA_PUBLIC_API_KEY</code></li>
             </ul>
           </li>
-          <li>Make sure they're enabled for <strong>Preview</strong> and <strong>Production</strong> environments</li>
+          <li>Make sure they&apos;re enabled for <strong>Preview</strong> and <strong>Production</strong> environments</li>
           <li>Redeploy after adding/updating environment variables</li>
         </ol>
       </div>
