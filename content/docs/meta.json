@@ -1,6 +1,7 @@
 {
   "title": "Documentation",
   "pages": [
+    "ai-features",
     "---Overview---",
     "introduction",
     "quickstart",
