@@ -16,11 +16,20 @@ Threshold alerts trigger when a metric crosses a defined boundary. For example, 
 ![](./static/threshold.png)
 
 ### Anomaly Detection
+
+<Callout type="info">
+  <EnterpriseBadge /> This feature requires an Enterprise license.
+</Callout>
 Anomaly Detection alerts use machine learning to identify unusual patterns in your data. These alerts automatically detect deviations from normal behavior without requiring you to set specific thresholds.
 
 ![](./static/anomaly-detection.png)
 
 ### Forecasting
+
+<Callout type="info">
+  <EnterpriseBadge /> This feature requires an Enterprise license.
+</Callout>
+
 Forecasting alerts predict future values based on historical data and alert you if the predicted values are expected to cross your defined limits. This helps you proactively address issues before they occur.
 
 ![](./static/forecast.png)
@@ -64,6 +73,11 @@ Configure the alert rules for all alert types:
 ![](./static/set-threshold-final.gif)
 
 #### Anomaly Detection
+
+<Callout type="info">
+  <EnterpriseBadge /> This feature requires an Enterprise license.
+</Callout>
+
 - **Description**: Get an alert if your latest data looks unusual compared to recent trends
 - **Use historical data of**: Training period for the ML model (e.g., 1 day, 1 week, 1 month)
 - **Repeat evaluation every**: How often to check for anomalies (e.g., every 10 minutes)
@@ -72,6 +86,11 @@ Configure the alert rules for all alert types:
 ![](./static/set-anomaly.gif)
 
 #### Forecasting
+
+<Callout type="info">
+  <EnterpriseBadge /> This feature requires an Enterprise license.
+</Callout>
+
 - **Description**: We predict future data and alert you if it's expected to cross your limit
 - **Use historical data of**: Historical period for prediction model (e.g., 1 day, 1 week)
 - **Repeat evaluation every**: How often to run predictions (e.g., every 10 minutes)
