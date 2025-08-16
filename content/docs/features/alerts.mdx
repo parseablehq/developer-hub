@@ -10,17 +10,17 @@ Parseable offers realtime alerting based on contents of incoming events. Each da
 
 Parseable supports three types of alerts:
 
-### 1. Threshold Alerts
+### Threshold Alerts
 Threshold alerts trigger when a metric crosses a defined boundary. For example, alerting when response time exceeds 500ms or when error count is greater than 100.
 
 ![](./static/threshold.png)
 
-### 2. Anomaly Detection
+### Anomaly Detection
 Anomaly Detection alerts use machine learning to identify unusual patterns in your data. These alerts automatically detect deviations from normal behavior without requiring you to set specific thresholds.
 
 ![](./static/anomaly-detection.png)
 
-### 3. Forecasting
+### Forecasting
 Forecasting alerts predict future values based on historical data and alert you if the predicted values are expected to cross your defined limits. This helps you proactively address issues before they occur.
 
 ![](./static/forecast.png)
@@ -42,7 +42,7 @@ You can easily set up alerts through Parseable's user interface called Prism, wh
 3. Set the "Preview", it could be either chart or table for 10m, 1h, 5h 1d or any custom timerange. 
 ![](./static/preview.png)  
 
-### 4. Configure Alert Rules
+### Configure Alert Rules
 
 Configure the alert rules for all alert types:
 
@@ -53,7 +53,7 @@ Configure the alert rules for all alert types:
 
 ![](./static/set-rule-alerts.gif)
 
-### 5. Set Evaluation Configuration
+### Set Evaluation Configuration
 
 #### Threshold Alerts
 - **Description**: Get notified when a metric crosses a set limit
@@ -80,7 +80,7 @@ Configure the alert rules for all alert types:
 
 ![](./static/set-forecast.gif)
 
-### 6. Configure Targets
+### Configure Targets
 
 Targets in Parseable alerts are the destinations where notifications are sent when an alert is triggered. Each alert can be configured to send notifications to multiple targets simultaneously. A target can be a notification service like Slack, a webhook endpoint, or an alert management system like Alertmanager.
 
@@ -186,7 +186,7 @@ The slack target can be used to send notifications to a Slack channel. The targe
 | `alertType` | The type of alert: `threshold`, `anomaly`, or `forecast` |
 | `targets` | An array of target IDs to which the notification will be sent |
 
-### 7. Add Title and Save
+### Add Title and Save
 
 Finally, configure the alert metadata and save your alert:
 
@@ -200,7 +200,7 @@ Finally, configure the alert metadata and save your alert:
 
 Once all configurations are complete, click **"Save"** to create your alert. The alert will immediately begin monitoring your data based on the configured rules and will send notifications to the specified targets when conditions are met.
 
-### Managing Alerts
+## Managing Alerts
 
 ![](./static/alerts-page.png)
 
