@@ -4,158 +4,95 @@ title: Alerts
 
 Parseable offers realtime alerting based on contents of incoming events. Each dataset can have several alerts and each alert is evaluated independently.
 
+![](./static/alert-created.png)
+
+## Alert Types
+
+Parseable supports three types of alerts:
+
+### 1. Threshold Alerts
+Threshold alerts trigger when a metric crosses a defined boundary. For example, alerting when response time exceeds 500ms or when error count is greater than 100.
+
+![](./static/threshold.png)
+
+### 2. Anomaly Detection
+Anomaly Detection alerts use machine learning to identify unusual patterns in your data. These alerts automatically detect deviations from normal behavior without requiring you to set specific thresholds.
+
+![](./static/anomaly-detection.png)
+
+### 3. Forecasting
+Forecasting alerts predict future values based on historical data and alert you if the predicted values are expected to cross your defined limits. This helps you proactively address issues before they occur.
+
+![](./static/forecast.png)
+
 ## How it works
 
 Alerts in Parseable work by monitoring your log data in real-time and triggering notifications when specific conditions are met. Here's how it works in simple terms:
 
-1. **Define conditions**: You set up rules that specify what to look for in your logs (like error codes, specific text patterns, or threshold values)
+1. **Define conditions**: You set up rules that specify what to look for in your logs (like error codes, specific text patterns, threshold values, anomalies, or forecasted trends)
 2. **Automatic monitoring**: Parseable continuously checks incoming logs against these rules
 3. **Notification**: When a rule condition is met, Parseable sends notifications to your configured targets (like Slack or a webhook)
 
 You can easily set up alerts through Parseable's user interface called Prism, which provides a simple way to configure all aspects of your alerts without writing complex code.
 
-### What are targets?
+## How to set-up alerts
+
+1. Navigate to the Alerts page from the side navigation menu
+2. Click on "Create Alert" to set up a new alert
+3. Set the "Preview", it could be either chart or table for 10m, 1h, 5h 1d or any custom timerange. 
+![](./static/preview.png)  
+
+### 4. Configure Alert Rules
+
+Configure the alert rules for all alert types:
+
+- **Dataset**: Select the log stream or dataset you want to monitor
+- **Monitor**: Choose the specific field to track (e.g., `response_time`, `error_count`, `status_code`)
+- **Filter** (Optional): Add conditions to narrow down the data (e.g., `status = 500`, `environment = production`)
+- **Group By** (Optional): Group results by specific fields for more granular alerting (e.g., group by `service_name` or `region`)
+
+![](./static/set-rule-alerts.gif)
+
+### 5. Set Evaluation Configuration
+
+#### Threshold Alerts
+- **Description**: Get notified when a metric crosses a set limit
+- **Evaluate the last**: Time window to analyze (e.g., 10 minutes, 1 hour, 1 day)
+- **Repeat evaluation every**: How often to check the condition (e.g., every 10 minutes)
+- **Trigger when result is**: Set the comparison operator (`>`, `<`, `=`, `>=`, `<=`, `!=`) and threshold value
+
+![](./static/set-threshold-final.gif)
+
+#### Anomaly Detection
+- **Description**: Get an alert if your latest data looks unusual compared to recent trends
+- **Use historical data of**: Training period for the ML model (e.g., 1 day, 1 week, 1 month)
+- **Repeat evaluation every**: How often to check for anomalies (e.g., every 10 minutes)
+- **Group By behavior**: When using Group By with Anomaly Detection, the system analyzes each group independently. Alerts trigger separately for each group that shows anomalous behavior. You can preview anomalies for individual groups using the dropdown selector in the top-right corner of the preview panel. 
+
+![](./static/set-anomaly.gif)
+
+#### Forecasting
+- **Description**: We predict future data and alert you if it's expected to cross your limit
+- **Use historical data of**: Historical period for prediction model (e.g., 1 day, 1 week)
+- **Repeat evaluation every**: How often to run predictions (e.g., every 10 minutes)
+- **Forecast the next**: Time window to predict ahead (e.g., 3 hours, 1 day)
+- **Group By behavior**: When using Group By with Forecasting, the system analyzes each group independently. Alerts trigger separately for each group that shows anomalous behavior. You can preview anomalies for individual groups using the dropdown selector in the top-right corner of the preview panel. 
+
+![](./static/set-forecast.gif)
+
+### 6. Configure Targets
 
 Targets in Parseable alerts are the destinations where notifications are sent when an alert is triggered. Each alert can be configured to send notifications to multiple targets simultaneously. A target can be a notification service like Slack, a webhook endpoint, or an alert management system like Alertmanager.
 
 When an alert condition is met, Parseable sends the alert message to all the targets specified in the alert configuration. Each target has its own configuration parameters, such as endpoint URLs, authentication credentials, and notification frequency settings.
 
-### Configuration
-
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
-
-<Tabs items={['Prism', 'API']}>
-  <Tab value="Prism">
-    You can configure alerts via the Prism UI. Follow these steps:
-    
-    1. Navigate to the Alerts page from the side navigation menu
-    2. Click on "Create Alert" to set up a new alert
-    3. Fill in the required fields (name, message, rule conditions, and targets)
-    4. Save your configuration
-  </Tab>
-  <Tab value="API">
-When configuring alerts via API, you'll need to understand how to use the `aggregates` key properly. This key is essential for defining the conditions that trigger your alerts based on aggregated data.  
-
-#### Understanding Aggregation Configuration
-
-The `aggregates` key describes the aggregations to be applied to the result of the SQL in `query`. Each aggregation consists of these components:
-
-| Component | Description |
-| --- | --- |
-| `aggregateFunction` | The function to apply (`avg`, `sum`, `count`, `min`, `max`) |
-| `column` | The column to apply the function to |
-| `operator` | Comparison operator (`>`, `<`, `=`, `!=`, `>=`, `<=`) |
-| `value` | The threshold value to compare against |
-| `conditions` | Additional filtering conditions (similar to SQL WHERE clauses) |
-
-#### Condition Limits
-
-Parseable imposes these limits on aggregation conditions:
-
-- Maximum of two conditions per aggregate config object
-- Conditions must be joined by either `AND` or `OR` (specified in the `operator` field)
-- Each condition can only compare a single column to a single value
-
-#### Example 1: Single Condition
-
-Consider this base query:
-
-```sql
-SELECT * FROM backend_logs
-```
-
-To create an alert when the average latency exceeds 200ms for successful calls (status=200):
-
-```json
-"aggregateConfig":[
-  {
-    "aggregateFunction": "avg",
-    "column": "latency",
-    "operator": ">",
-    "value": "200",
-    "conditions": {
-      "operator": null,
-      "conditionConfig": [
-        {
-          "column": "status",
-          "operator": "=",
-          "value": "200"
-        }
-      ]
-    }
-  }
-]
-```
-
-#### Example 2: Multiple Conditions with AND
-
-To alert when average latency exceeds 200ms for successful calls (status=200) AND a specific user:
-
-```json
-"aggregateConfig": [
-  {
-    "aggregateFunction": "avg",
-    "column": "latency",
-    "operator": ">",
-    "value": "200",
-    "conditions": {
-      "operator": "and",
-      "conditionConfig": [
-        {
-          "column": "status",
-          "operator": "=",
-          "value": "200"
-        },
-        {
-          "column": "user_id",
-          "operator": "=",
-          "value": "someUserID"
-        }
-      ]
-    }
-  }
-]
-```
-
-#### Example 3: Multiple Conditions with OR
-
-To alert when the count of errors exceeds 5 for either 4xx or 5xx status codes:
-
-```json
-"aggregateConfig": [
-  {
-    "aggregateFunction": "count",
-    "column": "*",
-    "operator": ">",
-    "value": "5",
-    "conditions": {
-      "operator": "or",
-      "conditionConfig": [
-        {
-          "column": "status",
-          "operator": "like",
-          "value": "4%"
-        },
-        {
-          "column": "status",
-          "operator": "like",
-          "value": "5%"
-        }
-      ]
-    }
-  }
-]
-```
-  </Tab>
-</Tabs>
-
-
-
-### **Supported targets**
-
 Parseable supports sending alerts to Webhook, Slack, and Alertmanager targets. You can configure multiple targets for each alert.
 
-#### **Target Configuration**
+The list of configured targets can be seen under Settings > Alert Targets.
+
+![](./static/target.gif)
+
+**Target Configuration**
 
 Targets are the destinations where notifications are sent when an alert is triggered. The targets field is an array of target objects, each with the following common parameters:
 
@@ -238,7 +175,7 @@ The slack target can be used to send notifications to a Slack channel. The targe
 | --- | --- | --- |
 | endpoint | Yes | Slack webhook URL. Refer [Slack docs for details](https://api.slack.com/messaging/webhooks). |
 
-#### **Alert Configuration Fields**
+**Alert Configuration Fields**
 
 | Field | Description |
 | --- | --- |
@@ -246,14 +183,33 @@ The slack target can be used to send notifications to a Slack channel. The targe
 | `severity` | Either `low`, `medium`, `high`, `critical` |
 | `title` | The title of the alert |
 | `stream` | The dataset on which the alert is being configured |
-| `alertType` | Should be `threshold` for now |
+| `alertType` | The type of alert: `threshold`, `anomaly`, or `forecast` |
 | `targets` | An array of target IDs to which the notification will be sent |
 
-#### **Evaluation Configuration**
+### 7. Add Title and Save
 
-`evalConfig` - For now the `evalConfig` is set to `rollingWindow`
+Finally, configure the alert metadata and save your alert:
 
-* `rollingWindow` - This is the only supported evaluation type for now. The start time and end time keep moving constantly
-  * `evalStart` - The start time for evaluation. Should be of `humantime` type
-  * `evalEnd` - Should be `now`
-  * `evalFrequency` - An integer describing after how many minutes should an evaluation be run
+- **Title**: Give your alert a descriptive name that clearly identifies its purpose (e.g., "High CPU Usage", "API Error Rate", "GPU Load")
+- **Severity**: Select the appropriate severity level:
+  - **Low**: Minor issues that need attention but aren't urgent
+  - **Medium**: Issues that should be addressed soon
+  - **High**: Important issues requiring prompt attention
+  - **Critical**: Urgent issues requiring immediate action
+- **Tags** (Optional): Add tags to categorize and organize your alerts for easier management
+
+Once all configurations are complete, click **"Save"** to create your alert. The alert will immediately begin monitoring your data based on the configured rules and will send notifications to the specified targets when conditions are met.
+
+### Managing Alerts
+
+![](./static/alerts-page.png)
+
+After creating alerts, you can manage them from the Alerts page. Each alert has a context menu with the following options:
+
+- **Evaluate alert**: Manually trigger an evaluation of the alert conditions to test if it's working correctly
+- **Disable alert**: Temporarily disable an alert without deleting it. Disabled alerts won't monitor data or send notifications
+- **Mute notifications**: Keep the alert active and monitoring, but temporarily stop sending notifications. Useful during maintenance windows or known issues
+- **Edit alert**: Modify any aspect of the alert configuration including rules, targets, severity, and evaluation settings
+- **Delete Alert**: Permanently remove an alert from the system
+
+These management options give you full control over your alert lifecycle, allowing you to adapt to changing monitoring needs without recreating alerts from scratch.
