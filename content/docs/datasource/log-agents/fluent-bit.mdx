@@ -443,7 +443,7 @@ This configuration sets up Fluent Bit to:
 3. **Authenticate** using basic authentication
 4. **Tag** data with stream names and sources for organization in Parseable
 
-```conf
+```ini
 [SERVICE]
     Flush         1                # Flush data every second
     Log_Level     debug            # Enable debug logging for troubleshooting
@@ -543,7 +543,7 @@ This configuration creates a bridge between Prometheus and Parseable:
 
 ### Configuration Example
 
-```conf
+```ini
 [SERVICE]
     Flush              5          # Flush metrics every 5 seconds
     Log_Level          info       # Standard logging level
@@ -581,7 +581,7 @@ This configuration creates a bridge between Prometheus and Parseable:
 
 You can scrape metrics from various sources by adjusting the `Host` and `Port`:
 
-```conf
+```ini
 # Scrape Node Exporter
 Host: node-exporter
 Port: 9100
