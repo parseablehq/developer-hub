@@ -25,6 +25,32 @@ service:
       exporters: [otlphttp/parseablelogs]
 ```
 
+## Support for Protocol Buffers
+
+<Callout type="info">
+  <EnterpriseBadge /> This feature requires an Enterprise license.
+</Callout>
+
+Parseable also supports ingesting the OpenTelemetry logs sent from the OTEL collectors in the Protocol Buffers format. Below is an example configuration of the OTEL collector to send the logs to Parseable in the Protocol Buffers format.
+
+```yaml
+exporters:
+  otlphttp/parseablelogs:
+    endpoint: "http://parseable:8000"
+    headers:
+      Authorization: "Basic YWRtaW46YWRtaW4="  # admin:admin in base64
+      X-P-Stream: otel-logs
+      X-P-Log-Source: otel-logs
+      Content-Type: application/x-protobuf
+    encoding: proto
+    tls:
+      insecure: true
+service:
+  pipelines:
+    logs:
+      exporters: [otlphttp/parseablelogs]
+```
+
 ## Data Flattening
 The OpenTelemetry logs that are in the form of a nested JSON. When the log event is received at `/v1/logs` endpoint, Parseable will flatten the nested JSON to a flat JSON object. This is done to make the data more queryable and filterable. Here's a quick comparison of the nested JSON and the flattened JSON:
 
