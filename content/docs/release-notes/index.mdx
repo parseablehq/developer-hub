@@ -2,6 +2,125 @@
 title: Release Notes
 ---
 
+## v2.4.1 (August 18, 2025)
+
+We're thrilled to announce Parseable v2.4.1, packed with powerful new features that enhance monitoring, visualization, and data ingestion capabilities. This release introduces advanced alerting mechanisms, expanded dashboard visualization options, and native Protocol Buffer support.
+
+### 1. Advanced Alert Types
+
+Building on our alerting capabilities, v2.4.1 introduces three sophisticated alert types to help you proactively monitor your systems. [Learn more about Alerts](/docs/features/alerts)
+
+**Threshold Alerts**
+- Set precise boundaries for your metrics.
+- Trigger alerts when values exceed defined limits.
+- Example: Alert when response time > 500ms.
+- Configure multiple conditions with "Filter" and "Group by". 
+
+**Anomaly Detection** 
+
+<Callout type="info">
+  <EnterpriseBadge /> This feature requires an Enterprise license.
+</Callout>
+
+- Leverage machine learning to automatically identify unusual patterns.
+- No manual threshold configuration required.
+- Detects deviations from normal behavior patterns.
+- Reduces alert fatigue by focusing on genuine anomalies.
+
+**Forecasting Alerts**
+
+<Callout type="info">
+  <EnterpriseBadge /> This feature requires an Enterprise license.
+</Callout>
+
+- Predict future metric values based on historical trends.
+- Alert on expected limit violations before they occur.
+- Enable proactive capacity planning.
+- Example: Alert when disk space is predicted to run out in 24 hours.
+
+
+### 2. New Dashboard Visualization Types
+
+Expand your data visualization capabilities with four new chart types. [Learn more about Dashboards](/docs/features/dashboards)
+
+![Dashboard Chart Builder](../features/static/chart-builder.png)
+
+**Pie Charts**
+- Visualize proportional data at a glance.
+- Perfect for showing distribution across categories.
+- Interactive legends with click-to-filter functionality
+
+**Donut Charts**
+- Modern alternative to pie charts with hollow center
+- Display key metrics in the center space
+- Ideal for showing completion percentages
+
+![Donut Chart Example](../features/static/donut.png)
+
+**Gauge Charts**
+- Real-time performance indicators
+- Configurable color-coded segments for thresholds
+- Support for custom ranges and units
+- Perfect for KPI monitoring (CPU usage, memory utilization)
+
+![Gauge Chart Styling](../features/static/gauage-plot-style.png)
+
+**Query Value**
+- Display single, prominent metric values
+- Ideal for highlighting critical KPIs
+- Support for auto-formatting and precision control
+- Color coding based on thresholds
+
+**Enhanced Styling Options:**
+- Custom color palettes for all chart types
+- Configurable units and number formatting
+- Threshold-based color coding
+- Responsive design for all screen sizes
+
+![Timeseries Plot Example](../features/static/timeseries-plot.png)
+
+### 3. Protocol Buffer (Protobuf) Support
+
+<Callout type="info">
+  <EnterpriseBadge /> This feature requires an Enterprise license.
+</Callout>
+
+Native support for Protocol Buffer format significantly improves data ingestion efficiency:
+
+**Key Benefits:**
+- **Prometheus Compatibility Path**: Protobuf support is a crucial step towards enabling full Prometheus compatibility.
+- **Reduced Bandwidth**: Up to 50% smaller payload sizes compared to JSON
+- **Faster Processing**: Binary format enables quicker parsing
+- **Type Safety**: Strong typing prevents data corruption
+
+**Implementation:**
+```bash
+# Send protobuf encoded logs
+curl -X POST https://parseable.example.com/api/v1/ingest \
+  -H "Content-Type: application/x-protobuf" \
+  -H "X-P-Stream: my-stream" \
+  --data-binary @logs.pb
+```
+
+### 4. Enhanced Column Support
+
+Parseable now supports up to **1000 columns** per dataset, a significant increase from previous limits:
+
+- **Maximum Columns**: Support for up to 1000 columns per dataset.
+- **Recommended Threshold**: Beyond 800 columns, consider splitting the dataset into multiple datasets based on schema similarity or query patterns for optimal performance.
+- **Hard Limit**: The server will reject ingestion requests with more than 1000 columns.
+
+### Upgrade Instructions
+
+```bash
+# Docker
+docker pull parseable/parseable:v2.4.1
+
+# Kubernetes
+kubectl set image deployment/parseable parseable=parseable/parseable:v2.4.1
+```
+
+
 ## v2.4.0 (July 22, 2025)
 
 It’s that time again, a new Parseable release, and this one’s big. We’re moving up from v2.3.x to v2.4.0. Read on for all the highlights, new features, and tips to get the most out of v2.4.0
