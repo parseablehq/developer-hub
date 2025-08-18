@@ -11,10 +11,10 @@ We're thrilled to announce Parseable v2.4.1, packed with powerful new features t
 Building on our alerting capabilities, v2.4.1 introduces three sophisticated alert types to help you proactively monitor your systems. [Learn more about Alerts](/docs/features/alerts)
 
 **Threshold Alerts**
-- Set precise boundaries for your metrics
-- Trigger alerts when values exceed defined limits
-- Example: Alert when response time > 500ms or error rate > 5%
-- Configure multiple conditions with AND/OR logic
+- Set precise boundaries for your metrics.
+- Trigger alerts when values exceed defined limits.
+- Example: Alert when response time > 500ms.
+- Configure multiple conditions with "Filter" and "Group by". 
 
 **Anomaly Detection** 
 
@@ -22,10 +22,10 @@ Building on our alerting capabilities, v2.4.1 introduces three sophisticated ale
   <EnterpriseBadge /> This feature requires an Enterprise license.
 </Callout>
 
-- Leverage machine learning to automatically identify unusual patterns
-- No manual threshold configuration required
-- Detects deviations from normal behavior patterns
-- Reduces alert fatigue by focusing on genuine anomalies
+- Leverage machine learning to automatically identify unusual patterns.
+- No manual threshold configuration required.
+- Detects deviations from normal behavior patterns.
+- Reduces alert fatigue by focusing on genuine anomalies.
 
 **Forecasting Alerts**
 
@@ -33,10 +33,10 @@ Building on our alerting capabilities, v2.4.1 introduces three sophisticated ale
   <EnterpriseBadge /> This feature requires an Enterprise license.
 </Callout>
 
-- Predict future metric values based on historical trends
-- Alert on expected limit violations before they occur
-- Enable proactive capacity planning
-- Example: Alert when disk space is predicted to run out in 24 hours
+- Predict future metric values based on historical trends.
+- Alert on expected limit violations before they occur.
+- Enable proactive capacity planning.
+- Example: Alert when disk space is predicted to run out in 24 hours.
 
 
 ### 2. New Dashboard Visualization Types
@@ -46,8 +46,8 @@ Expand your data visualization capabilities with four new chart types. [Learn mo
 ![Dashboard Chart Builder](../features/static/chart-builder.png)
 
 **Pie Charts**
-- Visualize proportional data at a glance
-- Perfect for showing distribution across categories
+- Visualize proportional data at a glance.
+- Perfect for showing distribution across categories.
 - Interactive legends with click-to-filter functionality
 
 **Donut Charts**
@@ -88,10 +88,10 @@ Expand your data visualization capabilities with four new chart types. [Learn mo
 Native support for Protocol Buffer format significantly improves data ingestion efficiency:
 
 **Key Benefits:**
+- **Prometheus Compatibility Path**: Protobuf support is a crucial step towards enabling full Prometheus compatibility.
 - **Reduced Bandwidth**: Up to 50% smaller payload sizes compared to JSON
 - **Faster Processing**: Binary format enables quicker parsing
 - **Type Safety**: Strong typing prevents data corruption
-- **Schema Evolution**: Backward and forward compatibility
 
 **Implementation:**
 ```bash
