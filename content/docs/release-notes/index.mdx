@@ -102,6 +102,14 @@ curl -X POST https://parseable.example.com/api/v1/ingest \
   --data-binary @logs.pb
 ```
 
+### 4. Enhanced Column Support
+
+Parseable now supports up to **1000 columns** per dataset, a significant increase from previous limits:
+
+- **Maximum Columns**: Support for up to 1000 columns per dataset.
+- **Recommended Threshold**: Beyond 800 columns, consider splitting the dataset into multiple datasets based on schema similarity or query patterns for optimal performance.
+- **Hard Limit**: The server will reject ingestion requests with more than 1000 columns.
+
 ### Upgrade Instructions
 
 ```bash

@@ -47,7 +47,7 @@ Let's understand this with some examples:
 - **Aggregated data**: If you have aggregated data (e.g. metrics, traces) that you want to store, you can create a separate dataset for that. This allows you to query the aggregated data separately from the raw logs.
 
 <Callout type="warn">
-Beyond 200 columns in a dataset, consider splitting the dataset into multiple datasets based on schema similarity or query patterns. Beyond 250 columns, the server will reject the ingestion request with an error.
+Beyond 800 columns in a dataset, consider splitting the dataset into multiple datasets based on schema similarity or query patterns. Beyond 1000 columns, the server will reject the ingestion request with an error.
 </Callout>
 
 ## Dataset vs index
