@@ -17,7 +17,7 @@ const config = {
     return [
       {
         source: '/server/opentelemetry',
-        destination: '/OpenTelemetry',
+        destination: '/docs/OpenTelemetry',
         permanent: true, // 301 redirect
       },
     ]
