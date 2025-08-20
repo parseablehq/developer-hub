@@ -13,6 +13,15 @@ const config = {
     contentDispositionType: "attachment",
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
+  async redirects() {
+    return [
+      {
+        source: '/server/opentelemetry',
+        destination: '/OpenTelemetry',
+        permanent: true, // 301 redirect
+      },
+    ]
+  },
   async headers() {
       return [
         {
