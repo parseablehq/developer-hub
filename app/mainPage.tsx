@@ -178,21 +178,21 @@ export default function MainPage() {
               {
                 icon: <CodeIcon fontSize="inherit" />,
                 color: "text-green-500",
-                title: "API Reference",
+                title: "AI Native Features",
                 description:
-                  "Comprehensive API documentation for integrating with Parseable programmatically.",
+                  "AI Native features like Text to SQL, Summarization, Forecasting",
                 links: [
                   {
-                    text: "Authentication",
-                    href: `${baseUrl}api#authentication`,
+                    text: "Text to SQL",
+                    href: `${baseUrl}ai-features/text-to-sql`,
                   },
                   {
-                    text: "Ingestion API",
-                    href: `${baseUrl}api#log-ingestion`,
+                    text: "Summarization",
+                    href: `${baseUrl}ai-features/summarization`,
                   },
                   {
-                    text: "Query API",
-                    href: `${baseUrl}api#query-api`,
+                    text: "Forecasting",
+                    href: `${baseUrl}ai-features/forecasting`,
                   },
                 ],
               },
