@@ -2,94 +2,44 @@
 title: Release Notes
 ---
 
-## v2.4.2 (September 22, 2025)
+## v2.4.3 (September 22, 2025)
 
-### 1. Support for SQL based Dashboard Charts
+We're excited to announce Parseable v2.4.3. This release was focussed on improving the user experience of using SQL via our SQL editor. 
 
-You can now build Dashboard charts using SQL queries. 
+###  New SQL editor
 
-How it works:
+The SQL editor has a new sidebar to showcase all the columns and their types for fast lookups. After the query is run and results are available, you can now use the chart view customization options and add these charts to dashboards directly.
 
-- Select the "Create with SQL" option under the "+Add Tile" button.
-- Select the dataset.
-- Write your SQL query to fetch the data.
-- Select the chart type.
-- Configure the chart options.
-- Click on "Create" to create the chart.
+AI assistant, saved queries are now rearranged to the right side of the screen for better visibility and access.
 
 ![Dashboard SQL Chart Builder](./static/chart-builder-new.png)
 
-### 2. Revamped SQL Editor
-
-The SQL editor has been revamped to provide a better experience.
-
-Key Changes:
-
-1. You can see all the fields of the dataset along with their data types.
-2. New Chart Builder with more customization options.
-
 <iframe width="560" height="315" src="https://www.youtube.com/embed/VjwFONGGqaE?si=hMkSWfwGWmfb4HfY" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
-### 3. Export Chart to Dashboard from SQL Editor
+### Create alerts from Dashboard
 
-<Callout type="info">
-  <EnterpriseBadge /> This feature requires an Enterprise license.
-</Callout>
+Visualization gives you a good idea of patterns forming, and many times you want to be alerted when these patterns cross a certain threshold. You can now create alerts directly from the dashboard.
 
-You can now export a chart to a dashboard from the SQL editor.
-
-How it works:
-
-- Under the SQL editor, once the Query is executed, click on the "Export to Dashboard" button.
-- Select the dashboard. You can only see the list of Dashboards that you have edit permissions. 
-- Select the chart type.
-- Configure the chart options.
-- Click on "Create" to create the chart.
-
-![Dashboard SQL Editor](./static/sql-add-to-dashboard.png)
-
-### 4. Create Alert from Dashboard
-
-You can now create alerts from the Dashboard.
-
-How it works:
-
-1. **Initiate Alert Creation**: Click on the "three dots" button in the chart and select "Create Alert" from the dropdown menu.
-2. **Navigate to Alert Builder**: You will be seamlessly redirected to the Alert Builder page, where your current filters and group-by options are automatically applied.
-3. **Configure Your Alert**: Customize the alert settings to suit your needs, including thresholds, notification preferences, and more.
-4. **Finalize Alert Setup**: Once satisfied with the configuration, click "Create" to activate your alert.
+Click on the "three dots" button in a dashboard tile and select "Create Alert" from the dropdown menu. You will be redirected to the Alert Builder page, where your current filters and group-by options are automatically applied. Once satisfied with the configuration, click "Create" to activate your alert.
 
 ![Create Alert from Dashboard](./static/create-alert-dashbaord.png)
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/O_lyg-0wBFY?si=FdfyUFnVs1zkHiql" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
+### Investigation flows
 
-### 5. Investigate from Dashboard
+As you analyze the data in your dashboard, you may identify specific trends or anomalies that require further exploration. Our new investigation flows make it easy to dive deeper into the data. You can now drill down into the data from the Dashboard or a triggered Alert.
 
-<Callout type="info">
-  <EnterpriseBadge /> This feature requires an Enterprise license.
-</Callout>
-
-You can now drill down into the data from the Dashboard.
-
-How it works:
+In a dashboard tile:
 
 - Select the "Investigate" option under the "three dots" button in chart.
 - You'll be redirected to the Explore Page of the dataset with the same filters and group by options as the chart.
 
 ![Investigate from Dashboard](./static/investigate-from-dashboard.png)
 
-### 6. Investigate from triggered Alert
+From a triggered Alert:
 
-<Callout type="info">
-  <EnterpriseBadge /> This feature requires an Enterprise license.
-</Callout>
-
-You can now drill down into the data from the triggered Alert.
-
-How it works:
-
-- Select the "Investigate" option from the Trigerred Alert page.
+- Select the "Investigate" option from the Triggered Alert page.
 - You'll be redirected to the Explore Page of the dataset with the same filters and group by options as the chart along with the timeline of the alert.
 
 ![Investigate from Alert](./static/investigate-alert-page.png)
