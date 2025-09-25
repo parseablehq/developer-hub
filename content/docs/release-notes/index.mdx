@@ -2,6 +2,48 @@
 title: Release Notes
 ---
 
+## v2.4.3 (September 22, 2025)
+
+We're excited to announce Parseable v2.4.3. This release was focussed on improving the user experience of using SQL via our SQL editor. 
+
+###  New SQL editor
+
+The SQL editor has a new sidebar to showcase all the columns and their types for fast lookups. After the query is run and results are available, you can now use the chart view customization options and add these charts to dashboards directly.
+
+AI assistant, saved queries are now rearranged to the right side of the screen for better visibility and access.
+
+![Dashboard SQL Chart Builder](./static/chart-builder-new.png)
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/VjwFONGGqaE?si=hMkSWfwGWmfb4HfY" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/O_lyg-0wBFY?si=FdfyUFnVs1zkHiql" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+### Create alerts from Dashboard
+
+Visualization gives you a good idea of patterns forming, and many times you want to be alerted when these patterns cross a certain threshold. You can now create alerts directly from the dashboard.
+
+Click on the "three dots" button in a dashboard tile and select "Create Alert" from the dropdown menu. You will be redirected to the Alert Builder page, where your current filters and group-by options are automatically applied. Once satisfied with the configuration, click "Create" to activate your alert.
+
+![Create Alert from Dashboard](./static/create-alert-dashbaord.png)
+
+### Investigation flows
+
+As you analyze the data in your dashboard, you may identify specific trends or anomalies that require further exploration. Our new investigation flows make it easy to dive deeper into the data. You can now drill down into the data from the Dashboard or a triggered Alert.
+
+In a dashboard tile:
+
+- Select the "Investigate" option under the "three dots" button in chart.
+- You'll be redirected to the Explore Page of the dataset with the same filters and group by options as the chart.
+
+![Investigate from Dashboard](./static/investigate-from-dashboard.png)
+
+From a triggered Alert:
+
+- Select the "Investigate" option from the Triggered Alert page.
+- You'll be redirected to the Explore Page of the dataset with the same filters and group by options as the chart along with the timeline of the alert.
+
+![Investigate from Alert](./static/investigate-alert-page.png)
+
 ## v2.4.1 (August 18, 2025)
 
 We're thrilled to announce Parseable v2.4.1, packed with powerful new features that enhance monitoring, visualization, and data ingestion capabilities. This release introduces advanced alerting mechanisms, expanded dashboard visualization options, and native Protocol Buffer support.
@@ -539,4 +581,4 @@ Whether you're scaling infrastructure or just want to avoid surprises, forecasti
 - ALB Log Regex Fix - Resolved regex parsing issues for ALB logs, ensuring accurate log ingestion.
 
 - Create Index Form Validation - Fixed validation logic in the Create Index form, resolving form submission issues and improving user feedback during index creation.
-
+b
