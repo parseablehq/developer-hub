@@ -99,6 +99,19 @@ The configuration options vary based on your selected chart type:
 **Quick Table View:**
 Want to see raw data? Click the **Table** button in the top right corner to skip chart setup and view your query results in a tabular format.
 
+## SQL Based Chart Builder
+
+You can now build Dashboard charts using SQL queries. Follow the steps below to create a chart using SQL queries:
+
+- Select the "Create with SQL" option under the "+Add Tile" button.
+- Select the dataset.
+- Write your SQL query to fetch the data.
+- Select the chart type.
+- Configure the chart options.
+- Click on "Create" to create the chart.
+
+![Dashboard SQL Chart Builder](./static/chart-builder-new.png)
+
 ## How it works
 
 Dashboards in Parseable are a collection of tiles, each representing a visualization of a query result. You can create multiple tiles on a dashboard, each with its own query and chart type. Further, a tile's chart can be configured for different colors, units and formatting. Each tile can be based on a query targeting different dataset. The tiles can be resized, repositioned, and exported in various formats for easy sharing and collaboration.
@@ -143,3 +156,26 @@ Each visualization includes customizable styling options for colors, labels, and
 ## Time Range
 
 Set a fixed time range for your dashboard to ensure all tiles load data consistently. You can save this time range with the dashboard, allowing for synchronized data views across all visualizations.
+
+## Proactive Dashboards
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/Xmon42Ha3Bg?si=Raw2GJPU5a9i-Ig1" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+### Create alerts from Dashboard
+
+Visualization gives you a good idea of patterns forming, and many times you want to be alerted when these patterns cross a certain threshold. You can now create alerts directly from the dashboard.
+
+Click on the "three dots" button in a dashboard tile and select "Create Alert" from the dropdown menu. You will be redirected to the Alert Builder page, where your current filters and group-by options are automatically applied. Once satisfied with the configuration, click "Create" to activate your alert.
+
+![Create Alert from Dashboard](./static/create-alert-dashbaord.png)
+
+### Investigation flows
+
+As you analyze the data in your dashboard, you may identify specific trends or anomalies that require further exploration. Our new investigation flows make it easy to dive deeper into the data. You can now drill down into the data from the Dashboard.
+
+In a dashboard tile:
+
+- Select the "Investigate" option under the "three dots" button in chart.
+- You'll be redirected to the Explore Page of the dataset with the same filters and group by options as the chart.
+
+![Investigate from Dashboard](./static/investigate-from-dashboard.png)

@@ -178,6 +178,43 @@ For example, for a query like `select count(*) as count from app1`, with the que
 }
 ```
 
+## SQL Editor
+
+Prism UI in Parseable provides a feature to export query results and create charts from the query results and can be accessed from the SQL editor. 
+For ease of writing queries, the SQL editor provides the list of fields along with their datatypes for any selected dataset. 
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/VjwFONGGqaE?si=hMkSWfwGWmfb4HfY" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+### 1. Exporting Query Results
+
+You can export query results to a CSV/JSON file by clicking on the "Export" button in the SQL editor. The export feature is available in the Prism UI and can be accessed from the SQL editor.
+
+![](./static/export-query-result.png)
+
+### 2. Creating a Chart
+
+You can create a chart under the "Chart View" tab in the SQL editor. Parseable provides a chart builder to help you create charts from the query results.
+
+![](./static/chart-view.png)
+
+### 3. Add Chart to Dashboard
+
+After the query is run and results are available, you can now use the chart view customization options and add these charts to dashboards directly.
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/O_lyg-0wBFY?si=FdfyUFnVs1zkHiql" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+How it works:
+
+- Under the SQL editor, once the Query is executed, click on the "Add to Dashboard" button.
+- Select the dashboard. You can only see the list of Dashboards that you have edit permissions. 
+- Select the chart type.
+- Configure the chart options.
+- Click on "Create" to create the chart.
+
+![Dashboard SQL Editor](./static/sql-add-to-dashboard.png)
+
+![Dashboard SQL Editor](./static/chart-builder-new.png)
+
 ## LLM Based Query Builder
 
 <Callout type="info">
