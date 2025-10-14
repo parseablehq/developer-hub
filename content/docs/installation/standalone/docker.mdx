@@ -27,6 +27,8 @@ P_S3_REGION=<region>
 EOF
 ```
 
+You can add additional environment variables to the `parseable-env` file as needed. You can find the details of all the environment variables in the [Environment Variables](/docs/env-variables) section.
+
 ## Run Parseable
 
 Parseable needs a local directory for staging log data, before sending it to object storage (configurable via `P_STAGING_DIR` field in the env file). Assuming you've set the `P_STAGING_DIR` field to `/staging` and want to mount that volume to a local path `/parseable/staging`, run the below command.
