@@ -22,6 +22,8 @@ This document lists all the environment variables and HTTP headers supported by 
 | `P_PARQUET_COMPRESSION_ALGO` | `No` | Specify the compression algorithm to use for Parquet files. Support values are `UNCOMPRESSED`, `SNAPPY`, `GZIP`, `LZO`, `BROTLI`, `LZ4`, `ZSTD`. | `LZ4` | `GZIP` |
 | `P_OPENAI_API_KEY` | `No` | Specify your OpenAI API key to generate SQL automatically from plain text. Read more here. | - | `sk-open-ai-api-key` |
 | `P_CORS` | `No` | Specify whether the server should enable/disable CORS. Supported values are `true` to disable, `false` to enable CORS | `true` | `false` |
+| `P_MEMORY_THRESHOLD` | `No` | Specify the memory threshold to use for Parseable server. | `80` | `100` |
+| `P_CPU_THRESHOLD` | `No` | Specify the CPU threshold to use for Parseable server. | `80` | `100` |
 
 ### Applicable to distributed mode
 | Variable Name | Required | Description | Default | Example |

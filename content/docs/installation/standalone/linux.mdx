@@ -24,6 +24,8 @@ P_FS_DIR="/var/lib/parseable/data"
 EOT
 ```
 
+You can add additional environment variables to the `/etc/default/parseable` file as needed. For example, for memory and cpu thresholds you can set `P_MEMORY_THRESHOLD` and `P_CPU_THRESHOLD` environment variables as `100`. By default, the memory and cpu thresholds are set to `80%`.
+
 Download `parseable.local.service` in `/etc/systemd/system/`:
 
 ```bash

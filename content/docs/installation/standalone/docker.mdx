@@ -27,6 +27,8 @@ P_S3_REGION=<region>
 EOF
 ```
 
+You can add additional environment variables to the `parseable-env` file as needed. For example, for memory and cpu thresholds you can set `P_MEMORY_THRESHOLD` and `P_CPU_THRESHOLD` environment variables as `100`. By default, the memory and cpu thresholds are set to `80%`.
+
 ## Run Parseable
 
 Parseable needs a local directory for staging log data, before sending it to object storage (configurable via `P_STAGING_DIR` field in the env file). Assuming you've set the `P_STAGING_DIR` field to `/staging` and want to mount that volume to a local path `/parseable/staging`, run the below command.

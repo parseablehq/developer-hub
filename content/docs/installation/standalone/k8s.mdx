@@ -22,6 +22,8 @@ password=admin
 EOF
 ```
 
+You can add additional environment variables to the `parseable-env-secret` file as needed. For example, for memory and cpu thresholds you can set `P_MEMORY_THRESHOLD` and `P_CPU_THRESHOLD` environment variables as `100`. By default, the memory and cpu thresholds are set to `80%`.
+
 Then create the secret in Kubernetes.
 
 ```bash
