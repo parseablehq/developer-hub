@@ -43,7 +43,8 @@ What are the top 5 error codes in the last 24 hours?
 
 #### Dataset & time range selection
 
-Keystone processes your question and extracts:
+Keystone processes the question and extracts two key pieces of information:
+
 - Relevant datasets: Which datasets contain the data needed
 - Time-range: The time period to query (e.g., last 24 hours, last week)
 
@@ -53,26 +54,19 @@ You'll be presented with these selections for validation before proceeding.
 
 #### Query generation & execution within guardrails
 
-Once you validate the selection:
+Once you validate the selection
+
 1. The Q&A agent collaborates with the SQL agent
 2. Multiple SQL queries are generated to approach your question from different angles
 3. All queries are executed against the selected datasets
 4. The overview agent validates the results from each query, acting as a guardrail to ensure accuracy
 5. The best answer is curated based on which query results most accurately address your question
 
-### Answer & visualization
+#### Answer & visualization
 
-Keystone provides:
 - A natural language answer to your question
 - Raw data results from the query
 - Optional visualizations (charts/graphs) for clearer understanding
-
-## Supported models and providers
-
-Keystone currently supports the following models and providers:
-
-- **OpenAI**: GPT-4 and GPT-3.5 models
-- **Anthropic**: Claude models
 
 ## Configuration
 
@@ -83,8 +77,9 @@ To enable Keystone, configure your LLM provider in your Parseable instance:
 * Add your API key.
 * Save your preferences.
 
+Note that Keystone currently supports the following models and providers:
+
+- **OpenAI**: GPT-4 and GPT-3.5 models
+- **Anthropic**: Claude models
+
 ![LLM Configuration](../key-concepts/static/add-llm.png)
-
-
-
-
