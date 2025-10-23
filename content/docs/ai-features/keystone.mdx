@@ -1,0 +1,92 @@
+---
+title: "KeyStone Agent"
+position: 1
+---
+
+<Callout type="info">
+  <EnterpriseBadge /> This feature requires an Enterprise license.
+</Callout>
+
+## Introduction
+
+KeyStone is Parseable's observability agent that provides point-in-time insights into your systems. Ask "What caused the spike in errors?" and KeyStone finds the right data, runs validated queries, and returns answers with charts. This document explains how KeyStone works.
+
+## How KeyStone Works
+
+KeyStone uses multiple AI agents working together to answer your questions:
+
+- **Overview Agent**: Identifies which datasets contain the data you need and time-range.
+- **SQL Agent**: Generates and runs multiple SQL queries to find the best answer. It also validates the results from each query, acting as a guardrail to ensure accuracy.
+- **Charting Agent**: Creates visualizations if asked by users to explain the results. 
+
+![KeyStone Architecture](./static/key-stone-overview.png)
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/cvX01iZZ_tE?si=Mp6VR2pTjkbLaFHy" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+## Background Learning Process
+
+KeyStone includes an automated learning process that runs periodically every 12 hours in the background. The LLM is provided with:
+
+- **Dataset schemas**: Structure and field definitions for each dataset.
+- **Column-level statistics**: Data distribution, common values, and patterns
+
+Using this information, the LLM generates questions to better understand the underlying data. This is done for service discovery and to better identify datasets which will be required to answer your questions.
+
+## Question & Answer Workflow
+
+### Step 1: Ask Your Question
+
+Start by asking a question in natural language:
+
+```
+What are the top 5 error codes in the last 24 hours?
+```
+
+### Step 2: Dataset & Time-Range Selection
+
+KeyStone processes your question and extracts:
+- Relevant datasets: Which datasets contain the data needed
+- Time-range: The time period to query (e.g., last 24 hours, last week)
+
+You'll be presented with these selections for validation before proceeding.
+
+![Dataset & Time-Range Selection](./static/keystone.gif)
+
+### Step 3: Query Generation & Execution
+
+Once you validate the selection:
+1. The Q&A agent collaborates with the SQL agent
+2. Multiple SQL queries are generated to approach your question from different angles
+3. All queries are executed against the selected datasets
+4. The agent validates the results from each query, acting as a guardrail to ensure accuracy
+5. The best answer is curated based on which query results most accurately address your question
+
+### Step 4: Answer & Visualization
+
+KeyStone provides:
+- A natural language answer to your question
+- Raw data results from the query
+- Optional visualizations (charts/graphs) for clearer understanding
+
+
+## Supported LLM Providers
+
+KeyStone currently supports the following LLM providers:
+
+- **OpenAI**: GPT-4 and GPT-3.5 models
+- **Anthropic**: Claude models
+
+## Configuration
+
+To enable KeyStone, configure your LLM provider in your Parseable instance:
+
+* Go to **Settings** > **AI Assistant**.
+* Choose your preferred LLM provider (OpenAI GPT or Anthropic Claude).
+* Add your API key.
+* Save your preferences.
+
+![LLM Configuration](../key-concepts/static/add-llm.png)
+
+
+
+
