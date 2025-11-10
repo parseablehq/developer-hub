@@ -1,0 +1,72 @@
+---
+title: Data Sources
+description: Learn how to send telemetry to Parseable from various applications and telemetry agents
+---
+
+Parseable supports ingesting telemetry from a wide variety of data sources. Whether you're sending telemetry directly from your applications or using popular telemetry agents, Parseable provides flexible integration options to fit your logging infrastructure.
+
+## Overview
+
+There are two primary ways to send telemetry to Parseable:
+
+1. **Direct Application Integration** - Send telemetry directly from your application code using HTTP APIs
+2. **Telemetry Agents** - Use industry-standard telemetry collection agents to aggregate and forward telemetry
+
+## Applications
+
+Send telemetry directly from your applications using Parseable's HTTP API. This approach gives you fine-grained control over what gets logged and when. Parseable provides examples and guidance for popular programming languages:
+
+- **[Python](/docs/datasource/applications/python)** - Send telemetry using Python's requests library
+- **[JavaScript](/docs/datasource/applications/javascript)** - Integrate telemetry in Node.js and browser applications
+- **[Go](/docs/datasource/applications/go)** - Use Go's native HTTP client for telemetry ingestion
+- **[Java](/docs/datasource/applications/java)** - Send telemetry from Java applications
+- **[Rust](/docs/datasource/applications/rust)** - Integrate Parseable in Rust applications
+- **[C#](/docs/datasource/applications/csharp)** - Send telemetry from .NET applications
+
+Each language guide includes examples for:
+- Creating telemetry streams
+- Sending telemetry events with custom metadata and tags
+- Querying telemetry using SQL
+
+## Log Agents
+
+Use established log collection agents to aggregate telemetry from multiple sources and forward them to Parseable. This approach is ideal for:
+
+- Collecting telemetry from multiple applications and services
+- Aggregating system telemetry and container telemetry
+- Processing and transforming telemetry before ingestion
+- Implementing centralized telemetry architectures
+
+Parseable integrates seamlessly with popular log agents:
+
+- **[Fluent Bit](/docs/datasource/log-agents/fluent-bit)** - Lightweight and high-performance log processor
+- **[Fluentd](/docs/datasource/log-agents/fluentd)** - Unified logging layer with extensive plugin ecosystem
+- **[Vector](/docs/datasource/log-agents/vector)** - High-performance observability data pipeline
+- **[OpenTelemetry Collector](/docs/datasource/log-agents/otel-collector)** - Vendor-agnostic telemetry data collection
+- **[Logstash](/docs/datasource/log-agents/logstash)** - Server-side data processing pipeline
+- **[Syslog](/docs/datasource/log-agents/syslog)** - Traditional system logging protocol
+- **[Apache Log4j](/docs/datasource/log-agents/apache-log-4j)** - Java-based logging utility
+
+## Choosing the Right Approach
+
+### Use Direct Application Integration When:
+- You need fine-grained control over telemetry content and structure
+- You want to minimize infrastructure dependencies
+- You're building a new application or microservice
+- You need to add custom metadata or tags at the application level
+
+### Use Telemetry Agents When:
+- You need to collect telemetry from multiple sources
+- You want to aggregate container or system telemetry
+- You need to transform or enrich telemetry before ingestion
+- You're implementing a centralized telemetry strategy
+- You want to buffer telemetry during network issues
+
+## Next Steps
+
+Choose your integration method and follow the corresponding guide:
+
+- Browse the **[Applications](/docs/datasource/applications)** section for language-specific examples
+- Explore the **[Log Agents](/docs/datasource/log-agents)** section for agent-specific configurations
+
+For API reference and advanced configuration options, see the [API Documentation](/docs/api).
