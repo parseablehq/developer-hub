@@ -6,8 +6,18 @@ figure{ padding: 15px;}
 
 /* Fix diagrams with black text not visible in dark mode */
 .dark .prose img,
-.dark article img {
-  background-color: white;
+.dark article img,
+.dark [data-rmiz-modal-img],
+.dark [data-rmiz] img {
+  filter: invert(1) hue-rotate(180deg);
   border-radius: 8px;
-  padding: 12px;
+}
+
+/* Target the zoomed/magnified image overlay */
+.dark [data-rmiz-modal-overlay] {
+  background-color: rgba(0, 0, 0, 0.9) !important;
+}
+
+.dark [data-rmiz-modal-content] img {
+  filter: invert(1) hue-rotate(180deg);
 }
