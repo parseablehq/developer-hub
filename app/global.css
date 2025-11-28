@@ -3,3 +3,11 @@
 @import 'fumadocs-ui/css/preset.css';
 
 figure{ padding: 15px;}
+
+/* Fix diagrams with black text not visible in dark mode */
+.dark .prose img,
+.dark article img {
+  background-color: white;
+  border-radius: 8px;
+  padding: 12px;
+}
