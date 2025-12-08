@@ -2,6 +2,53 @@
 title: Release Notes
 ---
 
+## v2.5 (December 8, 2025)
+
+**Parseable v2.5.0** is here! This major update significantly expands our observability capabilities, introducing a dedicated **Trace View**, a reimagined **Metrics View**, and powerful AI-native integrations connecting Keystone with the alerting ecosystem.
+
+### 1. Trace View Implementation
+We have unlocked a new dimension of observability with the introduction of the **Trace View**. This feature is designed to help you visualize the complete lifecycle of requests as they traverse your distributed systems, making it easier than ever to diagnose latency issues and bottlenecks.
+* **Full Trace Visualization:** Users can now view comprehensive waterfall charts of traces, providing deep visibility into service interactions.
+* **Enhanced Navigation:** We added intuitive breadcrumbs to the Traces Span detail sheet, allowing for seamless navigation through complex span hierarchies.
+* **OpenTelemetry Standardization:** Trace field names for events and links have been updated to align strictly with OpenTelemetry standards, ensuring consistent data ingestion and better interoperability.
+
+![](./static/trace-1.png)
+![](./static/trace-2.png)
+
+### 2. Metrics View
+The Metrics experience has been overhauled to provide deeper insights and a more fluid user experience.
+* **Data Consistency:** Attribute field names have been standardized across all metric types, simplifying queries and ensuring consistency across your data.
+
+![](./static/metrics-1.png)
+![](./static/metrics-2.png)
+
+### 3. Keystone Integration with Alerts
+We are bringing AI-native capabilities closer to your incident response workflow. Keystone is now tightly integrated with the alerting system.
+* **Automated Investigation:** You can now initiate a Keystone analysis session directly from a triggered alert. This seamless handoff reduces the time between detecting an anomaly and understanding its root cause.
+
+![](./static/alerts.gif)
+
+### 4. SQL Editor & Visualization
+We have enhanced the SQL Editor to support more complex data exploration and reporting needs.
+* **Table Chart Support:** We introduced the **'Table' chart type**, allowing you to visualize raw data rows directly within your dashboards for detailed reporting.
+* **Multi-Dataset Expansion:** The SQL editor now supports up to **3 distinct datasets** simultaneously, enabling more complex joins and comparative analysis.
+* **UX Enhancements:**
+    * Added a **"Clear All"** button to instantly reset GroupBy selections, speeding up exploratory data analysis.
+    * Improved state management for SQL editor tabs to prevent data loss when switching contexts.
+    * Refined the `dbName` logic to better handle complex subqueries.
+
+### 5. Alerting Improvements
+The alerting engine has been optimized for performance and better context.
+* **State History:** Parseable now saves the history of alert states, providing a valuable audit trail of when alerts fired, resolved, or changed status.
+* **Contextual Alerts:** You can now include the `metric_name` context when creating alerts, making notifications more informative at a glance.
+* **Performance & Clarity:** We optimized the underlying queries used for alert creation to reduce load and removed redundant text from notification messages for cleaner, easier-to-read alerts.
+
+### 6. Bug Fixes
+* **SQL Editor:** Fixed an issue where error messages were not being displayed when a query failed, ensuring users now see the correct feedback.
+* **Visualization Logic:** Refined query data checks in the `GaugeStyleSection` to correctly respect `rangeTo` values for accurate gauge rendering.
+* **Recents Management:** The "Recents" list now automatically cleans itself by removing entries that are no longer valid.
+* **Timezones:** Fixed an issue with URL parameter handling to ensure selected timezones persist correctly during navigation.
+
 ## v2.4.3 (September 22, 2025)
 
 We're excited to announce Parseable v2.4.3. This release was focussed on improving the user experience of using SQL via our SQL editor. 
