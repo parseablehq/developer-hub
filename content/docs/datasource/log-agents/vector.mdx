@@ -48,7 +48,7 @@ Let's take a deeper look at the Vector sink configuration in `values.yaml`. Impo
         password: admin
       request:
         headers:
-          X-P-Stream: vectordemo
+          X-P-Stream: vectordemo  ## dataset/stream name
       healthcheck:
         enabled: true
         path: 'http://parseable.parseable.svc.cluster.local/api/v1/liveness'
