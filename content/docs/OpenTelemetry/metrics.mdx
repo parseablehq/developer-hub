@@ -12,7 +12,7 @@ exporters:
     endpoint: "<parseable-endpoint> eg. http://localhost:8000"
     headers:
       Authorization: "Basic <base64 encoded string of username:password>"
-      X-P-Stream: otel-metrics
+      X-P-Stream: otel-metrics     # dataset/stream name
       X-P-Log-Source: otel-metrics
       Content-Type: application/json
     encoding: json
@@ -39,7 +39,7 @@ exporters:
     endpoint: "http://parseable:8000"
     headers:
       Authorization: "Basic YWRtaW46YWRtaW4="  # admin:admin in base64
-      X-P-Stream: otel-metrics
+      X-P-Stream: otel-metrics       # dataset/stream name
       X-P-Log-Source: otel-metrics
       Content-Type: application/x-protobuf
     encoding: proto
