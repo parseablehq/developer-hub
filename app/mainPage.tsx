@@ -13,10 +13,14 @@ import {
   CloudQueue as CloudQueueIcon,
   Storage as StorageIcon,
 } from "@mui/icons-material";
+import { useIsMac } from "./hooks/useIsMac";
 
 export default function MainPage() {
   const [copied, setCopied] = useState(false);
-  const installCommand = "curl -fsSL https://logg.ing/install | bash";
+  const isMac = useIsMac();
+  const installCommand = `curl -fsSL https://logg.ing/install | ${
+    isMac ? "zsh" : "bash"
+  }`;
   const baseUrl =
     process.env.NEXT_PUBLIC_ENV === "development" ? "/" : "/docs/";
 
@@ -34,12 +38,15 @@ export default function MainPage() {
             Welcome to Parseable Documentation
           </h1>
           <p className="text-lg dark:text-slate-300 text-slate-500 mb-10 max-w-3xl mx-auto">
-            Parseable is a unified observability platform, built to extract insights from telemetry data.
+            Parseable is a unified observability platform, built to extract
+            insights from telemetry data.
           </p>
           <div className="max-w-2xl mx-auto">
             <div className="relative flex flex-col sm:flex-row items-stretch sm:items-center bg-white dark:bg-slate-800 rounded-lg overflow-hidden">
               <code className="flex-1 px-4 py-3 text-black dark:text-slate-200 text-sm sm:text-base overflow-x-auto whitespace-nowrap">
-                curl -fsSL https://logg.ing/install | bash
+                {`curl -fsSL https://logg.ing/install | ${
+                  isMac ? "zsh" : "bash"
+                }`}
               </code>
               <button
                 onClick={copyToClipboard}
