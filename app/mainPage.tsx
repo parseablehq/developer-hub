@@ -1,506 +1,237 @@
 import Link from "next/link";
-import { useState } from "react";
-import {
-  ContentCopy as ContentCopyIcon,
-  Check as CheckIcon,
-  RocketLaunch as RocketLaunchIcon,
-  Input as InputIcon,
-  ManageSearch as ManageSearchIcon,
-  AdminPanelSettings as AdminPanelSettingsIcon,
-  CloudUpload as CloudUploadIcon,
-  Code as CodeIcon,
-  ArrowForward as ArrowForwardIcon,
-  CloudQueue as CloudQueueIcon,
-  Storage as StorageIcon,
-} from "@mui/icons-material";
-import { usePlatform } from "./hooks/usePlatform";
 
 export default function MainPage() {
-  const [copied, setCopied] = useState(false);
-  const platform = usePlatform();
-  const installCommand =
-    platform === "windows"
-      ? 'powershell -ep bypass -c "irm https://logg.ing/install-windows | iex"'
-      : "curl -fsSL https://logg.ing/install | bash}";
   const baseUrl =
     process.env.NEXT_PUBLIC_ENV === "development" ? "/" : "/docs/";
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(installCommand);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   return (
-    <main className="flex-1 bg-[#F5F5F5] text-slate-900 dark:bg-slate-900 dark:text-slate-100 overflow-x-hidden">
-      <section className="py-16 text-center">
-        <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-screen-xl">
-          <h1 className="text-xl sm:text-4xl font-bold dark:text-white leading-tight mb-6">
-            Welcome to Parseable Documentation
-          </h1>
-          <p className="text-lg dark:text-slate-300 text-slate-500 mb-10 max-w-3xl mx-auto">
-            Parseable is a unified observability platform, built to extract
-            insights from telemetry data.
-          </p>
-          <div className="max-w-2xl mx-auto">
-            <div className="relative flex flex-col sm:flex-row items-stretch sm:items-center bg-white dark:bg-slate-800 rounded-lg overflow-hidden">
-              <code className="flex-1 px-4 py-3 text-black dark:text-slate-200 text-sm sm:text-base overflow-x-auto whitespace-nowrap">
-                {installCommand}
-              </code>
-              <button
-                onClick={copyToClipboard}
-                className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center justify-center"
-                aria-label="Copy to clipboard"
-              >
-                {copied ? (
-                  <>
-                    <CheckIcon className="w-5 h-5 mr-1.5" />
-                    <span className="text-sm">Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <ContentCopyIcon className="w-5 h-5 mr-1.5" />
-                    <span className="text-sm">Copy</span>
-                  </>
-                )}
-              </button>
-            </div>
-            <p className="mt-2 text-sm text-slate-400">
-              Run this command in your terminal to install Parseable
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16">
-        <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-screen-xl">
-          <h2 className="text-3xl font-semibold dark:text-white mb-8">
-            Explore Documentation
+    <main className="flex-1 bg-[#F8F9FA] dark:bg-[#101622] text-slate-900 dark:text-white overflow-x-hidden font-[Inter,sans-serif]">
+      {/* Hero Section */}
+      <div className="pt-16 sm:pt-24"></div>
+      <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-[1088px] space-y-16">
+        {/* Get Started Section */}
+        <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 sm:p-12 text-center">
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
+            Get Started with Parseable
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <p className="mt-2 text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+            Ready to dive in? Sign up for our cloud offering or download the
+            self-hosted version to get started in minutes.
+          </p>
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link
+              href="https://app.parseable.com"
+              className="flex min-w-[84px] w-full sm:w-auto cursor-pointer items-center justify-center overflow-hidden rounded-md h-12 px-6 bg-[#5A43F5] text-white text-base font-semibold leading-normal tracking-[-0.01em] hover:bg-[#4836c4] transition-colors"
+            >
+              <svg
+                className="mr-2 w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                />
+              </svg>
+              <span className="truncate">Sign up now</span>
+            </Link>
+            <Link
+              href={`${baseUrl}installation`}
+              className="flex min-w-[84px] w-full sm:w-auto cursor-pointer items-center justify-center overflow-hidden rounded-md h-12 px-6 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-base font-semibold leading-normal tracking-[-0.01em] hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+            >
+              <svg
+                className="mr-2 w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                />
+              </svg>
+              <span className="truncate">Download now</span>
+            </Link>
+          </div>
+        </section>
+
+        <div className="h-px bg-slate-200 dark:bg-slate-800"></div>
+
+        {/* Core Concepts Section */}
+        <section>
+          <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-6">
+            Core Concepts
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {[
               {
-                icon: <RocketLaunchIcon fontSize="inherit" />,
-                color: "text-orange-500",
-                title: "Getting Started",
-                description:
-                  "Installation guides, initial setup, and basic configuration for Parseable.",
-                links: [
-                  {
-                    text: "Quick Start Guide",
-                    href: `${baseUrl}quickstart/binary`,
-                  },
-                  {
-                    text: "Installation Options",
-                    href: `${baseUrl}installation`,
-                  },
-                  {
-                    text: "Basic Configuration",
-                    href: `${baseUrl}architecture`,
-                  },
-                ],
+                icon: "architecture",
+                title: "Architecture",
+                href: `${baseUrl}architecture`,
               },
               {
-                icon: <InputIcon fontSize="inherit" />,
-                color: "text-purple-500",
-                title: "Data Ingestion",
-                description:
-                  "Learn how to send logs from various sources to your Parseable instance.",
-                links: [
-                  {
-                    text: "Fluent Bit Integration",
-                    href: `${baseUrl}datasource/log-agents/fluent-bit`,
-                  },
-                  {
-                    text: "Vector Setup",
-                    href: `${baseUrl}datasource/log-agents/vector`,
-                  },
-                  {
-                    text: "API Endpoints",
-                    href: `${baseUrl}api/v1/logstream/stream_name/put`,
-                  },
-                ],
+                icon: "design_services",
+                title: "Design Choices",
+                href: `${baseUrl}design-choices`,
               },
               {
-                icon: <ManageSearchIcon fontSize="inherit" />,
-                color: "text-teal-500",
-                title: "Querying & Visualization",
-                description:
-                  "Master Parseable's query language and integrate with visualization tools.",
-                links: [
-                  {
-                    text: "Query Syntax",
-                    href: `${baseUrl}key-concepts/query`,
-                  },
-                  {
-                    text: "Grafana Integration",
-                    href: `${baseUrl}visualization/grafana`,
-                  },
-                  {
-                    text: "Parseable UI Guide",
-                    href: "https://www.parseable.com/blog/prism-unified-observability-on-parseable",
-                  },
-                ],
+                icon: "database",
+                title: "Data Modelling",
+                href: `${baseUrl}key-concepts/data-model`,
               },
               {
-                icon: <AdminPanelSettingsIcon fontSize="inherit" />,
-                color: "text-red-500",
-                title: "Administration",
-                description:
-                  "Manage users, permissions, and system settings for your Parseable deployment.",
-                links: [
-                  {
-                    text: "User Management",
-                    href: `${baseUrl}features/rbac`,
-                  },
-                  { text: "Alerts", href: `${baseUrl}features/alerts` },
-                  {
-                    text: "Monitoring",
-                    href: `${baseUrl}features/dashboards`,
-                  },
-                ],
+                icon: "input",
+                title: "Ingestion",
+                href: `${baseUrl}datasource`,
               },
               {
-                icon: <CloudUploadIcon fontSize="inherit" />,
-                color: "text-blue-500",
-                title: "Storage & Archival",
-                description:
-                  "Configure storage backends and manage data retention policies.",
-                links: [
-                  {
-                    text: "S3 Configuration",
-                    href: `${baseUrl}storage/awss3`,
-                  },
-                  {
-                    text: "Azure Setup",
-                    href: `${baseUrl}cloud-provider/azure/api-service`,
-                  },
-                  {
-                    text: "Retention Policies",
-                    href: `${baseUrl}features/retention`,
-                  },
-                ],
+                icon: "query_stats",
+                title: "Query",
+                href: `${baseUrl}key-concepts/query`,
               },
-              {
-                icon: <CodeIcon fontSize="inherit" />,
-                color: "text-green-500",
-                title: "AI Native Features",
-                description:
-                  "AI Native features like Text to SQL, Summarization, Forecasting",
-                links: [
-                  {
-                    text: "Text to SQL",
-                    href: `${baseUrl}ai-features/text-to-sql`,
-                  },
-                  {
-                    text: "Summarization",
-                    href: `${baseUrl}ai-features/summarization`,
-                  },
-                  {
-                    text: "Forecasting",
-                    href: `${baseUrl}ai-features/forecasting`,
-                  },
-                ],
-              },
-            ].map((card, index) => (
-              <div
+            ].map((item, index) => (
+              <Link
                 key={index}
-                className="bg-white dark:bg-slate-800 rounded-lg p-6 hover:bg-slate-750 transition-colors"
+                href={item.href}
+                className="group flex flex-col items-center justify-center text-center gap-3 p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-[#5A43F5] dark:hover:border-[#5A43F5]/70 hover:shadow-lg transition-all h-32"
               >
-                <div
-                  className={`${card.color} mb-3`}
-                  style={{ fontSize: "2.25rem" }}
-                >
-                  {card.icon}
-                </div>
-                <h3 className="text-xl font-semibold text-black dark:text-white mb-3">
-                  {card.title}
+                <span className="material-symbols-outlined text-[#5A43F5] text-3xl font-light">
+                  {item.icon}
+                </span>
+                <h3 className="text-slate-900 dark:text-white text-sm font-semibold">
+                  {item.title}
                 </h3>
-                <p className="text-slate-400 mb-4">{card.description}</p>
-                <ul className="space-y-2">
-                  {card.links.map((link, linkIndex) => (
-                    <li key={linkIndex}>
-                      <Link
-                        href={link.href}
-                        className="text-blue-400 hover:text-blue-300 text-sm flex items-center"
-                      >
-                        <span className="mr-1" style={{ fontSize: "0.875rem" }}>
-                          <ArrowForwardIcon fontSize="inherit" />
-                        </span>{" "}
-                        {link.text}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              </Link>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section className="py-16 dark:bg-slate-900">
-        <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-screen-xl">
-          <h2 className="text-3xl font-semibold dark:text-white mb-8">
-            Explore Parseable Editions
+        <div className="h-px bg-slate-200 dark:bg-slate-800"></div>
+
+        {/* Flavours Section */}
+        <section>
+          <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-6">
+            Flavours
           </h2>
-          <p className="dark:text-slate-300 text-slate-500 mb-10 text-lg max-w-4xl">
-            Parseable offers flexible editions to suit your specific telemetry
-            data management and observability requirements...
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-            <div className="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-lg hover:shadow-blue-500/30 transition-shadow">
-              <div className="flex items-center mb-4">
-                <div
-                  className="text-blue-500 mr-4"
-                  style={{ fontSize: "2.25rem" }}
-                >
-                  <CloudQueueIcon fontSize="inherit" />
-                </div>
-                <h3 className="text-2xl font-semibold text-black dark:text-white">
-                  Parseable Enterprise
-                </h3>
-              </div>
-              <p className="text-slate-400 mb-6 text-sm">
-                Scalable, secure, and supported telemetry data management for
-                demanding production environments. Includes advanced features,
-                dedicated support, and SLAs.
-              </p>
-
-              <Link
-                href={`${baseUrl}enterprise`}
-                className="inline-flex items-center text-blue-400 hover:text-blue-300 hover:underline transition-colors font-medium"
-              >
-                Learn about Enterprise{" "}
-                <span className="ml-1" style={{ fontSize: "0.875rem" }}>
-                  <ArrowForwardIcon fontSize="inherit" />
-                </span>
-              </Link>
-            </div>
-            <div className="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-lg hover:shadow-green-500/30 transition-shadow">
-              <div className="flex items-center mb-4">
-                <div
-                  className="text-green-500 mr-4"
-                  style={{ fontSize: "2.25rem" }}
-                >
-                  <StorageIcon fontSize="inherit" />
-                </div>
-                <h3 className="text-2xl font-semibold dark:text-white text-black">
-                  Parseable OSS
-                </h3>
-              </div>
-              <p className="text-slate-400 mb-6 text-sm">
-                The powerful open-source core of Parseable. Perfect for getting
-                started, development, and smaller deployments.
-                Community-supported.
-              </p>
-              <Link
-                href="https://github.com/parseablehq/parseable"
-                className="inline-flex items-center text-blue-400 hover:text-blue-300 hover:underline transition-colors font-medium"
-              >
-                Learn about OSS{" "}
-                <span className="ml-1" style={{ fontSize: "0.875rem" }}>
-                  <ArrowForwardIcon fontSize="inherit" />
-                </span>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 dark:bg-slate-950">
-        <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-screen-xl">
-          <h2 className="text-3xl font-semibold dark:text-white mb-8">
-            Need Help?
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-lg">
-              <h3 className="text-xl font-semibold dark:text-white mb-2 text-black">
-                Community Forums
-              </h3>
-              <p className="text-slate-400 mb-4 text-sm">
-                Ask questions, share your knowledge, and connect with other
-                Parseable users.
-              </p>
-              <Link
-                href="https://logg.ing/community"
-                className="text-blue-400 hover:text-blue-300 hover:underline transition-colors text-sm"
-              >
-                Visit the Forums
-              </Link>
-            </div>
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-lg">
-              <h3 className="text-xl font-semibold dark:text-white mb-2 text-black">
-                Enterprise Support
-              </h3>
-              <p className="text-slate-400 mb-4 text-sm">
-                Parseable Enterprise customers can access dedicated support
-                channels.
-              </p>
-              <Link
-                href="mailto:sales@parseable.com"
-                className="text-blue-400 hover:text-blue-300 hover:underline transition-colors text-sm"
-              >
-                Contact Support
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <footer className="bg-slate-800 border-t border-slate-700">
-        <div className="mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-screen-xl">
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-8">
-            <div>
-              <h5 className="text-white font-semibold mb-3">Editions</h5>
-              <ul className="space-y-2">
-                <li>
-                  <Link
-                    href="https://www.parseable.com/blog/announcing-parseable-20"
-                    className="text-slate-400 hover:text-slate-200 transition-colors text-sm"
-                  >
-                    Parseable Enterprise
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href={`${baseUrl}`}
-                    className="text-slate-400 hover:text-slate-200 transition-colors text-sm"
-                  >
-                    Parseable OSS
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="https://www.parseable.com/pricing"
-                    className="text-slate-400 hover:text-slate-200 transition-colors text-sm"
-                  >
-                    Pricing
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h5 className="text-white font-semibold mb-3">Resources</h5>
-              <ul className="space-y-2">
-                <li>
-                  <Link
-                    href={`${baseUrl}`}
-                    className="text-slate-400 hover:text-slate-200 transition-colors text-sm"
-                  >
-                    Documentation
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="https://www.parseable.com/blog"
-                    className="text-slate-400 hover:text-slate-200 transition-colors text-sm"
-                  >
-                    Blog
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="https://logg.ing/community"
-                    className="text-slate-400 hover:text-slate-200 transition-colors text-sm"
-                  >
-                    Community
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="https://github.com/parseablehq/parseable"
-                    className="text-slate-400 hover:text-slate-200 transition-colors text-sm"
-                  >
-                    GitHub
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h5 className="text-white font-semibold mb-3">Company</h5>
-              <ul className="space-y-2">
-                <li>
-                  <Link
-                    href="https://www.parseable.com/about"
-                    className="text-slate-400 hover:text-slate-200 transition-colors text-sm"
-                  >
-                    About Us
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="mailto:sales@parseable.com"
-                    className="text-slate-400 hover:text-slate-200 transition-colors text-sm"
-                  >
-                    Contact
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h5 className="text-white font-semibold mb-3">Legal</h5>
-              <ul className="space-y-2">
-                <li>
-                  <Link
-                    href="https://github.com/parseablehq/parseable/blob/main/LICENSE"
-                    className="text-slate-400 hover:text-slate-200 transition-colors text-sm"
-                  >
-                    License (OSS)
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-slate-700 pt-8 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <div className="text-slate-400 text-sm">
-              © 2025 Parseable. All rights reserved.
-            </div>
-            <div className="flex space-x-4">
-              <Link
-                href="https://github.com/parseablehq"
-                aria-label="Parseable on GitHub"
-                className="text-slate-400 hover:text-slate-200 transition-colors"
-              >
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Link
+              href="https://app.parseable.com"
+              className="group relative flex flex-1 flex-col gap-4 rounded-xl border-2 border-transparent bg-violet-50 dark:bg-violet-900/20 p-6 transition-all hover:border-violet-500 hover:shadow-xl overflow-hidden"
+            >
+              <div className="absolute -top-4 -right-4 w-20 h-20 rounded-bl-full bg-violet-200 dark:bg-violet-800/50 transition-transform group-hover:scale-110"></div>
+              <div className="relative z-10">
                 <svg
-                  className="h-6 w-6"
-                  fill="currentColor"
+                  className="w-10 h-10 text-violet-600 dark:text-violet-400"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
                   viewBox="0 0 24 24"
-                  aria-hidden="true"
                 >
                   <path
-                    fillRule="evenodd"
-                    d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-                    clipRule="evenodd"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.758-3.848 5.25 5.25 0 00-10.233 2.33A4.502 4.502 0 002.25 15z"
                   />
                 </svg>
+                <h3 className="mt-4 text-slate-900 dark:text-white text-lg font-semibold leading-tight">
+                  Cloud
+                </h3>
+                <p className="mt-1 text-slate-600 dark:text-slate-400 text-sm font-normal leading-normal">
+                  Fully managed, secure, and scalable Parseable service.
+                </p>
+              </div>
+            </Link>
+
+            <Link
+              href={`${baseUrl}enterprise`}
+              className="group relative flex flex-1 flex-col gap-4 rounded-xl border-2 border-transparent bg-sky-50 dark:bg-sky-900/20 p-6 transition-all hover:border-sky-500 hover:shadow-xl overflow-hidden"
+            >
+              <div className="absolute -bottom-6 -right-6 w-24 h-24 rounded-full bg-sky-200 dark:bg-sky-800/50 transition-transform group-hover:scale-110"></div>
+              <div className="relative z-10">
+                <svg
+                  className="w-10 h-10 text-sky-600 dark:text-sky-400"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z"
+                  />
+                </svg>
+                <h3 className="mt-4 text-slate-900 dark:text-white text-lg font-semibold leading-tight">
+                  Managed Enterprise
+                </h3>
+                <p className="mt-1 text-slate-600 dark:text-slate-400 text-sm font-normal leading-normal">
+                  Dedicated infrastructure with enterprise-grade features and
+                  support.
+                </p>
+              </div>
+            </Link>
+
+            <Link
+              href="https://github.com/parseablehq/parseable"
+              className="group relative flex flex-1 flex-col gap-4 rounded-xl border-2 border-transparent bg-emerald-50 dark:bg-emerald-900/20 p-6 transition-all hover:border-emerald-500 hover:shadow-xl overflow-hidden"
+            >
+              <div className="absolute -bottom-8 -left-2 w-28 h-28 -rotate-45 bg-emerald-200 dark:bg-emerald-800/50 transition-transform group-hover:scale-110"></div>
+              <div className="relative z-10">
+                <svg
+                  className="w-10 h-10 text-emerald-600 dark:text-emerald-400"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z"
+                  />
+                </svg>
+                <h3 className="mt-4 text-slate-900 dark:text-white text-lg font-semibold leading-tight">
+                  OSS Self-Hosted
+                </h3>
+                <p className="mt-1 text-slate-600 dark:text-slate-400 text-sm font-normal leading-normal">
+                  Deploy and manage Parseable on your own infrastructure.
+                </p>
+              </div>
+            </Link>
+          </div>
+        </section>
+      </div>
+
+      {/* Footer */}
+      <footer className="mt-24 border-t border-slate-200 dark:border-slate-800 py-8">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-[1088px]">
+          <div className="flex flex-col md:flex-row justify-between items-center text-sm gap-4">
+            <p className="text-slate-500 dark:text-slate-400">
+              © 2025 Parseable Inc.
+            </p>
+            <div className="flex items-center gap-6">
+              <Link
+                href="https://github.com/parseablehq/parseable"
+                className="text-slate-500 dark:text-slate-400 hover:text-[#5A43F5] dark:hover:text-white font-medium"
+              >
+                GitHub
               </Link>
               <Link
-                href="https://x.com/parseablehq"
-                aria-label="Parseable on X (Twitter)"
-                className="text-slate-400 hover:text-slate-200 transition-colors"
+                href="https://logg.ing/community"
+                className="text-slate-500 dark:text-slate-400 hover:text-[#5A43F5] dark:hover:text-white font-medium"
               >
-                <svg
-                  className="h-6 w-6"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
-                </svg>
+                Discord
               </Link>
               <Link
-                href="https://www.linkedin.com/company/parseable"
-                aria-label="Parseable on LinkedIn"
-                className="text-slate-400 hover:text-slate-200 transition-colors"
+                href="mailto:support@parseable.com"
+                className="text-slate-500 dark:text-slate-400 hover:text-[#5A43F5] dark:hover:text-white font-medium"
               >
-                <svg
-                  className="h-6 w-6"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
-                </svg>
+                Support
               </Link>
             </div>
           </div>
