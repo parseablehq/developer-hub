@@ -1,0 +1,8 @@
+{
+  "title": "Ingest Data",
+  "pages": [
+    "logs-ingestion",
+    "metrics-ingestion",
+    "traces-ingestion"
+  ]
+}

@@ -225,7 +225,7 @@ export default function MainPage() {
                 href="https://logg.ing/community"
                 className="text-slate-500 dark:text-slate-400 hover:text-[#5A43F5] dark:hover:text-white font-medium"
               >
-                Discord
+                Slack
               </Link>
               <Link
                 href="mailto:support@parseable.com"

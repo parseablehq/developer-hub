@@ -1,0 +1,121 @@
+---
+title: OpenTelemetry
+---
+
+Parseable enables ingesting the OpenTelemetry logs sent from the OTEL collectors in the JSON format. In order to do so, Parseable exposes default endpoint /v1/logs at which the OTEL collector sends the log data.
+
+Below is the sample configuration of the OTEL collector to send the logs to Parseable
+
+```yaml
+exporters:
+  otlphttp/parseablelogs:
+    endpoint: "<parseable-endpoint> eg. http://localhost:8000"
+    headers:
+      Authorization: "Basic <base64 encoded string of username:password>"
+      X-P-Stream: otel-logs     # dataset/stream name
+      X-P-Log-Source: otel-logs
+      Content-Type: application/json
+    encoding: json
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    logs:
+      exporters: [otlphttp/parseablelogs]
+```
+
+## Support for Protocol Buffers
+
+<Callout type="info">
+  <EnterpriseBadge /> This feature requires an Enterprise license.
+</Callout>
+
+Parseable also supports ingesting the OpenTelemetry logs sent from the OTEL collectors in the Protocol Buffers format. Below is an example configuration of the OTEL collector to send the logs to Parseable in the Protocol Buffers format.
+
+```yaml
+exporters:
+  otlphttp/parseablelogs:
+    endpoint: "http://parseable:8000"
+    headers:
+      Authorization: "Basic YWRtaW46YWRtaW4="  # admin:admin in base64
+      X-P-Stream: otel-logs      # dataset/stream name
+      X-P-Log-Source: otel-logs
+      Content-Type: application/x-protobuf
+    encoding: proto
+    tls:
+      insecure: true
+service:
+  pipelines:
+    logs:
+      exporters: [otlphttp/parseablelogs]
+```
+
+## Data Flattening
+The OpenTelemetry logs that are in the form of a nested JSON. When the log event is received at `/v1/logs` endpoint, Parseable will flatten the nested JSON to a flat JSON object. This is done to make the data more queryable and filterable. Here's a quick comparison of the nested JSON and the flattened JSON:
+
+### OTEL JSON format sample:
+
+```json
+{
+  "resourceLogs": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "container.id",
+            "value": {
+              "stringValue": "61625241a33e64c6c34de99b1827a713b630f5548e715a87c6f8d052f1e3a2ab"
+            }
+          },
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "kafka"
+            }
+          }
+        ]
+      },
+      "scopeLogs": [
+        {
+          "scope": {
+            "name": "kafka.server.BrokerServer"
+          },
+          "logRecords": [
+            {
+              "timeUnixNano": "1735735228333091540",
+              "observedTimeUnixNano": "1735735228333101306",
+              "severityNumber": 9,
+              "severityText": "INFO",
+              "body": {
+                "stringValue": "[BrokerServer id=1] Transition from STARTED to SHUTTING_DOWN"
+              },
+              "traceId": "",
+              "spanId": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Flattened JSON:
+
+```json
+{
+  "body": "[BrokerServer id=1] Transition from STARTED to SHUTTING_DOWN",
+  "container.id": "61625241a33e64c6c34de99b1827a713b630f5548e715a87c6f8d052f1e3a2ab",
+  "p_timestamp": "2025-01-01T23:15:01.661+05:30",
+  "scope_name": "kafka.server.BrokerServer",
+  "service.name": "kafka",
+  "severity_number": 9,
+  "severity_text": "SEVERITY_NUMBER_INFO",
+  "time_unix_nano": 1735735228333091600
+}
+```
+
+All the resource attributes are stored as key-value pair where each attribute key becomes the field and the value, which may be of one of `stringValue/intValue/doubleValue etc`, becomes the value for that particular field.
+
+Each log record in the incoming log event is stored as individual record in Parseable and all resource attributes, scope name, version etc which are at the scope level (parent of logRecords) are copied in each ingested record.
