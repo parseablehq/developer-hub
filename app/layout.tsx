@@ -22,7 +22,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         />
       </head>
       <body className="flex flex-col min-h-screen" suppressHydrationWarning>
-        <RootProvider>{children}</RootProvider>
+        <RootProvider enableTelemetry={false}>{children}</RootProvider>
         {gaId && <Analytics gaId={gaId} />}
         {koalaApiKey && <KoalaAnalytics apiKey={koalaApiKey} />}
       </body>

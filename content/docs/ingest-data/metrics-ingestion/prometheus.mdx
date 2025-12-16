@@ -1,0 +1,31 @@
+---
+title: Prometheus
+---
+
+Parseable supports ingesting metrics from Prometheus using the remote write protocol. This allows you to use Parseable as a long-term storage backend for your Prometheus metrics.
+
+## Configuration
+
+To configure Prometheus to send metrics to Parseable, add the following to your Prometheus configuration file:
+
+```yaml
+remote_write:
+  - url: "http://<parseable-endpoint>:8000/api/v1/ingest"
+    basic_auth:
+      username: <username>
+      password: <password>
+    headers:
+      X-P-Stream: prometheus-metrics
+```
+
+## Features
+
+- **Long-term Storage**: Store your Prometheus metrics in Parseable for long-term retention and analysis.
+- **SQL Queries**: Query your metrics using standard SQL syntax.
+- **Cost Effective**: Leverage Parseable's efficient storage to reduce costs compared to traditional time-series databases.
+
+## Best Practices
+
+1. **Stream Naming**: Use descriptive stream names to organize your metrics by application or environment.
+2. **Retention Policies**: Configure appropriate retention policies based on your compliance and analysis needs.
+3. **Query Optimization**: Use appropriate time ranges and filters when querying large metric datasets.

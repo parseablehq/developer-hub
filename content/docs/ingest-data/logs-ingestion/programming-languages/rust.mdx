@@ -1,0 +1,103 @@
+---
+title: "Rust"
+---
+
+## Create a dataset
+First, we'll need to create a dataset. This is a one time operation, and we recommend storing log entries with same schema in a single dataset. So, for example, you can use one dataset per application (given that all logs from that application have the same schema).
+
+
+```rust
+use reqwest::{Client};
+
+#[tokio::main]
+async fn main() {
+    // TODO: Replace the url with your Parseable URL and stream name    
+    let url = "https://<parseable-url>/api/v1/logstream/<stream-name>";
+
+    let client = Client::new();
+    client
+        .put(url)
+        // TODO: Replace the basic auth credentials with your Parseable credentials
+        .header("Authorization", "Basic YWRtaW46YWRtaW4=")
+        .send()
+        .await
+        .unwrap();
+}
+```
+
+## Send logs to the dataset
+After dataset is created, you can start sending logs to the dataset using HTTP POST requests.
+
+
+```rust
+use std::collections::HashMap;
+use reqwest::{Client};
+
+#[tokio::main]
+async fn main() {
+    // TODO: Replace the url with your Parseable URL and stream name    
+    let url = "https://<parseable-url>/api/v1/logstream/<stream-name>";
+
+    let mut map = HashMap::new();
+    map.insert("id", "434a5f5e-2f5f-11ed-a261-0242ac120002");
+    map.insert("datetime", "24/Jun/2022:14:12:15 +0000");
+    map.insert("host", "153.10.110.81",);
+    map.insert("user-identifier", "Mozilla/5.0 Gecko/20100101 Firefox/64.0",);
+    map.insert("method", "PUT",);
+    map.insert("status", "500");
+    map.insert("referrer", "http://www.google.com/");
+
+    let client = Client::new();
+    client
+        .post(url)
+        // INFO: Use X-P-META-<key>:<value> to add custom metadata to the log event
+        .header("X-P-META-meta1", "value1")
+        // INFO: Use X-P-TAG-<key>:<value> to add tags to the log event
+        .header("X-P-TAG-tag1", "value1")
+        // TODO: Replace the basic auth credentials with your Parseable credentials
+        .header("Authorization", "Basic YWRtaW46YWRtaW4=")
+        .header("Content-Type", "application/json")
+        .json(&map)
+        .send()
+        .await
+        .unwrap();
+}
+```
+
+## Querying a dataset
+Once you have started sending logs to a dataset, you can query the logs using standard SQL.
+
+
+```rust
+use reqwest::{Client};
+use std::collections::HashMap;
+
+#[tokio::main]
+async fn main() {
+    // TODO: Replace the url with your Parseable URL
+    let url = "https://<parseable-url>/api/v1/query";
+
+    let mut map = HashMap::new();
+    // TODO: Replace the dataset name with your dataset name
+    map.insert("query", "select * from <dataset-name>");
+    // TODO: Replace the time range with your desired time range
+    map.insert("startTime", "2022-11-20T08:20:00+00:00");
+    map.insert("endTime", "2022-11-20T22:20:31+00:00");
+
+    let client = Client::new();
+    let res = client
+        .post(url)
+        // TODO: Replace the basic auth credentials with your Parseable credentials
+        .header("Authorization", "Basic YWRtaW46YWRtaW4=")
+        .header("Content-Type", "application/json")
+        .json(&map)
+        .send()
+        .await
+        .unwrap();
+
+    if res.status() != 200 {
+        panic!("Error: {}", res.status());
+    }
+    println!("{}", res.text().await.unwrap());
+}
+```
