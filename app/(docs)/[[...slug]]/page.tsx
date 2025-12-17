@@ -9,6 +9,7 @@ import { notFound } from 'next/navigation';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { getMDXComponents } from '@/mdx-components';
 import { EditOnGitHub } from './page.client';
+import { CopyPageDropdown } from '@/components/CopyPageDropdown';
 
 const owner = 'parseablehq';
 const repo = 'developer-hub';
@@ -33,11 +34,16 @@ export default async function Page(props: {
   const MDXContent = page.data.body;
 
   return (
-    <DocsPage toc={page.data.toc} full={page.data.full}>
+    <DocsPage 
+      toc={page.data.toc} 
+      full={page.data.full}
+      tableOfContent={{
+        header: <CopyPageDropdown slug={params.slug} filePath={page.file.path} />,
+      }}
+    >
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
       <div className="flex flex-row gap-2 items-center mb-4">
-        {/* <LLMCopyButton slug={params.slug} /> */}
         <EditOnGitHub
           url={`https://github.com/${owner}/${repo}/tree/main/${path}`}
         />
