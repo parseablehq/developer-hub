@@ -1,0 +1,51 @@
+---
+title: OSS
+description: Parseable Open Source - High performance log analytics for everyone
+---
+
+## Parseable OSS
+
+Parseable OSS is the open-source edition of Parseable, licensed under AGPLv3. It provides a high-performance, cost-effective solution for log analytics.
+
+### Features
+
+- **High Performance** - Optimized for speed and efficiency
+- **Single Binary** - Easy deployment with built-in Prism UI
+- **RBAC** - Role-based access control for secure multi-tenant deployments
+- **OIDC Integrations** - Connect with your existing identity providers
+- **Regular Updates** - Feature releases based on community feedback
+
+### Perfect For
+
+- Individuals and hobbyists
+- Smaller teams
+- Non-mission-critical deployments
+- Learning and experimentation
+
+### Getting Started
+
+Get started with Parseable OSS in minutes:
+
+```bash
+curl -fsSL https://logg.ing/install | bash
+```
+
+Or run with Docker:
+
+```bash
+docker run -p 8000:8000 \
+  -v /tmp/parseable/data:/parseable/data \
+  -v /tmp/parseable/staging:/parseable/staging \
+  -e P_FS_DIR=/parseable/data \
+  -e P_STAGING_DIR=/parseable/staging \
+  parseable/parseable:latest \
+  parseable local-store
+```
+
+### Community
+
+Join our community on [Slack](https://logg.ing/community) to get help, share feedback, and connect with other users.
+
+### Source Code
+
+Parseable OSS is available on [GitHub](https://github.com/parseablehq/parseable).

@@ -30,7 +30,6 @@ export function CopyPageDropdown({ slug, filePath }: CopyPageDropdownProps) {
     ? window.location.href 
     : `https://parseable.com/docs/${slug.join('/')}`;
 
-  const markdownUrl = `/docs/${slug.join('/')}.mdx`;
   const rawGitHubUrl = `https://raw.githubusercontent.com/parseablehq/developer-hub/main/content/docs/${filePath}`;
 
   const handleCopyLink = async () => {
