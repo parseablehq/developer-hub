@@ -1,0 +1,182 @@
+---
+title: LDAP
+description: Configure LDAP authentication with Parseable
+---
+
+Configure LDAP (Lightweight Directory Access Protocol) for Parseable authentication.
+
+## Overview
+
+Integrate LDAP with Parseable to:
+
+- **Directory Integration** - Use existing LDAP/AD users
+- **Centralized Auth** - Single source of truth for users
+- **Group-Based Access** - Map LDAP groups to permissions
+- **Enterprise Ready** - Support for Active Directory
+
+## Prerequisites
+
+- LDAP server (OpenLDAP, Active Directory, etc.)
+- LDAP bind credentials
+- Network access from Parseable to LDAP server
+- Parseable Enterprise (LDAP support may require enterprise features)
+
+## LDAP Configuration
+
+### Connection Settings
+
+```bash
+# LDAP Server Configuration
+P_LDAP_URL=ldap://ldap.example.com:389
+P_LDAP_BIND_DN=cn=admin,dc=example,dc=com
+P_LDAP_BIND_PASSWORD=your-bind-password
+P_LDAP_BASE_DN=dc=example,dc=com
+P_LDAP_USER_FILTER=(uid={username})
+```
+
+### TLS/SSL Configuration
+
+For secure LDAP (LDAPS):
+
+```bash
+P_LDAP_URL=ldaps://ldap.example.com:636
+P_LDAP_TLS_ENABLED=true
+P_LDAP_TLS_SKIP_VERIFY=false
+P_LDAP_TLS_CA_CERT=/path/to/ca.crt
+```
+
+### Docker Compose
+
+```yaml
+version: '3.8'
+services:
+  parseable:
+    image: parseable/parseable:latest
+    environment:
+      - P_LDAP_URL=ldap://ldap.example.com:389
+      - P_LDAP_BIND_DN=cn=admin,dc=example,dc=com
+      - P_LDAP_BIND_PASSWORD=${LDAP_PASSWORD}
+      - P_LDAP_BASE_DN=dc=example,dc=com
+      - P_LDAP_USER_FILTER=(uid={username})
+    volumes:
+      - ./certs:/etc/parseable/certs
+```
+
+## Active Directory Configuration
+
+For Microsoft Active Directory:
+
+```bash
+P_LDAP_URL=ldap://ad.example.com:389
+P_LDAP_BIND_DN=CN=Service Account,OU=Service Accounts,DC=example,DC=com
+P_LDAP_BIND_PASSWORD=your-password
+P_LDAP_BASE_DN=DC=example,DC=com
+P_LDAP_USER_FILTER=(sAMAccountName={username})
+P_LDAP_GROUP_FILTER=(member={dn})
+```
+
+## Configuration Options
+
+| Parameter | Description |
+|-----------|-------------|
+| `P_LDAP_URL` | LDAP server URL |
+| `P_LDAP_BIND_DN` | Bind DN for LDAP queries |
+| `P_LDAP_BIND_PASSWORD` | Bind password |
+| `P_LDAP_BASE_DN` | Base DN for searches |
+| `P_LDAP_USER_FILTER` | Filter to find users |
+| `P_LDAP_GROUP_FILTER` | Filter to find groups |
+| `P_LDAP_TLS_ENABLED` | Enable TLS |
+| `P_LDAP_TLS_SKIP_VERIFY` | Skip certificate verification |
+
+## User Filter Examples
+
+### OpenLDAP
+
+```
+(uid={username})
+```
+
+### Active Directory
+
+```
+(sAMAccountName={username})
+```
+
+### By Email
+
+```
+(mail={username})
+```
+
+### Multiple Attributes
+
+```
+(|(uid={username})(mail={username}))
+```
+
+## Group Mapping
+
+Map LDAP groups to Parseable roles:
+
+```bash
+P_LDAP_GROUP_BASE_DN=ou=groups,dc=example,dc=com
+P_LDAP_GROUP_FILTER=(member={dn})
+P_LDAP_ADMIN_GROUP=cn=parseable-admins,ou=groups,dc=example,dc=com
+P_LDAP_EDITOR_GROUP=cn=parseable-editors,ou=groups,dc=example,dc=com
+```
+
+## Testing LDAP Connection
+
+Test with `ldapsearch`:
+
+```bash
+# Test bind
+ldapsearch -x -H ldap://ldap.example.com:389 \
+  -D "cn=admin,dc=example,dc=com" \
+  -w password \
+  -b "dc=example,dc=com" \
+  "(uid=testuser)"
+
+# Test with TLS
+ldapsearch -x -H ldaps://ldap.example.com:636 \
+  -D "cn=admin,dc=example,dc=com" \
+  -w password \
+  -b "dc=example,dc=com" \
+  "(uid=testuser)"
+```
+
+## Best Practices
+
+1. **Use LDAPS** - Always use TLS in production
+2. **Service Account** - Use dedicated bind account
+3. **Minimal Permissions** - Bind account needs only read access
+4. **Connection Pooling** - Enable for performance
+5. **Failover** - Configure multiple LDAP servers
+
+## Troubleshooting
+
+### Connection Failed
+
+1. Verify LDAP server is accessible
+2. Check firewall rules (port 389 or 636)
+3. Verify bind DN and password
+4. Check TLS certificate
+
+### User Not Found
+
+1. Verify base DN is correct
+2. Check user filter syntax
+3. Test with ldapsearch
+4. Verify user exists in LDAP
+
+### Group Mapping Issues
+
+1. Verify group filter syntax
+2. Check group base DN
+3. Verify user is member of group
+
+## Next Steps
+
+- Configure [OAuth](/docs/integrations/oauth) for OIDC providers
+- Set up [RBAC](/docs/user-guide/rbac) in Parseable
+- Review [security best practices](/docs/cookbook/security)

@@ -1,0 +1,341 @@
+---
+title: PHP
+description: Send logs from PHP applications to Parseable
+---
+
+Send logs from PHP applications to Parseable using HTTP or logging libraries.
+
+## Overview
+
+Integrate PHP with Parseable to:
+
+- **Application Logs** - Send structured logs from PHP apps
+- **Laravel/Symfony** - Works with popular frameworks
+- **Monolog Integration** - Use with Monolog handler
+- **Structured Logging** - JSON-formatted log entries
+
+## Prerequisites
+
+- PHP 7.4+
+- Parseable instance accessible
+- cURL extension or Guzzle HTTP client
+
+## Basic HTTP Integration
+
+### Using cURL
+
+```php
+<?php
+
+class ParseableLogger
+{
+    private string $url;
+    private string $stream;
+    private string $auth;
+
+    public function __construct(string $url, string $stream, string $username, string $password)
+    {
+        $this->url = rtrim($url, '/') . '/api/v1/ingest';
+        $this->stream = $stream;
+        $this->auth = base64_encode("$username:$password");
+    }
+
+    public function log(string $level, string $message, array $context = []): void
+    {
+        $entry = [
+            'timestamp' => gmdate('Y-m-d\TH:i:s.v\Z'),
+            'level' => $level,
+            'message' => $message,
+            ...$context
+        ];
+
+        $this->send([$entry]);
+    }
+
+    public function info(string $message, array $context = []): void
+    {
+        $this->log('info', $message, $context);
+    }
+
+    public function error(string $message, array $context = []): void
+    {
+        $this->log('error', $message, $context);
+    }
+
+    public function warning(string $message, array $context = []): void
+    {
+        $this->log('warning', $message, $context);
+    }
+
+    private function send(array $entries): void
+    {
+        $ch = curl_init($this->url);
+        
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => json_encode($entries),
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json',
+                "Authorization: Basic {$this->auth}",
+                "X-P-Stream: {$this->stream}"
+            ],
+            CURLOPT_TIMEOUT => 5
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode >= 400) {
+            error_log("Failed to send log to Parseable: HTTP $httpCode");
+        }
+    }
+}
+
+// Usage
+$logger = new ParseableLogger(
+    'http://parseable:8000',
+    'php-app',
+    'admin',
+    'admin'
+);
+
+$logger->info('Application started', ['version' => '1.0.0']);
+$logger->error('Database error', ['error' => 'Connection refused']);
+```
+
+### Using Guzzle
+
+```php
+<?php
+
+use GuzzleHttp\Client;
+
+class ParseableLogger
+{
+    private Client $client;
+    private string $stream;
+
+    public function __construct(string $url, string $stream, string $username, string $password)
+    {
+        $this->stream = $stream;
+        $this->client = new Client([
+            'base_uri' => $url,
+            'auth' => [$username, $password],
+            'timeout' => 5.0,
+        ]);
+    }
+
+    public function log(string $level, string $message, array $context = []): void
+    {
+        $entry = [
+            'timestamp' => gmdate('Y-m-d\TH:i:s.v\Z'),
+            'level' => $level,
+            'message' => $message,
+            ...$context
+        ];
+
+        try {
+            $this->client->post('/api/v1/ingest', [
+                'json' => [$entry],
+                'headers' => [
+                    'X-P-Stream' => $this->stream
+                ]
+            ]);
+        } catch (\Exception $e) {
+            error_log("Failed to send log: " . $e->getMessage());
+        }
+    }
+}
+```
+
+## Monolog Handler
+
+Create a custom Monolog handler:
+
+```php
+<?php
+
+namespace App\Logging;
+
+use Monolog\Handler\AbstractProcessingHandler;
+use Monolog\LogRecord;
+
+class ParseableHandler extends AbstractProcessingHandler
+{
+    private string $url;
+    private string $stream;
+    private string $auth;
+    private array $buffer = [];
+    private int $batchSize;
+
+    public function __construct(
+        string $url,
+        string $stream,
+        string $username,
+        string $password,
+        int $batchSize = 100,
+        $level = Logger::DEBUG,
+        bool $bubble = true
+    ) {
+        parent::__construct($level, $bubble);
+        $this->url = rtrim($url, '/') . '/api/v1/ingest';
+        $this->stream = $stream;
+        $this->auth = base64_encode("$username:$password");
+        $this->batchSize = $batchSize;
+    }
+
+    protected function write(LogRecord $record): void
+    {
+        $this->buffer[] = [
+            'timestamp' => $record->datetime->format('Y-m-d\TH:i:s.v\Z'),
+            'level' => strtolower($record->level->name),
+            'message' => $record->message,
+            'channel' => $record->channel,
+            'context' => $record->context,
+            'extra' => $record->extra
+        ];
+
+        if (count($this->buffer) >= $this->batchSize) {
+            $this->flush();
+        }
+    }
+
+    public function flush(): void
+    {
+        if (empty($this->buffer)) {
+            return;
+        }
+
+        $entries = $this->buffer;
+        $this->buffer = [];
+
+        $ch = curl_init($this->url);
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => json_encode($entries),
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json',
+                "Authorization: Basic {$this->auth}",
+                "X-P-Stream: {$this->stream}"
+            ]
+        ]);
+        curl_exec($ch);
+        curl_close($ch);
+    }
+
+    public function close(): void
+    {
+        $this->flush();
+        parent::close();
+    }
+}
+```
+
+## Laravel Integration
+
+### Custom Log Channel
+
+In `config/logging.php`:
+
+```php
+'channels' => [
+    'parseable' => [
+        'driver' => 'custom',
+        'via' => App\Logging\CreateParseableLogger::class,
+        'url' => env('PARSEABLE_URL'),
+        'stream' => env('PARSEABLE_STREAM', 'laravel-app'),
+        'username' => env('PARSEABLE_USERNAME'),
+        'password' => env('PARSEABLE_PASSWORD'),
+    ],
+],
+```
+
+Create `app/Logging/CreateParseableLogger.php`:
+
+```php
+<?php
+
+namespace App\Logging;
+
+use Monolog\Logger;
+
+class CreateParseableLogger
+{
+    public function __invoke(array $config): Logger
+    {
+        $logger = new Logger('parseable');
+        
+        $logger->pushHandler(new ParseableHandler(
+            $config['url'],
+            $config['stream'],
+            $config['username'],
+            $config['password']
+        ));
+
+        return $logger;
+    }
+}
+```
+
+### Usage
+
+```php
+Log::channel('parseable')->info('User logged in', ['user_id' => 123]);
+```
+
+## Symfony Integration
+
+### Service Configuration
+
+```yaml
+# config/services.yaml
+services:
+    App\Logging\ParseableHandler:
+        arguments:
+            $url: '%env(PARSEABLE_URL)%'
+            $stream: '%env(PARSEABLE_STREAM)%'
+            $username: '%env(PARSEABLE_USERNAME)%'
+            $password: '%env(PARSEABLE_PASSWORD)%'
+```
+
+### Monolog Configuration
+
+```yaml
+# config/packages/monolog.yaml
+monolog:
+    handlers:
+        parseable:
+            type: service
+            id: App\Logging\ParseableHandler
+```
+
+## Best Practices
+
+1. **Use Batching** - Buffer logs and send in batches
+2. **Async Sending** - Use queues for non-blocking sends
+3. **Handle Failures** - Log locally on send failures
+4. **Add Context** - Include request ID, user ID
+5. **Flush on Shutdown** - Register shutdown handler
+
+## Troubleshooting
+
+### Connection Errors
+
+1. Verify cURL extension is installed
+2. Check Parseable URL is accessible
+3. Verify SSL certificates
+
+### Missing Logs
+
+1. Check buffer is being flushed
+2. Verify stream name
+3. Check for cURL errors
+
+## Next Steps
+
+- Configure [alerts](/docs/user-guide/alerting) for error patterns
+- Create [dashboards](/docs/user-guide/dashboards) for PHP metrics
+- Explore [OpenTelemetry](/docs/ingest-data/logs-ingestion/opentelemetry) for tracing

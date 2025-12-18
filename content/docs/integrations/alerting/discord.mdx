@@ -1,0 +1,160 @@
+---
+title: Discord
+description: Send alerts and notifications to Discord servers
+---
+
+Send Parseable alerts to Discord channels for team notifications and incident awareness.
+
+## Overview
+
+Integrate Parseable with Discord to:
+
+- **Server Notifications** - Alert your team in dedicated channels
+- **Rich Embeds** - Send formatted messages with alert details
+- **Bot Integration** - Use Discord bots for advanced features
+- **Mobile Alerts** - Receive notifications on any device
+
+## Prerequisites
+
+- Discord server with admin access
+- Discord Webhook URL
+- Parseable instance with alerting configured
+
+## Setting Up Discord Webhook
+
+### Create a Webhook
+
+1. Open Discord and go to your server
+2. Navigate to the channel for alerts
+3. Click **Edit Channel** (gear icon)
+4. Go to **Integrations** → **Webhooks**
+5. Click **New Webhook**
+6. Name your webhook (e.g., "Parseable Alerts")
+7. Copy the **Webhook URL**
+
+## Webhook Integration
+
+Create a webhook service to transform Parseable alerts to Discord format:
+
+```javascript
+// webhook-to-discord.js
+const express = require('express');
+const axios = require('axios');
+
+const app = express();
+app.use(express.json());
+
+const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
+
+app.post('/webhook', async (req, res) => {
+  const alert = req.body;
+  
+  const discordMessage = {
+    username: "Parseable Alerts",
+    avatar_url: "https://parseable.com/logo.png",
+    embeds: [{
+      title: `🚨 ${alert.name || 'Alert Triggered'}`,
+      description: alert.message || `Alert triggered on stream ${alert.stream}`,
+      color: getColor(alert.severity),
+      fields: [
+        {
+          name: "Stream",
+          value: alert.stream || 'N/A',
+          inline: true
+        },
+        {
+          name: "Severity",
+          value: alert.severity || 'Unknown',
+          inline: true
+        },
+        {
+          name: "Current Value",
+          value: String(alert.value || 'N/A'),
+          inline: true
+        },
+        {
+          name: "Threshold",
+          value: String(alert.threshold || 'N/A'),
+          inline: true
+        }
+      ],
+      timestamp: new Date().toISOString(),
+      footer: {
+        text: "Parseable Alert System"
+      }
+    }]
+  };
+
+  try {
+    await axios.post(DISCORD_WEBHOOK_URL, discordMessage);
+    res.status(200).json({ status: 'sent' });
+  } catch (error) {
+    console.error('Error sending to Discord:', error);
+    res.status(500).json({ error: 'Failed to send to Discord' });
+  }
+});
+
+function getColor(severity) {
+  const colors = {
+    'critical': 0xFF0000,  // Red
+    'high': 0xFFA500,      // Orange
+    'medium': 0xFFFF00,    // Yellow
+    'low': 0x00FF00,       // Green
+    'info': 0x0000FF       // Blue
+  };
+  return colors[severity?.toLowerCase()] || 0xFFA500;
+}
+
+app.listen(3000);
+```
+
+### With Mentions
+
+Add role or user mentions for critical alerts:
+
+```javascript
+const discordMessage = {
+  content: alert.severity === 'critical' ? '<@&ROLE_ID> Critical Alert!' : '',
+  embeds: [{
+    // ... embed content
+  }]
+};
+```
+
+## Docker Compose
+
+```yaml
+version: '3.8'
+services:
+  webhook-to-discord:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
+```
+
+## Configuration Options
+
+### Embed Colors
+
+| Severity | Color | Hex |
+|----------|-------|-----|
+| critical | Red | 0xFF0000 |
+| high | Orange | 0xFFA500 |
+| medium | Yellow | 0xFFFF00 |
+| low | Green | 0x00FF00 |
+| info | Blue | 0x0000FF |
+
+## Best Practices
+
+1. **Use Dedicated Channels** - Create separate channels for alerts
+2. **Role Mentions** - Mention roles for critical alerts only
+3. **Rich Embeds** - Use embeds for better formatting
+4. **Rate Limiting** - Discord has rate limits, batch messages if needed
+
+## Next Steps
+
+- Set up [Parseable alerts](/docs/user-guide/alerting) for automated notifications
+- Configure [Slack](/docs/integrations/alerting/slack) as an alternative
+- Create [dashboards](/docs/user-guide/dashboards) for monitoring

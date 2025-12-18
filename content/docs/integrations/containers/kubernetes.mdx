@@ -1,0 +1,504 @@
+---
+title: Kubernetes
+description: Collect logs from Kubernetes clusters
+---
+
+Collect and forward logs from Kubernetes clusters to Parseable.
+
+## Overview
+
+Integrate Kubernetes with Parseable to:
+
+- **Pod Logs** - Collect logs from all pods
+- **Cluster Events** - Monitor Kubernetes events
+- **Rich Metadata** - Include pod, namespace, and label information
+- **Centralized Observability** - Unified view of cluster logs
+
+## Prerequisites
+
+- Kubernetes cluster
+- kubectl configured
+- Helm (recommended)
+- Parseable instance accessible from cluster
+
+## Method 1: Fluent Bit DaemonSet
+
+Deploy Fluent Bit as a DaemonSet for cluster-wide log collection.
+
+### Install with Helm
+
+```bash
+helm repo add fluent https://fluent.github.io/helm-charts
+helm repo update
+
+helm install fluent-bit fluent/fluent-bit \
+  --namespace logging \
+  --create-namespace \
+  -f fluent-bit-values.yaml
+```
+
+### Fluent Bit Values
+
+```yaml
+# fluent-bit-values.yaml
+config:
+  service: |
+    [SERVICE]
+        Flush         5
+        Log_Level     info
+        Daemon        off
+        Parsers_File  /fluent-bit/etc/parsers.conf
+        HTTP_Server   On
+        HTTP_Listen   0.0.0.0
+        HTTP_Port     2020
+
+  inputs: |
+    [INPUT]
+        Name              tail
+        Path              /var/log/containers/*.log
+        Parser            cri
+        Tag               kube.*
+        Mem_Buf_Limit     50MB
+        Skip_Long_Lines   On
+        Refresh_Interval  10
+
+  filters: |
+    [FILTER]
+        Name                kubernetes
+        Match               kube.*
+        Kube_URL            https://kubernetes.default.svc:443
+        Kube_CA_File        /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        Kube_Token_File     /var/run/secrets/kubernetes.io/serviceaccount/token
+        Kube_Tag_Prefix     kube.var.log.containers.
+        Merge_Log           On
+        Merge_Log_Key       log_processed
+        K8S-Logging.Parser  On
+        K8S-Logging.Exclude Off
+        Labels              On
+        Annotations         Off
+
+    [FILTER]
+        Name          nest
+        Match         kube.*
+        Operation     lift
+        Nested_under  kubernetes
+        Add_prefix    k8s_
+
+  outputs: |
+    [OUTPUT]
+        Name            http
+        Match           kube.*
+        Host            parseable.parseable.svc.cluster.local
+        Port            8000
+        URI             /api/v1/ingest
+        Format          json
+        Header          Authorization Basic YWRtaW46YWRtaW4=
+        Header          X-P-Stream k8s-logs
+        tls             Off
+        Retry_Limit     5
+
+  customParsers: |
+    [PARSER]
+        Name        cri
+        Format      regex
+        Regex       ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>[^ ]*) (?<log>.*)$
+        Time_Key    time
+        Time_Format %Y-%m-%dT%H:%M:%S.%L%z
+
+tolerations:
+  - key: node-role.kubernetes.io/master
+    operator: Exists
+    effect: NoSchedule
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+```
+
+## Method 2: OpenTelemetry Collector
+
+Deploy OTel Collector for comprehensive telemetry.
+
+### Collector DaemonSet
+
+```yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: otel-collector
+  namespace: logging
+spec:
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+    spec:
+      serviceAccountName: otel-collector
+      containers:
+        - name: collector
+          image: otel/opentelemetry-collector-contrib:latest
+          args:
+            - --config=/etc/otelcol/config.yaml
+          volumeMounts:
+            - name: config
+              mountPath: /etc/otelcol
+            - name: varlog
+              mountPath: /var/log
+              readOnly: true
+            - name: varlibdockercontainers
+              mountPath: /var/lib/docker/containers
+              readOnly: true
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+      volumes:
+        - name: config
+          configMap:
+            name: otel-collector-config
+        - name: varlog
+          hostPath:
+            path: /var/log
+        - name: varlibdockercontainers
+          hostPath:
+            path: /var/lib/docker/containers
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+```
+
+### OTel Collector ConfigMap
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: logging
+data:
+  config.yaml: |
+    receivers:
+      filelog:
+        include:
+          - /var/log/containers/*.log
+        exclude:
+          - /var/log/containers/otel-collector*.log
+        operators:
+          - type: router
+            id: get-format
+            routes:
+              - output: parser-cri
+                expr: 'body matches "^[^ Z]+ "'
+          - type: regex_parser
+            id: parser-cri
+            regex: '^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$'
+            timestamp:
+              parse_from: attributes.time
+              layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+
+    processors:
+      k8sattributes:
+        extract:
+          metadata:
+            - k8s.pod.name
+            - k8s.pod.uid
+            - k8s.namespace.name
+            - k8s.node.name
+            - k8s.deployment.name
+            - k8s.container.name
+        pod_association:
+          - sources:
+              - from: resource_attribute
+                name: k8s.pod.uid
+      batch:
+        timeout: 10s
+        send_batch_size: 1000
+
+    exporters:
+      otlphttp:
+        endpoint: "http://parseable.parseable.svc.cluster.local:8000"
+        headers:
+          Authorization: "Basic YWRtaW46YWRtaW4="
+          X-P-Stream: "k8s-logs"
+          X-P-Log-Source: "otel-logs"
+
+    service:
+      pipelines:
+        logs:
+          receivers: [filelog]
+          processors: [k8sattributes, batch]
+          exporters: [otlphttp]
+```
+
+### RBAC Configuration
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: otel-collector
+  namespace: logging
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: otel-collector
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "namespaces", "nodes"]
+    verbs: ["get", "watch", "list"]
+  - apiGroups: ["apps"]
+    resources: ["replicasets", "deployments"]
+    verbs: ["get", "watch", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: otel-collector
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: otel-collector
+subjects:
+  - kind: ServiceAccount
+    name: otel-collector
+    namespace: logging
+```
+
+## Method 3: Kubernetes Events
+
+Collect Kubernetes events for cluster monitoring.
+
+### Event Exporter
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-event-exporter
+  namespace: logging
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k8s-event-exporter
+  template:
+    metadata:
+      labels:
+        app: k8s-event-exporter
+    spec:
+      serviceAccountName: event-exporter
+      containers:
+        - name: exporter
+          image: bitnami/kubectl:latest
+          command:
+            - /bin/bash
+            - -c
+            - |
+              while true; do
+                kubectl get events -A --watch -o json | while read event; do
+                  curl -s -X POST "http://parseable.parseable.svc.cluster.local:8000/api/v1/ingest" \
+                    -H "Authorization: Basic YWRtaW46YWRtaW4=" \
+                    -H "X-P-Stream: k8s-events" \
+                    -H "Content-Type: application/json" \
+                    -d "[${event}]" || true
+                done
+                sleep 5
+              done
+```
+
+### Event Exporter RBAC
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: event-exporter
+  namespace: logging
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: event-exporter
+rules:
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["get", "watch", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: event-exporter
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: event-exporter
+subjects:
+  - kind: ServiceAccount
+    name: event-exporter
+    namespace: logging
+```
+
+## Deploy Parseable on Kubernetes
+
+### Helm Installation
+
+```bash
+helm repo add parseable https://charts.parseable.com
+helm repo update
+
+helm install parseable parseable/parseable \
+  --namespace parseable \
+  --create-namespace \
+  --set parseable.username=admin \
+  --set parseable.password=admin
+```
+
+### Basic Deployment
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: parseable
+  namespace: parseable
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: parseable
+  template:
+    metadata:
+      labels:
+        app: parseable
+    spec:
+      containers:
+        - name: parseable
+          image: parseable/parseable:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: P_USERNAME
+              value: "admin"
+            - name: P_PASSWORD
+              value: "admin"
+          resources:
+            limits:
+              cpu: "1"
+              memory: 2Gi
+            requests:
+              cpu: 500m
+              memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: parseable
+  namespace: parseable
+spec:
+  selector:
+    app: parseable
+  ports:
+    - port: 8000
+      targetPort: 8000
+```
+
+## Namespace Filtering
+
+Filter logs by namespace:
+
+```yaml
+# In Fluent Bit config
+filters: |
+  [FILTER]
+      Name    grep
+      Match   kube.*
+      Exclude $kubernetes['namespace_name'] kube-system
+
+  [FILTER]
+      Name    grep
+      Match   kube.*
+      Exclude $kubernetes['namespace_name'] logging
+```
+
+## Querying Kubernetes Logs
+
+```sql
+-- Recent pod logs
+SELECT timestamp, k8s_namespace_name, k8s_pod_name, log
+FROM "k8s-logs"
+ORDER BY timestamp DESC
+LIMIT 100
+
+-- Errors by namespace
+SELECT 
+  k8s_namespace_name,
+  COUNT(*) as error_count
+FROM "k8s-logs"
+WHERE log LIKE '%error%' OR log LIKE '%ERROR%'
+  AND timestamp > NOW() - INTERVAL '1 hour'
+GROUP BY k8s_namespace_name
+ORDER BY error_count DESC
+
+-- Pod restarts (from events)
+SELECT timestamp, involvedObject_name, reason, message
+FROM "k8s-events"
+WHERE reason = 'Restarted' OR reason = 'BackOff'
+ORDER BY timestamp DESC
+
+-- Logs from specific deployment
+SELECT timestamp, k8s_pod_name, log
+FROM "k8s-logs"
+WHERE k8s_deployment_name = 'my-app'
+ORDER BY timestamp DESC
+LIMIT 100
+```
+
+## Best Practices
+
+1. **Use DaemonSet** - Ensure logs from all nodes
+2. **Add Tolerations** - Run on master/control-plane nodes
+3. **Filter System Logs** - Exclude kube-system if noisy
+4. **Resource Limits** - Set appropriate limits for collectors
+5. **Use Labels** - Leverage Kubernetes labels for filtering
+6. **Monitor Collectors** - Watch for backpressure and errors
+
+## Troubleshooting
+
+### Missing Logs
+
+1. Check DaemonSet pods are running on all nodes
+2. Verify RBAC permissions
+3. Check log file paths are correct
+4. Verify Parseable service is accessible
+
+### High Resource Usage
+
+1. Increase `Mem_Buf_Limit`
+2. Add namespace exclusions
+3. Reduce `Refresh_Interval`
+4. Enable log sampling
+
+### Permission Denied
+
+1. Verify ServiceAccount exists
+2. Check ClusterRole and ClusterRoleBinding
+3. Verify pod security policies
+
+## Next Steps
+
+- Configure [Amazon EKS](/docs/integrations/containers/amazon-eks) for AWS
+- Configure [Google GKE](/docs/integrations/containers/google-gke) for GCP
+- Configure [Azure AKS](/docs/integrations/containers/azure-aks) for Azure
+- Set up [alerts](/docs/user-guide/alerting) for cluster events
+- Create [dashboards](/docs/user-guide/dashboards) for monitoring

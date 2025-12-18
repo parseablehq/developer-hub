@@ -1,0 +1,11 @@
+{
+  "title": "Authentication",
+  "pages": [
+    "keycloak",
+    "okta",
+    "auth0",
+    "azure-ad",
+    "google-workspace",
+    "ldap"
+  ]
+}

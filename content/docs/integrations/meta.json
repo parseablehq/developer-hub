@@ -4,10 +4,17 @@
     "grafana",
     "metabase",
     "oauth",
-    "databases",
+    "visualization",
     "alerting",
     "cloud",
+    "auth",
+    "log-shippers",
+    "streaming",
+    "containers",
+    "languages",
+    "databases",
     "cicd",
-    "security"
+    "security",
+    "llm-agents"
   ]
 }

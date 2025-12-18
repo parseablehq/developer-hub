@@ -3,6 +3,10 @@
   "pages": [
     "slack",
     "pagerduty",
+    "opsgenie",
+    "microsoft-teams",
+    "discord",
+    "email",
     "webhook"
   ]
 }

@@ -1,0 +1,186 @@
+---
+title: Azure Event Hubs
+description: Stream logs from Azure Event Hubs to Parseable
+---
+
+Stream logs from Azure Event Hubs to Parseable for centralized observability.
+
+## Overview
+
+Integrate Azure Event Hubs with Parseable to:
+
+- **Stream Azure Logs** - Collect logs from Azure services
+- **High Throughput** - Handle millions of events per second
+- **Real-time Processing** - Process logs as they arrive
+- **Azure Integration** - Native Azure ecosystem support
+
+## Prerequisites
+
+- Azure subscription with Event Hubs
+- Event Hubs namespace and hub created
+- Parseable instance accessible from Azure
+- Connection string or managed identity
+
+## Method 1: Azure Functions
+
+Use Azure Functions to consume events and forward to Parseable.
+
+### Function Code
+
+```javascript
+// index.js
+const axios = require('axios');
+
+module.exports = async function (context, eventHubMessages) {
+  const PARSEABLE_URL = process.env.PARSEABLE_URL;
+  const PARSEABLE_AUTH = process.env.PARSEABLE_AUTH;
+  
+  const logs = eventHubMessages.map(msg => {
+    if (typeof msg === 'string') {
+      try {
+        return JSON.parse(msg);
+      } catch {
+        return { message: msg, timestamp: new Date().toISOString() };
+      }
+    }
+    return msg;
+  });
+
+  try {
+    await axios.post(`${PARSEABLE_URL}/api/v1/ingest`, logs, {
+      headers: {
+        'Authorization': `Basic ${PARSEABLE_AUTH}`,
+        'X-P-Stream': 'azure-events',
+        'Content-Type': 'application/json'
+      }
+    });
+    context.log(`Sent ${logs.length} events to Parseable`);
+  } catch (error) {
+    context.log.error('Error sending to Parseable:', error);
+    throw error;
+  }
+};
+```
+
+### Function Configuration
+
+```json
+// function.json
+{
+  "bindings": [
+    {
+      "type": "eventHubTrigger",
+      "name": "eventHubMessages",
+      "direction": "in",
+      "eventHubName": "your-event-hub",
+      "connection": "EventHubConnection",
+      "cardinality": "many",
+      "consumerGroup": "$Default"
+    }
+  ]
+}
+```
+
+### Application Settings
+
+```
+PARSEABLE_URL=https://your-parseable.com
+PARSEABLE_AUTH=base64-encoded-credentials
+EventHubConnection=Endpoint=sb://...
+```
+
+## Method 2: OpenTelemetry Collector
+
+Use OTel Collector with Azure Event Hubs receiver.
+
+### Configuration
+
+```yaml
+receivers:
+  azureeventhub:
+    connection: ${EVENTHUB_CONNECTION}
+    format: json
+
+exporters:
+  otlphttp/parseable:
+    endpoint: "http://parseable:8000"
+    headers:
+      Authorization: "Basic YWRtaW46YWRtaW4="
+      X-P-Stream: "azure-events"
+      X-P-Log-Source: "otel-logs"
+
+service:
+  pipelines:
+    logs:
+      receivers: [azureeventhub]
+      exporters: [otlphttp/parseable]
+```
+
+## Method 3: Fluent Bit
+
+Use Fluent Bit with Azure Event Hubs input.
+
+### Configuration
+
+```yaml
+service:
+  flush: 5
+  log_level: info
+
+pipeline:
+  inputs:
+    - name: azure_event_hub
+      connection_string: ${EVENTHUB_CONNECTION}
+      hub_name: your-event-hub
+      consumer_group: $Default
+
+  outputs:
+    - name: http
+      match: '*'
+      host: parseable
+      port: 8000
+      uri: /api/v1/ingest
+      format: json
+      header: Authorization Basic YWRtaW46YWRtaW4=
+      header: X-P-Stream azure-events
+```
+
+## Diagnostic Settings
+
+Export Azure resource logs to Event Hubs:
+
+1. Go to your Azure resource
+2. **Monitoring** → **Diagnostic settings**
+3. Click **Add diagnostic setting**
+4. Select log categories
+5. Choose **Stream to an event hub**
+6. Select your Event Hubs namespace and hub
+
+## Best Practices
+
+1. **Use Consumer Groups** - Separate consumers for different purposes
+2. **Configure Partitions** - Scale throughput with partitions
+3. **Enable Checkpointing** - Track processing progress
+4. **Monitor Lag** - Watch for processing delays
+5. **Handle Retries** - Implement retry logic
+
+## Troubleshooting
+
+### Connection Issues
+
+1. Verify connection string is correct
+2. Check network connectivity
+3. Verify firewall rules allow access
+4. Check managed identity permissions
+
+### Missing Events
+
+1. Verify consumer group configuration
+2. Check checkpoint storage
+3. Monitor Event Hubs metrics
+
+## Next Steps
+
+- Set up [Azure Blob Storage](/docs/integrations/cloud/azure-blob-storage) for log storage
+- Configure [alerts](/docs/user-guide/alerting) for Azure metrics
+- Create [dashboards](/docs/user-guide/dashboards) for monitoring
