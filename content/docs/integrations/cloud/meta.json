@@ -3,6 +3,11 @@
   "pages": [
     "aws-cloudwatch",
     "aws-s3",
-    "gcp-pubsub"
+    "aws-kinesis",
+    "azure-event-hubs",
+    "azure-blob-storage",
+    "gcp-pubsub",
+    "gcp-storage",
+    "digitalocean-spaces"
   ]
 }

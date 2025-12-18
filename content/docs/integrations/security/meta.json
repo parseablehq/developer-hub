@@ -2,6 +2,7 @@
   "title": "Security",
   "pages": [
     "falco",
-    "trivy"
+    "trivy",
+    "siem-export"
   ]
 }

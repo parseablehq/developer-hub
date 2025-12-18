@@ -3,6 +3,9 @@
   "pages": [
     "github-actions",
     "jenkins",
-    "gitlab-ci"
+    "gitlab-ci",
+    "circleci",
+    "argocd",
+    "terraform"
   ]
 }

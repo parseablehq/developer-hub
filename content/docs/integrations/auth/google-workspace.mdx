@@ -1,0 +1,129 @@
+---
+title: Google Workspace
+description: Configure Google Workspace for SSO with Parseable
+---
+
+Configure Google Workspace (formerly G Suite) for Parseable authentication.
+
+## Overview
+
+Integrate Google Workspace with Parseable to:
+
+- **Google SSO** - Use Google Workspace identities
+- **Domain Restriction** - Limit access to your domain
+- **Simple Setup** - Quick OAuth configuration
+- **Familiar Login** - Users sign in with Google
+
+## Prerequisites
+
+- Google Workspace account (or Google Cloud project)
+- Admin access to Google Cloud Console
+- Parseable instance with OIDC support
+
+## Google Cloud Configuration
+
+### Create OAuth Client
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com)
+2. Select or create a project
+3. Go to **APIs & Services** → **Credentials**
+4. Click **Create Credentials** → **OAuth client ID**
+
+### Configure OAuth Consent Screen
+
+If prompted, configure the consent screen:
+
+1. Go to **OAuth consent screen**
+2. Select **Internal** (for Workspace) or **External**
+3. Fill in:
+   - **App name**: Parseable
+   - **User support email**: Your email
+   - **Developer contact**: Your email
+4. Add scopes: `email`, `profile`, `openid`
+5. Click **Save and Continue**
+
+### Create Client ID
+
+1. **Application type**: Web application
+2. **Name**: Parseable
+3. **Authorized redirect URIs**: `https://your-parseable.com/callback`
+4. Click **Create**
+5. Copy **Client ID** and **Client Secret**
+
+## Parseable Configuration
+
+### Environment Variables
+
+```bash
+P_OIDC_CLIENT_ID=your-client-id.apps.googleusercontent.com
+P_OIDC_CLIENT_SECRET=your-client-secret
+P_OIDC_ISSUER=https://accounts.google.com
+P_OIDC_REDIRECT_URI=https://your-parseable.com/callback
+```
+
+### Docker Compose
+
+```yaml
+version: '3.8'
+services:
+  parseable:
+    image: parseable/parseable:latest
+    environment:
+      - P_OIDC_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - P_OIDC_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - P_OIDC_ISSUER=https://accounts.google.com
+      - P_OIDC_REDIRECT_URI=https://your-parseable.com/callback
+```
+
+## OIDC Endpoints
+
+Google OIDC endpoints:
+
+| Endpoint | URL |
+|----------|-----|
+| Issuer | `https://accounts.google.com` |
+| Authorization | `https://accounts.google.com/o/oauth2/v2/auth` |
+| Token | `https://oauth2.googleapis.com/token` |
+| UserInfo | `https://openidconnect.googleapis.com/v1/userinfo` |
+| JWKS | `https://www.googleapis.com/oauth2/v3/certs` |
+
+## Domain Restriction
+
+Restrict access to your Google Workspace domain:
+
+### In Google Cloud Console
+
+1. Go to **OAuth consent screen**
+2. Set **User type** to **Internal**
+3. Only users in your Workspace domain can access
+
+### In Parseable (if supported)
+
+Configure allowed domains in Parseable settings.
+
+## Best Practices
+
+1. **Use Internal Type** - For Workspace-only access
+2. **Verify Domain** - Add and verify your domain
+3. **Limit Scopes** - Request only needed permissions
+4. **Monitor Usage** - Check OAuth usage in Cloud Console
+
+## Troubleshooting
+
+### Access Blocked
+
+1. Verify OAuth consent screen is configured
+2. Check app is published (for external)
+3. Verify user is in allowed domain
+
+### Invalid Client
+
+1. Check client ID format (ends with `.apps.googleusercontent.com`)
+2. Verify client secret is correct
+3. Check redirect URI matches exactly
+
+## Next Steps
+
+- Configure [OAuth](/docs/integrations/oauth) for other providers
+- Set up [RBAC](/docs/user-guide/rbac) in Parseable
+- Review [security best practices](/docs/cookbook/security)

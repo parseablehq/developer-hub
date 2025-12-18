@@ -1,0 +1,130 @@
+---
+title: Tableau
+description: Connect Parseable to Tableau for enterprise analytics
+---
+
+Connect Parseable to Tableau for enterprise-grade analytics and visualization.
+
+## Overview
+
+Integrate Parseable with Tableau to:
+
+- **Enterprise Analytics** - Leverage Tableau's powerful analytics engine
+- **Rich Visualizations** - Create sophisticated charts and dashboards
+- **Data Blending** - Combine log data with other data sources
+- **Sharing** - Publish and share insights across your organization
+
+## Prerequisites
+
+- Tableau Desktop or Tableau Server
+- Parseable instance with data
+- PostgreSQL connector
+
+## Connection Setup
+
+### Tableau Desktop
+
+1. Open Tableau Desktop
+2. Click **Connect** → **To a Server** → **PostgreSQL**
+3. Enter connection details:
+
+| Field | Value |
+|-------|-------|
+| Server | your-parseable-host |
+| Port | 8000 |
+| Database | parseable |
+| Username | your-username |
+| Password | your-password |
+
+4. Click **Sign In**
+
+### Select Data
+
+1. In the **Database** dropdown, select `parseable`
+2. Drag your stream (table) to the canvas
+3. Click **Update Now** to preview data
+
+## Creating Visualizations
+
+### Time Series Analysis
+
+1. Drag `p_timestamp` to Columns
+2. Right-click and select appropriate date part (Hour, Day, etc.)
+3. Drag `Number of Records` to Rows
+4. Add filters for specific log levels or services
+
+### Log Level Distribution
+
+1. Drag `level` to Columns
+2. Drag `Number of Records` to Rows
+3. Change mark type to **Bar**
+4. Add color by `level`
+
+### Top Error Sources
+
+1. Create calculated field for errors:
+   ```
+   IF [level] = 'error' THEN 1 ELSE 0 END
+   ```
+2. Drag `service` to Rows
+3. Drag error count to Columns
+4. Sort descending
+
+## Building Dashboards
+
+### Create Dashboard
+
+1. Click **Dashboard** → **New Dashboard**
+2. Drag sheets from the left panel
+3. Add filters and parameters
+4. Configure interactivity
+
+### Add Filters
+
+1. Drag a filter field to the Filters shelf
+2. Right-click → **Apply to Worksheets** → **All Using This Data Source**
+3. Show filter control on dashboard
+
+## Tableau Server Publishing
+
+### Publish Workbook
+
+1. **Server** → **Publish Workbook**
+2. Select your Tableau Server
+3. Configure:
+   - Project location
+   - Permissions
+   - Data source embedding
+
+### Schedule Refreshes
+
+1. On Tableau Server, go to your workbook
+2. Click **Schedules**
+3. Set refresh frequency
+
+## Best Practices
+
+1. **Use Extracts** - Create extracts for better performance
+2. **Filter Early** - Apply filters at the data source level
+3. **Optimize Queries** - Use custom SQL for complex aggregations
+4. **Cache Results** - Enable caching on Tableau Server
+
+## Troubleshooting
+
+### Connection Failed
+
+1. Verify PostgreSQL driver is installed
+2. Check network connectivity
+3. Verify credentials
+
+### Slow Performance
+
+1. Use data extracts instead of live connections
+2. Add context filters
+3. Reduce data granularity
+
+## Next Steps
+
+- Create [dashboards](/docs/user-guide/dashboards) in Parseable
+- Set up [alerts](/docs/user-guide/alerting) for anomalies
+- Explore [Metabase](/docs/integrations/metabase) as an alternative
