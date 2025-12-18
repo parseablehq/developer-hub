@@ -1,0 +1,10 @@
+{
+  "title": "User Guide",
+  "pages": [
+    "ai-native",
+    "alerting",
+    "dashboards",
+    "sql-editor",
+    "rbac"
+  ]
+}

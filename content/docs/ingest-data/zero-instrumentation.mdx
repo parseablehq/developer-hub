@@ -1,0 +1,27 @@
+---
+title: Zero Instrumentation
+description: Collect logs without modifying your application code
+---
+
+## Zero Instrumentation
+
+Parseable supports zero-instrumentation log collection, allowing you to capture logs from your applications without any code changes.
+
+### Benefits
+
+- **No Code Changes** - Start collecting logs immediately without modifying your application
+- **Minimal Overhead** - Lightweight collection with minimal performance impact
+- **Universal Compatibility** - Works with any application that writes to stdout/stderr
+
+### How It Works
+
+Zero instrumentation leverages existing log outputs from your applications. By configuring log collectors to capture stdout/stderr streams, you can send logs to Parseable without adding any instrumentation libraries to your code.
+
+### Getting Started
+
+1. Deploy Parseable
+2. Configure your log collector (Fluent Bit, Vector, etc.) to capture application logs
+3. Point the collector to your Parseable endpoint
+4. Start querying your logs
+
+See the [Logging Agents](/docs/ingest-data/logs-ingestion/logging-agents) section for detailed setup guides.

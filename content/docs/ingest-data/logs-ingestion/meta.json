@@ -3,7 +3,6 @@
   "pages": [
     "logging-agents",
     "opentelemetry",
-    "programming-languages",
-    "streaming-data"
+    "programming-languages"
   ]
 }

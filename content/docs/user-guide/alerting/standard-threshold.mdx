@@ -1,0 +1,24 @@
+---
+title: Standard Threshold
+description: Configure alerts based on defined threshold values
+---
+
+## Standard Threshold Alerts
+
+Standard threshold alerts trigger when metrics cross defined boundaries, such as response time exceeding 500ms or error rate going above 5%.
+
+### How It Works
+
+You define specific threshold values, and Parseable monitors your data continuously. When the threshold is crossed, an alert is triggered.
+
+### Use Cases
+
+- **Error Rate Monitoring** - Alert when error rate exceeds a percentage
+- **Latency Monitoring** - Alert when response times exceed acceptable limits
+- **Resource Usage** - Alert when CPU, memory, or disk usage crosses thresholds
+
+### Configuration
+
+Set `alertType` to `threshold` when creating an alert and specify your threshold values.
+
+See the [Alerts documentation](/docs/features/alerts) for detailed configuration options.
