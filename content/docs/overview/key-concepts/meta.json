@@ -1,0 +1,11 @@
+{
+  "title": "Key Concepts",
+  "pages": [
+    "data-model",
+    "ingestion",
+    "partitioning",
+    "storage",
+    "query",
+    "high-availability"
+  ]
+}

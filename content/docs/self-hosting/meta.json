@@ -1,0 +1,10 @@
+{
+  "title": "Self Hosting",
+  "pages": [
+    "configuration",
+    "installation",
+    "storage-targets",
+    "metrics",
+    "telemetry"
+  ]
+}

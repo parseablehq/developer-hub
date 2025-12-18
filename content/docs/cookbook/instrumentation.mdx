@@ -1,0 +1,43 @@
+---
+title: Instrumentation
+description: Best practices for instrumenting your applications
+---
+
+## Instrumentation Guide
+
+Learn how to properly instrument your applications for effective observability with Parseable.
+
+### Structured Logging
+
+Always use structured logging formats like JSON:
+
+```json
+{
+  "timestamp": "2024-01-15T10:30:00Z",
+  "level": "info",
+  "message": "User logged in",
+  "user_id": "user-123",
+  "ip_address": "192.168.1.1",
+  "duration_ms": 45
+}
+```
+
+### Key Fields to Include
+
+- **timestamp** - When the event occurred
+- **level** - Log level (debug, info, warn, error)
+- **message** - Human-readable description
+- **correlation_id** - For tracing requests across services
+- **service** - Name of the service generating the log
+
+### Best Practices
+
+1. Use consistent field names across services
+2. Include context with every log entry
+3. Avoid logging sensitive data
+4. Use appropriate log levels
+5. Include timing information for performance analysis
+
+### Integration Examples
+
+See the [Logging Agents](/docs/ingest-data/logs-ingestion/logging-agents) and [OpenTelemetry](/docs/ingest-data/logs-ingestion/opentelemetry) sections for integration guides.

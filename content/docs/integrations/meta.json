@@ -1,0 +1,8 @@
+{
+  "title": "Integrations",
+  "pages": [
+    "grafana",
+    "metabase",
+    "oauth"
+  ]
+}

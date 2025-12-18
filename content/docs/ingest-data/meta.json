@@ -1,7 +1,9 @@
 {
-  "title": "Ingest Data",
+  "title": "Ingesting Data",
   "pages": [
+    "zero-instrumentation",
     "logs-ingestion",
+    "streaming-data",
     "metrics-ingestion",
     "traces-ingestion"
   ]

@@ -1,0 +1,44 @@
+---
+title: SQL Editor
+description: Query your logs using SQL syntax
+---
+
+## SQL Editor
+
+Parseable provides a powerful SQL editor that allows you to query your log data using familiar SQL syntax.
+
+### Features
+
+- **Full SQL Support** - Use standard SQL queries to analyze your logs
+- **Auto-completion** - Intelligent suggestions as you type
+- **Query History** - Access your previous queries
+- **Export Results** - Download query results in various formats
+
+### Getting Started
+
+1. Navigate to the SQL Editor in the Parseable UI
+2. Select your log stream from the dropdown
+3. Write your SQL query
+4. Click "Run" to execute
+
+### Example Queries
+
+```sql
+-- Get recent logs
+SELECT * FROM mystream LIMIT 100
+
+-- Count logs by level
+SELECT level, COUNT(*) as count 
+FROM mystream 
+GROUP BY level
+
+-- Filter by time range
+SELECT * FROM mystream 
+WHERE p_timestamp > NOW() - INTERVAL '1 hour'
+```
+
+### Tips
+
+- Use `p_timestamp` for time-based filtering
+- Use `LIMIT` to prevent large result sets
+- Use `GROUP BY` for aggregations
