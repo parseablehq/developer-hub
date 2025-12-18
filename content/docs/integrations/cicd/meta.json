@@ -1,0 +1,8 @@
+{
+  "title": "CI/CD",
+  "pages": [
+    "github-actions",
+    "jenkins",
+    "gitlab-ci"
+  ]
+}

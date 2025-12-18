@@ -1,0 +1,8 @@
+{
+  "title": "Cloud Providers",
+  "pages": [
+    "aws-cloudwatch",
+    "aws-s3",
+    "gcp-pubsub"
+  ]
+}

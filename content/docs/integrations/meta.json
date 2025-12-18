@@ -3,6 +3,11 @@
   "pages": [
     "grafana",
     "metabase",
-    "oauth"
+    "oauth",
+    "databases",
+    "alerting",
+    "cloud",
+    "cicd",
+    "security"
   ]
 }

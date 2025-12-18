@@ -1,0 +1,277 @@
+---
+title: AWS S3
+description: Use AWS S3 as storage backend for Parseable
+---
+
+Configure AWS S3 as the storage backend for Parseable to store and query your observability data.
+
+## Overview
+
+Using AWS S3 with Parseable provides:
+
+- **Scalable Storage** - Virtually unlimited storage capacity
+- **Cost Effective** - Pay only for what you use
+- **Durability** - 99.999999999% (11 9's) durability
+- **Integration** - Native AWS ecosystem integration
+
+## Prerequisites
+
+- AWS account with S3 access
+- S3 bucket created for Parseable data
+- AWS credentials with S3 read/write permissions
+
+### IAM Permissions
+
+Create an IAM policy with the required S3 permissions:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject",
+        "s3:ListBucket",
+        "s3:GetBucketLocation"
+      ],
+      "Resource": [
+        "arn:aws:s3:::your-parseable-bucket",
+        "arn:aws:s3:::your-parseable-bucket/*"
+      ]
+    }
+  ]
+}
+```
+
+## Parseable Configuration
+
+### Environment Variables
+
+Configure Parseable to use S3 storage:
+
+```bash
+# S3 Storage Configuration
+P_S3_URL=https://s3.us-east-1.amazonaws.com
+P_S3_BUCKET=your-parseable-bucket
+P_S3_REGION=us-east-1
+P_S3_ACCESS_KEY=your-access-key
+P_S3_SECRET_KEY=your-secret-key
+
+# Optional: S3 path prefix
+P_S3_PATH_PREFIX=parseable-data/
+```
+
+### Docker Compose
+
+```yaml
+version: '3.8'
+services:
+  parseable:
+    image: parseable/parseable:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - P_S3_URL=https://s3.us-east-1.amazonaws.com
+      - P_S3_BUCKET=your-parseable-bucket
+      - P_S3_REGION=us-east-1
+      - P_S3_ACCESS_KEY=${AWS_ACCESS_KEY_ID}
+      - P_S3_SECRET_KEY=${AWS_SECRET_ACCESS_KEY}
+      - P_USERNAME=admin
+      - P_PASSWORD=admin
+    command: ["parseable", "s3-store"]
+```
+
+### Kubernetes with IRSA
+
+Use IAM Roles for Service Accounts (IRSA) for secure authentication:
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: parseable
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/ParseableS3Role
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: parseable
+spec:
+  template:
+    spec:
+      serviceAccountName: parseable
+      containers:
+        - name: parseable
+          image: parseable/parseable:latest
+          env:
+            - name: P_S3_URL
+              value: "https://s3.us-east-1.amazonaws.com"
+            - name: P_S3_BUCKET
+              value: "your-parseable-bucket"
+            - name: P_S3_REGION
+              value: "us-east-1"
+          args: ["parseable", "s3-store"]
+```
+
+## S3 Bucket Configuration
+
+### Bucket Policy (Optional)
+
+Restrict bucket access to specific IAM roles:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::123456789012:role/ParseableS3Role"
+      },
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::your-parseable-bucket",
+        "arn:aws:s3:::your-parseable-bucket/*"
+      ]
+    }
+  ]
+}
+```
+
+### Lifecycle Rules
+
+Configure lifecycle rules for cost optimization:
+
+```json
+{
+  "Rules": [
+    {
+      "ID": "TransitionToIA",
+      "Status": "Enabled",
+      "Filter": {
+        "Prefix": "parseable-data/"
+      },
+      "Transitions": [
+        {
+          "Days": 30,
+          "StorageClass": "STANDARD_IA"
+        },
+        {
+          "Days": 90,
+          "StorageClass": "GLACIER"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Server-Side Encryption
+
+Enable default encryption on the bucket:
+
+```bash
+aws s3api put-bucket-encryption \
+  --bucket your-parseable-bucket \
+  --server-side-encryption-configuration '{
+    "Rules": [
+      {
+        "ApplyServerSideEncryptionByDefault": {
+          "SSEAlgorithm": "aws:kms",
+          "KMSMasterKeyID": "your-kms-key-id"
+        }
+      }
+    ]
+  }'
+```
+
+## Configuration Options
+
+| Parameter | Description |
+|-----------|-------------|
+| `P_S3_URL` | S3 endpoint URL |
+| `P_S3_BUCKET` | S3 bucket name |
+| `P_S3_REGION` | AWS region |
+| `P_S3_ACCESS_KEY` | AWS access key ID |
+| `P_S3_SECRET_KEY` | AWS secret access key |
+| `P_S3_PATH_PREFIX` | Optional path prefix in bucket |
+
+## S3-Compatible Storage
+
+Parseable also works with S3-compatible storage providers:
+
+### MinIO
+
+```bash
+P_S3_URL=http://minio:9000
+P_S3_BUCKET=parseable
+P_S3_REGION=us-east-1
+P_S3_ACCESS_KEY=minioadmin
+P_S3_SECRET_KEY=minioadmin
+```
+
+### DigitalOcean Spaces
+
+```bash
+P_S3_URL=https://nyc3.digitaloceanspaces.com
+P_S3_BUCKET=your-space-name
+P_S3_REGION=nyc3
+P_S3_ACCESS_KEY=your-spaces-key
+P_S3_SECRET_KEY=your-spaces-secret
+```
+
+### Cloudflare R2
+
+```bash
+P_S3_URL=https://account-id.r2.cloudflarestorage.com
+P_S3_BUCKET=your-bucket
+P_S3_REGION=auto
+P_S3_ACCESS_KEY=your-r2-access-key
+P_S3_SECRET_KEY=your-r2-secret-key
+```
+
+## Best Practices
+
+1. **Use IRSA in EKS** - Avoid hardcoding credentials
+2. **Enable Encryption** - Use SSE-S3 or SSE-KMS
+3. **Configure Lifecycle Rules** - Optimize storage costs
+4. **Use VPC Endpoints** - Reduce data transfer costs
+5. **Enable Versioning** - Protect against accidental deletion
+6. **Monitor Costs** - Set up billing alerts
+
+## Troubleshooting
+
+### Access Denied Errors
+
+1. Verify IAM permissions are correct
+2. Check bucket policy allows access
+3. Verify credentials are not expired
+4. Check bucket region matches configuration
+
+### Connection Issues
+
+1. Verify S3 endpoint URL is correct
+2. Check network connectivity to S3
+3. Verify VPC endpoints if using private networking
+4. Check security group rules
+
+### Performance Issues
+
+1. Use S3 Transfer Acceleration for global access
+2. Consider using S3 Express One Zone for low latency
+3. Optimize object sizes for your workload
+
+## Next Steps
+
+- Configure [CloudWatch integration](/docs/integrations/cloud/aws-cloudwatch) for AWS logs
+- Set up [alerts](/docs/user-guide/alerting) for storage metrics
+- Create [dashboards](/docs/user-guide/dashboards) for monitoring

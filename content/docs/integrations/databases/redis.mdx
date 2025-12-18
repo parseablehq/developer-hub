@@ -1,0 +1,251 @@
+---
+title: Redis
+description: Monitor Redis metrics with Parseable using OpenTelemetry
+---
+
+Monitor your Redis instances by collecting metrics using the OpenTelemetry Collector and sending them to Parseable.
+
+## Overview
+
+The OpenTelemetry Collector's Redis receiver collects metrics from Redis instances using the `INFO` command including:
+
+- **Server Statistics** - Uptime, connected clients, memory usage
+- **Memory Metrics** - Used memory, peak memory, fragmentation
+- **Persistence Metrics** - RDB and AOF status
+- **Replication Metrics** - Master/replica status and lag
+- **Command Statistics** - Commands processed, keyspace hits/misses
+
+## Prerequisites
+
+- Redis 4.0+
+- OpenTelemetry Collector with `redis` receiver
+- Parseable instance running and accessible
+
+### Redis Authentication (Optional)
+
+If your Redis instance requires authentication:
+
+```bash
+# Redis 6.0+ with ACL
+redis-cli ACL SETUSER otel on >your-password +info +client +slowlog +latency allkeys
+
+# Redis < 6.0 with requirepass
+# Set password in redis.conf: requirepass your-password
+```
+
+## OpenTelemetry Collector Configuration
+
+### Basic Configuration
+
+Create an `otel-collector-config.yaml` file:
+
+```yaml
+receivers:
+  redis:
+    endpoint: "localhost:6379"
+    collection_interval: 10s
+    password: ${env:REDIS_PASSWORD}
+
+exporters:
+  otlphttp/parseable:
+    endpoint: "http://parseable:8000"
+    headers:
+      Authorization: "Basic YWRtaW46YWRtaW4="
+      X-P-Stream: "redis-metrics"
+      X-P-Log-Source: "otel-metrics"
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    metrics:
+      receivers: [redis]
+      exporters: [otlphttp/parseable]
+```
+
+### TLS Configuration
+
+For Redis instances with TLS enabled:
+
+```yaml
+receivers:
+  redis:
+    endpoint: "localhost:6379"
+    collection_interval: 10s
+    username: otel
+    password: ${env:REDIS_PASSWORD}
+    tls:
+      insecure: false
+      ca_file: /path/to/ca.crt
+      cert_file: /path/to/client.crt
+      key_file: /path/to/client.key
+
+exporters:
+  otlphttp/parseable:
+    endpoint: "http://parseable:8000"
+    headers:
+      Authorization: "Basic YWRtaW46YWRtaW4="
+      X-P-Stream: "redis-metrics"
+      X-P-Log-Source: "otel-metrics"
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    metrics:
+      receivers: [redis]
+      exporters: [otlphttp/parseable]
+```
+
+### Unix Socket Configuration
+
+For Redis instances using Unix sockets:
+
+```yaml
+receivers:
+  redis:
+    endpoint: "/var/run/redis/redis.sock"
+    transport: unix
+    collection_interval: 10s
+    password: ${env:REDIS_PASSWORD}
+
+exporters:
+  otlphttp/parseable:
+    endpoint: "http://parseable:8000"
+    headers:
+      Authorization: "Basic YWRtaW46YWRtaW4="
+      X-P-Stream: "redis-metrics"
+      X-P-Log-Source: "otel-metrics"
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    metrics:
+      receivers: [redis]
+      exporters: [otlphttp/parseable]
+```
+
+## Configuration Options
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `endpoint` | - | Redis server endpoint (required) |
+| `transport` | `tcp` | Transport protocol (`tcp` or `unix`) |
+| `username` | - | Username for Redis 6.0+ ACL |
+| `password` | - | Redis password |
+| `collection_interval` | `10s` | Metrics collection interval |
+| `tls.insecure` | `true` | Disable TLS |
+| `tls.ca_file` | - | CA certificate path |
+| `tls.cert_file` | - | Client certificate path |
+| `tls.key_file` | - | Client key path |
+
+## Collected Metrics
+
+The Redis receiver collects the following metrics:
+
+| Metric | Description |
+|--------|-------------|
+| `redis.clients.connected` | Number of connected clients |
+| `redis.clients.blocked` | Number of blocked clients |
+| `redis.clients.max_input_buffer` | Biggest input buffer |
+| `redis.clients.max_output_buffer` | Biggest output buffer |
+| `redis.commands` | Total commands processed |
+| `redis.commands.processed` | Commands processed per second |
+| `redis.connections.received` | Total connections received |
+| `redis.connections.rejected` | Rejected connections |
+| `redis.cpu.time` | CPU time consumed |
+| `redis.db.avg_ttl` | Average TTL of keys |
+| `redis.db.expires` | Keys with expiration |
+| `redis.db.keys` | Total keys in database |
+| `redis.keys.evicted` | Evicted keys |
+| `redis.keys.expired` | Expired keys |
+| `redis.keyspace.hits` | Keyspace hits |
+| `redis.keyspace.misses` | Keyspace misses |
+| `redis.memory.fragmentation_ratio` | Memory fragmentation ratio |
+| `redis.memory.lua` | Lua memory usage |
+| `redis.memory.peak` | Peak memory usage |
+| `redis.memory.rss` | Resident set size |
+| `redis.memory.used` | Used memory |
+| `redis.net.input` | Network input bytes |
+| `redis.net.output` | Network output bytes |
+| `redis.rdb.changes_since_last_save` | Changes since last RDB save |
+| `redis.replication.backlog_first_byte_offset` | Replication backlog offset |
+| `redis.replication.offset` | Replication offset |
+| `redis.slaves.connected` | Connected replicas |
+| `redis.uptime` | Server uptime in seconds |
+
+## Running the Collector
+
+### Docker
+
+```bash
+docker run -d \
+  --name otel-collector \
+  -v $(pwd)/otel-collector-config.yaml:/etc/otelcol/config.yaml \
+  -e REDIS_PASSWORD=your-password \
+  otel/opentelemetry-collector-contrib:latest
+```
+
+### Docker Compose
+
+```yaml
+version: '3.8'
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol/config.yaml
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    depends_on:
+      - redis
+      - parseable
+```
+
+## Querying Redis Metrics in Parseable
+
+Once data is flowing, query your Redis metrics:
+
+```sql
+-- Get memory usage over time
+SELECT p_timestamp, memory_used, memory_peak 
+FROM "redis-metrics" 
+ORDER BY p_timestamp DESC 
+LIMIT 100
+
+-- Calculate cache hit ratio
+SELECT 
+  p_timestamp,
+  keyspace_hits,
+  keyspace_misses,
+  (keyspace_hits::float / NULLIF(keyspace_hits + keyspace_misses, 0)) * 100 as hit_ratio
+FROM "redis-metrics"
+WHERE p_timestamp > NOW() - INTERVAL '1 hour'
+ORDER BY p_timestamp DESC
+```
+
+## Troubleshooting
+
+### Connection Issues
+
+If the collector can't connect to Redis:
+
+1. Verify Redis is accepting connections on the configured port
+2. Check the password is correct
+3. Verify `protected-mode` settings in Redis
+4. Check firewall rules allow the connection
+
+### Missing Metrics
+
+If some metrics are not appearing:
+
+1. Ensure the Redis user has permission to run `INFO` command
+2. Check if specific features (like replication) are enabled
+3. Verify the Redis version supports the metrics
+
+## Next Steps
+
+- Set up [alerts](/docs/user-guide/alerting) for cache performance thresholds
+- Create [dashboards](/docs/user-guide/dashboards) for Redis monitoring
+- Explore [SQL queries](/docs/user-guide/sql-editor) for custom analysis

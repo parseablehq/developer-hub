@@ -1,0 +1,440 @@
+---
+title: Trivy
+description: Send Trivy vulnerability scan results to Parseable
+---
+
+Collect and analyze Trivy vulnerability scan results in Parseable for comprehensive security monitoring.
+
+## Overview
+
+Integrate Trivy with Parseable to:
+
+- **Vulnerability Tracking** - Track vulnerabilities across your infrastructure
+- **Container Security** - Scan container images for known vulnerabilities
+- **IaC Security** - Detect misconfigurations in infrastructure code
+- **Compliance** - Monitor security compliance over time
+
+## Prerequisites
+
+- Trivy installed (CLI or Operator)
+- Parseable instance accessible
+- CI/CD pipeline or scheduled scanning
+
+## What is Trivy?
+
+Trivy is a comprehensive security scanner that detects:
+
+- **Vulnerabilities** - CVEs in OS packages and application dependencies
+- **Misconfigurations** - Security issues in IaC (Terraform, Kubernetes, etc.)
+- **Secrets** - Hardcoded secrets and credentials
+- **Licenses** - License compliance issues
+
+## Method 1: CI/CD Integration
+
+Send scan results from your CI/CD pipeline.
+
+### GitHub Actions
+
+```yaml
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 0 * * *'  # Daily scan
+
+jobs:
+  trivy-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'json'
+          output: 'trivy-results.json'
+      
+      - name: Send results to Parseable
+        run: |
+          # Transform Trivy output to Parseable format
+          jq -c '[.Results[] | .Vulnerabilities[]? | {
+            timestamp: now | strftime("%Y-%m-%dT%H:%M:%SZ"),
+            scan_type: "filesystem",
+            repository: "${{ github.repository }}",
+            ref: "${{ github.ref }}",
+            sha: "${{ github.sha }}",
+            vulnerability_id: .VulnerabilityID,
+            pkg_name: .PkgName,
+            installed_version: .InstalledVersion,
+            fixed_version: .FixedVersion,
+            severity: .Severity,
+            title: .Title,
+            description: .Description,
+            cvss_score: .CVSS.nvd.V3Score
+          }]' trivy-results.json > parseable-payload.json
+          
+          curl -X POST "${{ secrets.PARSEABLE_URL }}/api/v1/ingest" \
+            -H "Authorization: Basic ${{ secrets.PARSEABLE_AUTH }}" \
+            -H "X-P-Stream: trivy-vulnerabilities" \
+            -H "Content-Type: application/json" \
+            -d @parseable-payload.json
+```
+
+### Container Image Scanning
+
+```yaml
+name: Container Security Scan
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  scan-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build image
+        run: docker build -t myapp:${{ github.sha }} .
+      
+      - name: Run Trivy scanner
+        run: |
+          trivy image --format json --output trivy-results.json myapp:${{ github.sha }}
+      
+      - name: Send to Parseable
+        run: |
+          jq -c '[.Results[] | .Vulnerabilities[]? | {
+            timestamp: now | strftime("%Y-%m-%dT%H:%M:%SZ"),
+            scan_type: "container",
+            image: "myapp:${{ github.sha }}",
+            repository: "${{ github.repository }}",
+            target: .Target,
+            vulnerability_id: .VulnerabilityID,
+            pkg_name: .PkgName,
+            installed_version: .InstalledVersion,
+            fixed_version: .FixedVersion,
+            severity: .Severity,
+            title: .Title
+          }]' trivy-results.json > payload.json
+          
+          curl -X POST "${{ secrets.PARSEABLE_URL }}/api/v1/ingest" \
+            -H "Authorization: Basic ${{ secrets.PARSEABLE_AUTH }}" \
+            -H "X-P-Stream: trivy-vulnerabilities" \
+            -H "Content-Type: application/json" \
+            -d @payload.json
+```
+
+### GitLab CI
+
+```yaml
+trivy-scan:
+  stage: security
+  image: aquasec/trivy:latest
+  script:
+    - trivy image --format json --output trivy-results.json $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+    - |
+      apk add --no-cache jq curl
+      jq -c '[.Results[] | .Vulnerabilities[]? | {
+        timestamp: now | strftime("%Y-%m-%dT%H:%M:%SZ"),
+        scan_type: "container",
+        image: "'$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA'",
+        project: "'$CI_PROJECT_PATH'",
+        vulnerability_id: .VulnerabilityID,
+        pkg_name: .PkgName,
+        severity: .Severity,
+        title: .Title
+      }]' trivy-results.json > payload.json
+      
+      curl -X POST "${PARSEABLE_URL}/api/v1/ingest" \
+        -H "Authorization: Basic ${PARSEABLE_AUTH}" \
+        -H "X-P-Stream: trivy-vulnerabilities" \
+        -H "Content-Type: application/json" \
+        -d @payload.json
+```
+
+## Method 2: Trivy Operator
+
+Use the Trivy Operator for continuous Kubernetes scanning.
+
+### Install Trivy Operator
+
+```bash
+helm repo add aqua https://aquasecurity.github.io/helm-charts/
+helm repo update
+
+helm install trivy-operator aqua/trivy-operator \
+  --namespace trivy-system \
+  --create-namespace
+```
+
+### Collect Reports with Fluent Bit
+
+```yaml
+# fluent-bit-config.yaml
+service:
+  flush: 30
+  log_level: info
+
+pipeline:
+  inputs:
+    - name: kubernetes_events
+      tag: k8s_events
+      kube_url: https://kubernetes.default.svc
+      
+  filters:
+    - name: grep
+      match: k8s_events
+      regex: involvedObject.kind VulnerabilityReport
+
+  outputs:
+    - name: http
+      match: k8s_events
+      host: parseable
+      port: 8000
+      uri: /api/v1/ingest
+      format: json
+      header: Authorization Basic YWRtaW46YWRtaW4=
+      header: X-P-Stream trivy-operator
+```
+
+### Export Reports Script
+
+Create a script to export Trivy Operator reports:
+
+```bash
+#!/bin/bash
+# export-trivy-reports.sh
+
+PARSEABLE_URL="${PARSEABLE_URL:-http://parseable:8000}"
+PARSEABLE_AUTH="${PARSEABLE_AUTH:-YWRtaW46YWRtaW4=}"
+
+# Get all VulnerabilityReports
+kubectl get vulnerabilityreports -A -o json | jq -c '
+  [.items[] | {
+    timestamp: .metadata.creationTimestamp,
+    namespace: .metadata.namespace,
+    name: .metadata.name,
+    image: .report.artifact.repository,
+    tag: .report.artifact.tag,
+    critical: .report.summary.criticalCount,
+    high: .report.summary.highCount,
+    medium: .report.summary.mediumCount,
+    low: .report.summary.lowCount,
+    vulnerabilities: [.report.vulnerabilities[] | {
+      id: .vulnerabilityID,
+      severity: .severity,
+      pkg: .resource,
+      version: .installedVersion,
+      fixed: .fixedVersion,
+      title: .title
+    }]
+  }]
+' > /tmp/vuln-reports.json
+
+curl -X POST "${PARSEABLE_URL}/api/v1/ingest" \
+  -H "Authorization: Basic ${PARSEABLE_AUTH}" \
+  -H "X-P-Stream: trivy-operator" \
+  -H "Content-Type: application/json" \
+  -d @/tmp/vuln-reports.json
+```
+
+### Kubernetes CronJob
+
+```yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: trivy-report-exporter
+spec:
+  schedule: "0 * * * *"  # Every hour
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: trivy-exporter
+          containers:
+            - name: exporter
+              image: bitnami/kubectl:latest
+              command: ["/bin/bash", "/scripts/export-trivy-reports.sh"]
+              env:
+                - name: PARSEABLE_URL
+                  value: "http://parseable:8000"
+                - name: PARSEABLE_AUTH
+                  valueFrom:
+                    secretKeyRef:
+                      name: parseable-auth
+                      key: auth
+              volumeMounts:
+                - name: scripts
+                  mountPath: /scripts
+          volumes:
+            - name: scripts
+              configMap:
+                name: trivy-exporter-scripts
+          restartPolicy: OnFailure
+```
+
+## Method 3: Direct CLI Integration
+
+Send scan results directly from Trivy CLI.
+
+### Wrapper Script
+
+```bash
+#!/bin/bash
+# trivy-to-parseable.sh
+
+PARSEABLE_URL="${PARSEABLE_URL:-http://localhost:8000}"
+PARSEABLE_AUTH="${PARSEABLE_AUTH:-YWRtaW46YWRtaW4=}"
+STREAM="${STREAM:-trivy-scans}"
+
+# Run Trivy scan
+trivy "$@" --format json --output /tmp/trivy-results.json
+
+# Transform and send to Parseable
+jq -c '[{
+  timestamp: now | strftime("%Y-%m-%dT%H:%M:%SZ"),
+  scan_target: .ArtifactName,
+  scan_type: .ArtifactType,
+  results: [.Results[] | {
+    target: .Target,
+    class: .Class,
+    type: .Type,
+    vulnerabilities: (.Vulnerabilities // []) | length,
+    critical: [(.Vulnerabilities // [])[] | select(.Severity == "CRITICAL")] | length,
+    high: [(.Vulnerabilities // [])[] | select(.Severity == "HIGH")] | length,
+    medium: [(.Vulnerabilities // [])[] | select(.Severity == "MEDIUM")] | length,
+    low: [(.Vulnerabilities // [])[] | select(.Severity == "LOW")] | length
+  }]
+}]' /tmp/trivy-results.json > /tmp/parseable-payload.json
+
+curl -s -X POST "${PARSEABLE_URL}/api/v1/ingest" \
+  -H "Authorization: Basic ${PARSEABLE_AUTH}" \
+  -H "X-P-Stream: ${STREAM}" \
+  -H "Content-Type: application/json" \
+  -d @/tmp/parseable-payload.json
+
+echo "Scan results sent to Parseable"
+```
+
+Usage:
+
+```bash
+./trivy-to-parseable.sh image nginx:latest
+./trivy-to-parseable.sh fs /path/to/project
+./trivy-to-parseable.sh config /path/to/terraform
+```
+
+## Querying Trivy Results
+
+Query your vulnerability data in Parseable:
+
+```sql
+-- Get recent vulnerability scans
+SELECT timestamp, scan_target, scan_type, 
+       results[0].critical as critical,
+       results[0].high as high
+FROM "trivy-scans"
+ORDER BY timestamp DESC
+LIMIT 100
+
+-- Find critical vulnerabilities
+SELECT timestamp, image, vulnerability_id, pkg_name, title
+FROM "trivy-vulnerabilities"
+WHERE severity = 'CRITICAL'
+ORDER BY timestamp DESC
+
+-- Vulnerability count by severity
+SELECT 
+  severity,
+  COUNT(*) as count
+FROM "trivy-vulnerabilities"
+WHERE timestamp > NOW() - INTERVAL '7 days'
+GROUP BY severity
+ORDER BY 
+  CASE severity 
+    WHEN 'CRITICAL' THEN 1 
+    WHEN 'HIGH' THEN 2 
+    WHEN 'MEDIUM' THEN 3 
+    WHEN 'LOW' THEN 4 
+  END
+
+-- Most vulnerable images
+SELECT 
+  image,
+  COUNT(*) as total_vulns,
+  SUM(CASE WHEN severity = 'CRITICAL' THEN 1 ELSE 0 END) as critical,
+  SUM(CASE WHEN severity = 'HIGH' THEN 1 ELSE 0 END) as high
+FROM "trivy-vulnerabilities"
+WHERE timestamp > NOW() - INTERVAL '24 hours'
+GROUP BY image
+ORDER BY critical DESC, high DESC
+LIMIT 20
+
+-- Vulnerabilities with available fixes
+SELECT vulnerability_id, pkg_name, installed_version, fixed_version, severity
+FROM "trivy-vulnerabilities"
+WHERE fixed_version IS NOT NULL AND fixed_version != ''
+ORDER BY 
+  CASE severity 
+    WHEN 'CRITICAL' THEN 1 
+    WHEN 'HIGH' THEN 2 
+  END
+LIMIT 50
+```
+
+## Setting Up Alerts
+
+Create alerts for critical vulnerabilities:
+
+```json
+{
+  "name": "Critical Vulnerability Detected",
+  "stream": "trivy-vulnerabilities",
+  "alertType": "threshold",
+  "condition": {
+    "field": "severity",
+    "operator": "equals",
+    "value": "CRITICAL"
+  },
+  "threshold": 1,
+  "duration": "5m",
+  "webhook": {
+    "url": "https://your-slack-webhook",
+    "method": "POST"
+  }
+}
+```
+
+## Best Practices
+
+1. **Scan Regularly** - Run scans on every build and on a schedule
+2. **Track Trends** - Monitor vulnerability counts over time
+3. **Prioritize Fixes** - Focus on critical and high severity first
+4. **Include Context** - Add repository, image, and commit information
+5. **Set SLAs** - Define remediation timelines by severity
+
+## Troubleshooting
+
+### Empty Results
+
+1. Verify Trivy is finding vulnerabilities (check raw output)
+2. Check jq transformation is correct
+3. Verify Parseable stream accepts the payload format
+
+### Large Payloads
+
+1. Split large scans into smaller batches
+2. Send summary data instead of full vulnerability details
+3. Use compression if supported
+
+## Next Steps
+
+- Set up [alerts](/docs/user-guide/alerting) for vulnerability thresholds
+- Create [dashboards](/docs/user-guide/dashboards) for security posture
+- Configure [Falco](/docs/integrations/security/falco) for runtime security
