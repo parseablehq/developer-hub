@@ -1,0 +1,8 @@
+{
+  "title": "Alerting",
+  "pages": [
+    "slack",
+    "pagerduty",
+    "webhook"
+  ]
+}

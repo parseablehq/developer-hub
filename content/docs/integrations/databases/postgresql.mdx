@@ -1,0 +1,222 @@
+---
+title: PostgreSQL
+description: Monitor PostgreSQL metrics and logs with Parseable using OpenTelemetry
+---
+
+Monitor your PostgreSQL databases by collecting metrics and logs using the OpenTelemetry Collector and sending them to Parseable.
+
+## Overview
+
+The OpenTelemetry Collector's PostgreSQL receiver collects metrics from PostgreSQL databases including:
+
+- **Database Statistics** - Connections, transactions, queries
+- **Table Metrics** - Row counts, dead tuples, table sizes
+- **Index Metrics** - Index usage and efficiency
+- **Query Performance** - Query samples and execution times
+- **Replication Metrics** - Lag and replication status
+
+## Prerequisites
+
+- PostgreSQL 12+ (see [supported versions](https://www.postgresql.org/support/versioning))
+- OpenTelemetry Collector with `postgresql` receiver
+- Parseable instance running and accessible
+
+### Database User Setup
+
+Create a monitoring user with the required permissions:
+
+```sql
+-- Create monitoring user
+CREATE USER otel WITH PASSWORD 'your-secure-password';
+
+-- Grant required permissions
+GRANT SELECT ON pg_stat_database TO otel;
+GRANT pg_monitor TO otel;
+
+-- For query sample collection (optional)
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+```
+
+## OpenTelemetry Collector Configuration
+
+### Basic Configuration
+
+Create an `otel-collector-config.yaml` file:
+
+```yaml
+receivers:
+  postgresql:
+    endpoint: localhost:5432
+    transport: tcp
+    username: otel
+    password: ${env:POSTGRESQL_PASSWORD}
+    databases:
+      - mydb
+    collection_interval: 10s
+    tls:
+      insecure: true
+
+exporters:
+  otlphttp/parseable:
+    endpoint: "http://parseable:8000"
+    headers:
+      Authorization: "Basic YWRtaW46YWRtaW4="
+      X-P-Stream: "postgresql-metrics"
+      X-P-Log-Source: "otel-metrics"
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    metrics:
+      receivers: [postgresql]
+      exporters: [otlphttp/parseable]
+```
+
+### Advanced Configuration with Query Samples
+
+For detailed query performance monitoring:
+
+```yaml
+receivers:
+  postgresql:
+    endpoint: localhost:5432
+    transport: tcp
+    username: otel
+    password: ${env:POSTGRESQL_PASSWORD}
+    databases:
+      - mydb
+    collection_interval: 10s
+    tls:
+      insecure: false
+      insecure_skip_verify: false
+      ca_file: /path/to/ca.crt
+      cert_file: /path/to/client.crt
+      key_file: /path/to/client.key
+    events:
+      db.server.query_sample:
+        enabled: true
+      db.server.top_query:
+        enabled: true
+    query_sample_collection:
+      max_rows_per_query: 100
+    top_query_collection:
+      max_rows_per_query: 100
+      top_n_query: 100
+
+exporters:
+  otlphttp/parseable:
+    endpoint: "http://parseable:8000"
+    headers:
+      Authorization: "Basic YWRtaW46YWRtaW4="
+      X-P-Stream: "postgresql-metrics"
+      X-P-Log-Source: "otel-metrics"
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    metrics:
+      receivers: [postgresql]
+      exporters: [otlphttp/parseable]
+```
+
+## Configuration Options
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `endpoint` | `localhost:5432` | PostgreSQL server endpoint |
+| `transport` | `tcp` | Transport protocol (`tcp` or `unix`) |
+| `username` | - | Database username |
+| `password` | - | Database password |
+| `databases` | `[]` | List of databases to monitor (empty = all) |
+| `collection_interval` | `10s` | Metrics collection interval |
+| `tls.insecure` | `false` | Disable TLS |
+| `tls.insecure_skip_verify` | `true` | Skip certificate verification |
+
+## Collected Metrics
+
+The PostgreSQL receiver collects the following metrics:
+
+| Metric | Description |
+|--------|-------------|
+| `postgresql.backends` | Number of active connections |
+| `postgresql.commits` | Number of committed transactions |
+| `postgresql.rollbacks` | Number of rolled back transactions |
+| `postgresql.database.size` | Database size in bytes |
+| `postgresql.rows` | Number of rows by operation type |
+| `postgresql.blocks_read` | Number of disk blocks read |
+| `postgresql.blocks_hit` | Number of buffer hits |
+| `postgresql.deadlocks` | Number of deadlocks detected |
+| `postgresql.temp_files` | Number of temporary files created |
+
+## Running the Collector
+
+### Docker
+
+```bash
+docker run -d \
+  --name otel-collector \
+  -v $(pwd)/otel-collector-config.yaml:/etc/otelcol/config.yaml \
+  -e POSTGRESQL_PASSWORD=your-password \
+  otel/opentelemetry-collector-contrib:latest
+```
+
+### Docker Compose
+
+```yaml
+version: '3.8'
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol/config.yaml
+    environment:
+      - POSTGRESQL_PASSWORD=${POSTGRESQL_PASSWORD}
+    depends_on:
+      - postgres
+      - parseable
+```
+
+## Querying PostgreSQL Metrics in Parseable
+
+Once data is flowing, query your PostgreSQL metrics:
+
+```sql
+-- Get connection count over time
+SELECT p_timestamp, backends 
+FROM "postgresql-metrics" 
+ORDER BY p_timestamp DESC 
+LIMIT 100
+
+-- Find databases with high rollback rates
+SELECT database_name, commits, rollbacks,
+       (rollbacks::float / NULLIF(commits + rollbacks, 0)) * 100 as rollback_pct
+FROM "postgresql-metrics"
+WHERE p_timestamp > NOW() - INTERVAL '1 hour'
+```
+
+## Troubleshooting
+
+### Connection Issues
+
+If the collector can't connect to PostgreSQL:
+
+1. Verify PostgreSQL is accepting connections on the configured port
+2. Check firewall rules allow the connection
+3. Verify the username and password are correct
+4. Check TLS settings match your PostgreSQL configuration
+
+### Missing Metrics
+
+If some metrics are not appearing:
+
+1. Ensure the monitoring user has `pg_monitor` role
+2. Verify `pg_stat_statements` extension is installed for query metrics
+3. Check the `databases` list includes your target databases
+
+## Next Steps
+
+- Set up [alerts](/docs/user-guide/alerting) for database performance thresholds
+- Create [dashboards](/docs/user-guide/dashboards) for PostgreSQL monitoring
+- Explore [SQL queries](/docs/user-guide/sql-editor) for custom analysis

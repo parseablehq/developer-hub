@@ -1,0 +1,315 @@
+---
+title: AWS CloudWatch
+description: Ingest logs from AWS CloudWatch into Parseable
+---
+
+Collect and forward logs from AWS CloudWatch Log Groups to Parseable using the OpenTelemetry Collector.
+
+## Overview
+
+Integrate AWS CloudWatch with Parseable to:
+
+- **Centralize AWS Logs** - Collect logs from Lambda, ECS, EC2, and other AWS services
+- **Unified Observability** - Combine AWS logs with application logs
+- **Cost Optimization** - Reduce CloudWatch costs by forwarding to Parseable
+- **Advanced Analytics** - Use Parseable's SQL queries on AWS logs
+
+## Prerequisites
+
+- AWS account with CloudWatch Logs
+- AWS credentials with CloudWatch read permissions
+- OpenTelemetry Collector with `awscloudwatch` receiver
+- Parseable instance running and accessible
+
+### IAM Permissions
+
+Create an IAM policy with the required permissions:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "logs:DescribeLogGroups",
+        "logs:DescribeLogStreams",
+        "logs:GetLogEvents",
+        "logs:FilterLogEvents"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+## OpenTelemetry Collector Configuration
+
+### Basic Configuration
+
+Create an `otel-collector-config.yaml` file:
+
+```yaml
+receivers:
+  awscloudwatch:
+    region: us-east-1
+    logs:
+      poll_interval: 1m
+      groups:
+        autodiscover:
+          limit: 100
+
+exporters:
+  otlphttp/parseable:
+    endpoint: "http://parseable:8000"
+    headers:
+      Authorization: "Basic YWRtaW46YWRtaW4="
+      X-P-Stream: "cloudwatch-logs"
+      X-P-Log-Source: "otel-logs"
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    logs:
+      receivers: [awscloudwatch]
+      exporters: [otlphttp/parseable]
+```
+
+### Filter Specific Log Groups
+
+Collect logs from specific log groups only:
+
+```yaml
+receivers:
+  awscloudwatch:
+    region: us-east-1
+    logs:
+      poll_interval: 1m
+      groups:
+        named:
+          /aws/lambda/my-function:
+          /aws/ecs/my-cluster:
+          /aws/apigateway/my-api:
+
+exporters:
+  otlphttp/parseable:
+    endpoint: "http://parseable:8000"
+    headers:
+      Authorization: "Basic YWRtaW46YWRtaW4="
+      X-P-Stream: "cloudwatch-logs"
+      X-P-Log-Source: "otel-logs"
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    logs:
+      receivers: [awscloudwatch]
+      exporters: [otlphttp/parseable]
+```
+
+### Autodiscover with Prefix Filter
+
+Discover log groups matching a prefix:
+
+```yaml
+receivers:
+  awscloudwatch:
+    region: us-east-1
+    logs:
+      poll_interval: 1m
+      groups:
+        autodiscover:
+          limit: 50
+          prefix: /aws/lambda/
+
+exporters:
+  otlphttp/parseable:
+    endpoint: "http://parseable:8000"
+    headers:
+      Authorization: "Basic YWRtaW46YWRtaW4="
+      X-P-Stream: "lambda-logs"
+      X-P-Log-Source: "otel-logs"
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    logs:
+      receivers: [awscloudwatch]
+      exporters: [otlphttp/parseable]
+```
+
+### Filter Log Streams
+
+Filter specific log streams within log groups:
+
+```yaml
+receivers:
+  awscloudwatch:
+    region: us-east-1
+    logs:
+      poll_interval: 1m
+      groups:
+        named:
+          /aws/lambda/my-function:
+            names:
+              - "2024/01/15/[$LATEST]abc123"
+            prefixes:
+              - "2024/01/"
+
+exporters:
+  otlphttp/parseable:
+    endpoint: "http://parseable:8000"
+    headers:
+      Authorization: "Basic YWRtaW46YWRtaW4="
+      X-P-Stream: "lambda-logs"
+      X-P-Log-Source: "otel-logs"
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    logs:
+      receivers: [awscloudwatch]
+      exporters: [otlphttp/parseable]
+```
+
+## Configuration Options
+
+### Top Level Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `region` | Yes | AWS region (e.g., `us-east-1`) |
+| `profile` | No | AWS profile name |
+| `imds_endpoint` | No | Custom IMDS endpoint for EC2 |
+| `logs` | No | Logs collection configuration |
+
+### Logs Parameters
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `poll_interval` | `1m` | Time between log requests |
+| `max_events_per_request` | `1000` | Max events per CloudWatch request |
+| `groups` | All | Log group configuration |
+
+### Group Parameters
+
+| Parameter | Description |
+|-----------|-------------|
+| `autodiscover.limit` | Max log groups to discover |
+| `autodiscover.prefix` | Log group name prefix filter |
+| `named` | Specific log groups to collect |
+
+## Running the Collector
+
+### Docker with AWS Credentials
+
+```bash
+docker run -d \
+  --name otel-collector \
+  -v $(pwd)/otel-collector-config.yaml:/etc/otelcol/config.yaml \
+  -v ~/.aws:/root/.aws:ro \
+  -e AWS_REGION=us-east-1 \
+  otel/opentelemetry-collector-contrib:latest
+```
+
+### Docker with Environment Variables
+
+```bash
+docker run -d \
+  --name otel-collector \
+  -v $(pwd)/otel-collector-config.yaml:/etc/otelcol/config.yaml \
+  -e AWS_ACCESS_KEY_ID=your-access-key \
+  -e AWS_SECRET_ACCESS_KEY=your-secret-key \
+  -e AWS_REGION=us-east-1 \
+  otel/opentelemetry-collector-contrib:latest
+```
+
+### Kubernetes with IAM Roles for Service Accounts (IRSA)
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: otel-collector
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/OtelCollectorRole
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+spec:
+  template:
+    spec:
+      serviceAccountName: otel-collector
+      containers:
+        - name: otel-collector
+          image: otel/opentelemetry-collector-contrib:latest
+          volumeMounts:
+            - name: config
+              mountPath: /etc/otelcol/config.yaml
+              subPath: config.yaml
+      volumes:
+        - name: config
+          configMap:
+            name: otel-collector-config
+```
+
+## Querying CloudWatch Logs in Parseable
+
+Once data is flowing, query your CloudWatch logs:
+
+```sql
+-- Get recent Lambda logs
+SELECT p_timestamp, log_group, log_stream, message 
+FROM "cloudwatch-logs" 
+WHERE log_group LIKE '/aws/lambda/%'
+ORDER BY p_timestamp DESC 
+LIMIT 100
+
+-- Find Lambda errors
+SELECT p_timestamp, log_group, message
+FROM "cloudwatch-logs"
+WHERE log_group LIKE '/aws/lambda/%'
+  AND (message LIKE '%ERROR%' OR message LIKE '%Exception%')
+ORDER BY p_timestamp DESC
+
+-- Count logs by log group
+SELECT log_group, COUNT(*) as log_count
+FROM "cloudwatch-logs"
+WHERE p_timestamp > NOW() - INTERVAL '1 hour'
+GROUP BY log_group
+ORDER BY log_count DESC
+```
+
+## Troubleshooting
+
+### Authentication Issues
+
+1. Verify AWS credentials are configured correctly
+2. Check IAM permissions include required CloudWatch actions
+3. Verify the region matches your log groups
+4. Check for credential expiration (if using temporary credentials)
+
+### Missing Logs
+
+1. Verify log groups exist and have recent logs
+2. Check `poll_interval` is appropriate for your log volume
+3. Verify autodiscover prefix matches your log group names
+4. Check CloudWatch Logs retention settings
+
+### High Latency
+
+1. Reduce `poll_interval` for more frequent collection
+2. Increase `max_events_per_request` for higher throughput
+3. Filter to specific log groups to reduce API calls
+
+## Next Steps
+
+- Set up [alerts](/docs/user-guide/alerting) for AWS log patterns
+- Create [dashboards](/docs/user-guide/dashboards) for AWS monitoring
+- Configure [AWS S3](/docs/integrations/cloud/aws-s3) for log storage
