@@ -28,6 +28,11 @@ export const openapi = createOpenAPI({
   generateCodeSamples() {
     return [
       {
+        lang: 'shell',
+        label: 'cURL',
+        source: false
+      },
+      {
         lang: 'javascript',
         label: 'JavaScript',
         source: false

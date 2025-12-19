@@ -25,8 +25,10 @@ The OpenTelemetry Collector's PostgreSQL receiver collects metrics from PostgreS
 
 Create a monitoring user with the required permissions:
 
-```sql
--- Create monitoring user
+<EditableCode 
+  language="sql"
+  title="Database User Setup"
+  code={`-- Create monitoring user
 CREATE USER otel WITH PASSWORD 'your-secure-password';
 
 -- Grant required permissions
@@ -34,8 +36,8 @@ GRANT SELECT ON pg_stat_database TO otel;
 GRANT pg_monitor TO otel;
 
 -- For query sample collection (optional)
-CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
-```
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;`}
+/>
 
 ## OpenTelemetry Collector Configuration
 
@@ -43,13 +45,15 @@ CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 
 Create an `otel-collector-config.yaml` file:
 
-```yaml
-receivers:
+<EditableCode 
+  language="yaml"
+  title="Basic OTEL Collector Configuration"
+  code={`receivers:
   postgresql:
     endpoint: localhost:5432
     transport: tcp
     username: otel
-    password: ${env:POSTGRESQL_PASSWORD}
+    password: \${env:POSTGRESQL_PASSWORD}
     databases:
       - mydb
     collection_interval: 10s
@@ -70,8 +74,8 @@ service:
   pipelines:
     metrics:
       receivers: [postgresql]
-      exporters: [otlphttp/parseable]
-```
+      exporters: [otlphttp/parseable]`}
+/>
 
 ### Advanced Configuration with Query Samples
 

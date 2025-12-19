@@ -6,8 +6,10 @@ Parseable enables ingesting the OpenTelemetry logs sent from the OTEL collectors
 
 Below is the sample configuration of the OTEL collector to send the logs to Parseable
 
-```yaml
-exporters:
+<EditableCode 
+  language="yaml"
+  title="OTEL Collector Configuration"
+  code={`exporters:
   otlphttp/parseablelogs:
     endpoint: "<parseable-endpoint> eg. http://localhost:8000"
     headers:
@@ -22,8 +24,8 @@ exporters:
 service:
   pipelines:
     logs:
-      exporters: [otlphttp/parseablelogs]
-```
+      exporters: [otlphttp/parseablelogs]`}
+/>
 
 ## Support for Protocol Buffers
 
@@ -33,8 +35,10 @@ service:
 
 Parseable also supports ingesting the OpenTelemetry logs sent from the OTEL collectors in the Protocol Buffers format. Below is an example configuration of the OTEL collector to send the logs to Parseable in the Protocol Buffers format.
 
-```yaml
-exporters:
+<EditableCode 
+  language="yaml"
+  title="Protocol Buffers Configuration"
+  code={`exporters:
   otlphttp/parseablelogs:
     endpoint: "http://parseable:8000"
     headers:
@@ -48,8 +52,8 @@ exporters:
 service:
   pipelines:
     logs:
-      exporters: [otlphttp/parseablelogs]
-```
+      exporters: [otlphttp/parseablelogs]`}
+/>
 
 ## Data Flattening
 The OpenTelemetry logs that are in the form of a nested JSON. When the log event is received at `/v1/logs` endpoint, Parseable will flatten the nested JSON to a flat JSON object. This is done to make the data more queryable and filterable. Here's a quick comparison of the nested JSON and the flattened JSON:
@@ -119,3 +123,35 @@ The OpenTelemetry logs that are in the form of a nested JSON. When the log event
 All the resource attributes are stored as key-value pair where each attribute key becomes the field and the value, which may be of one of `stringValue/intValue/doubleValue etc`, becomes the value for that particular field.
 
 Each log record in the incoming log event is stored as individual record in Parseable and all resource attributes, scope name, version etc which are at the scope level (parent of logRecords) are copied in each ingested record.
+
+## Sending OTLP Logs with cURL
+
+You can also send OTLP formatted logs directly to Parseable using `curl`. This is useful for quick tests or scenarios where a full OpenTelemetry collector is not desired.
+
+<CurlTerminal 
+  title="Send OTLP logs to Parseable"
+  command={`curl -X POST \\
+  http://parseable:8000/v1/logs \\
+  -H 'Authorization: Basic YWRtaW46YWRtaW4=' \\
+  -H 'Content-Type: application/json' \\
+  -H 'X-P-Stream: otel-logs' \\
+  -H 'X-P-Log-Source: otel-logs' \\
+  -d '{
+    "resourceLogs": [{
+      "resource": {
+        "attributes": [
+          {"key": "service.name", "value": {"stringValue": "my-service"}}
+        ]
+      },
+      "scopeLogs": [{
+        "scope": {"name": "my-scope"},
+        "logRecords": [{
+          "timeUnixNano": "1735735228333091540",
+          "severityNumber": 9,
+          "severityText": "INFO",
+          "body": {"stringValue": "Hello from OTLP!"}
+        }]
+      }]
+    }]
+  }'`}
+/>
