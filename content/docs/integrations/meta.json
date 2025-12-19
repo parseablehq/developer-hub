@@ -1,18 +1,18 @@
 {
   "title": "Integrations",
   "pages": [
-    "oauth",
-    "visualization",
     "alerting",
-    "cloud",
     "auth",
-    "log-shippers",
-    "streaming",
-    "containers",
-    "languages",
-    "databases",
     "cicd",
+    "cloud",
+    "containers",
+    "databases",
+    "languages",
+    "llm-agents",
+    "log-shippers",
+    "oauth",
     "security",
-    "llm-agents"
+    "streaming",
+    "visualization"
   ]
 }
