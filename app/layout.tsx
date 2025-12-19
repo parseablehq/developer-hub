@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google';
 import type { ReactNode } from 'react';
 import Analytics from '../components/GoogleAnalytics';
 import KoalaAnalytics from '../components/KoalaAnalytics';
+import { SearchProvider } from '../components/SearchProvider';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -22,7 +23,15 @@ export default function Layout({ children }: { children: ReactNode }) {
         />
       </head>
       <body className="flex flex-col min-h-screen" suppressHydrationWarning>
-        <RootProvider>{children}</RootProvider>
+        <RootProvider
+          search={{
+            enabled: false,
+          }}
+        >
+          <SearchProvider>
+            {children}
+          </SearchProvider>
+        </RootProvider>
         {gaId && <Analytics gaId={gaId} />}
         {koalaApiKey && <KoalaAnalytics apiKey={koalaApiKey} />}
       </body>

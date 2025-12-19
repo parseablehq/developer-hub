@@ -1,8 +1,6 @@
 {
   "title": "Integrations",
   "pages": [
-    "grafana",
-    "metabase",
     "oauth",
     "visualization",
     "alerting",
