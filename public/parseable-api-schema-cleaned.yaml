@@ -5,7 +5,17 @@ info:
   description: |-
     Core APIs for Parseable - a simplified version of the API schema with only essential endpoints.
 servers:
-  - url: http://ENDPOINT
+  - url: '{protocol}://{host}:{port}'
+    variables:
+      protocol:
+        default: http
+        enum:
+          - http
+          - https
+      host:
+        default: localhost
+      port:
+        default: '8000'
 components:
   securitySchemes:
     basicAuth:

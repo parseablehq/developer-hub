@@ -44,16 +44,3 @@ Another node called Prism node responds to all the role, user management, datase
 
 ![Parseable Query Architecture](./static/query-architecture.png)
 
-## Benchmarking
-
-ParseableDB is an OLAP database purpose built for high volume ingestion, and fast querying of observability signals. It uses object storage as the primary data store, for cost efficiency and scale. For fast query response, it uses caching mechanisms to keep the frequently accessed data in memory and on local disk. 
-
-Parseable ranks among the **fastest databases** on ClickBench, outperforming several OLAP systems in structured query benchmarks.
-Parseable benchmarks are available on [ClickBench](https://benchmark.clickhouse.com/).
-
-Refer to the benchmark results here: [ParseableDB Benchmark](http://logg.ing/clickbench)
-
-Steps on how to run the benchmarks are available in the [ClickBench documentation](https://github.com/ClickHouse/ClickBench/tree/main/parseable).
-
-![Parseable Benchmark](./static/benchmark.png)
-

@@ -7,6 +7,8 @@ import { openapi } from './lib/source';
 import type { MDXComponents } from 'mdx/types';
 import { EnterpriseBadge } from './components/EnterpriseBadge';
 import { YouTubeEmbed } from './components/YouTubeEmbed';
+import CurlTerminal from './components/CurlTerminal';
+import EditableCode from './components/EditableCode';
 
 // This function provides MDX components for rendering MDX content
 export function getMDXComponents(components: MDXComponents = {}): MDXComponents {
@@ -20,6 +22,8 @@ export function getMDXComponents(components: MDXComponents = {}): MDXComponents 
     Cards,
     EnterpriseBadge,
     YouTubeEmbed,
+    CurlTerminal,
+    EditableCode,
     APIPage: (props) => <APIPage {...openapi.getAPIPageProps(props)} />,
     
     // Override any components if needed
