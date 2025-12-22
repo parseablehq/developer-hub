@@ -1,6 +1,27 @@
 import Link from "next/link";
+import { useState } from "react";
+import {
+  ContentCopy as ContentCopyIcon,
+  Check as CheckIcon,
+  RocketLaunch as RocketLaunchIcon,
+  Input as InputIcon,
+  ManageSearch as ManageSearchIcon,
+  AdminPanelSettings as AdminPanelSettingsIcon,
+  CloudUpload as CloudUploadIcon,
+  Code as CodeIcon,
+  ArrowForward as ArrowForwardIcon,
+  CloudQueue as CloudQueueIcon,
+  Storage as StorageIcon,
+} from "@mui/icons-material";
+import { usePlatform } from "./hooks/usePlatform";
 
 export default function MainPage() {
+  const [copied, setCopied] = useState(false);
+  const platform = usePlatform();
+  const installCommand =
+    platform === "windows"
+      ? 'powershell -ep bypass -c "irm https://logg.ing/install-windows | iex"'
+      : "curl -fsSL https://logg.ing/install | bash}";
   const baseUrl =
     process.env.NEXT_PUBLIC_ENV === "development" ? "/" : "/docs/";
 
@@ -18,17 +39,15 @@ export default function MainPage() {
             Ready to dive in? Sign up for our cloud offering or download the
             self-hosted version to get started in minutes.
           </p>
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="https://app.parseable.com"
-              className="flex min-w-[84px] w-full sm:w-auto cursor-pointer items-center justify-center overflow-hidden rounded-md h-12 px-6 bg-[#5A43F5] text-white text-base font-semibold leading-normal tracking-[-0.01em] hover:bg-[#4836c4] transition-colors"
-            >
-              <svg
-                className="mr-2 w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
+          <div className="max-w-2xl mx-auto">
+            <div className="relative flex flex-col sm:flex-row items-stretch sm:items-center bg-white dark:bg-slate-800 rounded-lg overflow-hidden">
+              <code className="flex-1 px-4 py-3 text-black dark:text-slate-200 text-sm sm:text-base overflow-x-auto whitespace-nowrap">
+                {installCommand}
+              </code>
+              <button
+                onClick={copyToClipboard}
+                className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center justify-center"
+                aria-label="Copy to clipboard"
               >
                 <path
                   strokeLinecap="round"
