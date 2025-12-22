@@ -1,0 +1,211 @@
+---
+title: MySQL
+description: Monitor MySQL metrics and logs with Parseable using OpenTelemetry
+---
+
+Monitor your MySQL databases by collecting metrics and logs using the OpenTelemetry Collector and sending them to Parseable.
+
+## Overview
+
+The OpenTelemetry Collector's MySQL receiver collects metrics from MySQL and MariaDB databases including:
+
+- **Server Statistics** - Connections, queries, threads
+- **InnoDB Metrics** - Buffer pool, row operations, locks
+- **Query Performance** - Statement events, query samples
+- **Replication Status** - Slave lag and replication metrics
+
+## Prerequisites
+
+- MySQL 8.0+ or MariaDB 10.11+
+- OpenTelemetry Collector with `mysql` receiver
+- Parseable instance running and accessible
+
+### Database User Setup
+
+Create a monitoring user with the required permissions:
+
+```sql
+-- Create monitoring user
+CREATE USER 'otel'@'%' IDENTIFIED BY 'your-secure-password';
+
+-- Grant required permissions
+GRANT PROCESS, REPLICATION CLIENT ON *.* TO 'otel'@'%';
+GRANT SELECT ON performance_schema.* TO 'otel'@'%';
+
+-- Flush privileges
+FLUSH PRIVILEGES;
+```
+
+## OpenTelemetry Collector Configuration
+
+### Basic Configuration
+
+Create an `otel-collector-config.yaml` file:
+
+```yaml
+receivers:
+  mysql:
+    endpoint: localhost:3306
+    username: otel
+    password: ${env:MYSQL_PASSWORD}
+    database: mydb
+    collection_interval: 10s
+
+exporters:
+  otlphttp/parseable:
+    endpoint: "http://parseable:8000"
+    headers:
+      Authorization: "Basic YWRtaW46YWRtaW4="
+      X-P-Stream: "mysql-metrics"
+      X-P-Log-Source: "otel-metrics"
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    metrics:
+      receivers: [mysql]
+      exporters: [otlphttp/parseable]
+```
+
+### Advanced Configuration with Statement Events
+
+For detailed query performance monitoring:
+
+```yaml
+receivers:
+  mysql:
+    endpoint: localhost:3306
+    username: otel
+    password: ${env:MYSQL_PASSWORD}
+    database: mydb
+    collection_interval: 10s
+    initial_delay: 1s
+    statement_events:
+      digest_text_limit: 120
+      time_limit: 24h
+      limit: 250
+    tls:
+      insecure: false
+      insecure_skip_verify: false
+
+exporters:
+  otlphttp/parseable:
+    endpoint: "http://parseable:8000"
+    headers:
+      Authorization: "Basic YWRtaW46YWRtaW4="
+      X-P-Stream: "mysql-metrics"
+      X-P-Log-Source: "otel-metrics"
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    metrics:
+      receivers: [mysql]
+      exporters: [otlphttp/parseable]
+```
+
+## Configuration Options
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `endpoint` | `localhost:3306` | MySQL server endpoint |
+| `username` | `root` | Database username |
+| `password` | - | Database password |
+| `database` | - | Database name (empty = all databases) |
+| `collection_interval` | `10s` | Metrics collection interval |
+| `allow_native_passwords` | `true` | Allow native password authentication |
+| `tls.insecure` | `false` | Disable TLS |
+| `statement_events.limit` | `250` | Max statement events to collect |
+
+## Collected Metrics
+
+The MySQL receiver collects the following metrics:
+
+| Metric | Description |
+|--------|-------------|
+| `mysql.buffer_pool.pages` | Buffer pool page counts |
+| `mysql.buffer_pool.data_pages` | Buffer pool data pages |
+| `mysql.buffer_pool.operations` | Buffer pool operations |
+| `mysql.commands` | Command execution counts |
+| `mysql.handlers` | Handler operation counts |
+| `mysql.locks` | Lock wait counts |
+| `mysql.sorts` | Sort operation counts |
+| `mysql.threads` | Thread counts by state |
+| `mysql.connections` | Connection counts |
+| `mysql.queries` | Query execution counts |
+| `mysql.statement_events.count` | Statement event counts |
+| `mysql.statement_events.wait.time` | Statement wait times |
+
+## Running the Collector
+
+### Docker
+
+```bash
+docker run -d \
+  --name otel-collector \
+  -v $(pwd)/otel-collector-config.yaml:/etc/otelcol/config.yaml \
+  -e MYSQL_PASSWORD=your-password \
+  otel/opentelemetry-collector-contrib:latest
+```
+
+### Docker Compose
+
+```yaml
+version: '3.8'
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol/config.yaml
+    environment:
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    depends_on:
+      - mysql
+      - parseable
+```
+
+## Querying MySQL Metrics in Parseable
+
+Once data is flowing, query your MySQL metrics:
+
+```sql
+-- Get thread counts over time
+SELECT p_timestamp, threads_running, threads_connected 
+FROM "mysql-metrics" 
+ORDER BY p_timestamp DESC 
+LIMIT 100
+
+-- Find slow queries
+SELECT digest_text, total_latency, exec_count
+FROM "mysql-metrics"
+WHERE p_timestamp > NOW() - INTERVAL '1 hour'
+ORDER BY total_latency DESC
+LIMIT 10
+```
+
+## Troubleshooting
+
+### Connection Issues
+
+If the collector can't connect to MySQL:
+
+1. Verify MySQL is accepting connections on the configured port
+2. Check the user has proper permissions
+3. Verify `skip-networking` is not enabled in MySQL config
+4. Check firewall rules allow the connection
+
+### Missing Metrics
+
+If some metrics are not appearing:
+
+1. Ensure `performance_schema` is enabled
+2. Verify the monitoring user has SELECT on `performance_schema`
+3. Check InnoDB is the storage engine for InnoDB-specific metrics
+
+## Next Steps
+
+- Set up [alerts](/docs/user-guide/alerting) for database performance thresholds
+- Create [dashboards](/docs/user-guide/dashboards) for MySQL monitoring
+- Explore [SQL queries](/docs/user-guide/sql-editor) for custom analysis

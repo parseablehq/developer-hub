@@ -1,0 +1,15 @@
+---
+title: Storage
+---
+
+### Overview
+
+Parseable is object store–first: every byte that flows through the platform is persisted in inexpensive, infinitely scalable commodity storage such as Amazon S3, Google Cloud Storage, Azure Blob, or any S3‑compatible service (MinIO, Wasabi, DigitalOcean Spaces, etc.).
+
+We lean on two community crates:
+
+`objectstore` – a vendor‑agnostic Rust SDK that abstracts away the quirks of each provider (authentication, region handling, presigned URLs, retry semantics).
+
+`limitstore` – a thin wrapper that throttles concurrent calls so we never overwhelm the remote API or your network egress budget.
+
+Together they give us uniform APIs, predictable throughput, and consistent error handling across clouds.

@@ -1,0 +1,61 @@
+---
+title: OpenTelemetry
+---
+
+Parseable enables ingesting the OpenTelemetry traces sent from the OTEL collectors in the JSON format. In order to do so, Parseable exposes default endpoint /v1/traces at which the OTEL collector sends the span data.
+
+Below is the sample configuration of the OTEL collector to send the traces to Parseable
+
+```yaml
+exporters:
+  otlphttp/parseabletraces:
+    endpoint: "<parseable-endpoint> eg. http://localhost:8000"
+    headers:
+      Authorization: "Basic <base64 encoded string of username:password>"
+      X-P-Stream: otel-traces       # dataset/stream name
+      X-P-Log-Source: otel-traces
+      Content-Type: application/json
+    encoding: json
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    traces:
+      exporters: [otlphttp/parseabletraces]
+```
+
+## Support for Protocol Buffers
+
+<Callout type="info">
+  <EnterpriseBadge /> This feature requires an Enterprise license.
+</Callout>
+
+Parseable also supports ingesting the OpenTelemetry Traces sent from the OTEL collectors in the Protocol Buffers format. Below is an example configuration of the OTEL collector to send the traces to Parseable in the Protocol Buffers format.
+
+```yaml
+exporters:
+  otlphttp/parseabletraces:
+    endpoint: "http://parseable:8000"
+    headers:
+      Authorization: "Basic YWRtaW46YWRtaW4="  # admin:admin in base64
+      X-P-Stream: otel-traces        # dataset/stream name
+      X-P-Log-Source: otel-traces
+      Content-Type: application/x-protobuf
+    encoding: proto
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    traces:
+      exporters: [otlphttp/parseabletraces]
+```
+
+## Data Flattening
+
+The OpenTelemetry traces that are in the form of a nested JSON. When the log event is received at `/v1/traces` endpoint, Parseable will flatten the nested JSON to a flat JSON object. This is done to make the data more queryable and filterable.
+
+All the resource attributes are stored as key-value pair where each attribute key becomes the field and the value, which may be of one of `stringValue/intValue/doubleValue etc`, becomes the value for that particular field.
+
+Each event under span record in the incoming log event is stored as individual record in Parseable and all resource or span attributes, scope name, version, span elements such as traceId, spanId, name, kind etc which are at the parent level of event are copied in each ingested record.

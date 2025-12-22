@@ -1,0 +1,40 @@
+---
+title: Tool Calls
+description: Monitor and log tool calls in AI agent applications
+---
+
+## Tool Calls Observability
+
+Track and analyze tool calls made by AI agents to understand their behavior and debug issues.
+
+### What are Tool Calls?
+
+Tool calls are function invocations made by AI agents to interact with external systems, APIs, or perform specific actions.
+
+### Logging Tool Calls
+
+```json
+{
+  "timestamp": "2024-01-15T10:30:00Z",
+  "agent_id": "agent-123",
+  "tool_name": "search_database",
+  "input": {"query": "user data"},
+  "output": {"results": 42},
+  "duration_ms": 150,
+  "status": "success"
+}
+```
+
+### Key Metrics
+
+- **Call Frequency** - How often each tool is called
+- **Success Rate** - Percentage of successful tool calls
+- **Latency** - Time taken for tool execution
+- **Error Types** - Common failure modes
+
+### Best Practices
+
+1. Log both input and output of tool calls
+2. Include timing information
+3. Track the agent context for each call
+4. Set up alerts for high failure rates

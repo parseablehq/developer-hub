@@ -1,0 +1,301 @@
+---
+title: CircleCI
+description: Send CircleCI pipeline logs to Parseable
+---
+
+Collect and analyze CircleCI pipeline logs in Parseable for CI/CD observability.
+
+## Overview
+
+Integrate CircleCI with Parseable to:
+
+- **Pipeline Logs** - Collect all job and workflow logs
+- **Debug Failures** - Quickly find and analyze failed builds
+- **Track Performance** - Monitor build times and trends
+- **Audit Pipelines** - Maintain compliance with log retention
+
+## Prerequisites
+
+- CircleCI project
+- Parseable instance accessible from CircleCI
+- CircleCI environment variables configured
+
+## Direct Log Shipping
+
+Send logs directly from your CircleCI config.
+
+### Config.yml
+
+```yaml
+version: 2.1
+
+executors:
+  default:
+    docker:
+      - image: cimg/base:stable
+
+commands:
+  send_to_parseable:
+    parameters:
+      status:
+        type: string
+      message:
+        type: string
+        default: ""
+    steps:
+      - run:
+          name: Send to Parseable
+          command: |
+            curl -X POST "${PARSEABLE_URL}/api/v1/ingest" \
+              -H "Authorization: Basic ${PARSEABLE_AUTH}" \
+              -H "X-P-Stream: circleci-pipelines" \
+              -H "Content-Type: application/json" \
+              -d "[{
+                \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+                \"project\": \"${CIRCLE_PROJECT_REPONAME}\",
+                \"workflow\": \"${CIRCLE_WORKFLOW_ID}\",
+                \"job\": \"${CIRCLE_JOB}\",
+                \"build_num\": ${CIRCLE_BUILD_NUM},
+                \"branch\": \"${CIRCLE_BRANCH}\",
+                \"sha\": \"${CIRCLE_SHA1}\",
+                \"username\": \"${CIRCLE_USERNAME}\",
+                \"status\": \"<< parameters.status >>\",
+                \"message\": \"<< parameters.message >>\"
+              }]"
+          when: always
+
+jobs:
+  build:
+    executor: default
+    steps:
+      - checkout
+      - send_to_parseable:
+          status: "started"
+          message: "Build started"
+      - run:
+          name: Build
+          command: |
+            echo "Building..."
+            npm ci
+            npm run build
+      - send_to_parseable:
+          status: "completed"
+          message: "Build completed"
+
+  test:
+    executor: default
+    steps:
+      - checkout
+      - run:
+          name: Test
+          command: npm test
+      - send_to_parseable:
+          status: "completed"
+          message: "Tests passed"
+
+workflows:
+  build-and-test:
+    jobs:
+      - build
+      - test:
+          requires:
+            - build
+```
+
+### With Status Detection
+
+```yaml
+commands:
+  send_to_parseable_with_status:
+    steps:
+      - run:
+          name: Send to Parseable
+          command: |
+            if [ "${CIRCLE_JOB_STATUS}" = "success" ]; then
+              STATUS="success"
+            else
+              STATUS="failure"
+            fi
+            
+            curl -X POST "${PARSEABLE_URL}/api/v1/ingest" \
+              -H "Authorization: Basic ${PARSEABLE_AUTH}" \
+              -H "X-P-Stream: circleci-pipelines" \
+              -H "Content-Type: application/json" \
+              -d "[{
+                \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+                \"project\": \"${CIRCLE_PROJECT_REPONAME}\",
+                \"job\": \"${CIRCLE_JOB}\",
+                \"build_num\": ${CIRCLE_BUILD_NUM},
+                \"status\": \"${STATUS}\"
+              }]"
+          when: always
+```
+
+## Orb Integration
+
+Create a reusable orb for Parseable logging.
+
+### Orb Definition
+
+```yaml
+# .circleci/orbs/parseable.yml
+version: 2.1
+
+description: Send logs to Parseable
+
+commands:
+  log:
+    parameters:
+      status:
+        type: string
+      message:
+        type: string
+        default: ""
+      stream:
+        type: string
+        default: "circleci-pipelines"
+    steps:
+      - run:
+          name: Log to Parseable
+          command: |
+            curl -s -X POST "${PARSEABLE_URL}/api/v1/ingest" \
+              -H "Authorization: Basic ${PARSEABLE_AUTH}" \
+              -H "X-P-Stream: << parameters.stream >>" \
+              -H "Content-Type: application/json" \
+              -d "[{
+                \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+                \"project\": \"${CIRCLE_PROJECT_REPONAME}\",
+                \"workflow_id\": \"${CIRCLE_WORKFLOW_ID}\",
+                \"job\": \"${CIRCLE_JOB}\",
+                \"build_num\": ${CIRCLE_BUILD_NUM},
+                \"branch\": \"${CIRCLE_BRANCH}\",
+                \"sha\": \"${CIRCLE_SHA1}\",
+                \"status\": \"<< parameters.status >>\",
+                \"message\": \"<< parameters.message >>\"
+              }]" || true
+          when: always
+```
+
+### Using the Orb
+
+```yaml
+version: 2.1
+
+orbs:
+  parseable: your-org/parseable@1.0.0
+
+jobs:
+  build:
+    docker:
+      - image: cimg/node:18.0
+    steps:
+      - checkout
+      - parseable/log:
+          status: "started"
+      - run: npm ci && npm run build
+      - parseable/log:
+          status: "completed"
+```
+
+## Webhook Integration
+
+Use CircleCI webhooks for workflow events.
+
+### Webhook Receiver
+
+```javascript
+const express = require('express');
+const axios = require('axios');
+const crypto = require('crypto');
+
+const app = express();
+app.use(express.json());
+
+const CIRCLECI_SECRET = process.env.CIRCLECI_WEBHOOK_SECRET;
+const PARSEABLE_URL = process.env.PARSEABLE_URL;
+const PARSEABLE_AUTH = process.env.PARSEABLE_AUTH;
+
+app.post('/webhook', async (req, res) => {
+  // Verify signature
+  const signature = req.headers['circleci-signature'];
+  // Verification logic here
+  
+  const event = req.body;
+  
+  const logEntry = {
+    timestamp: new Date().toISOString(),
+    event_type: event.type,
+    project: event.project?.name,
+    workflow_id: event.workflow?.id,
+    workflow_name: event.workflow?.name,
+    job_name: event.job?.name,
+    status: event.job?.status || event.workflow?.status,
+    branch: event.pipeline?.vcs?.branch,
+    commit: event.pipeline?.vcs?.revision
+  };
+  
+  try {
+    await axios.post(`${PARSEABLE_URL}/api/v1/ingest`, [logEntry], {
+      headers: {
+        'Authorization': `Basic ${PARSEABLE_AUTH}`,
+        'X-P-Stream': 'circleci-webhooks',
+        'Content-Type': 'application/json'
+      }
+    });
+  } catch (error) {
+    console.error('Error:', error);
+  }
+  
+  res.status(200).json({ status: 'received' });
+});
+
+app.listen(3000);
+```
+
+## Environment Variables
+
+Configure in CircleCI project settings:
+
+| Variable | Description |
+|----------|-------------|
+| `PARSEABLE_URL` | Parseable instance URL |
+| `PARSEABLE_AUTH` | Base64 encoded `username:password` |
+
+## Querying CircleCI Logs
+
+```sql
+-- Recent builds
+SELECT timestamp, project, job, status, branch
+FROM "circleci-pipelines"
+ORDER BY timestamp DESC
+LIMIT 100
+
+-- Failed builds
+SELECT timestamp, project, job, branch, message
+FROM "circleci-pipelines"
+WHERE status = 'failure'
+ORDER BY timestamp DESC
+
+-- Build success rate
+SELECT 
+  project,
+  COUNT(*) as total,
+  SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) as successful,
+  ROUND(SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END)::float / COUNT(*) * 100, 2) as success_rate
+FROM "circleci-pipelines"
+WHERE timestamp > NOW() - INTERVAL '7 days'
+GROUP BY project
+```
+
+## Best Practices
+
+1. **Use Orbs** - Centralize logging logic
+2. **Log All Jobs** - Track every job in workflow
+3. **Include Context** - Add branch, commit, and user info
+4. **Handle Failures** - Use `when: always` for logging steps
+
+## Next Steps
+
+- Set up [alerts](/docs/user-guide/alerting) for failed builds
+- Create [dashboards](/docs/user-guide/dashboards) for CI/CD metrics
+- Configure [GitHub Actions](/docs/integrations/cicd/github-actions) for comparison

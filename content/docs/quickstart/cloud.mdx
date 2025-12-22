@@ -1,0 +1,54 @@
+---
+title: Parseable Cloud
+sidebar_position: 1
+---
+
+Get started with Parseable Cloud in minutes — no infrastructure to manage.
+
+## Sign Up
+
+1. Go to [app.parseable.com](https://app.parseable.com) and create an account
+2. Verify your email address
+
+## Create a Workspace
+
+1. Click **Create Workspace**
+2. Choose your preferred **region** (select the region closest to your data sources for best performance)
+3. Wait a few minutes for your Parseable workspace to be provisioned
+
+Once ready, you'll receive your unique **ingestion endpoint**.
+
+## Start Ingesting Data
+
+Use the endpoint provided to start sending logs. Here's an example using curl:
+
+<CurlTerminal 
+  title="Send logs to Parseable Cloud"
+  command={`curl --location --request POST \\
+'https://<your-workspace>.parseable.com/api/v1/ingest' \\
+--header 'X-P-Stream: demo' \\
+--header 'Authorization: Basic <your-credentials>' \\
+--header 'Content-Type: application/json' \\
+--data-raw '[
+    {
+        "id": "434a5f5e-2f5f-11ed-a261-0242ac120002",
+        "datetime": "2023-01-05T07:20:50.52Z",
+        "host": "153.10.110.81",
+        "message": "Hello from Parseable Cloud!"
+    }
+]'`}
+/>
+
+Replace `<your-workspace>` and `<your-credentials>` with the values from your workspace dashboard.
+
+## Query Your Data
+
+Once data is ingested, you can query it directly from the Parseable Cloud console at [app.parseable.com](https://app.parseable.com).
+
+## Benefits of Parseable Cloud
+
+- **No infrastructure management** — We handle scaling, updates, and maintenance
+- **Pay-as-you-go pricing** — Only pay for what you use
+- **Global regions** — Deploy close to your data sources
+- **Instant setup** — Start ingesting in minutes
+- **Enterprise-grade security** — SOC 2 compliant, encrypted at rest and in transit

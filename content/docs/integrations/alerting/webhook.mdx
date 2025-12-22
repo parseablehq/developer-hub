@@ -1,0 +1,346 @@
+---
+title: Webhook
+description: Send alerts to any HTTP endpoint using webhooks
+---
+
+Send Parseable alerts to any HTTP endpoint using generic webhooks for custom integrations.
+
+## Overview
+
+Webhooks provide a flexible way to integrate Parseable with any system that accepts HTTP requests:
+
+- **Custom Applications** - Send alerts to your internal tools
+- **Third-Party Services** - Integrate with any service that has an API
+- **Automation Workflows** - Trigger automated responses to alerts
+- **Data Pipelines** - Forward alerts to data processing systems
+
+## Prerequisites
+
+- HTTP endpoint that accepts POST requests
+- Parseable alerts configured
+- Network connectivity between Parseable and the webhook endpoint
+
+## Basic Webhook Configuration
+
+### Parseable Alert with Webhook
+
+Configure an alert in Parseable with a webhook target:
+
+```json
+{
+  "name": "High Error Rate Alert",
+  "stream": "application-logs",
+  "alertType": "threshold",
+  "condition": {
+    "field": "level",
+    "operator": "equals",
+    "value": "error"
+  },
+  "threshold": 100,
+  "duration": "5m",
+  "webhook": {
+    "url": "https://your-endpoint.com/webhook",
+    "method": "POST",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer your-api-token"
+    }
+  }
+}
+```
+
+## Webhook Payload
+
+When an alert triggers, Parseable sends a JSON payload to your webhook endpoint:
+
+```json
+{
+  "alert_name": "High Error Rate Alert",
+  "stream": "application-logs",
+  "alert_type": "threshold",
+  "severity": "high",
+  "triggered_at": "2024-01-15T10:30:00Z",
+  "condition": {
+    "field": "level",
+    "operator": "equals",
+    "value": "error"
+  },
+  "threshold": 100,
+  "current_value": 150,
+  "duration": "5m",
+  "message": "Error count exceeded threshold: 150 > 100"
+}
+```
+
+## Building a Webhook Receiver
+
+### Node.js Example
+
+```javascript
+const express = require('express');
+const app = express();
+
+app.use(express.json());
+
+app.post('/webhook', (req, res) => {
+  const alert = req.body;
+  
+  console.log('Received alert:', alert);
+  
+  // Process the alert
+  handleAlert(alert);
+  
+  res.status(200).json({ status: 'received' });
+});
+
+function handleAlert(alert) {
+  // Your custom logic here
+  // Examples:
+  // - Send to a messaging queue
+  // - Update a database
+  // - Trigger an automation
+  // - Forward to another service
+  
+  console.log(`Alert: ${alert.alert_name}`);
+  console.log(`Stream: ${alert.stream}`);
+  console.log(`Value: ${alert.current_value} (threshold: ${alert.threshold})`);
+}
+
+app.listen(3000, () => {
+  console.log('Webhook receiver listening on port 3000');
+});
+```
+
+### Python Example
+
+```python
+from flask import Flask, request, jsonify
+import logging
+
+app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    alert = request.json
+    
+    logging.info(f"Received alert: {alert}")
+    
+    # Process the alert
+    handle_alert(alert)
+    
+    return jsonify({'status': 'received'}), 200
+
+def handle_alert(alert):
+    # Your custom logic here
+    logging.info(f"Alert: {alert.get('alert_name')}")
+    logging.info(f"Stream: {alert.get('stream')}")
+    logging.info(f"Value: {alert.get('current_value')} (threshold: {alert.get('threshold')})")
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=3000)
+```
+
+### Go Example
+
+```go
+package main
+
+import (
+    "encoding/json"
+    "fmt"
+    "log"
+    "net/http"
+)
+
+type Alert struct {
+    AlertName    string `json:"alert_name"`
+    Stream       string `json:"stream"`
+    AlertType    string `json:"alert_type"`
+    Severity     string `json:"severity"`
+    TriggeredAt  string `json:"triggered_at"`
+    Threshold    int    `json:"threshold"`
+    CurrentValue int    `json:"current_value"`
+    Message      string `json:"message"`
+}
+
+func webhookHandler(w http.ResponseWriter, r *http.Request) {
+    var alert Alert
+    
+    if err := json.NewDecoder(r.Body).Decode(&alert); err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+    
+    log.Printf("Received alert: %s", alert.AlertName)
+    log.Printf("Stream: %s, Value: %d (threshold: %d)", 
+        alert.Stream, alert.CurrentValue, alert.Threshold)
+    
+    // Process the alert
+    handleAlert(alert)
+    
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]string{"status": "received"})
+}
+
+func handleAlert(alert Alert) {
+    // Your custom logic here
+    fmt.Printf("Processing alert: %s\n", alert.AlertName)
+}
+
+func main() {
+    http.HandleFunc("/webhook", webhookHandler)
+    log.Println("Webhook receiver listening on port 3000")
+    log.Fatal(http.ListenAndServe(":3000", nil))
+}
+```
+
+## Authentication
+
+### Bearer Token
+
+```json
+{
+  "webhook": {
+    "url": "https://your-endpoint.com/webhook",
+    "headers": {
+      "Authorization": "Bearer your-api-token"
+    }
+  }
+}
+```
+
+### Basic Auth
+
+```json
+{
+  "webhook": {
+    "url": "https://your-endpoint.com/webhook",
+    "headers": {
+      "Authorization": "Basic base64-encoded-credentials"
+    }
+  }
+}
+```
+
+### API Key
+
+```json
+{
+  "webhook": {
+    "url": "https://your-endpoint.com/webhook",
+    "headers": {
+      "X-API-Key": "your-api-key"
+    }
+  }
+}
+```
+
+## Common Integrations
+
+### Forward to Microsoft Teams
+
+```javascript
+app.post('/webhook', async (req, res) => {
+  const alert = req.body;
+  
+  const teamsMessage = {
+    "@type": "MessageCard",
+    "@context": "http://schema.org/extensions",
+    "themeColor": alert.severity === 'critical' ? "FF0000" : "FFA500",
+    "summary": alert.alert_name,
+    "sections": [{
+      "activityTitle": `🚨 ${alert.alert_name}`,
+      "facts": [
+        { "name": "Stream", "value": alert.stream },
+        { "name": "Severity", "value": alert.severity },
+        { "name": "Value", "value": `${alert.current_value} (threshold: ${alert.threshold})` }
+      ],
+      "markdown": true
+    }]
+  };
+  
+  await axios.post(process.env.TEAMS_WEBHOOK_URL, teamsMessage);
+  res.status(200).json({ status: 'sent' });
+});
+```
+
+### Forward to Discord
+
+```javascript
+app.post('/webhook', async (req, res) => {
+  const alert = req.body;
+  
+  const discordMessage = {
+    embeds: [{
+      title: `🚨 ${alert.alert_name}`,
+      color: alert.severity === 'critical' ? 0xFF0000 : 0xFFA500,
+      fields: [
+        { name: "Stream", value: alert.stream, inline: true },
+        { name: "Severity", value: alert.severity, inline: true },
+        { name: "Value", value: `${alert.current_value}`, inline: true }
+      ],
+      timestamp: alert.triggered_at
+    }]
+  };
+  
+  await axios.post(process.env.DISCORD_WEBHOOK_URL, discordMessage);
+  res.status(200).json({ status: 'sent' });
+});
+```
+
+### Trigger AWS Lambda
+
+```javascript
+const AWS = require('aws-sdk');
+const lambda = new AWS.Lambda();
+
+app.post('/webhook', async (req, res) => {
+  const alert = req.body;
+  
+  await lambda.invoke({
+    FunctionName: 'alert-handler',
+    InvocationType: 'Event',
+    Payload: JSON.stringify(alert)
+  }).promise();
+  
+  res.status(200).json({ status: 'triggered' });
+});
+```
+
+## Best Practices
+
+1. **Respond Quickly** - Return 200 status immediately, process async if needed
+2. **Implement Retries** - Handle transient failures gracefully
+3. **Validate Payloads** - Verify the webhook payload structure
+4. **Use HTTPS** - Always use encrypted connections
+5. **Authenticate Requests** - Verify requests are from Parseable
+6. **Log Everything** - Keep audit logs of received webhooks
+7. **Handle Duplicates** - Implement idempotency for duplicate alerts
+
+## Troubleshooting
+
+### Webhook Not Receiving
+
+1. Verify the webhook URL is accessible from Parseable
+2. Check firewall rules allow incoming connections
+3. Verify the endpoint returns 2xx status codes
+4. Check Parseable logs for webhook errors
+
+### Authentication Failures
+
+1. Verify credentials are correct
+2. Check header names are properly formatted
+3. Ensure tokens haven't expired
+
+### Timeout Issues
+
+1. Increase timeout settings if processing takes time
+2. Process alerts asynchronously
+3. Return 202 Accepted for long-running operations
+
+## Next Steps
+
+- Set up [Parseable alerts](/docs/user-guide/alerting) for automated notifications
+- Configure [Slack](/docs/integrations/alerting/slack) for team notifications
+- Configure [PagerDuty](/docs/integrations/alerting/pagerduty) for incident management

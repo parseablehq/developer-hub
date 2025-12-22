@@ -1,0 +1,9 @@
+{
+  "title": "Cookbook",
+  "pages": [
+    "agentic-observability",
+    "security",
+    "tool-calls",
+    "instrumentation"
+  ]
+}

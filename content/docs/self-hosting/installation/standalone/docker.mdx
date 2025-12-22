@@ -1,0 +1,57 @@
+---
+title: Docker
+---
+
+This document explains how to set up Parseable in standalone mode on Docker with `s3-store` mode. This mode is used to store logs on S3 or compatible object storage.
+
+## Prerequisites
+- S3 or a compatible object storage URL.
+- Credentials to read / write access the object storage.
+- Bucket created on object storage.
+- Docker is now installed on your machine. Refer to [this doc](https://www.docker.com/products/docker-desktop/) to install Docker if you haven't already.
+
+## Setup env file
+We'll create an env file with all the config fields for Parseable. Use the command below to create the file. Note that fields need to be set after you create the file.
+
+```bash
+cat << EOF > parseable-env
+P_STAGING_DIR=/staging
+P_ADDR=0.0.0.0:8000
+P_USERNAME=<username-to-be-set-for-parseable>
+P_PASSWORD=<password-to-be-set-for-parseable>
+P_S3_URL=<s3-url>
+P_S3_BUCKET=<s3-bucket>
+P_S3_ACCESS_KEY=<access-key>
+P_S3_SECRET_KEY=<secret-key>
+P_S3_REGION=<region>
+EOF
+```
+
+You can add additional environment variables to the `parseable-env` file as needed. You can find the details of all the environment variables in the [Environment Variables](/docs/env-variables) section.
+
+## Run Parseable
+
+Parseable needs a local directory for staging log data, before sending it to object storage (configurable via `P_STAGING_DIR` field in the env file). Assuming you've set the `P_STAGING_DIR` field to `/staging` and want to mount that volume to a local path `/parseable/staging`, run the below command.
+
+```bash
+mkdir /parseable/staging
+
+docker run \
+  -p 8000:8000 \
+  --env-file parseable-env \
+  -v /parseable/staging:/staging \
+  parseable/parseable:latest \
+  parseable s3-store
+```
+
+<Callout type="info">
+Since Parseable runs as user parseable inside the container, you'll need to make sure that the local path /data/parseable is owned by user parseable (`uid: 10001`). You can do that by running `chown -R 10001:10001 /data/parseable` on the host machine.
+</Callout>
+
+## Access Parseable
+Once Parseable is up and running, you can access it at `http://localhost:8000` (assuming you've set `P_ADDR` to `:8000` in the env file). Credentials to login to Parseable are set via `P_USERNAME` and `P_PASSWORD` fields in the env file.
+
+## Troubleshoot
+### Running docker on AWS EC2
+When trying to fetch credentials over IMDSv2 inside a docker container the client can hang indefinitely. This can happen due to AWS not allowing more than 1 hop in IMDSv2 endpoint response. You can change this configuration, please refer to the consideration section of [retrieve instance metadata](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-retrieval.html#imds-considerations).
+
