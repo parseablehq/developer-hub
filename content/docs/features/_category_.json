@@ -1,7 +1,8 @@
 {
-  "title": "User Guide",
+  "title": "Features",
   "pages": [
     "index",
+    "ai-native",
     "dashboards",
     "alerts",
     "rbac",

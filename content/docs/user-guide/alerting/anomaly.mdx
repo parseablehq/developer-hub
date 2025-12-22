@@ -3,22 +3,18 @@ title: Anomaly Detection
 description: Automatically detect unusual patterns in your data using ML
 ---
 
+<Callout type="info">
+  <EnterpriseBadge /> This feature requires an Enterprise license.
+</Callout>
+
 ## Anomaly Detection Alerts
 
-Anomaly detection alerts use machine learning to automatically identify unusual patterns in your data without requiring manual threshold configuration.
-
-### How It Works
-
-Parseable analyzes your historical data to learn normal patterns and automatically detects deviations that may indicate issues.
-
-### Benefits
-
-- **No Manual Thresholds** - The system learns what's normal for your data
-- **Adaptive** - Automatically adjusts to changing patterns
-- **Early Detection** - Catch issues before they become critical
+Get an alert if your latest data looks unusual compared to recent trends.
 
 ### Configuration
 
-Set `alertType` to `anomaly` when creating an alert to enable anomaly detection.
+- **Use historical data of**: Training period for the ML model (e.g., 1 day, 1 week, 1 month)
+- **Repeat evaluation every**: How often to check for anomalies (e.g., every 10 minutes)
+- **Group By behavior**: When using Group By with Anomaly Detection, the system analyzes each group independently. Alerts trigger separately for each group that shows anomalous behavior. You can preview anomalies for individual groups using the dropdown selector in the top-right corner of the preview panel.
 
-See the [Alerts documentation](/docs/features/alerts) for detailed configuration options.
+![](../../features/static/set-anomaly.gif)

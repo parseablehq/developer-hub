@@ -5,6 +5,8 @@
     "alerting",
     "dashboards",
     "sql-editor",
-    "rbac"
+    "rbac",
+    "log-iq",
+    "openid"
   ]
 }

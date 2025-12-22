@@ -2,11 +2,21 @@
 title: Quickstart Guide
 ---
 import { IconChartCohort, IconDirections, IconCloudDataConnection, IconBrandInertia, IconFileTypeSql, IconServerBolt,
- IconSchema, IconFileDigitFilled, IconCloudComputing } from '@tabler/icons-react';
+ IconSchema, IconFileDigitFilled, IconCloudComputing, IconCloud } from '@tabler/icons-react';
+
+## Parseable Cloud
+
+The fastest way to get started — no infrastructure to manage.
+
+<Cards>
+<Card href="/quickstart/cloud" icon={<IconCloud className="text-blue-600" />} title='Parseable Cloud'>
+Sign up at app.parseable.com and start ingesting in minutes.
+</Card>
+</Cards>
 
 ## Run Parseable Locally
 
-Running Parseable for the first time? You can get up and running in less than a minute with the Docker container. Run the following command to start Parseable in local mode on your machine:
+Prefer to self-host? You can get up and running in less than a minute with the Docker container. Run the following command to start Parseable in local mode on your machine:
 
 ```bash
 docker run -p 8000:8000 \

@@ -1,0 +1,226 @@
+---
+title: Log IQ
+---
+
+<Callout type="info">
+  <EnterpriseBadge /> This feature requires an Enterprise license.
+</Callout>
+
+Log IQ allows identifying the format of unstructured log data, transforming it into structured columns within ingested events in JSON format. This helps in easy and optimized query, search, debug and visualize the data.
+
+## How Log IQ works
+
+Log IQ requires specific HTTP headers when ingesting data to properly identify and parse log formats:
+
+### Required Headers
+
+- `X-P-Log-Source` - **Mandatory** - Identifies the log format name (e.g., `syslog`, `nginx_access`, `zookeeper`)
+- `X-P-Extract-Log` - **Required for unstructured data** - Specifies which field in the incoming JSON contains the raw log text (typically `log`)
+
+### Processing Logic
+
+**For structured data:**
+- Only `X-P-Log-Source` is required
+- Parseable assumes the data is already in a structured format
+- The specified format is used for validation and additional processing
+
+**For unstructured data:**
+- Both `X-P-Log-Source` and `X-P-Extract-Log` are required
+- Parseable extracts the raw log text from the field specified in `X-P-Extract-Log`
+- The system applies regex patterns based on the format specified in `X-P-Log-Source`
+- If the content matches the format, it's parsed into structured fields
+- If the content doesn't match the format, the original value is retained in the specified field
+
+### Outcome
+
+- After successful format detection, a `p_format` field is added to the log event containing the log source name
+- The stream info is updated with an array of detected log sources
+- Parseable UI (Prism) automatically displays filters on the `p_format` field
+- If the log format is not detected, `p_format_verified=false` is added to the event
+- Data is always ingested, regardless of format detection success
+
+> **Note:** Even if your unstructured data doesn't match any of the supported formats listed below, you must still specify both headers. Choose the format that most closely aligns with your log structure.
+
+### Example: Processing a Syslog Entry
+
+Let's walk through a practical example of how Log IQ processes a syslog entry:
+
+**1. Original log sent by an agent (e.g., FluentBit):**
+
+```json
+{
+    "log": "2025-07-11T14:57:33.000111+05:30 node01 exporter[9012]: [2025/07/11 14:57:33] [error] [output:http:http.8] Failed to push metrics to endpoint /metrics"
+}
+```
+
+**2. HTTP headers used when sending to Parseable:**
+
+```
+X-P-Log-Source: syslog_log
+X-P-Extract-Log: log
+```
+
+**3. Parseable's processed output:**
+
+```json
+{
+  "body": "[2025/07/11 14:57:33] [error] [output:http:http.8] Failed to push metrics to endpoint /metrics",
+  "log": "2025-07-11T14:57:33.000111+05:30 node01 exporter[9012]: [2025/07/11 14:57:33] [error] [output:http:http.8] Failed to push metrics to endpoint /metrics",
+  "log_hostname": "node01",
+  "log_pid": "9012",
+  "log_procname": "exporter",
+  "log_syslog_tag": "exporter[9012]",
+  "p_format": "syslog_log",
+  "p_format_verified": "true",
+  "p_src_ip": "127.0.0.1",
+  "p_timestamp": "2025-07-11T09:20:23.019",
+  "p_user_agent": "PostmanRuntime/7.44.1",
+  "timestamp": "2025-07-11T09:27:33"
+}
+```
+
+In this example:
+
+1. The agent (like FluentBit) collects the log and places it in the `log` field
+2. Parseable receives this with the appropriate headers
+3. The system identifies it as a syslog format and extracts structured fields:
+   - `log_hostname`: The host that generated the log ("node01")
+   - `log_pid`: The process ID ("9012")
+   - `log_procname`: The process name ("exporter")
+   - `log_syslog_tag`: The syslog tag ("exporter[9012]")
+   - `body`: The actual message content
+4. Parseable adds its metadata fields:
+   - `p_format`: The detected format ("syslog_log")
+   - `p_format_verified`: Confirmation that the format was successfully detected
+   - Other `p_` prefixed fields with request metadata
+
+This structured data is now ready for efficient querying and analysis.
+
+## Supported Formats
+
+Parseable Log IQ supports a wide range of log formats. You can specify these formats using the `X-P-Log-Source` header when ingesting logs. The currently supported formats include:
+
+| Format | Description |
+| --- | --- |
+| `access_log` | Common web server access logs (Apache, Nginx, etc.) |
+| `alb_log` | AWS Application Load Balancer logs |
+| `block_log` | Generic block-style logs |
+| `candlepin_log` | Candlepin service logs |
+| `choose_repo_log` | Repository selection logs |
+| `cloudvm_ram_log` | Cloud VM RAM usage logs |
+| `cups_log` | Common UNIX Printing System logs |
+| `dpkg_log` | Debian package manager logs |
+| `elb_log` | AWS Elastic Load Balancer logs |
+| `engine_log` | Generic engine logs |
+| `env_logger_log` | Environment logger format |
+| `error_log` | Common error log format |
+| `esx_syslog_log` | VMware ESX syslog format |
+| `haproxy_log` | HAProxy load balancer logs |
+| `katello_log` | Katello service logs |
+| `lnav_debug_log` | LNAV debug logs |
+| `nextflow_log` | Nextflow workflow logs |
+| `openam_log` | OpenAM authentication logs |
+| `openamdb_log` | OpenAM database logs |
+| `openstack_log` | OpenStack service logs |
+| `page_log` | Printer page logs |
+| `procstate_log` | Process state logs |
+| `proxifier_log` | Proxifier logs |
+| `rails_log` | Ruby on Rails application logs |
+| `redis_log` | Redis database logs |
+| `s3_log` | AWS S3 access logs |
+| `simple_rs_log` | Simple Rust logs |
+| `snaplogic_log` | SnapLogic integration logs |
+| `sssd_log` | System Security Services Daemon logs |
+| `strace_log` | System call trace logs |
+| `sudo_log` | Sudo command logs |
+| `syslog_log` | Standard system logs |
+| `tcf_log` | Target Communication Framework logs |
+| `tcsh_history` | TCSH shell history |
+| `uwsgi_log` | uWSGI server logs |
+| `vmk_log` | VMware kernel logs |
+| `vmw_log` | VMware general logs |
+| `vmw_py_log` | VMware Python logs |
+| `vmw_vc_svc_log` | VMware vCenter service logs |
+| `vpostgres_log` | VMware Postgres database logs |
+| `web_robot_log` | Web crawler/robot logs |
+| `xmlrpc_log` | XML-RPC logs |
+
+Each format has specific patterns and fields that are extracted. When a log matches one of these formats, Parseable automatically extracts the structured fields and makes them available for querying and analysis.
+
+### Extracted Fields by Format
+
+Below are the fields extracted for each supported log format:
+
+<details>
+<summary><b>access_log</b> - Web server access logs</summary>
+
+- `timestamp` - Time when the request was received
+- `c_ip` - Client IP address
+- `cs_username` - Username if authentication was used
+- `cs_method` - HTTP method (GET, POST, etc.)
+- `cs_uri_stem` - Requested URI path
+- `cs_uri_query` - Query string parameters
+- `cs_version` - HTTP protocol version
+- `sc_status` - HTTP status code
+- `sc_bytes` - Response size in bytes
+- `cs_referer` - Referer URL
+- `cs_user_agent` - User agent string
+- `cs_host` - Host header value
+- `body` - Any additional content
+</details>
+
+<details>
+<summary><b>alb_log</b> - AWS Application Load Balancer logs</summary>
+
+- `type` - Connection type (HTTP, HTTPS, etc.)
+- `timestamp` - Request timestamp
+- `elb` - Load balancer name
+- `client_ip` - Client IP address
+- `client_port` - Client port
+- `target_ip` - Target IP address
+- `target_port` - Target port
+- `request_processing_time` - Time from connection to routing decision
+- `target_processing_time` - Time from request to response from target
+- `response_processing_time` - Time from response from target to client
+- `elb_status_code` - Response code from load balancer
+- `target_status_code` - Response code from target
+- `received_bytes` - Bytes received from client
+- `sent_bytes` - Bytes sent to client
+- `cs_method` - HTTP method
+- `cs_uri_whole` - Request URL
+- `cs_version` - HTTP version
+- `user_agent` - User agent string
+- `ssl_cipher` - SSL cipher
+- `ssl_protocol` - SSL/TLS protocol
+</details>
+
+<details>
+<summary><b>syslog_log</b> - Standard system logs</summary>
+
+- `timestamp` - Log timestamp
+- `log_hostname` - Host name
+- `log_syslog_tag` - Syslog tag
+- `log_procname` - Process name
+- `log_pid` - Process ID
+- `body` - Log message content
+- `log_pri` - Priority value
+- `syslog_version` - Syslog version
+- `log_msgid` - Message ID
+- `log_struct` - Structured data
+</details>
+
+<details>
+<summary><b>redis_log</b> - Redis database logs</summary>
+
+- `pid` - Process ID
+- `timestamp` - Log timestamp
+- `level` - Log level
+- `role` - Redis role (master, slave, etc.)
+- `body` - Log message content
+</details>
+
+This is not an exhaustive list of all fields for all formats. Each format has specific patterns and may extract additional fields based on the log content. When using Log IQ, you can explore the extracted fields in the Parseable UI or through SQL queries.
+
+<Callout type="info">
+In case of p_format_verified = false, for a known format listed above, raise a Git issue to add the format.
+</Callout>

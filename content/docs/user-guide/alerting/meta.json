@@ -1,8 +1,9 @@
 {
   "title": "Alerting",
   "pages": [
-    "forecasting",
+    "...",
+    "standard-threshold",
     "anomaly",
-    "standard-threshold"
+    "forecasting"
   ]
 }

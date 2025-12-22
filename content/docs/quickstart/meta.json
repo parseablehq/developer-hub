@@ -1,3 +1,4 @@
 {
-  "title": "Get Started"
+  "title": "Get Started",
+  "pages": ["...", "cloud", "binary", "docker"]
 }
