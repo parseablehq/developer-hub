@@ -7,15 +7,10 @@
     "features",
     "overview",
     "integrations",
-    "---Ingesting Data---",
     "ingest-data",
-    "---User Guide---",
     "user-guide",
-    "---Cookbook---",
     "cookbook",
-    "---Self Hosting---",
     "self-hosting",
-    "---Release Notes---",
     "release-notes"
   ]
 }

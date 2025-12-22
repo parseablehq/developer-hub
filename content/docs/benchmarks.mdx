@@ -12,6 +12,8 @@ Parseable is a top performer on the [ClickBench](https://benchmark.clickhouse.co
 
 ![Parseable Benchmark](./static/benchmark.png)
 
+Parseable's performance is a result of its modern architecture, designed for observability data, Read more about our performance philosophy in our post: [Performance is Table Stakes](https://www.parseable.com/blog/performance-is-table-stakes).
+
 ## Real-World Performance: 100 TB/Day
 
 We tested Parseable's performance with a real-world scenario of ingesting **100 TB of telemetry data per day**.
@@ -25,23 +27,4 @@ We tested Parseable's performance with a real-world scenario of ingesting **100 
 | **Monthly Cost**      | **~$11,810** (for a 4-node cluster)  |
 | **Compression Ratio** | **Up to 90%**                        |
 
-### Test Environment
-
-*   **Cloud Provider:** AWS
-*   **Ingestion Nodes:** 4 x c5n.2xlarge EC2 instances
-*   **Storage:** AWS S3
-
 For more details, see our blog post: [The Economics and Physics of 100 TB Telemetry Data Per Day](https://www.parseable.com/blog/the-economics-and-physics-of-100-tb-telemetry-data-per-day).
-
-## Architectural Highlights
-
-Parseable's performance is a result of its modern architecture, designed for observability data:
-
-*   **Diskless Architecture:** Separates compute and storage, using object storage for scalability.
-*   **Columnar Storage:** High compression and fast queries.
-*   **On-Demand Indexing:** Reduces indexing overhead.
-*   **Stateless Nodes:** For horizontal scaling.
-*   **Vectorized Query Execution:** Efficient CPU usage.
-*   **Built in Rust:** For a small memory footprint.
-
-Read more about our performance philosophy in our post: [Performance is Table Stakes](https://www.parseable.com/blog/performance-is-table-stakes).

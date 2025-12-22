@@ -1,8 +1,9 @@
 {
   "title": "AI Native",
   "pages": [
+    "...",
+    "keystone",
     "summary",
-    "text-to-sql",
-    "keystone"
+    "text-to-sql"
   ]
 }
