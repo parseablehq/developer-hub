@@ -71,6 +71,15 @@ export async function generateMetadata(props: {
   params: Promise<{ slug?: string[] }>;
 }) {
   const params = await props.params;
+  
+  // Handle root /docs path
+  if (!params.slug || params.slug.length === 0) {
+    return {
+      title: 'Documentation | Parseable',
+      description: 'Parseable documentation and guides',
+    };
+  }
+  
   const page = source.getPage(params.slug);
   if (!page) notFound();
 
