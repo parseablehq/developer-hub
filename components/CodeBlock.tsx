@@ -12,6 +12,7 @@ export default function CodeBlock({ children, className }: CodeBlockProps) {
   const [copied, setCopied] = useState(false);
   
   // Extract language from className (e.g., "language-yaml")
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const language = className?.replace('language-', '') || '';
   
   // Get the text content from children
@@ -20,8 +21,9 @@ export default function CodeBlock({ children, className }: CodeBlockProps) {
     if (typeof node === 'number') return String(node);
     if (!node) return '';
     if (Array.isArray(node)) return node.map(getTextContent).join('');
-    if (typeof node === 'object' && 'props' in node) {
-      return getTextContent((node as any).props.children);
+    if (typeof node === 'object' && node !== null && 'props' in node) {
+      const element = node as { props: { children?: ReactNode } };
+      return getTextContent(element.props.children);
     }
     return '';
   };

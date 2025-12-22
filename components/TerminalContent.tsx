@@ -46,7 +46,7 @@ export default function TerminalContent({ command }: TerminalContentProps) {
           setOutput(data.output);
         }
       }
-    } catch (err) {
+    } catch {
       setError('Failed to execute command');
     } finally {
       setIsRunning(false);
