@@ -3,15 +3,7 @@ import { useState } from "react";
 import {
   ContentCopy as ContentCopyIcon,
   Check as CheckIcon,
-  RocketLaunch as RocketLaunchIcon,
-  Input as InputIcon,
-  ManageSearch as ManageSearchIcon,
-  AdminPanelSettings as AdminPanelSettingsIcon,
   CloudUpload as CloudUploadIcon,
-  Code as CodeIcon,
-  ArrowForward as ArrowForwardIcon,
-  CloudQueue as CloudQueueIcon,
-  Storage as StorageIcon,
 } from "@mui/icons-material";
 import { usePlatform } from "./hooks/usePlatform";
 
@@ -21,9 +13,15 @@ export default function MainPage() {
   const installCommand =
     platform === "windows"
       ? 'powershell -ep bypass -c "irm https://logg.ing/install-windows | iex"'
-      : "curl -fsSL https://logg.ing/install | bash}";
+      : "curl -fsSL https://logg.ing/install | bash";
   const baseUrl =
     process.env.NEXT_PUBLIC_ENV === "development" ? "/" : "/docs/";
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(installCommand);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <main className="flex-1 bg-[#F8F9FA] dark:bg-[#101622] text-slate-900 dark:text-white overflow-x-hidden font-[Inter,sans-serif]">
@@ -49,12 +47,16 @@ export default function MainPage() {
                 className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center justify-center"
                 aria-label="Copy to clipboard"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                />
-              </svg>
+                {copied ? <CheckIcon /> : <ContentCopyIcon />}
+              </button>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4 mt-6 justify-center">
+            <Link
+              href="https://cloud.parseable.com"
+              className="flex min-w-[84px] w-full sm:w-auto cursor-pointer items-center justify-center overflow-hidden rounded-md h-12 px-6 bg-blue-600 text-white text-base font-semibold leading-normal tracking-[-0.01em] hover:bg-blue-700 transition-colors"
+            >
+              <CloudUploadIcon className="mr-2" />
               <span className="truncate">Sign up now</span>
             </Link>
             <Link
