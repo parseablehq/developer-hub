@@ -20,6 +20,12 @@ const config = {
         destination: '/docs/OpenTelemetry',
         permanent: true, // 301 redirect
       },
+      // Redirect /docs/* to /* for development/preview environments
+      {
+        source: '/docs/:path*',
+        destination: '/:path*',
+        permanent: false,
+      },
     ]
   },
   async headers() {
