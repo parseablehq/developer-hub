@@ -1,8 +1,27 @@
 import Link from "next/link";
+import { useState } from "react";
+import {
+  ContentCopy as ContentCopyIcon,
+  Check as CheckIcon,
+  CloudUpload as CloudUploadIcon,
+} from "@mui/icons-material";
+import { usePlatform } from "./hooks/usePlatform";
 
 export default function MainPage() {
+  const [copied, setCopied] = useState(false);
+  const platform = usePlatform();
+  const installCommand =
+    platform === "windows"
+      ? 'powershell -ep bypass -c "irm https://logg.ing/install-windows | iex"'
+      : "curl -fsSL https://logg.ing/install | bash";
   const baseUrl =
     process.env.NEXT_PUBLIC_ENV === "development" ? "/" : "/docs/";
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(installCommand);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <main className="flex-1 bg-[#F8F9FA] dark:bg-[#101622] text-slate-900 dark:text-white overflow-x-hidden font-[Inter,sans-serif]">
@@ -18,24 +37,26 @@ export default function MainPage() {
             Ready to dive in? Sign up for our cloud offering or download the
             self-hosted version to get started in minutes.
           </p>
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="https://app.parseable.com"
-              className="flex min-w-[84px] w-full sm:w-auto cursor-pointer items-center justify-center overflow-hidden rounded-md h-12 px-6 bg-[#5A43F5] text-white text-base font-semibold leading-normal tracking-[-0.01em] hover:bg-[#4836c4] transition-colors"
-            >
-              <svg
-                className="mr-2 w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
+          <div className="max-w-2xl mx-auto">
+            <div className="relative flex flex-col sm:flex-row items-stretch sm:items-center bg-white dark:bg-slate-800 rounded-lg overflow-hidden">
+              <code className="flex-1 px-4 py-3 text-black dark:text-slate-200 text-sm sm:text-base overflow-x-auto whitespace-nowrap">
+                {installCommand}
+              </code>
+              <button
+                onClick={copyToClipboard}
+                className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center justify-center"
+                aria-label="Copy to clipboard"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                />
-              </svg>
+                {copied ? <CheckIcon /> : <ContentCopyIcon />}
+              </button>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4 mt-6 justify-center">
+            <Link
+              href="https://cloud.parseable.com"
+              className="flex min-w-[84px] w-full sm:w-auto cursor-pointer items-center justify-center overflow-hidden rounded-md h-12 px-6 bg-blue-600 text-white text-base font-semibold leading-normal tracking-[-0.01em] hover:bg-blue-700 transition-colors"
+            >
+              <CloudUploadIcon className="mr-2" />
               <span className="truncate">Sign up now</span>
             </Link>
             <Link
