@@ -13,14 +13,15 @@ import {
   CloudQueue as CloudQueueIcon,
   Storage as StorageIcon,
 } from "@mui/icons-material";
-import { useIsMac } from "./hooks/useIsMac";
+import { usePlatform } from "./hooks/usePlatform";
 
 export default function MainPage() {
   const [copied, setCopied] = useState(false);
-  const isMac = useIsMac();
-  const installCommand = `curl -fsSL https://logg.ing/install | ${
-    isMac ? "zsh" : "bash"
-  }`;
+  const platform = usePlatform();
+  const installCommand =
+    platform === "windows"
+      ? 'powershell -ep bypass -c "irm https://logg.ing/install-windows | iex"'
+      : "curl -fsSL https://logg.ing/install | bash}";
   const baseUrl =
     process.env.NEXT_PUBLIC_ENV === "development" ? "/" : "/docs/";
 
@@ -44,9 +45,7 @@ export default function MainPage() {
           <div className="max-w-2xl mx-auto">
             <div className="relative flex flex-col sm:flex-row items-stretch sm:items-center bg-white dark:bg-slate-800 rounded-lg overflow-hidden">
               <code className="flex-1 px-4 py-3 text-black dark:text-slate-200 text-sm sm:text-base overflow-x-auto whitespace-nowrap">
-                {`curl -fsSL https://logg.ing/install | ${
-                  isMac ? "zsh" : "bash"
-                }`}
+                {installCommand}
               </code>
               <button
                 onClick={copyToClipboard}
