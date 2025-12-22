@@ -5,6 +5,7 @@ import { promisify } from 'util';
 const execFileAsync = promisify(execFile);
 
 // Allowed curl options (whitelist approach)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ALLOWED_OPTIONS = new Set([
   // Request methods
   '-X', '--request',
@@ -199,12 +200,13 @@ export async function POST(request: NextRequest) {
       success: true,
       output: stdout || stderr,
     });
-  } catch (error: any) {
-    console.error('Curl execution error:', error);
+  } catch (error: unknown) {
+    const err = error as Error & { stderr?: string; stdout?: string };
+    console.error('Curl execution error:', err);
     return NextResponse.json({
       success: false,
-      error: error.message || 'Command execution failed',
-      output: error.stderr || error.stdout || '',
+      error: err.message || 'Command execution failed',
+      output: err.stderr || err.stdout || '',
     });
   }
 }
