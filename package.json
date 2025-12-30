@@ -6,7 +6,8 @@
     "build": "next build",
     "dev": "next dev --turbo",
     "start": "next start",
-    "postinstall": "fumadocs-mdx"
+    "postinstall": "fumadocs-mdx",
+    "check-links": "node scripts/check-links.mjs"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
