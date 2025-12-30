@@ -11,6 +11,8 @@ const contentDir = path.join(rootDir, 'content', 'docs');
 
 const brokenLinks = [];
 const checkedFiles = [];
+const allLinks = [];
+const validDocsLinks = [];
 
 // Get all MDX files recursively
 function getMdxFiles(dir) {
@@ -113,26 +115,30 @@ function checkFile(filePath) {
     
     // Check internal /docs links
     if (url.startsWith('/docs')) {
+      allLinks.push({ file: relativePath, url: url });
       if (!doesDocPathExist(url)) {
         brokenLinks.push({
           file: relativePath,
           url: url,
-          type: link.type
+          type: link.type,
+          reason: 'Target page does not exist'
         });
+      } else {
+        validDocsLinks.push({ file: relativePath, url: url });
       }
     }
-    // Check relative links without /docs prefix that should have it
-    else if (url.startsWith('/') && !url.startsWith('/api') && !url.startsWith('/_')) {
-      // These might be missing /docs prefix
+    // Flag ALL internal links that don't start with /docs (they should)
+    else if (url.startsWith('/') && !url.startsWith('/_next') && !url.startsWith('/_')) {
+      // Internal links in docs should always start with /docs
       const withDocsPrefix = '/docs' + url;
-      if (doesDocPathExist(withDocsPrefix) && !doesDocPathExist(url)) {
-        brokenLinks.push({
-          file: relativePath,
-          url: url,
-          type: link.type,
-          suggestion: withDocsPrefix
-        });
-      }
+      const suggestion = doesDocPathExist(withDocsPrefix) ? withDocsPrefix : null;
+      brokenLinks.push({
+        file: relativePath,
+        url: url,
+        type: link.type,
+        suggestion: suggestion,
+        reason: 'Internal link missing /docs prefix'
+      });
     }
   }
 }
@@ -146,16 +152,21 @@ for (const file of mdxFiles) {
   checkFile(file);
 }
 
-console.log(`📄 Checked ${checkedFiles.length} files\n`);
+console.log(`📄 Checked ${checkedFiles.length} files`);
+console.log(`🔗 Found ${allLinks.length} internal /docs links`);
+console.log(`✓  ${validDocsLinks.length} valid links\n`);
 
 if (brokenLinks.length === 0) {
-  console.log('✅ No broken links found!');
+  console.log('✅ All links are valid!');
 } else {
   console.log(`❌ Found ${brokenLinks.length} broken/suspicious link(s):\n`);
   
   for (const link of brokenLinks) {
     console.log(`  File: ${link.file}`);
     console.log(`  Link: ${link.url}`);
+    if (link.reason) {
+      console.log(`  Reason: ${link.reason}`);
+    }
     if (link.suggestion) {
       console.log(`  Suggestion: ${link.suggestion}`);
     }
