@@ -10,7 +10,11 @@ var docs = defineDocs({
   // The root directory for all documentation
   dir: "content/docs",
   docs: {
-    schema: frontmatterSchema
+    schema: frontmatterSchema,
+    postprocess: {
+      // Only include processed markdown in production (for LLM endpoints)
+      includeProcessedMarkdown: process.env.NODE_ENV === "production"
+    }
   },
   meta: {
     schema: metaSchema

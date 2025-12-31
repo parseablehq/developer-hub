@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 import { baseOptions } from '@/app/layout.config';
 import { source } from '@/lib/source';
 import SearchButton from '@/components/SearchButton';
+import { AskAITrigger } from '@/components/AskAI';
+import { SidebarBanner } from '@/components/SidebarBanner';
 
 export default function Layout({ children }: { children: ReactNode }) {
   return (
@@ -15,8 +17,12 @@ export default function Layout({ children }: { children: ReactNode }) {
           lg: <SearchButton />,
         },
       }}
+      sidebar={{
+        banner: <SidebarBanner />,
+      }}
     >
       {children}
+      <AskAITrigger />
     </DocsLayout>
   );
 }

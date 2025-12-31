@@ -1,52 +1,20 @@
-import { docs, releaseNotes } from '@/.source';
+import { docs, releaseNotes } from '@/.source/server';
 import { loader } from 'fumadocs-core/source';
-import { createOpenAPI, attachFile } from 'fumadocs-openapi/server';
+import { createOpenAPI, openapiPlugin } from 'fumadocs-openapi/server';
 
 // See https://fumadocs.vercel.app/docs/headless/source-api for more info
 export const source = loader({
-  // it assigns a URL to your pages
-  baseUrl: process.env.NEXT_PUBLIC_ENV === "development" ? '/': '/docs',
+  // baseUrl is now handled by basePath in next.config.mjs
+  baseUrl: '/',
   source: docs.toFumadocsSource(),
-  pageTree: {
-    // adds a badge to each page item in page tree
-    attachFile,
-  },
+  plugins: [openapiPlugin()],
 });
 
 // Create a separate loader for release notes
 export const releaseNotesSource = loader({
   baseUrl: '/release-notes',
   source: releaseNotes.toFumadocsSource(),
-  pageTree: {
-    attachFile,
-  },
 });
 
 // Create OpenAPI instance for the Parseable API
-export const openapi = createOpenAPI({
-  // Point to the correct schema file
-  generateCodeSamples() {
-    return [
-      {
-        lang: 'shell',
-        label: 'cURL',
-        source: false
-      },
-      {
-        lang: 'javascript',
-        label: 'JavaScript',
-        source: false
-      },
-      {
-        lang: 'python',
-        label: 'Python',
-        source: false
-      },
-      {
-        lang: 'go',
-        label: 'Go',
-        source: false
-      },
-    ];
-  },
-});
+export const openapi = createOpenAPI();

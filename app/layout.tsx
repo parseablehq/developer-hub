@@ -1,10 +1,11 @@
 import './global.css';
-import { RootProvider } from 'fumadocs-ui/provider';
+import { RootProvider } from 'fumadocs-ui/provider/next';
 import { Inter } from 'next/font/google';
 import type { ReactNode } from 'react';
 import Analytics from '../components/GoogleAnalytics';
 import KoalaAnalytics from '../components/KoalaAnalytics';
 import { SearchProvider } from '../components/SearchProvider';
+import { DeploymentModeProvider } from '../components/DeploymentModeProvider';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -28,9 +29,11 @@ export default function Layout({ children }: { children: ReactNode }) {
             enabled: false,
           }}
         >
-          <SearchProvider>
-            {children}
-          </SearchProvider>
+          <DeploymentModeProvider>
+            <SearchProvider>
+              {children}
+            </SearchProvider>
+          </DeploymentModeProvider>
         </RootProvider>
         {gaId && <Analytics gaId={gaId} />}
         {koalaApiKey && <KoalaAnalytics apiKey={koalaApiKey} />}

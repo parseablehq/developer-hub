@@ -6,12 +6,26 @@ const withMDX = createMDX();
 const config = {
   reactStrictMode: true,
   trailingSlash: false,
-  assetPrefix: "/docs",
+  basePath: process.env.NEXT_PUBLIC_ENV === "development" ? "" : "/docs",
   images: {
-    domains: ["lh3.googleusercontent.com"], // Add other domains as needed
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+      },
+    ],
     dangerouslyAllowSVG: true,
     contentDispositionType: "attachment",
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+  },
+  async rewrites() {
+    return [
+      // Rewrite *.mdx requests to llms.mdx route for AI agents
+      {
+        source: '/:path*.mdx',
+        destination: '/llms.mdx/:path*',
+      },
+    ];
   },
   async redirects() {
     return [

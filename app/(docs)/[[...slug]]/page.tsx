@@ -8,11 +8,7 @@ import {
 import { notFound } from 'next/navigation';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { getMDXComponents } from '@/mdx-components';
-import { EditOnGitHub } from './page.client';
 import { CopyPageDropdown } from '@/components/CopyPageDropdown';
-
-const owner = 'parseablehq';
-const repo = 'developer-hub';
 
 import { HomepageContent } from './homepage.client';
 
@@ -29,7 +25,6 @@ export default async function Page(props: {
   // Otherwise, show the regular docs page
   const page = source.getPage(params.slug);
   if (!page) notFound();
-  const path = `content/docs/${page.file.path}`;
 
   const MDXContent = page.data.body;
 
@@ -37,16 +32,11 @@ export default async function Page(props: {
     <DocsPage 
       toc={page.data.toc} 
       full={page.data.full}
-      tableOfContent={{
-        header: <CopyPageDropdown slug={params.slug} filePath={page.file.path} />,
-      }}
     >
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
       <div className="flex flex-row gap-2 items-center mb-4">
-        <EditOnGitHub
-          url={`https://github.com/${owner}/${repo}/tree/main/${path}`}
-        />
+        <CopyPageDropdown slug={params.slug} filePath={`${params.slug?.join('/') || 'index'}.mdx`} />
       </div>
       <hr/>
       <DocsBody>
