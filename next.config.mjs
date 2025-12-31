@@ -6,14 +6,9 @@ const withMDX = createMDX();
 const config = {
   reactStrictMode: true,
   trailingSlash: false,
-  basePath: process.env.NEXT_PUBLIC_ENV === "development" ? "" : "/docs",
+  assetPrefix: "/docs",
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'lh3.googleusercontent.com',
-      },
-    ],
+    domains: ["lh3.googleusercontent.com"],
     dangerouslyAllowSVG: true,
     contentDispositionType: "attachment",
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
