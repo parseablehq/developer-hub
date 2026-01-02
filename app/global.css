@@ -2,6 +2,51 @@
 @import 'fumadocs-ui/css/neutral.css';
 @import 'fumadocs-ui/css/preset.css';
 
+@theme {
+  --color-brand: hsl(217, 100%, 58%);
+  --color-brand-foreground: white;
+  --color-brand-secondary: hsl(199, 89%, 48%);
+  --color-brand-secondary-foreground: hsl(199, 89%, 20%);
+  --color-brand-200: hsl(217, 100%, 65%);
+}
+
+.dark {
+  --color-brand: hsl(217, 100%, 70%);
+  --color-brand-secondary: hsl(199, 89%, 60%);
+  --color-brand-secondary-foreground: hsl(199, 89%, 90%);
+  --color-brand-foreground: black;
+  --color-brand-200: hsl(217, 100%, 80%);
+}
+
+:root {
+  --cloud-color: hsl(217, 100%, 58%);
+  --self-hosted-color: hsl(25, 95%, 53%);
+}
+
+.dark {
+  --cloud-color: hsl(217, 100%, 70%);
+  --self-hosted-color: hsl(25, 95%, 65%);
+}
+
+.cloud {
+  --color-fd-primary: var(--cloud-color);
+}
+
+.self-hosted {
+  --color-fd-primary: var(--self-hosted-color);
+}
+
+/* Blue highlight for active sidebar items */
+:root {
+  --color-fd-primary: hsl(217, 100%, 58%);
+  --color-fd-primary-foreground: white;
+}
+
+.dark {
+  --color-fd-primary: hsl(217, 100%, 70%);
+  --color-fd-primary-foreground: hsl(217, 100%, 10%);
+}
+
 figure{ padding: 15px;}
 
 /* Fix diagrams with black text not visible in dark mode */
