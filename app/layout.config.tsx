@@ -1,5 +1,4 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
-import { IconMonkeybar, IconApi, IconMapShare } from "@tabler/icons-react";
 
 /**
  * Shared layout configurations
@@ -12,26 +11,7 @@ export const baseOptions: BaseLayoutProps = {
   nav: {
     title: <span className="font-bold text-xl">Parseable Docs</span>,
   },
-  links: [
-    {
-      text: "Benchmarks",
-      url: "/docs/benchmarks",
-      external: false,
-      icon: <IconMonkeybar />, // Icon for the link
-    },
-    {
-      text: "Release Notes",
-      url: "/docs/release-notes",
-      external: false, // Internal link
-      icon: <IconMapShare />, // Icon for the link
-    },
-    {
-      text: "API Documentation",
-      url: "/docs/api",
-      external: false, // Internal link
-      icon: <IconApi />, // Icon for the link
-    },
-  ],
+  links: [],
   // Footer will be added in the layout component
   // Theme will be configured in the RootProvider
 };

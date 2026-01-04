@@ -5,21 +5,19 @@ import {
   DocsDescription,
   DocsTitle,
 } from 'fumadocs-ui/page';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { getMDXComponents } from '@/mdx-components';
 import { CopyPageDropdown } from '@/components/CopyPageDropdown';
-
-import { HomepageContent } from './homepage.client';
 
 export default async function Page(props: {
   params: Promise<{ slug?: string[] }>;
 }) {
   const params = await props.params;
   
-  // If we're at the root /docs path, show the homepage content
+  // If we're at the root /docs path, redirect to cloud index
   if (!params.slug || params.slug.length === 0) {
-    return <HomepageContent />;
+    redirect('/cloud');
   }
   
   // Otherwise, show the regular docs page
@@ -62,11 +60,11 @@ export async function generateMetadata(props: {
 }) {
   const params = await props.params;
   
-  // Handle root /docs path
+  // Handle root /docs path - will redirect, but provide metadata just in case
   if (!params.slug || params.slug.length === 0) {
     return {
-      title: 'Documentation | Parseable',
-      description: 'Parseable documentation and guides',
+      title: 'Parseable Documentation',
+      description: 'Welcome to the Parseable documentation',
     };
   }
   

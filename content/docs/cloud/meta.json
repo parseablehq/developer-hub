@@ -3,7 +3,10 @@
   "description": "Parseable Cloud documentation",
   "icon": "Cloud",
   "root": true,
+  "defaultOpen": true,
   "pages": [
+    "...index",
+    "benchmarks",
     "---Overview---",
     "introduction",
     "quickstart",

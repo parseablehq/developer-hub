@@ -4,6 +4,8 @@
   "icon": "Server",
   "root": true,
   "pages": [
+    "introduction",
+    "benchmarks",
     "configuration",
     "installation",
     "storage-targets",

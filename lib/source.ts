@@ -6,7 +6,6 @@ import { createElement } from 'react';
 
 // See https://fumadocs.vercel.app/docs/headless/source-api for more info
 export const source = loader({
-  // baseUrl is now handled by basePath in next.config.mjs
   baseUrl: '/',
   source: docs.toFumadocsSource(),
   plugins: [openapiPlugin()],
