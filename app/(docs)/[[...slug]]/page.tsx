@@ -15,10 +15,8 @@ export default async function Page(props: {
 }) {
   const params = await props.params;
   
-  // If we're at the root /docs path, redirect to cloud index
-  if (!params.slug || params.slug.length === 0) {
-    redirect('/cloud');
-  }
+  // If we're at the root path, show the index page (Get Started)
+  // No redirect needed - the index page will be shown
   
   // Otherwise, show the regular docs page
   const page = source.getPage(params.slug);
@@ -40,7 +38,7 @@ export default async function Page(props: {
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
       <div className="flex flex-row gap-2 items-center mb-4">
-        <CopyPageDropdown slug={params.slug} filePath={`${params.slug?.join('/') || 'index'}.mdx`} />
+        <CopyPageDropdown slug={params.slug ?? []} filePath={`${params.slug?.join('/') || 'index'}.mdx`} />
       </div>
       <hr/>
       <DocsBody>

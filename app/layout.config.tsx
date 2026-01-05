@@ -1,4 +1,5 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
+import Image from "next/image";
 
 /**
  * Shared layout configurations
@@ -9,7 +10,17 @@ import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
  */
 export const baseOptions: BaseLayoutProps = {
   nav: {
-    title: <span className="font-bold text-xl">Parseable Docs</span>,
+    title: (
+      <div className="flex items-center gap-2">
+        <Image
+          src="/images/parseable-icon.svg"
+          alt="Parseable"
+          width={24}
+          height={24}
+        />
+        <span className="font-bold text-xl">Parseable Docs</span>
+      </div>
+    ),
   },
   links: [],
   // Footer will be added in the layout component
