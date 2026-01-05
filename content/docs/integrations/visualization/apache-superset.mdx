@@ -1,0 +1,159 @@
+---
+title: Apache Superset
+description: Connect Parseable to Apache Superset for data exploration and visualization
+---
+
+Connect Parseable to Apache Superset for powerful data exploration, visualization, and dashboarding.
+
+## Overview
+
+Integrate Parseable with Apache Superset to:
+
+- **Data Exploration** - Explore log data with an intuitive interface
+- **Rich Visualizations** - Create charts, graphs, and maps
+- **Interactive Dashboards** - Build real-time monitoring dashboards
+- **SQL Lab** - Run ad-hoc queries on your log data
+
+## Prerequisites
+
+- Apache Superset instance
+- Parseable instance with data
+- PostgreSQL connector (Superset connects via Parseable's PostgreSQL-compatible interface)
+
+## Connection Setup
+
+### Add Database Connection
+
+1. Log in to Apache Superset
+2. Go to **Data** → **Databases**
+3. Click **+ Database**
+4. Select **PostgreSQL** as the database type
+5. Configure the connection:
+
+```
+Host: your-parseable-host
+Port: 8000
+Database: parseable
+Username: your-username
+Password: your-password
+```
+
+### SQLAlchemy URI
+
+Use this connection string format:
+
+```
+postgresql://username:password@parseable-host:8000/parseable
+```
+
+### Advanced Configuration
+
+```json
+{
+  "connect_args": {
+    "sslmode": "prefer"
+  }
+}
+```
+
+## Creating Visualizations
+
+### Add Dataset
+
+1. Go to **Data** → **Datasets**
+2. Click **+ Dataset**
+3. Select your Parseable database
+4. Choose a stream as the table
+5. Click **Add**
+
+### Create Chart
+
+1. Go to **Charts** → **+ Chart**
+2. Select your dataset
+3. Choose a visualization type:
+   - **Time-series** for log trends
+   - **Bar Chart** for categorical data
+   - **Table** for detailed views
+   - **Big Number** for KPIs
+
+### Example: Error Rate Over Time
+
+1. Create a new chart with Time-series visualization
+2. Configure:
+   - **Time Column**: `p_timestamp`
+   - **Metric**: `COUNT(*)`
+   - **Filter**: `level = 'error'`
+   - **Time Grain**: `hour`
+
+## Building Dashboards
+
+### Create Dashboard
+
+1. Go to **Dashboards** → **+ Dashboard**
+2. Add charts by dragging from the chart list
+3. Arrange and resize as needed
+4. Add filters for interactivity
+5. Save and publish
+
+### Dashboard Filters
+
+Add cross-filtering to your dashboard:
+
+1. Edit dashboard
+2. Click **Filter** icon
+3. Add filter components:
+   - Time range filter
+   - Stream selector
+   - Log level filter
+
+## SQL Lab Queries
+
+Use SQL Lab for ad-hoc analysis:
+
+```sql
+-- Error count by service
+SELECT 
+  service,
+  COUNT(*) as error_count
+FROM "application-logs"
+WHERE level = 'error'
+  AND p_timestamp > NOW() - INTERVAL '24 hours'
+GROUP BY service
+ORDER BY error_count DESC
+LIMIT 10;
+
+-- Response time percentiles
+SELECT 
+  percentile_cont(0.50) WITHIN GROUP (ORDER BY response_time) as p50,
+  percentile_cont(0.95) WITHIN GROUP (ORDER BY response_time) as p95,
+  percentile_cont(0.99) WITHIN GROUP (ORDER BY response_time) as p99
+FROM "api-logs"
+WHERE p_timestamp > NOW() - INTERVAL '1 hour';
+```
+
+## Best Practices
+
+1. **Use Caching** - Enable query caching for better performance
+2. **Optimize Queries** - Use time filters to limit data scanned
+3. **Create Virtual Datasets** - Pre-aggregate data for complex dashboards
+4. **Set Refresh Intervals** - Configure appropriate auto-refresh rates
+
+## Troubleshooting
+
+### Connection Issues
+
+1. Verify Parseable is accessible from Superset
+2. Check credentials are correct
+3. Ensure PostgreSQL port is exposed
+
+### Slow Queries
+
+1. Add time range filters
+2. Use LIMIT clauses
+3. Enable query caching
+
+## Next Steps
+
+- Create [dashboards](/docs/user-guide/dashboards) in Parseable
+- Set up [alerts](/docs/user-guide/alerting) for anomalies
+- Explore [Grafana](/docs/integrations/grafana) integration

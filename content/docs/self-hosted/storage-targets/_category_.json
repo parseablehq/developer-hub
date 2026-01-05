@@ -1,0 +1,12 @@
+{
+  "label": "Storage",
+  "collapsible": true,
+  "collapsed": true,
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "title": "Storage",
+    "description": "Storage guide for Parseable."
+  },
+  "customProps": {}
+}

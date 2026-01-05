@@ -1,0 +1,11 @@
+{
+  "title": "Visualization",
+  "pages": [
+    "grafana",
+    "metabase",
+    "apache-superset",
+    "tableau",
+    "redash",
+    "looker"
+  ]
+}

@@ -1,0 +1,274 @@
+---
+title: Amazon EKS
+description: Collect logs from Amazon EKS clusters
+---
+
+Collect and forward logs from Amazon EKS (Elastic Kubernetes Service) to Parseable.
+
+## Overview
+
+Integrate Amazon EKS with Parseable to:
+
+- **Kubernetes Logs** - Collect pod and container logs
+- **AWS Integration** - Native AWS ecosystem support
+- **Scalable Collection** - Handle large cluster deployments
+- **Rich Metadata** - Include Kubernetes context
+
+## Prerequisites
+
+- Amazon EKS cluster
+- kubectl configured
+- Helm (recommended)
+- Parseable instance accessible from EKS
+
+## Method 1: Fluent Bit DaemonSet
+
+Deploy Fluent Bit as a DaemonSet for log collection.
+
+### Install with Helm
+
+```bash
+helm repo add fluent https://fluent.github.io/helm-charts
+helm repo update
+
+helm install fluent-bit fluent/fluent-bit \
+  --namespace logging \
+  --create-namespace \
+  --set config.outputs="[OUTPUT]\n    Name http\n    Match *\n    Host parseable.example.com\n    Port 8000\n    URI /api/v1/ingest\n    Format json\n    Header Authorization Basic YWRtaW46YWRtaW4=\n    Header X-P-Stream eks-logs"
+```
+
+### Custom Values
+
+Create `fluent-bit-values.yaml`:
+
+```yaml
+config:
+  inputs: |
+    [INPUT]
+        Name tail
+        Path /var/log/containers/*.log
+        Parser cri
+        Tag kube.*
+        Mem_Buf_Limit 5MB
+        Skip_Long_Lines On
+
+  filters: |
+    [FILTER]
+        Name kubernetes
+        Match kube.*
+        Merge_Log On
+        Keep_Log Off
+        K8S-Logging.Parser On
+        K8S-Logging.Exclude On
+
+  outputs: |
+    [OUTPUT]
+        Name http
+        Match *
+        Host parseable.example.com
+        Port 8000
+        URI /api/v1/ingest
+        Format json
+        Header Authorization Basic YWRtaW46YWRtaW4=
+        Header X-P-Stream eks-logs
+        tls On
+        tls.verify Off
+
+tolerations:
+  - operator: Exists
+    effect: NoSchedule
+```
+
+Install with custom values:
+
+```bash
+helm install fluent-bit fluent/fluent-bit \
+  --namespace logging \
+  --create-namespace \
+  -f fluent-bit-values.yaml
+```
+
+## Method 2: AWS for Fluent Bit
+
+Use AWS's optimized Fluent Bit distribution.
+
+### DaemonSet Manifest
+
+```yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: fluent-bit
+  namespace: logging
+spec:
+  selector:
+    matchLabels:
+      app: fluent-bit
+  template:
+    metadata:
+      labels:
+        app: fluent-bit
+    spec:
+      serviceAccountName: fluent-bit
+      containers:
+        - name: fluent-bit
+          image: amazon/aws-for-fluent-bit:latest
+          volumeMounts:
+            - name: varlog
+              mountPath: /var/log
+            - name: varlibdockercontainers
+              mountPath: /var/lib/docker/containers
+              readOnly: true
+            - name: config
+              mountPath: /fluent-bit/etc/
+          env:
+            - name: PARSEABLE_HOST
+              value: "parseable.example.com"
+            - name: PARSEABLE_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: parseable-credentials
+                  key: auth
+      volumes:
+        - name: varlog
+          hostPath:
+            path: /var/log
+        - name: varlibdockercontainers
+          hostPath:
+            path: /var/lib/docker/containers
+        - name: config
+          configMap:
+            name: fluent-bit-config
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+```
+
+### ConfigMap
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluent-bit-config
+  namespace: logging
+data:
+  fluent-bit.conf: |
+    [SERVICE]
+        Flush         5
+        Log_Level     info
+        Parsers_File  parsers.conf
+
+    [INPUT]
+        Name              tail
+        Path              /var/log/containers/*.log
+        Parser            cri
+        Tag               kube.*
+        Refresh_Interval  5
+        Mem_Buf_Limit     50MB
+        Skip_Long_Lines   On
+
+    [FILTER]
+        Name                kubernetes
+        Match               kube.*
+        Kube_URL            https://kubernetes.default.svc:443
+        Kube_CA_File        /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        Kube_Token_File     /var/run/secrets/kubernetes.io/serviceaccount/token
+        Merge_Log           On
+        K8S-Logging.Parser  On
+
+    [OUTPUT]
+        Name            http
+        Match           *
+        Host            ${PARSEABLE_HOST}
+        Port            8000
+        URI             /api/v1/ingest
+        Format          json
+        Header          Authorization Basic ${PARSEABLE_AUTH}
+        Header          X-P-Stream eks-logs
+        tls             On
+
+  parsers.conf: |
+    [PARSER]
+        Name        cri
+        Format      regex
+        Regex       ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>[^ ]*) (?<log>.*)$
+        Time_Key    time
+        Time_Format %Y-%m-%dT%H:%M:%S.%L%z
+```
+
+## Method 3: OpenTelemetry Collector
+
+Deploy OTel Collector for comprehensive telemetry.
+
+```yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: otel-collector
+  namespace: logging
+spec:
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    spec:
+      containers:
+        - name: collector
+          image: otel/opentelemetry-collector-contrib:latest
+          volumeMounts:
+            - name: config
+              mountPath: /etc/otelcol
+            - name: varlog
+              mountPath: /var/log
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: otel-collector-config
+        - name: varlog
+          hostPath:
+            path: /var/log
+```
+
+## IRSA Configuration
+
+Use IAM Roles for Service Accounts:
+
+```bash
+eksctl create iamserviceaccount \
+  --name fluent-bit \
+  --namespace logging \
+  --cluster my-cluster \
+  --attach-policy-arn arn:aws:iam::aws:policy/CloudWatchLogsFullAccess \
+  --approve
+```
+
+## Best Practices
+
+1. **Use DaemonSet** - Ensure logs from all nodes
+2. **Add K8s Metadata** - Include pod, namespace, labels
+3. **Configure Tolerations** - Run on all nodes
+4. **Use IRSA** - Secure credential management
+5. **Monitor Collector** - Watch for backpressure
+
+## Troubleshooting
+
+### Missing Logs
+
+1. Check Fluent Bit pod logs
+2. Verify log paths are correct
+3. Check RBAC permissions
+4. Verify Parseable connectivity
+
+### High Resource Usage
+
+1. Adjust buffer limits
+2. Filter unnecessary logs
+3. Increase flush interval
+
+## Next Steps
+
+- Configure [Google GKE](/docs/integrations/containers/google-gke) for multi-cloud
+- Set up [alerts](/docs/user-guide/alerting) for Kubernetes events
+- Create [dashboards](/docs/user-guide/dashboards) for cluster monitoring

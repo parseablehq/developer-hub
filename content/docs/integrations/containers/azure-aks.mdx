@@ -1,0 +1,215 @@
+---
+title: Azure AKS
+description: Collect logs from Azure Kubernetes Service clusters
+---
+
+Collect and forward logs from Azure AKS to Parseable.
+
+## Overview
+
+Integrate Azure AKS with Parseable to:
+
+- **Kubernetes Logs** - Collect pod and container logs
+- **Azure Integration** - Native Azure ecosystem support
+- **Managed Identity** - Secure credential management
+- **Rich Metadata** - Include Azure and K8s context
+
+## Prerequisites
+
+- AKS cluster running
+- kubectl configured
+- Helm (recommended)
+- Parseable instance accessible from AKS
+
+## Method 1: Fluent Bit DaemonSet
+
+Deploy Fluent Bit for log collection.
+
+### Install with Helm
+
+```bash
+helm repo add fluent https://fluent.github.io/helm-charts
+helm repo update
+
+helm install fluent-bit fluent/fluent-bit \
+  --namespace logging \
+  --create-namespace \
+  -f fluent-bit-values.yaml
+```
+
+### Values File
+
+```yaml
+config:
+  inputs: |
+    [INPUT]
+        Name tail
+        Path /var/log/containers/*.log
+        Parser cri
+        Tag kube.*
+        Mem_Buf_Limit 5MB
+
+  filters: |
+    [FILTER]
+        Name kubernetes
+        Match kube.*
+        Merge_Log On
+        Keep_Log Off
+        K8S-Logging.Parser On
+
+    [FILTER]
+        Name modify
+        Match *
+        Add cloud.provider azure
+        Add cluster.name ${CLUSTER_NAME}
+
+  outputs: |
+    [OUTPUT]
+        Name http
+        Match *
+        Host parseable.example.com
+        Port 8000
+        URI /api/v1/ingest
+        Format json
+        Header Authorization Basic YWRtaW46YWRtaW4=
+        Header X-P-Stream aks-logs
+        tls On
+
+env:
+  - name: CLUSTER_NAME
+    value: "my-aks-cluster"
+
+tolerations:
+  - operator: Exists
+    effect: NoSchedule
+```
+
+## Method 2: Azure Monitor Export
+
+Export from Azure Monitor to Event Hubs, then to Parseable.
+
+### Enable Diagnostic Settings
+
+```bash
+az monitor diagnostic-settings create \
+  --name aks-to-eventhub \
+  --resource /subscriptions/.../resourceGroups/.../providers/Microsoft.ContainerService/managedClusters/my-cluster \
+  --event-hub-rule /subscriptions/.../resourceGroups/.../providers/Microsoft.EventHub/namespaces/.../authorizationRules/RootManageSharedAccessKey \
+  --logs '[{"category": "kube-apiserver", "enabled": true}, {"category": "kube-controller-manager", "enabled": true}]'
+```
+
+Then use [Azure Event Hubs integration](/docs/integrations/cloud/azure-event-hubs) to forward to Parseable.
+
+## Method 3: OpenTelemetry Collector
+
+### Collector DaemonSet
+
+```yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: otel-collector
+  namespace: logging
+spec:
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+    spec:
+      containers:
+        - name: collector
+          image: otel/opentelemetry-collector-contrib:latest
+          volumeMounts:
+            - name: config
+              mountPath: /etc/otelcol
+            - name: varlog
+              mountPath: /var/log
+              readOnly: true
+          env:
+            - name: PARSEABLE_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: parseable-credentials
+                  key: auth
+      volumes:
+        - name: config
+          configMap:
+            name: otel-collector-config
+        - name: varlog
+          hostPath:
+            path: /var/log
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+```
+
+## Azure Workload Identity
+
+Use Workload Identity for secure authentication:
+
+### Enable Workload Identity
+
+```bash
+az aks update \
+  --resource-group myResourceGroup \
+  --name myAKSCluster \
+  --enable-oidc-issuer \
+  --enable-workload-identity
+```
+
+### Create Managed Identity
+
+```bash
+az identity create \
+  --name fluent-bit-identity \
+  --resource-group myResourceGroup
+
+# Get client ID
+CLIENT_ID=$(az identity show --name fluent-bit-identity --resource-group myResourceGroup --query clientId -o tsv)
+```
+
+### Kubernetes Service Account
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fluent-bit
+  namespace: logging
+  annotations:
+    azure.workload.identity/client-id: ${CLIENT_ID}
+  labels:
+    azure.workload.identity/use: "true"
+```
+
+## Best Practices
+
+1. **Use Workload Identity** - Secure credential management
+2. **Add Azure Metadata** - Include subscription, resource group
+3. **Filter System Logs** - Exclude kube-system if needed
+4. **Monitor Resources** - Watch collector resource usage
+5. **Use Labels** - Leverage AKS labels for filtering
+
+## Troubleshooting
+
+### Permission Denied
+
+1. Verify Workload Identity configuration
+2. Check managed identity permissions
+3. Verify RBAC configuration
+
+### Missing Logs
+
+1. Check collector pod logs
+2. Verify log paths
+3. Check network policies
+4. Verify AKS node pools
+
+## Next Steps
+
+- Configure [Amazon EKS](/docs/integrations/containers/amazon-eks) for multi-cloud
+- Set up [alerts](/docs/user-guide/alerting) for AKS events
+- Create [dashboards](/docs/user-guide/dashboards) for cluster monitoring

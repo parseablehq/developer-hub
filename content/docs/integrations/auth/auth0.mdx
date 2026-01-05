@@ -1,0 +1,137 @@
+---
+title: Auth0
+description: Configure Auth0 for SSO authentication with Parseable
+---
+
+Configure Auth0 as an identity provider for Parseable using OpenID Connect.
+
+## Overview
+
+Integrate Auth0 with Parseable to:
+
+- **Flexible Authentication** - Multiple identity providers
+- **Social Login** - Google, GitHub, and more
+- **Enterprise Connections** - SAML, LDAP, AD
+- **Passwordless** - Email and SMS authentication
+
+## Prerequisites
+
+- Auth0 account
+- Auth0 tenant
+- Parseable instance with OIDC support
+
+## Auth0 Configuration
+
+### Create Application
+
+1. Log in to Auth0 Dashboard
+2. Go to **Applications** → **Applications**
+3. Click **Create Application**
+4. Configure:
+   - **Name**: Parseable
+   - **Type**: Regular Web Applications
+5. Click **Create**
+
+### Configure Application
+
+1. Go to **Settings** tab
+2. Configure:
+   - **Allowed Callback URLs**: `https://your-parseable.com/callback`
+   - **Allowed Logout URLs**: `https://your-parseable.com`
+   - **Allowed Web Origins**: `https://your-parseable.com`
+3. Click **Save Changes**
+
+### Get Credentials
+
+From the **Settings** tab, copy:
+- **Domain** (e.g., `your-tenant.auth0.com`)
+- **Client ID**
+- **Client Secret**
+
+## Parseable Configuration
+
+### Environment Variables
+
+```bash
+P_OIDC_CLIENT_ID=your-client-id
+P_OIDC_CLIENT_SECRET=your-client-secret
+P_OIDC_ISSUER=https://your-tenant.auth0.com/
+P_OIDC_REDIRECT_URI=https://your-parseable.com/callback
+```
+
+### Docker Compose
+
+```yaml
+version: '3.8'
+services:
+  parseable:
+    image: parseable/parseable:latest
+    environment:
+      - P_OIDC_CLIENT_ID=${AUTH0_CLIENT_ID}
+      - P_OIDC_CLIENT_SECRET=${AUTH0_CLIENT_SECRET}
+      - P_OIDC_ISSUER=https://your-tenant.auth0.com/
+      - P_OIDC_REDIRECT_URI=https://your-parseable.com/callback
+```
+
+## OIDC Endpoints
+
+Auth0 OIDC endpoints:
+
+| Endpoint | URL |
+|----------|-----|
+| Issuer | `https://{tenant}.auth0.com/` |
+| Authorization | `https://{tenant}.auth0.com/authorize` |
+| Token | `https://{tenant}.auth0.com/oauth/token` |
+| UserInfo | `https://{tenant}.auth0.com/userinfo` |
+| JWKS | `https://{tenant}.auth0.com/.well-known/jwks.json` |
+
+## Custom Claims with Rules
+
+Add custom claims using Auth0 Rules:
+
+```javascript
+function addRolesToToken(user, context, callback) {
+  const namespace = 'https://parseable.com/';
+  const assignedRoles = (context.authorization || {}).roles || [];
+  
+  context.idToken[namespace + 'roles'] = assignedRoles;
+  context.accessToken[namespace + 'roles'] = assignedRoles;
+  
+  callback(null, user, context);
+}
+```
+
+## Social Connections
+
+Enable social login:
+
+1. Go to **Authentication** → **Social**
+2. Enable desired providers (Google, GitHub, etc.)
+3. Configure each provider with API keys
+
+## Best Practices
+
+1. **Use Rules** - Add custom claims for authorization
+2. **Enable MFA** - Configure multi-factor authentication
+3. **Brute Force Protection** - Enable attack protection
+4. **Audit Logs** - Monitor authentication events
+
+## Troubleshooting
+
+### Callback URL Mismatch
+
+1. Verify callback URL matches exactly (including trailing slash)
+2. Check for http vs https
+3. Verify domain is correct
+
+### Token Issues
+
+1. Check client secret is correct
+2. Verify issuer URL format
+3. Check Auth0 logs for errors
+
+## Next Steps
+
+- Configure [OAuth](/docs/integrations/oauth) for other providers
+- Set up [RBAC](/docs/user-guide/rbac) in Parseable
+- Review [security best practices](/docs/cookbook/security)

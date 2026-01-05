@@ -1,0 +1,245 @@
+---
+title: Filebeat
+description: Ship logs from Filebeat to Parseable
+---
+
+Ship logs from Filebeat to Parseable using the HTTP output.
+
+## Overview
+
+Integrate Filebeat with Parseable to:
+
+- **Lightweight Collection** - Minimal resource footprint
+- **Rich Inputs** - Collect from files, containers, cloud services
+- **Modules** - Pre-built configurations for common applications
+- **Reliable Delivery** - At-least-once delivery guarantee
+
+## Prerequisites
+
+- Filebeat installed
+- Parseable instance accessible
+- Log files or inputs configured
+
+## Filebeat Configuration
+
+### Basic Configuration
+
+Create `filebeat.yml`:
+
+```yaml
+filebeat.inputs:
+  - type: log
+    enabled: true
+    paths:
+      - /var/log/*.log
+    fields:
+      source: filebeat
+    fields_under_root: true
+
+output.http:
+  hosts: ["http://parseable:8000/api/v1/ingest"]
+  method: "POST"
+  headers:
+    Authorization: "Basic YWRtaW46YWRtaW4="
+    X-P-Stream: "filebeat-logs"
+    Content-Type: "application/json"
+  codec.format:
+    string: '[%{[message]}]'
+```
+
+### JSON Log Collection
+
+For JSON-formatted logs:
+
+```yaml
+filebeat.inputs:
+  - type: log
+    enabled: true
+    paths:
+      - /var/log/app/*.json
+    json.keys_under_root: true
+    json.add_error_key: true
+
+processors:
+  - timestamp:
+      field: timestamp
+      layouts:
+        - '2006-01-02T15:04:05.000Z'
+      test:
+        - '2024-01-15T10:30:00.000Z'
+
+output.http:
+  hosts: ["http://parseable:8000/api/v1/ingest"]
+  method: "POST"
+  headers:
+    Authorization: "Basic YWRtaW46YWRtaW4="
+    X-P-Stream: "app-logs"
+  batch.size: 100
+  batch.timeout: 5s
+```
+
+### Container Logs
+
+Collect Docker container logs:
+
+```yaml
+filebeat.inputs:
+  - type: container
+    paths:
+      - '/var/lib/docker/containers/*/*.log'
+    processors:
+      - add_docker_metadata:
+          host: "unix:///var/run/docker.sock"
+
+output.http:
+  hosts: ["http://parseable:8000/api/v1/ingest"]
+  method: "POST"
+  headers:
+    Authorization: "Basic YWRtaW46YWRtaW4="
+    X-P-Stream: "container-logs"
+```
+
+### Kubernetes Logs
+
+For Kubernetes deployments:
+
+```yaml
+filebeat.inputs:
+  - type: container
+    paths:
+      - /var/log/containers/*.log
+    processors:
+      - add_kubernetes_metadata:
+          host: ${NODE_NAME}
+          matchers:
+            - logs_path:
+                logs_path: "/var/log/containers/"
+
+output.http:
+  hosts: ["http://parseable:8000/api/v1/ingest"]
+  method: "POST"
+  headers:
+    Authorization: "Basic YWRtaW46YWRtaW4="
+    X-P-Stream: "k8s-logs"
+```
+
+## Filebeat Modules
+
+Use built-in modules for common applications:
+
+### Enable Module
+
+```bash
+filebeat modules enable nginx
+filebeat modules enable mysql
+```
+
+### Module Configuration
+
+```yaml
+# modules.d/nginx.yml
+- module: nginx
+  access:
+    enabled: true
+    var.paths: ["/var/log/nginx/access.log*"]
+  error:
+    enabled: true
+    var.paths: ["/var/log/nginx/error.log*"]
+```
+
+## Running Filebeat
+
+### Docker
+
+```bash
+docker run -d \
+  --name filebeat \
+  -v $(pwd)/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro \
+  -v /var/log:/var/log:ro \
+  docker.elastic.co/beats/filebeat:8.11.0
+```
+
+### Docker Compose
+
+```yaml
+version: '3.8'
+services:
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.11.0
+    user: root
+    volumes:
+      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+```
+
+### Kubernetes DaemonSet
+
+```yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: filebeat
+spec:
+  selector:
+    matchLabels:
+      app: filebeat
+  template:
+    spec:
+      containers:
+        - name: filebeat
+          image: docker.elastic.co/beats/filebeat:8.11.0
+          volumeMounts:
+            - name: config
+              mountPath: /usr/share/filebeat/filebeat.yml
+              subPath: filebeat.yml
+            - name: varlog
+              mountPath: /var/log
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: filebeat-config
+        - name: varlog
+          hostPath:
+            path: /var/log
+```
+
+## Configuration Options
+
+| Parameter | Description |
+|-----------|-------------|
+| `output.http.hosts` | Parseable endpoint URL |
+| `output.http.headers` | HTTP headers including auth |
+| `output.http.batch.size` | Events per batch |
+| `output.http.batch.timeout` | Max wait time for batch |
+
+## Best Practices
+
+1. **Use Batching** - Configure appropriate batch sizes
+2. **Add Metadata** - Include host, container, or k8s metadata
+3. **Parse JSON** - Use JSON parsing for structured logs
+4. **Monitor Filebeat** - Enable monitoring endpoints
+5. **Handle Backpressure** - Configure queue settings
+
+## Troubleshooting
+
+### Events Not Sending
+
+1. Test Filebeat configuration: `filebeat test config`
+2. Test output: `filebeat test output`
+3. Check Filebeat logs
+4. Verify Parseable endpoint is accessible
+
+### Duplicate Events
+
+1. Check registry file location
+2. Verify clean_removed setting
+3. Check for multiple Filebeat instances
+
+## Next Steps
+
+- Configure [Fluent Bit](/docs/ingest-data/logs-ingestion/logging-agents) as alternative
+- Set up [alerts](/docs/user-guide/alerting) for log patterns
+- Create [dashboards](/docs/user-guide/dashboards) for monitoring

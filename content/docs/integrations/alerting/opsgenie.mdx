@@ -1,0 +1,134 @@
+---
+title: Opsgenie
+description: Send alerts to Opsgenie for incident management
+---
+
+Integrate Parseable with Opsgenie for alert management, on-call scheduling, and incident response.
+
+## Overview
+
+Integrate Parseable with Opsgenie to:
+
+- **Alert Management** - Create and manage alerts from Parseable
+- **On-Call Scheduling** - Route alerts to the right team members
+- **Incident Response** - Track and resolve issues efficiently
+- **Escalation Policies** - Automatic escalation for unacknowledged alerts
+
+## Prerequisites
+
+- Opsgenie account with API access
+- Opsgenie API Integration key
+- Parseable instance with alerting configured
+
+## Setting Up Opsgenie Integration
+
+### Create an API Integration
+
+1. Log in to your Opsgenie account
+2. Go to **Settings** → **Integration List**
+3. Search for **API** and click **Add**
+4. Name your integration (e.g., "Parseable Alerts")
+5. Copy the **API Key**
+6. Configure teams and responders as needed
+7. Click **Save Integration**
+
+## Webhook Integration
+
+Create a webhook service to transform Parseable alerts to Opsgenie format:
+
+```javascript
+// webhook-to-opsgenie.js
+const express = require('express');
+const axios = require('axios');
+
+const app = express();
+app.use(express.json());
+
+const OPSGENIE_API_KEY = process.env.OPSGENIE_API_KEY;
+const OPSGENIE_API_URL = 'https://api.opsgenie.com/v2/alerts';
+
+app.post('/webhook', async (req, res) => {
+  const alert = req.body;
+  
+  const opsgenieAlert = {
+    message: `[Parseable] ${alert.name || 'Alert Triggered'}`,
+    alias: `parseable-${alert.name}-${alert.stream}`,
+    description: alert.message || `Alert triggered on stream ${alert.stream}`,
+    priority: mapPriority(alert.severity),
+    source: 'Parseable',
+    tags: ['parseable', alert.stream],
+    details: {
+      stream: alert.stream,
+      query: alert.query,
+      threshold: alert.threshold,
+      current_value: alert.value
+    },
+    entity: alert.stream,
+    actions: ['Acknowledge', 'View in Parseable']
+  };
+
+  try {
+    await axios.post(OPSGENIE_API_URL, opsgenieAlert, {
+      headers: {
+        'Authorization': `GenieKey ${OPSGENIE_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    res.status(200).json({ status: 'sent' });
+  } catch (error) {
+    console.error('Error sending to Opsgenie:', error.response?.data || error);
+    res.status(500).json({ error: 'Failed to send to Opsgenie' });
+  }
+});
+
+function mapPriority(severity) {
+  const mapping = {
+    'critical': 'P1',
+    'high': 'P2',
+    'medium': 'P3',
+    'low': 'P4',
+    'info': 'P5'
+  };
+  return mapping[severity?.toLowerCase()] || 'P3';
+}
+
+app.listen(3000);
+```
+
+### Docker Compose
+
+```yaml
+version: '3.8'
+services:
+  webhook-to-opsgenie:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - OPSGENIE_API_KEY=your-api-key
+```
+
+## Configuration Options
+
+### Priority Mapping
+
+| Parseable Severity | Opsgenie Priority |
+|-------------------|-------------------|
+| critical | P1 |
+| high | P2 |
+| medium | P3 |
+| low | P4 |
+| info | P5 |
+
+## Best Practices
+
+1. **Use Aliases** - Prevent duplicate alerts with consistent aliases
+2. **Add Tags** - Include stream and severity tags for filtering
+3. **Set Priorities** - Map severity levels appropriately
+4. **Include Details** - Add context like query and threshold values
+
+## Next Steps
+
+- Set up [Parseable alerts](/docs/user-guide/alerting) for automated notifications
+- Configure [PagerDuty](/docs/integrations/alerting/pagerduty) as an alternative
+- Create [dashboards](/docs/user-guide/dashboards) for monitoring

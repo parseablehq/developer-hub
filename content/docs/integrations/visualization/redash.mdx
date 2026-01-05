@@ -1,0 +1,178 @@
+---
+title: Redash
+description: Connect Parseable to Redash for querying and visualization
+---
+
+Connect Parseable to Redash for SQL-based querying and dashboard creation.
+
+## Overview
+
+Integrate Parseable with Redash to:
+
+- **SQL Queries** - Write and save SQL queries against log data
+- **Visualizations** - Create charts from query results
+- **Dashboards** - Combine visualizations into dashboards
+- **Alerts** - Set up query-based alerts
+
+## Prerequisites
+
+- Redash instance (self-hosted or cloud)
+- Parseable instance with data
+- PostgreSQL data source support
+
+## Connection Setup
+
+### Add Data Source
+
+1. Log in to Redash
+2. Go to **Settings** → **Data Sources**
+3. Click **New Data Source**
+4. Select **PostgreSQL**
+5. Configure:
+
+| Field | Value |
+|-------|-------|
+| Name | Parseable |
+| Host | your-parseable-host |
+| Port | 8000 |
+| User | your-username |
+| Password | your-password |
+| Database | parseable |
+
+6. Click **Create** then **Test Connection**
+
+## Creating Queries
+
+### New Query
+
+1. Click **Create** → **Query**
+2. Select **Parseable** data source
+3. Write your SQL query
+4. Click **Execute**
+
+### Example Queries
+
+**Error Count by Hour:**
+```sql
+SELECT 
+  date_trunc('hour', p_timestamp) as hour,
+  COUNT(*) as error_count
+FROM "application-logs"
+WHERE level = 'error'
+  AND p_timestamp > NOW() - INTERVAL '24 hours'
+GROUP BY hour
+ORDER BY hour;
+```
+
+**Top Error Messages:**
+```sql
+SELECT 
+  message,
+  COUNT(*) as count
+FROM "application-logs"
+WHERE level = 'error'
+  AND p_timestamp > NOW() - INTERVAL '1 hour'
+GROUP BY message
+ORDER BY count DESC
+LIMIT 10;
+```
+
+**Response Time Stats:**
+```sql
+SELECT 
+  service,
+  AVG(response_time) as avg_response,
+  MAX(response_time) as max_response,
+  COUNT(*) as request_count
+FROM "api-logs"
+WHERE p_timestamp > NOW() - INTERVAL '1 hour'
+GROUP BY service
+ORDER BY avg_response DESC;
+```
+
+## Creating Visualizations
+
+### Add Visualization
+
+1. After executing a query, click **New Visualization**
+2. Select visualization type:
+   - **Chart** - Line, bar, area, pie
+   - **Counter** - Single number display
+   - **Table** - Tabular data
+   - **Map** - Geographic data
+
+### Chart Configuration
+
+For time-series data:
+- **X Column**: hour/timestamp column
+- **Y Columns**: metric columns
+- **Group by**: optional grouping
+
+## Building Dashboards
+
+### Create Dashboard
+
+1. Click **Create** → **Dashboard**
+2. Name your dashboard
+3. Click **Add Widget**
+4. Select queries and visualizations
+5. Arrange widgets as needed
+
+### Add Parameters
+
+Make queries interactive with parameters:
+
+```sql
+SELECT *
+FROM "application-logs"
+WHERE level = '{{log_level}}'
+  AND p_timestamp > NOW() - INTERVAL '{{time_range}}'
+LIMIT 100;
+```
+
+## Setting Up Alerts
+
+### Query-Based Alerts
+
+1. Create a query that returns a number
+2. Click **Add Alert**
+3. Configure:
+   - **Trigger when**: value condition
+   - **Rearm seconds**: cooldown period
+   - **Destinations**: notification channels
+
+### Example Alert Query
+
+```sql
+SELECT COUNT(*) as error_count
+FROM "application-logs"
+WHERE level = 'error'
+  AND p_timestamp > NOW() - INTERVAL '5 minutes';
+```
+
+## Best Practices
+
+1. **Use Parameters** - Make queries reusable
+2. **Schedule Refreshes** - Keep dashboards up to date
+3. **Organize Queries** - Use tags and naming conventions
+4. **Share Carefully** - Set appropriate permissions
+
+## Troubleshooting
+
+### Connection Issues
+
+1. Verify Parseable host is accessible
+2. Check firewall rules
+3. Verify credentials
+
+### Query Timeout
+
+1. Add time range filters
+2. Use LIMIT clauses
+3. Optimize query structure
+
+## Next Steps
+
+- Create [dashboards](/docs/user-guide/dashboards) in Parseable
+- Set up [alerts](/docs/user-guide/alerting) for monitoring
+- Explore [Grafana](/docs/integrations/grafana) for advanced visualization

@@ -1,0 +1,332 @@
+---
+title: Docker
+description: Collect logs from Docker containers
+---
+
+Collect and forward logs from Docker containers to Parseable.
+
+## Overview
+
+Integrate Docker with Parseable to:
+
+- **Container Logs** - Collect stdout/stderr from containers
+- **Centralized Logging** - Aggregate logs from all containers
+- **Real-time Streaming** - Stream logs as they're generated
+- **Rich Metadata** - Include container and image information
+
+## Prerequisites
+
+- Docker installed
+- Parseable instance accessible
+- Fluent Bit or logging driver configured
+
+## Method 1: Fluent Bit Sidecar
+
+Deploy Fluent Bit alongside your containers.
+
+### Docker Compose
+
+```yaml
+version: '3.8'
+services:
+  app:
+    image: your-app:latest
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: localhost:24224
+        tag: app.logs
+
+  fluent-bit:
+    image: fluent/fluent-bit:latest
+    ports:
+      - "24224:24224"
+    volumes:
+      - ./fluent-bit.yaml:/fluent-bit/etc/fluent-bit.yaml
+    command: ["/fluent-bit/bin/fluent-bit", "-c", "/fluent-bit/etc/fluent-bit.yaml"]
+```
+
+### Fluent Bit Configuration
+
+```yaml
+service:
+  flush: 5
+  log_level: info
+
+pipeline:
+  inputs:
+    - name: forward
+      listen: 0.0.0.0
+      port: 24224
+
+  outputs:
+    - name: http
+      match: '*'
+      host: parseable
+      port: 8000
+      uri: /api/v1/ingest
+      format: json
+      header: Authorization Basic YWRtaW46YWRtaW4=
+      header: X-P-Stream docker-logs
+```
+
+## Method 2: Docker Log Driver
+
+Use Docker's built-in logging drivers.
+
+### Fluentd Driver
+
+```yaml
+version: '3.8'
+services:
+  app:
+    image: your-app:latest
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: "fluent-bit:24224"
+        fluentd-async: "true"
+        tag: "docker.{{.Name}}"
+```
+
+### JSON File Driver with Tail
+
+Collect logs from Docker's default JSON file driver:
+
+```yaml
+# fluent-bit.yaml
+service:
+  flush: 5
+  log_level: info
+
+pipeline:
+  inputs:
+    - name: tail
+      path: /var/lib/docker/containers/*/*.log
+      parser: docker
+      tag: docker.*
+      refresh_interval: 5
+      mem_buf_limit: 5MB
+      skip_long_lines: on
+
+  parsers:
+    - name: docker
+      format: json
+      time_key: time
+      time_format: "%Y-%m-%dT%H:%M:%S.%L"
+
+  filters:
+    - name: modify
+      match: docker.*
+      add: source docker
+
+  outputs:
+    - name: http
+      match: '*'
+      host: parseable
+      port: 8000
+      uri: /api/v1/ingest
+      format: json
+      header: Authorization Basic YWRtaW46YWRtaW4=
+      header: X-P-Stream docker-logs
+```
+
+### Docker Compose with Log Collection
+
+```yaml
+version: '3.8'
+services:
+  fluent-bit:
+    image: fluent/fluent-bit:latest
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./fluent-bit.yaml:/fluent-bit/etc/fluent-bit.yaml
+    command: ["/fluent-bit/bin/fluent-bit", "-c", "/fluent-bit/etc/fluent-bit.yaml"]
+
+  parseable:
+    image: parseable/parseable:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - P_USERNAME=admin
+      - P_PASSWORD=admin
+```
+
+## Method 3: Direct HTTP Logging
+
+Send logs directly from your application.
+
+### Python Example
+
+```python
+import logging
+import requests
+import json
+from datetime import datetime
+
+class ParseableHandler(logging.Handler):
+    def __init__(self, url, stream, username, password):
+        super().__init__()
+        self.url = f"{url}/api/v1/ingest"
+        self.stream = stream
+        self.auth = (username, password)
+        self.buffer = []
+        self.batch_size = 100
+
+    def emit(self, record):
+        log_entry = {
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "level": record.levelname.lower(),
+            "message": self.format(record),
+            "logger": record.name,
+            "container": os.environ.get("HOSTNAME", "unknown")
+        }
+        self.buffer.append(log_entry)
+        
+        if len(self.buffer) >= self.batch_size:
+            self.flush()
+
+    def flush(self):
+        if not self.buffer:
+            return
+        try:
+            requests.post(
+                self.url,
+                json=self.buffer,
+                auth=self.auth,
+                headers={"X-P-Stream": self.stream}
+            )
+        except Exception as e:
+            print(f"Failed to send logs: {e}")
+        finally:
+            self.buffer = []
+
+# Usage
+handler = ParseableHandler(
+    url="http://parseable:8000",
+    stream="app-logs",
+    username="admin",
+    password="admin"
+)
+logging.getLogger().addHandler(handler)
+```
+
+## Method 4: Docker Events
+
+Collect Docker daemon events.
+
+### Event Collector Script
+
+```python
+#!/usr/bin/env python3
+import docker
+import requests
+import json
+from datetime import datetime
+
+PARSEABLE_URL = "http://parseable:8000"
+PARSEABLE_AUTH = ("admin", "admin")
+STREAM = "docker-events"
+
+client = docker.from_env()
+
+for event in client.events(decode=True):
+    log_entry = {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "event_type": event.get("Type"),
+        "action": event.get("Action"),
+        "actor_id": event.get("Actor", {}).get("ID"),
+        "actor_attributes": event.get("Actor", {}).get("Attributes"),
+        "status": event.get("status"),
+        "from": event.get("from")
+    }
+    
+    try:
+        requests.post(
+            f"{PARSEABLE_URL}/api/v1/ingest",
+            json=[log_entry],
+            auth=PARSEABLE_AUTH,
+            headers={"X-P-Stream": STREAM}
+        )
+    except Exception as e:
+        print(f"Error: {e}")
+```
+
+## Container Labels
+
+Add metadata using Docker labels:
+
+```yaml
+version: '3.8'
+services:
+  app:
+    image: your-app:latest
+    labels:
+      - "logging.parseable.stream=app-logs"
+      - "logging.parseable.service=my-app"
+      - "logging.parseable.environment=production"
+```
+
+### Use Labels in Fluent Bit
+
+```yaml
+filters:
+  - name: modify
+    match: docker.*
+    add: service ${LABEL_logging.parseable.service}
+    add: environment ${LABEL_logging.parseable.environment}
+```
+
+## Querying Docker Logs
+
+```sql
+-- Recent container logs
+SELECT timestamp, container_name, message, level
+FROM "docker-logs"
+ORDER BY timestamp DESC
+LIMIT 100
+
+-- Error logs by container
+SELECT container_name, COUNT(*) as error_count
+FROM "docker-logs"
+WHERE level = 'error'
+  AND timestamp > NOW() - INTERVAL '1 hour'
+GROUP BY container_name
+ORDER BY error_count DESC
+
+-- Container events
+SELECT timestamp, event_type, action, actor_id
+FROM "docker-events"
+ORDER BY timestamp DESC
+LIMIT 50
+```
+
+## Best Practices
+
+1. **Use Labels** - Add metadata for filtering
+2. **Buffer Logs** - Batch logs for efficiency
+3. **Handle Backpressure** - Configure memory limits
+4. **Monitor Collector** - Watch Fluent Bit health
+5. **Rotate Logs** - Configure Docker log rotation
+
+## Troubleshooting
+
+### Missing Logs
+
+1. Verify logging driver is configured
+2. Check Fluent Bit is running
+3. Verify Parseable endpoint is accessible
+4. Check container permissions
+
+### High Memory Usage
+
+1. Configure `mem_buf_limit` in Fluent Bit
+2. Enable Docker log rotation
+3. Reduce batch sizes
+
+## Next Steps
+
+- Configure [Kubernetes](/docs/integrations/containers/kubernetes) for orchestration
+- Set up [alerts](/docs/user-guide/alerting) for container events
+- Create [dashboards](/docs/user-guide/dashboards) for monitoring

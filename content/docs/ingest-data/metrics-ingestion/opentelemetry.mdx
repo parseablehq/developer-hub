@@ -1,0 +1,63 @@
+---
+title: OpenTelemetry
+---
+
+Parseable enables ingesting the OpenTelemetry metrics sent from the OTEL collectors in the JSON format. In order to do so, Parseable exposes default endpoint `/v1/metrics` at which the OTEL collector sends the metric data.
+
+Below is the sample configuration of the OTEL collector to send the metrics to Parseable
+
+```yaml
+exporters:
+  otlphttp/parseablemetrics:
+    endpoint: "<parseable-endpoint> eg. http://localhost:8000"
+    headers:
+      Authorization: "Basic <base64 encoded string of username:password>"
+      X-P-Stream: otel-metrics     # dataset/stream name
+      X-P-Log-Source: otel-metrics
+      Content-Type: application/json
+    encoding: json
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    metrics:
+      exporters: [otlphttp/parseablemetrics]
+```
+
+## Support for Protocol Buffers
+
+<Callout type="info">
+  <EnterpriseBadge /> This feature requires an Enterprise license.
+</Callout>
+
+Parseable also supports ingesting the OpenTelemetry Metrics sent from the OTEL collectors in the Protocol Buffers format. Below is an example configuration of the OTEL collector to send the metrics to Parseable in the Protocol Buffers format.
+
+```yaml
+exporters:
+  otlphttp/parseablemetrics:
+    endpoint: "http://parseable:8000"
+    headers:
+      Authorization: "Basic YWRtaW46YWRtaW4="  # admin:admin in base64
+      X-P-Stream: otel-metrics       # dataset/stream name
+      X-P-Log-Source: otel-metrics
+      Content-Type: application/x-protobuf
+    encoding: proto
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    metrics:
+      exporters: [otlphttp/parseablemetrics]
+```
+
+## Data Flattening
+
+The OpenTelemetry metrics that are in the form of a nested JSON. When the metric event is received at `/v1/metrics` endpoint, Parseable will flatten the nested JSON to a flat JSON object. This is done to make the data more queryable and filterable.
+
+All the resource attributes are stored as key-value pair where each attribute key becomes the field and the value, which may be of one of `stringValue/intValue/doubleValue etc`, becomes the value for that particular field.
+
+Each metric record has data which is one of `sum` `gauge` `histogram` `exponentialHistogram` `summary` type.
+
+Each data has one or more data points. Each data point is stored as individual record in Parseable and all resource attributes, scope name, version, other metric elements such as metric name, description, metadata etc are copied in each ingested record.
