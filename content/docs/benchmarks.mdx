@@ -3,23 +3,27 @@ title: Benchmarks
 icon: Gauge
 ---
 
-This page provides an overview of Parseable's performance benchmarks.
+Performance is a core requirement for observability platforms. As telemetry data volumes grow exponentially, it is critical for observability solutions to deliver high performance, at crucial times when teams need to troubleshoot and resolve issues quickly.
+
+Parseable's telemetry data lake architecture is designed from the ground up for high performance ingestion and querying of telemetry data at scale. 
+
+We use modern storage formats, efficient indexing techniques, and optimized query execution strategies to deliver fast performance, additionally local NVMe and memory caching further accelerates query response times.
 
 ## ClickBench
 
-Parseable is a top performer on the [ClickBench](https://benchmark.clickhouse.com/) benchmark. ClickBench is an industry-standard benchmark for analytical databases.
+[ClickBench](https://benchmark.clickhouse.com/) is an industry-standard benchmark for analytical databases. While originally designed for clickstream data, it has been widely adopted to evaluate performance of databases for various analytical workloads, including observability data.
 
-[**View Parseable on ClickBench**](http://logg.ing/clickbench)
+Parseable is a top performer on the ClickBench. [View Parseable on ClickBench](http://logg.ing/clickbench)
 
 ![Parseable Benchmark](./static/benchmark.png)
 
-Parseable's performance is a result of its modern architecture, designed for observability data, Read more about our performance philosophy in our post: [Performance is Table Stakes](https://www.parseable.com/blog/performance-is-table-stakes).
+Read more about our performance philosophy in our post: [Performance is Table Stakes](https://www.parseable.com/blog/performance-is-table-stakes).
 
-## Real-World Performance: 100 TB/Day
+## Real world performance
 
-We tested Parseable's performance with a real-world scenario of ingesting **100 TB of telemetry data per day**.
+Understanding Parseable's performance with a real-world scenario of ingesting and querying 100 TB of telemetry data per day.
 
-### Test Results at a Glance
+Test Results at a Glance
 
 | Metric                | Result                               |
 | --------------------- | ------------------------------------ |

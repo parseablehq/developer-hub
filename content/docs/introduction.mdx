@@ -5,15 +5,17 @@ icon: Sparkles
 
 import { IconCpu2,IconSortDescendingSmallBig,IconBolt,IconTelescope,IconCloudDataConnection,IconFileTextShield } from '@tabler/icons-react';
 
-Parseable is an observability platform built to make sense of large volumes of telemetry data (logs, metrics, and traces). It is easy to deploy and use, and scales to petabytes of data ingested, queried and analyzed.
+<p>Parseable is a <u>modern, unified observability platform</u>. It is based on our <u>purpose built telemetry data lake</u>. Written in Rust, Parseable uses advanced compression and caching techniques to offer best in class performance and scalability.</p>
 
-SRE and DevOps teams use Parseable to build observability pipelines and data lakes for their telemetry data. With built-in support for predictive alerting and anomaly detection, Parseable helps teams proactively monitor their complete stack.
+SRE and DevOps teams use Parseable to build observability pipelines to observe their production systems at scale. Parseable ingests, stores, and queries logs, metrics, and traces from applications, infrastructure, and services.
 
-Parseable is based on purpose built, disk-less database [ParseableDB](https://github.com/parseablehq/parseable). It uses columnar storage format with an object storage first approach, making it efficient for both storage and query performance. ParseableDB is built with Rust, leveraging modern programming techniques to achieve high performance and low resource usage.
+With built-in support for predictive alerting and anomaly detection, Parseable helps teams proactively identify and resolve issues before they impact end-users.
+
+Parseable is based on purpose built telemetry data lake that uses object storage as the primary storage layer. With columnar storage format, Parseable is efficient for both storage and query performance.
 
 ![](./static/intro-image.png)
 
-## Key Value Drivers
+## Key differentiators
 
 <Cards>
 
@@ -25,7 +27,7 @@ Parseable is based on purpose built, disk-less database [ParseableDB](https://gi
 Built-in compression to compress observability and telemetry data by up to 90%. 
 </Card>
 
-<Card icon={<IconBolt />} title='Fast query'>
+<Card icon={<IconBolt />} title='Fast queries'>
 Fast query response with Rust based design, modern query techniques, and intelligent caching on SSDs / NVMe and memory.
 </Card>
 
@@ -43,9 +45,24 @@ Deploy across public or private clouds, containers, VMs, or bare metal environme
 
 </Cards>
 
-## Glossary
+## Learn more
 
-- **ParseableDB**: The core, open source database engine of Parseable, designed for high performance and efficiency in handling telemetry data.
-- **Prism**: The proprietary observability frontend for ParseableDB. Provides a unified interface for managing and querying telemetry data.
-- **Ingestion**: The process of collecting and storing telemetry data into ParseableDB.
-- **Query**: The action of retrieving and analyzing data stored in ParseableDB using its PostgreSQL compatible SQL.
+<Cards>
+
+<Card href="/architecture" icon={<IconTelescope className="text-blue-500" />} className="text-blue-500" title='Architecture'>
+Learn about the telemetry data lake architecture.
+</Card>
+
+<Card href="/features" icon={<IconBolt className="text-blue-500" />} className="text-blue-500" title='Features'>
+Get to know the key features of Parseable.
+</Card>
+
+<Card href="/ingest-data/logs-ingestion" icon={<IconCloudDataConnection className="text-blue-500" />} className="text-blue-500" title='Ingest data'>
+Ingest telemetry data into Parseable.
+</Card>
+
+<Card href="/integrations" icon={<IconCloudDataConnection className="text-blue-500" />} className="text-blue-500" title='Ingest data'>
+Integrate with your existing tools and workflows.
+</Card>
+
+</Cards>

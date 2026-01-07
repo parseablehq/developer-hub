@@ -5,19 +5,21 @@ icon: Rocket
 import { IconChartCohort, IconDirections, IconCloudDataConnection, IconBrandInertia, IconFileTypeSql, IconServerBolt,
  IconSchema, IconFileDigitFilled, IconCloudComputing, IconCloud } from '@tabler/icons-react';
 
-## Parseable Cloud
+Get started with Parseable in less than a minute. Choose from the options below to get up and running.
 
-The fastest way to get started — no infrastructure to manage.
+## Parseable Pro
+
+The fastest way to get started is Parseable Cloud Pro tier. Sign up for Parseable Pro for a free 14 days trial. No credit card needed.
 
 <Cards>
-<Card href="/quickstart/cloud" icon={<IconCloud className="text-blue-600" />} title='Parseable Cloud'>
-Sign up at app.parseable.com and start ingesting in minutes.
+<Card href="https://telemetry.new" icon={<IconCloud className="text-blue-500" />}  title='Parseable Pro' className="text-blue-500 col-span-2">
+Sign up for fully featured trial.
 </Card>
 </Cards>
 
-## Run Parseable Locally
+## Run locally
 
-Prefer to self-host? You can get up and running in less than a minute with the Docker container. Run the following command to start Parseable in local mode on your machine:
+To run Parseable locally, run the following command to start Parseable in local mode on your machine:
 
 ```bash
 docker run -p 8000:8000 \
@@ -29,16 +31,14 @@ Once the container is running successfully, go to [http://localhost:8000](http:/
 
 You'll see the setup screen where you can import sample data in one click. This will also create few dashboards and queries to get you started.
 
-## Production installation options
+## Production installation
 
-To deploy Parseable in a production grade environment, here are the popular deployment options:
+To deploy Parseable in a production environment, refer to the self-hosted installation guide:
 
 <Cards>
-<Card href="/docs/installation/distributed/linux" icon={<IconSchema className="text-purple-600" />} title='Linux Cluster'>
-Run distributed Parseable on a Linux cluster.
+
+<Card href="/self-hosted/installation" icon={<IconSchema className="text-blue-500" />} title='Self-hosted installation' className="col-span-2 text-blue-500">
+Deploy Parseable in your own environment.
 </Card>
 
-<Card href="/docs/installation/distributed/k8s-helm" icon={<IconCloudComputing className="text-purple-600" />} title='Kubernetes (Helm)'>
-Run distributed Parseable on a Kubernetes cluster.
-</Card>
 </Cards>
