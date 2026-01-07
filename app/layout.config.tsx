@@ -15,10 +15,9 @@ export const baseOptions: BaseLayoutProps = {
         <Image
           src="/images/parseable-icon.svg"
           alt="Parseable"
-          width={24}
+          width={180}
           height={24}
         />
-        <span className="font-bold text-xl">Parseable Docs</span>
       </div>
     ),
   },

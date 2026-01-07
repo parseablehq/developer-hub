@@ -5,10 +5,10 @@
   "defaultOpen": true,
   "pages": [
     "index",
-    "benchmarks",
-    "---Overview---",
     "introduction",
     "quickstart",
+    "benchmarks",
+    "---Overview---",
     "features",
     "overview",
     "integrations",

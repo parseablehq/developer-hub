@@ -1,33 +1,58 @@
 ---
-title: Introduction
-description: Get started with Parseable - the modern observability platform
+title: Home
 ---
-import { IconEmpathize,IconHandClick,IconGeometry,IconBrandSpeedtest,IconBrandInertia,IconFileTypeSql } from '@tabler/icons-react';
+import { IconEmpathize,IconHandClick,IconGeometry,IconBrandSpeedtest,IconBrandInertia,IconFileTypeSql, IconCloud,IconBrandTabler,IconBrandOpenSource } from '@tabler/icons-react';
+import { Banner } from 'fumadocs-ui/components/banner';
+
+<Banner>
+    Experience the future of observability with Parseable Cloud.
+    <a href="https://telemetry.new"> Get Started ↗︎ </a>
+</Banner>
+
+<p>Parseable is a modern, full stack observability platform. It is based on a purpose built telemetry data lake architecture, written in Rust, uses advanced compression techniques, and leverages AI to provide deep insights.</p>
+
+<p text="bold">Parseable is an AI native, high-performance, scalable alternative to traditional observability solutions.</p>
+
+<p>This documentation site provides comprehensive guides, references, and tutorials to help you get the most out of Parseable.</p>
+
+### Flavors
+
+Parseable is available in three flavors.
 
 <Cards>
 
-<Card href="/introduction" icon={<IconEmpathize className="text-purple-600" />} title='What is Parseable?'>
-Get introduced to Parseable, its features, and how it can help you with observability and telemetry data.
+<Card href="/parseable-cloud/overview" icon={<IconCloud className="text-blue-500" />} className="text-blue-500 bg-green-200 hover:bg-green-300 col-span-2" title='Parseable Cloud'>
+Learn about Parseable Cloud, the fully managed observability platform.
 </Card>
 
-<Card href="/quickstart" icon={<IconHandClick className="text-purple-600" />} title='Quick Start'>
-Get started with Parseable in just two commands. Follow the quick start guide to set up Parseable and ingest your telemetry data.
+<Card href="/design-choices" icon={<IconBrandTabler className="text-blue-500" />} className="text-blue-500 bg-orange-200 hover:bg-orange-300" title='Managed Parseable'>
+Parseable available as a managed service to run in your cloud account.
 </Card>
 
-<Card href="/overview" icon={<IconGeometry className="text-purple-600" />} title='Architecture'>
-Fast query response with Rust based design, modern query techniques, and intelligent caching on SSDs / NVMe and memory.
+<Card href="/self-hosted/overview" icon={<IconBrandOpenSource className="text-blue-500" />} className="text-blue-500 bg-purple-200 hover:bg-purple-300" title='Parseable OSS'>
+Learn about Self-hosted Parseable, the open-source observability platform.
 </Card>
 
-<Card href="/benchmarks" icon={<IconBrandSpeedtest className="text-purple-600" />} title='Benchmarks'>
-Excellent storage efficiency and cost with object stores like S3, GCS, Azure Blob as the primary storage layer.
+</Cards>
+
+### Learn more
+
+<Cards>
+
+<Card href="/introduction" icon={<IconEmpathize className="text-blue-500" />} className="text-blue-500" title='What is Parseable?'>
+Get introduced to Parseable.
 </Card>
 
-<Card href="/ingest-data/logs-ingestion" icon={<IconBrandInertia className="text-purple-600" />} title='Ingestion'>
-Ingest, manage and query OpenTelemetry logs, metrics or traces natively. Zero configuration needed. 
+<Card href="/quickstart" icon={<IconHandClick className="text-blue-500" />} className="text-blue-500" title='Quickstart'>
+Get started with Parseable in less than a minute.
 </Card>
 
-<Card href="/api" icon={<IconFileTypeSql className="text-purple-600" />} title='API Reference'>
-Explore the Parseable API for programmatic access to your observability data.
+<Card href="/overview" icon={<IconGeometry className="text-blue-500" />} className="text-blue-500" title='Architecture'>
+Learn about the telemetry data lake architecture.
+</Card>
+
+<Card href="/ingest-data/logs-ingestion" icon={<IconBrandInertia className="text-blue-500" />} className="text-blue-500" title='Ingest data'>
+Ingesting telemetry data into Parseable.
 </Card>
 
 </Cards>
