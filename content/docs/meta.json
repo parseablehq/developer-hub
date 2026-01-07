@@ -6,11 +6,11 @@
   "pages": [
     "index",
     "introduction",
-    "quickstart",
+    "get-started",
     "benchmarks",
     "---Overview---",
-    "features",
     "overview",
+    "features",
     "integrations",
     "---Ingesting Data---",
     "ingest-data/zero-instrumentation",

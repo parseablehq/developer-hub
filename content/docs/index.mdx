@@ -1,17 +1,19 @@
 ---
 title: Home
+icon: House
 ---
-import { IconEmpathize,IconHandClick,IconGeometry,IconBrandSpeedtest,IconBrandInertia,IconFileTypeSql, IconCloud,IconBrandTabler,IconBrandOpenSource } from '@tabler/icons-react';
+
+import {IconEmpathize,IconHandClick,IconGeometry,IconBrandSpeedtest,IconBrandInertia,IconFileTypeSql, IconCloud,IconBrandTabler,IconBrandOpenSource } from '@tabler/icons-react';
 import { Banner } from 'fumadocs-ui/components/banner';
 
-<Banner>
+<Banner changeLayout={false}>
     Experience the future of observability with Parseable Cloud.
     <a href="https://telemetry.new"> Get Started ↗︎ </a>
 </Banner>
 
-<p>Parseable is a modern, full stack observability platform. It is based on a purpose built telemetry data lake architecture, written in Rust, uses advanced compression techniques, and leverages AI to provide deep insights.</p>
+<p>Parseable is a <u>modern, unified observability platform</u>. It is based on our <u>purpose built telemetry data lake</u>. Written in Rust, Parseable uses advanced compression and caching techniques to offer best in class performance and scalability.</p>
 
-<p text="bold">Parseable is an AI native, high-performance, scalable alternative to traditional observability solutions.</p>
+<p text="bold">Parseable is AI native, high performance, peta scale alternative to traditional observability systems.</p>
 
 <p>This documentation site provides comprehensive guides, references, and tutorials to help you get the most out of Parseable.</p>
 
@@ -25,12 +27,12 @@ Parseable is available in three flavors.
 Learn about Parseable Cloud, the fully managed observability platform.
 </Card>
 
-<Card href="/design-choices" icon={<IconBrandTabler className="text-blue-500" />} className="text-blue-500 bg-orange-200 hover:bg-orange-300" title='Managed Parseable'>
-Parseable available as a managed service to run in your cloud account.
+<Card href="/managed-parseable/overview" icon={<IconBrandTabler className="text-blue-500" />} className="text-blue-500 bg-orange-200 hover:bg-orange-300" title='Managed Parseable'>
+Learn about managed Parseable available as a managed service to run in your cloud account.
 </Card>
 
 <Card href="/self-hosted/overview" icon={<IconBrandOpenSource className="text-blue-500" />} className="text-blue-500 bg-purple-200 hover:bg-purple-300" title='Parseable OSS'>
-Learn about Self-hosted Parseable, the open-source observability platform.
+Learn about Parseable OSS.
 </Card>
 
 </Cards>
