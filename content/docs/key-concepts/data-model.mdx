@@ -4,11 +4,13 @@ title: Modelling Data
 
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 
-It is important to understand how to model the observability data effectively in Parseable. This helps in optimal storage, compression and faster query performance. This section will cover the key concepts of data modelling in Parseable.
+A deep understanding of how to model the observability data in Parseable will help in storage, compression and faster query performance. This section will cover the key concepts of data modelling in Parseable.
 
 ## Dataset
 
-A dataset is a logical collection of data designed to ensure optimal storage compression and fast retrieval via query. Datasets are identified by a unique name. Each dataset has its schema, which includes the fields and their types. Role based access control, alerts, retention and notifications are all supported at the dataset level granularity.
+A dataset is a logical collection of data designed to ensure fast retrieval via query and optimal storage compression. Datasets are identified by a unique name. Role based access control, alerts, retention and notifications are all supported at the dataset level granularity.
+
+Each dataset has a assigned schema (can be dynamic i.e. inferred from incoming data or static i.e. explicitly defined). 
 
 Datasets are the primary unit of data storage in Parseable. Any MELT (Metrics, Events, Logs, Traces) data is ingested into one or other dataset. 
 
