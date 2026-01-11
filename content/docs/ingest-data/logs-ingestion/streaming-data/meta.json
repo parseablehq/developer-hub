@@ -1,7 +1,0 @@
-{
-  "title": "Streaming Data",
-  "pages": [
-    "kafka",
-    "redpanda"
-  ]
-}

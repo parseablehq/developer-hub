@@ -29,7 +29,7 @@ Configure an alert in Parseable with a webhook target:
 ```json
 {
   "name": "High Error Rate Alert",
-  "stream": "application-logs",
+  "dataset": "application-logs",
   "alertType": "threshold",
   "condition": {
     "field": "level",
@@ -56,7 +56,7 @@ When an alert triggers, Parseable sends a JSON payload to your webhook endpoint:
 ```json
 {
   "alert_name": "High Error Rate Alert",
-  "stream": "application-logs",
+  "dataset": "application-logs",
   "alert_type": "threshold",
   "severity": "high",
   "triggered_at": "2024-01-15T10:30:00Z",
@@ -102,7 +102,7 @@ function handleAlert(alert) {
   // - Forward to another service
   
   console.log(`Alert: ${alert.alert_name}`);
-  console.log(`Stream: ${alert.stream}`);
+  console.log(`Stream: ${alert.dataset}`);
   console.log(`Value: ${alert.current_value} (threshold: ${alert.threshold})`);
 }
 
@@ -134,7 +134,7 @@ def webhook():
 def handle_alert(alert):
     # Your custom logic here
     logging.info(f"Alert: {alert.get('alert_name')}")
-    logging.info(f"Stream: {alert.get('stream')}")
+    logging.info(f"Stream: {alert.get('dataset')}")
     logging.info(f"Value: {alert.get('current_value')} (threshold: {alert.get('threshold')})")
 
 if __name__ == '__main__':
@@ -155,7 +155,7 @@ import (
 
 type Alert struct {
     AlertName    string `json:"alert_name"`
-    Stream       string `json:"stream"`
+    Stream       string `json:"dataset"`
     AlertType    string `json:"alert_type"`
     Severity     string `json:"severity"`
     TriggeredAt  string `json:"triggered_at"`
@@ -252,7 +252,7 @@ app.post('/webhook', async (req, res) => {
     "sections": [{
       "activityTitle": `🚨 ${alert.alert_name}`,
       "facts": [
-        { "name": "Stream", "value": alert.stream },
+        { "name": "Stream", "value": alert.dataset },
         { "name": "Severity", "value": alert.severity },
         { "name": "Value", "value": `${alert.current_value} (threshold: ${alert.threshold})` }
       ],
@@ -276,7 +276,7 @@ app.post('/webhook', async (req, res) => {
       title: `🚨 ${alert.alert_name}`,
       color: alert.severity === 'critical' ? 0xFF0000 : 0xFFA500,
       fields: [
-        { name: "Stream", value: alert.stream, inline: true },
+        { name: "Stream", value: alert.dataset, inline: true },
         { name: "Severity", value: alert.severity, inline: true },
         { name: "Value", value: `${alert.current_value}`, inline: true }
       ],

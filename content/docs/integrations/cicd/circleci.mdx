@@ -151,7 +151,7 @@ commands:
       message:
         type: string
         default: ""
-      stream:
+      dataset:
         type: string
         default: "circleci-pipelines"
     steps:
@@ -160,7 +160,7 @@ commands:
           command: |
             curl -s -X POST "${PARSEABLE_URL}/api/v1/ingest" \
               -H "Authorization: Basic ${PARSEABLE_AUTH}" \
-              -H "X-P-Stream: << parameters.stream >>" \
+              -H "X-P-Stream: << parameters.dataset >>" \
               -H "Content-Type: application/json" \
               -d "[{
                 \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",

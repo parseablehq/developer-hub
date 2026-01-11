@@ -38,9 +38,9 @@ public class ParseableLogger : IDisposable
     private readonly int _batchSize;
     private readonly Timer _flushTimer;
 
-    public ParseableLogger(string url, string stream, string username, string password, int batchSize = 100)
+    public ParseableLogger(string url, string dataset, string username, string password, int batchSize = 100)
     {
-        _stream = stream;
+        _stream = dataset;
         _batchSize = batchSize;
         
         _client = new HttpClient { BaseAddress = new Uri(url) };
@@ -152,9 +152,9 @@ public class ParseableSink : ILogEventSink, IDisposable
     private readonly object _lock = new();
     private readonly Timer _flushTimer;
 
-    public ParseableSink(string url, string stream, string username, string password)
+    public ParseableSink(string url, string dataset, string username, string password)
     {
-        _stream = stream;
+        _stream = dataset;
         _client = new HttpClient { BaseAddress = new Uri(url) };
         var auth = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}"));
         _client.DefaultRequestHeaders.Authorization = 
@@ -222,11 +222,11 @@ public static class ParseableSinkExtensions
     public static LoggerConfiguration Parseable(
         this LoggerSinkConfiguration config,
         string url,
-        string stream,
+        string dataset,
         string username,
         string password)
     {
-        return config.Sink(new ParseableSink(url, stream, username, password));
+        return config.Sink(new ParseableSink(url, dataset, username, password));
     }
 }
 ```
@@ -237,7 +237,7 @@ public static class ParseableSinkExtensions
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Parseable(
         url: "http://parseable:8000",
-        stream: "dotnet-app",
+        dataset: "dotnet-app",
         username: "admin",
         password: "admin")
     .CreateLogger();
@@ -260,7 +260,7 @@ builder.Host.UseSerilog((context, config) =>
         .ReadFrom.Configuration(context.Configuration)
         .WriteTo.Parseable(
             url: context.Configuration["Parseable:Url"]!,
-            stream: context.Configuration["Parseable:Stream"]!,
+            dataset: context.Configuration["Parseable:Stream"]!,
             username: context.Configuration["Parseable:Username"]!,
             password: context.Configuration["Parseable:Password"]!);
 });
@@ -318,7 +318,7 @@ builder.Logging.AddOpenTelemetry(options =>
 
 1. Ensure Flush is called on shutdown
 2. Check for exceptions in background tasks
-3. Verify stream name
+3. Verify dataset name
 
 ## Next Steps
 

@@ -47,7 +47,7 @@ Use AWS FireLens with Fluent Bit sidecar for log routing.
         "options": {
           "awslogs-group": "/ecs/firelens",
           "awslogs-region": "us-east-1",
-          "awslogs-stream-prefix": "firelens"
+          "awslogs-dataset-prefix": "firelens"
         }
       },
       "memoryReservation": 50
@@ -108,7 +108,7 @@ Route logs through CloudWatch, then forward to Parseable.
         "options": {
           "awslogs-group": "/ecs/my-app",
           "awslogs-region": "us-east-1",
-          "awslogs-stream-prefix": "app"
+          "awslogs-dataset-prefix": "app"
         }
       }
     }

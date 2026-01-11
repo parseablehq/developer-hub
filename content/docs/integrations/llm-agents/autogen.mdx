@@ -32,9 +32,9 @@ import uuid
 import json
 
 class ParseableAutogenLogger:
-    def __init__(self, parseable_url: str, stream: str, username: str, password: str):
+    def __init__(self, parseable_url: str, dataset: str, username: str, password: str):
         self.parseable_url = parseable_url
-        self.stream = stream
+        self.dataset = dataset
         self.auth = (username, password)
         self.conversation_id = str(uuid.uuid4())
         self.message_count = 0
@@ -47,7 +47,7 @@ class ParseableAutogenLogger:
                 f"{self.parseable_url}/api/v1/ingest",
                 json=[entry],
                 auth=self.auth,
-                headers={"X-P-Stream": self.stream},
+                headers={"X-P-Stream": self.dataset},
                 timeout=5
             )
         except Exception as e:
@@ -172,7 +172,7 @@ class LoggedUserProxyAgent(UserProxyAgent):
 # Create logger
 logger = ParseableAutogenLogger(
     parseable_url="http://parseable:8000",
-    stream="autogen-logs",
+    dataset="autogen-logs",
     username="admin",
     password="admin"
 )

@@ -1,5 +1,6 @@
 ---
-title: All Releases
+title: Release notes
+icon: Book
 ---
 
 ## v2.5 (December 8, 2025)
@@ -12,21 +13,21 @@ We have unlocked a new dimension of observability with the introduction of the *
 * **Enhanced Navigation:** We added intuitive breadcrumbs to the Traces Span detail sheet, allowing for seamless navigation through complex span hierarchies.
 * **OpenTelemetry Standardization:** Trace field names for events and links have been updated to align strictly with OpenTelemetry standards, ensuring consistent data ingestion and better interoperability.
 
-![](./static/trace-1.png)
-![](./static/trace-2.png)
+![](./release-notes/static/trace-1.png)
+![](./release-notes/static/trace-2.png)
 
 ### 2. Metrics View
 The Metrics experience has been overhauled to provide deeper insights and a more fluid user experience.
 * **Data Consistency:** Attribute field names have been standardized across all metric types, simplifying queries and ensuring consistency across your data.
 
-![](./static/metrics-1.png)
-![](./static/metrics-2.png)
+![](./release-notes/static/metrics-1.png)
+![](./release-notes/static/metrics-2.png)
 
 ### 3. Keystone Integration with Alerts
 We are bringing AI-native capabilities closer to your incident response workflow. Keystone is now tightly integrated with the alerting system.
 * **Automated Investigation:** You can now initiate a Keystone analysis session directly from a triggered alert. This seamless handoff reduces the time between detecting an anomaly and understanding its root cause.
 
-![](./static/alerts.gif)
+![](./release-notes/static/alerts.gif)
 
 ### 4. SQL Editor & Visualization
 We have enhanced the SQL Editor to support more complex data exploration and reporting needs.
@@ -59,7 +60,7 @@ The SQL editor has a new sidebar to showcase all the columns and their types for
 
 AI assistant, saved queries are now rearranged to the right side of the screen for better visibility and access.
 
-![Dashboard SQL Chart Builder](./static/chart-builder-new.png)
+![Dashboard SQL Chart Builder](./release-notes/static/chart-builder-new.png)
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/VjwFONGGqaE?si=hMkSWfwGWmfb4HfY" title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen></iframe>
 
@@ -71,7 +72,7 @@ Visualization gives you a good idea of patterns forming, and many times you want
 
 Click on the "three dots" button in a dashboard tile and select "Create Alert" from the dropdown menu. You will be redirected to the Alert Builder page, where your current filters and group-by options are automatically applied. Once satisfied with the configuration, click "Create" to activate your alert.
 
-![Create Alert from Dashboard](./static/create-alert-dashbaord.png)
+![Create Alert from Dashboard](./release-notes/static/create-alert-dashbaord.png)
 
 ### Investigation flows
 
@@ -82,14 +83,14 @@ In a dashboard tile:
 - Select the "Investigate" option under the "three dots" button in chart.
 - You'll be redirected to the Explore Page of the dataset with the same filters and group by options as the chart.
 
-![Investigate from Dashboard](./static/investigate-from-dashboard.png)
+![Investigate from Dashboard](./release-notes/static/investigate-from-dashboard.png)
 
 From a triggered Alert:
 
 - Select the "Investigate" option from the Triggered Alert page.
 - You'll be redirected to the Explore Page of the dataset with the same filters and group by options as the chart along with the timeline of the alert.
 
-![Investigate from Alert](./static/investigate-alert-page.png)
+![Investigate from Alert](./release-notes/static/investigate-alert-page.png)
 
 ## v2.4.1 (August 18, 2025)
 
@@ -132,8 +133,6 @@ Building on our alerting capabilities, v2.4.1 introduces three sophisticated ale
 
 Expand your data visualization capabilities with four new chart types. [Learn more about Dashboards](/docs/features/dashboards)
 
-![Dashboard Chart Builder](../features/static/chart-builder.png)
-
 **Pie Charts**
 - Visualize proportional data at a glance.
 - Perfect for showing distribution across categories.
@@ -144,15 +143,11 @@ Expand your data visualization capabilities with four new chart types. [Learn mo
 - Display key metrics in the center space
 - Ideal for showing completion percentages
 
-![Donut Chart Example](../features/static/donut.png)
-
 **Gauge Charts**
 - Real-time performance indicators
 - Configurable color-coded segments for thresholds
 - Support for custom ranges and units
 - Perfect for KPI monitoring (CPU usage, memory utilization)
-
-![Gauge Chart Styling](../features/static/gauage-plot-style.png)
 
 **Query Value**
 - Display single, prominent metric values
@@ -165,8 +160,6 @@ Expand your data visualization capabilities with four new chart types. [Learn mo
 - Configurable units and number formatting
 - Threshold-based color coding
 - Responsive design for all screen sizes
-
-![Timeseries Plot Example](../features/static/timeseries-plot.png)
 
 ### 3. Protocol Buffer (Protobuf) Support
 
@@ -187,7 +180,7 @@ Native support for Protocol Buffer format significantly improves data ingestion 
 # Send protobuf encoded logs
 curl -X POST https://parseable.example.com/api/v1/ingest \
   -H "Content-Type: application/x-protobuf" \
-  -H "X-P-Stream: my-stream" \
+  -H "X-P-Stream: my-dataset" \
   --data-binary @logs.pb
 ```
 
@@ -228,7 +221,7 @@ We're excited to introduce AI-powered summarization, a powerful new feature desi
 
 - Click on `Summarize my data` to automatically generate a concise overview of your data.
 
-![](./static/summarize-homepage.png)
+![](./release-notes/static/summarize-homepage.png)
 
 - The AI identifies key patterns, anomalies, and potential faults in your dataset.
 
@@ -272,7 +265,7 @@ ORDER BY error_count DESC;
 
 We’ve added **User Groups** to Parseable’s RBAC system to make access management enterprise ready.
 
-![User Groups](./static/groups.png)  
+![User Groups](./release-notes/static/groups.png)  
 
 **How It Works:**
 
@@ -290,7 +283,7 @@ We’ve added **User Groups** to Parseable’s RBAC system to make access manage
 
 - Ingestor: Can only be assigned at the dataset level (for managing ingest operations).
 
-![](./static/rbac.png)
+![](./release-notes/static/rbac.png)
 
 
 **Benefits:**
@@ -313,7 +306,7 @@ Say your SRE team needs full write access to all logs, while support staff shoul
 
 Dashboards are here! Now you can visualize your data in Parseable, your way.
 
-![](./static/dashboards.png)
+![](./release-notes/static/dashboards.png)
 
 **How It Works:**
 
@@ -325,7 +318,7 @@ Dashboards are here! Now you can visualize your data in Parseable, your way.
 
 - **Chart Builder Flow:** Choose your chart type: Timeseries, Line, Bar, or Area.
 
-![](./static/chart-builder.png)
+![](./release-notes/static/chart-builder.png)
 
   - Select the dataset you want to visualize.
 
@@ -361,8 +354,8 @@ Dashboards are here! Now you can visualize your data in Parseable, your way.
 ### 4. All-New Onboarding Wizard 
 
 Getting started with Parseable just got a whole lot easier. With this release, we’ve overhauled the first-time user experience:
-![](./static/onboarding.png)
-![](./static/onboarding-complete.png)
+![](./release-notes/static/onboarding.png)
+![](./release-notes/static/onboarding-complete.png)
 
 **How It Works:**
 
@@ -403,15 +396,15 @@ We’re excited to roll out Parseable **v2.3.5**, a release packed with features
 **What’s new?**
 You can now filter and group logs directly from the log explorer using a flexible, built-in filter panel. Not only can you **filter logs by any field** (e.g., `service=payments`, `env=prod`), you can also **group them by any field** to spot patterns and outliers fast.
 
-![](./static/filter.png)
+![](./release-notes/static/filter.png)
 
 **How it works:**
 
 * **Build a filter:** Type in the filter panel just like a search box—e.g., `status=error AND region=us-west-2`.
 * **Add a group by:** Instantly group results by `error_code` or `user_id` to see which issues are most frequent or which users are affected.
-![](./static/group-by.png)
+![](./release-notes/static/group-by.png)
 * **Save filter views:** Liked what you built? Click “Save to Library” and name the view (e.g., `Payments Errors Last Week`). Next time, just apply it from the Library to debug similar issues—no more rebuilding filters from scratch.
-![](./static/library.png)
+![](./release-notes/static/library.png)
 
 **Example:**
 Troubleshooting an incident in the `payments` service?
@@ -449,7 +442,7 @@ You can now see detailed stats for any field in your telemetry, right in the UI.
 * **Frequency/occurrence** of each value (e.g., how many times did `status=error` appear?)
 * **Order and drill down**: Click any value to instantly filter logs to just that slice.
 
-![](./static/stats.png)
+![](./release-notes/static/stats.png)
 
 **Example:**
 Investigating API failures?
@@ -525,7 +518,7 @@ Even seasoned users benefit when dealing with complex joins, window functions, o
 
 In high-pressure situations, like an ongoing incident, the AI assistant acts as a query co-pilot. It reduces cognitive load, speeds up iteration, and lowers the risk of human error when time is critical. And because you can configure your preferred LLM in the settings, teams can balance performance, compliance, and cost based on their stack.
 
-![](./static/generate-with-ai.png)
+![](./release-notes/static/generate-with-ai.png)
 
 ### Chat History
 
@@ -533,7 +526,7 @@ Every prompt and response is automatically saved. Click the "History" tab in the
 
 This is especially useful during incident retrospectives or recurring analytics, you'll never lose a good query again.
 
-![](./static/chat-history.png)
+![](./release-notes/static/chat-history.png)
 
 ### The Library (Saved SQL, Now Smarter)
 
@@ -546,7 +539,7 @@ With Parseable 2.3.0, saved SQL queries live in the new Library. You can now:
 
 The library is your personal or team-wide knowledge base for telemetry insights.
 
-![](./static/query-library.png)
+![](./release-notes/static/query-library.png)
 
 ### Failed Query? Let AI Fix It
 
@@ -554,7 +547,7 @@ Let's say you're investigating a sudden spike in latency reported by your alerti
 
 "Fix with AI"
 
-![](./static/fix.png)
+![](./release-notes/static/fix.png)
 
 The assistant returns a corrected version using the correct percentile function and known schema fields, saving minutes or even hours of digging through docs and schema dumps.
 
@@ -564,7 +557,7 @@ This turns errors into learning moments and lets you recover faster in the middl
 
 Ever wish you could see into the future of your observability pipeline? Along with AI assisted SQL queries, now you can forecast the future ingestion load, with Parseable's new forecasting for log ingestion.
 
-![](./static/forecast.png)
+![](./release-notes/static/forecast.png)
 
 What this means for you:
 

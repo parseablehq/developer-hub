@@ -67,7 +67,7 @@ This section defines access to resources such as dashboards and filters. While m
 | DeleteFilter | DELETE /filters/\{filter_id\} | ✓ | ✓ | ✓ | ✓ | x |
 
 ### Stream Related
-This section deals with endpoints for managing datasets. Admins and Editors have full access to these endpoints, while other roles have limited or no access to stream management functionalities.
+This section deals with endpoints for managing datasets. Admins and Editors have full access to these endpoints, while other roles have limited or no access to dataset management functionalities.
 
 | Action | Endpoint | Admin | Editor | Writer | Reader | Ingester |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -127,13 +127,13 @@ Role JSON with Writer Privilege: The Writer privilege is resource specific. A us
     {
         "privilege": "writer",
         "resource": {
-            "stream": "backend"
+            "dataset": "backend"
         }
     },
     {
         "privilege": "writer",
         "resource": {
-            "stream": "frontend"
+            "dataset": "frontend"
         }
     }
 ]
@@ -146,13 +146,13 @@ Role JSON with Ingester Privilege: The Ingester privilege is resource specific. 
     {
         "privilege": "ingester",
         "resource": {
-            "stream": "backend"
+            "dataset": "backend"
         }
     },
     {
         "privilege": "ingester",
         "resource": {
-            "stream": "frontend"
+            "dataset": "frontend"
         }
     }
 ]
@@ -165,7 +165,7 @@ Role JSON with Reader Privilege: The Reader privilege is resource specific. A us
     {
         "privilege": "reader",
         "resource": {
-            "stream": "frontend",
+            "dataset": "frontend",
             "tag": "source=web"   // optional field
         }
     }

@@ -18,7 +18,7 @@ Edit the log4j2.xml file to add the following configuration. Please ensure to up
     <Appenders>
         <Http name="Parseable" url="<parseable-server-url>/api/v1/ingest" method="POST">
             <Property name="Authorization" value="Basic <basic-auth-hash>" />
-            <Property name="X-P-Stream" value="<stream-name>" />
+            <Property name="X-P-Stream" value="<dataset-name>" />
             <Property name="Accept" value="application/json" />
             <JsonLayout properties="true"/>
         </Http>

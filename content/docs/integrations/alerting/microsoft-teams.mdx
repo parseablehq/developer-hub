@@ -57,11 +57,11 @@ app.post('/webhook', async (req, res) => {
     "summary": `Parseable Alert: ${alert.name}`,
     "sections": [{
       "activityTitle": `🚨 ${alert.name || 'Alert Triggered'}`,
-      "activitySubtitle": `Stream: ${alert.stream}`,
+      "activitySubtitle": `Stream: ${alert.dataset}`,
       "activityImage": "https://parseable.com/logo.png",
       "facts": [
         { "name": "Severity", "value": alert.severity || 'Unknown' },
-        { "name": "Stream", "value": alert.stream || 'N/A' },
+        { "name": "Stream", "value": alert.dataset || 'N/A' },
         { "name": "Current Value", "value": String(alert.value || 'N/A') },
         { "name": "Threshold", "value": String(alert.threshold || 'N/A') },
         { "name": "Time", "value": new Date().toISOString() }
@@ -73,7 +73,7 @@ app.post('/webhook', async (req, res) => {
       "name": "View in Parseable",
       "targets": [{
         "os": "default",
-        "uri": `https://your-parseable.com/streams/${alert.stream}`
+        "uri": `https://your-parseable.com/streams/${alert.dataset}`
       }]
     }]
   };
@@ -125,7 +125,7 @@ const adaptiveCard = {
         {
           "type": "FactSet",
           "facts": [
-            { "title": "Stream", "value": alert.stream },
+            { "title": "Stream", "value": alert.dataset },
             { "title": "Severity", "value": alert.severity },
             { "title": "Value", "value": String(alert.value) }
           ]
@@ -134,7 +134,7 @@ const adaptiveCard = {
       "actions": [{
         "type": "Action.OpenUrl",
         "title": "View in Parseable",
-        "url": `https://your-parseable.com/streams/${alert.stream}`
+        "url": `https://your-parseable.com/streams/${alert.dataset}`
       }]
     }
   }]

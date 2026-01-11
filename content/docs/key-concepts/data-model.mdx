@@ -1,28 +1,24 @@
 ---
-title: Modelling Data
+title: Data modelling
 ---
 
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 
-A deep understanding of how to model the observability data in Parseable will help in storage, compression and faster query performance. This section will cover the key concepts of data modelling in Parseable.
+Datasets are the primary unit of storage in Parseable. Any MELT (Metrics, Events, Logs, Traces) data is ingested into one or other dataset.
 
-## Dataset
+Think of a dataset as a logical grouping of similar telemetry data. Proper datasets planning ensures fast query and optimal storage compression.
 
-A dataset is a logical collection of data designed to ensure fast retrieval via query and optimal storage compression. Datasets are identified by a unique name. Role based access control, alerts, retention and notifications are all supported at the dataset level granularity.
+Every dataset is identified by a unique name. A dataset has a assigned schema (can be dynamic i.e. inferred from incoming data or static i.e. explicitly defined). Role based access control, alerts, retention and notifications are supported at the dataset level.
 
-Each dataset has a assigned schema (can be dynamic i.e. inferred from incoming data or static i.e. explicitly defined). 
-
-Datasets are the primary unit of data storage in Parseable. Any MELT (Metrics, Events, Logs, Traces) data is ingested into one or other dataset. 
-
-### Creating a dataset
+## Creating a dataset
 
 You can create a dataset using the "Create Dataset" button on Datasets page. You'll be prompted to enter the dataset name, schema type, and partition column.
 
-You can set the schema type to be [static](#static) (schema has to be explicitly provided at the time of creation of dataset) or [dynamic](#dynamic) (let server infer the schema from the incoming data). Once set, the schema type cannot be changed later. Read more about schema types in the [Dataset Schema](#dataset-schema) section.
+You can set the schema type to be [static](#static) (schema has to be explicitly provided at the time of creation of dataset) or [dynamic](#dynamic) (let server infer the schema from the incoming data). Once set, the schema type cannot be changed. Read more about schema types in the [Dataset Schema](#dataset-schema) section.
 
 Partition column is an optional field. If you want to partition the dataset based on a specific field, you can specify that field here. If you don't specify a partition field, Parseable will use the internal `p_timestamp` field as the partition field. Read more about partitioning in the [Partitioning](/docs/key-concepts/partitioning) section.
 
-### Mapping sources to datasets
+## Mapping sources to datasets
 
 A source is anything that generates data, i.e. agents like FluentBit, FluentD, Vector, LogStash, agents from the OTel ecosystem, or the application itself. While ingesting data, you'll need to specify the dataset name to which the data should be sent. This allows mapping sources to datasets. Technically it is possible to map any number of data sources any number of data sources. Parseable allows this to ensure flexibility for varying use cases. 
 
@@ -68,7 +64,7 @@ Schema defines the fields in an event and their types. Parseable supports two ty
 
 Datasets by default have dynamic schema. This means you don't need to define a schema for a dataset. The Parseable server detects the schema from first event. If there are subsequent events (with new schema), it updates internal schema accordingly.
 
-Log data formats evolve over time, and users prefer a dynamic schema approach, where they don't have to worry about schema changes, and they are still able to ingest events to a given stream.
+Log data formats evolve over time, and users prefer a dynamic schema approach, where they don't have to worry about schema changes, and they are still able to ingest events to a given dataset.
 
 <Callout type="info">
 For dynamic schema, Parseable doesn't allow changing the type of an existing column whose type is already set. For example, if a column is detected as string in the first event, it can't be changed to int or timestamp in a later event. If you'd like to enforce a specific schema, please use static schema.

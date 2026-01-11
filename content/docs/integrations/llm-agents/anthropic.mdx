@@ -33,9 +33,9 @@ from datetime import datetime
 from typing import Dict, Any, List
 
 class AnthropicLogger:
-    def __init__(self, parseable_url: str, stream: str, username: str, password: str):
+    def __init__(self, parseable_url: str, dataset: str, username: str, password: str):
         self.parseable_url = parseable_url
-        self.stream = stream
+        self.dataset = dataset
         self.auth = (username, password)
         self.client = anthropic.Anthropic()
     
@@ -45,7 +45,7 @@ class AnthropicLogger:
                 f"{self.parseable_url}/api/v1/ingest",
                 json=[entry],
                 auth=self.auth,
-                headers={"X-P-Stream": self.stream},
+                headers={"X-P-Stream": self.dataset},
                 timeout=5
             )
         except Exception as e:
@@ -107,7 +107,7 @@ class AnthropicLogger:
 # Usage
 logger = AnthropicLogger(
     parseable_url="http://parseable:8000",
-    stream="anthropic-logs",
+    dataset="anthropic-logs",
     username="admin",
     password="admin"
 )
@@ -140,19 +140,19 @@ def message_stream(
     }
     
     try:
-        with self.client.messages.stream(
+        with self.client.messages.dataset(
             model=model,
             max_tokens=max_tokens,
             messages=messages,
             **kwargs
-        ) as stream:
+        ) as dataset:
             full_response = ""
-            for text in stream.text_stream:
+            for text in dataset.text_stream:
                 full_response += text
                 yield text
             
             # Get final message for usage stats
-            final_message = stream.get_final_message()
+            final_message = dataset.get_final_message()
             
             log_entry.update({
                 "success": True,
@@ -179,9 +179,9 @@ const Anthropic = require('@anthropic-ai/sdk');
 const axios = require('axios');
 
 class AnthropicLogger {
-  constructor(parseableUrl, stream, auth) {
+  constructor(parseableUrl, dataset, auth) {
     this.parseableUrl = parseableUrl;
-    this.stream = stream;
+    this.dataset = dataset;
     this.auth = auth;
     this.client = new Anthropic();
   }
@@ -191,7 +191,7 @@ class AnthropicLogger {
       await axios.post(`${this.parseableUrl}/api/v1/ingest`, [entry], {
         headers: {
           'Authorization': `Basic ${this.auth}`,
-          'X-P-Stream': this.stream
+          'X-P-Stream': this.dataset
         }
       });
     } catch (error) {

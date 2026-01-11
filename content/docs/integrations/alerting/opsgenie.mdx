@@ -52,18 +52,18 @@ app.post('/webhook', async (req, res) => {
   
   const opsgenieAlert = {
     message: `[Parseable] ${alert.name || 'Alert Triggered'}`,
-    alias: `parseable-${alert.name}-${alert.stream}`,
-    description: alert.message || `Alert triggered on stream ${alert.stream}`,
+    alias: `parseable-${alert.name}-${alert.dataset}`,
+    description: alert.message || `Alert triggered on dataset ${alert.dataset}`,
     priority: mapPriority(alert.severity),
     source: 'Parseable',
-    tags: ['parseable', alert.stream],
+    tags: ['parseable', alert.dataset],
     details: {
-      stream: alert.stream,
+      dataset: alert.dataset,
       query: alert.query,
       threshold: alert.threshold,
       current_value: alert.value
     },
-    entity: alert.stream,
+    entity: alert.dataset,
     actions: ['Acknowledge', 'View in Parseable']
   };
 
@@ -123,7 +123,7 @@ services:
 ## Best Practices
 
 1. **Use Aliases** - Prevent duplicate alerts with consistent aliases
-2. **Add Tags** - Include stream and severity tags for filtering
+2. **Add Tags** - Include dataset and severity tags for filtering
 3. **Set Priorities** - Map severity levels appropriately
 4. **Include Details** - Add context like query and threshold values
 

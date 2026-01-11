@@ -141,8 +141,8 @@ var requestOptions = {
     redirect: 'follow'
 };
 // highlight-start 
-// TODO: Replace the url with your Parseable URL and stream name
-fetch("https://<parseable-url>/api/v1/logstream/<stream-name>", requestOptions)
+// TODO: Replace the url with your Parseable URL and dataset name
+fetch("https://<parseable-url>/api/v1/logstream/<dataset-name>", requestOptions)
     // highlight-end
     .then(response => response.text())
     .then(result => console.log(result))
@@ -183,8 +183,8 @@ var requestOptions = {
 };
 
 // highlight-start
-// TODO: Replace the url with your Parseable URL and stream name
-fetch("https://<parseable-url>/api/v1/logstream/<stream-name>", requestOptions)
+// TODO: Replace the url with your Parseable URL and dataset name
+fetch("https://<parseable-url>/api/v1/logstream/<dataset-name>", requestOptions)
     // highlight-end
     .then(response => response.text())
     .then(result => console.log(result))

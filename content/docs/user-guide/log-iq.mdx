@@ -34,7 +34,7 @@ Log IQ requires specific HTTP headers when ingesting data to properly identify a
 ### Outcome
 
 - After successful format detection, a `p_format` field is added to the log event containing the log source name
-- The stream info is updated with an array of detected log sources
+- The dataset info is updated with an array of detected log sources
 - Parseable UI (Prism) automatically displays filters on the `p_format` field
 - If the log format is not detected, `p_format_verified=false` is added to the event
 - Data is always ingested, regardless of format detection success

@@ -54,12 +54,12 @@ app.post('/webhook', async (req, res) => {
     avatar_url: "https://parseable.com/logo.png",
     embeds: [{
       title: `🚨 ${alert.name || 'Alert Triggered'}`,
-      description: alert.message || `Alert triggered on stream ${alert.stream}`,
+      description: alert.message || `Alert triggered on dataset ${alert.dataset}`,
       color: getColor(alert.severity),
       fields: [
         {
           name: "Stream",
-          value: alert.stream || 'N/A',
+          value: alert.dataset || 'N/A',
           inline: true
         },
         {

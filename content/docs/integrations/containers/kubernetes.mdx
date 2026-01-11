@@ -101,7 +101,7 @@ config:
     [PARSER]
         Name        cri
         Format      regex
-        Regex       ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>[^ ]*) (?<log>.*)$
+        Regex       ^(?<time>[^ ]+) (?<dataset>stdout|stderr) (?<logtag>[^ ]*) (?<log>.*)$
         Time_Key    time
         Time_Format %Y-%m-%dT%H:%M:%S.%L%z
 
@@ -201,7 +201,7 @@ data:
                 expr: 'body matches "^[^ Z]+ "'
           - type: regex_parser
             id: parser-cri
-            regex: '^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$'
+            regex: '^(?P<time>[^ Z]+) (?P<dataset>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$'
             timestamp:
               parse_from: attributes.time
               layout: '%Y-%m-%dT%H:%M:%S.%LZ'

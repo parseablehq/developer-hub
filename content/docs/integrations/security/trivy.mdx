@@ -395,7 +395,7 @@ Create alerts for critical vulnerabilities:
 ```json
 {
   "name": "Critical Vulnerability Detected",
-  "stream": "trivy-vulnerabilities",
+  "dataset": "trivy-vulnerabilities",
   "alertType": "threshold",
   "condition": {
     "field": "severity",
@@ -425,7 +425,7 @@ Create alerts for critical vulnerabilities:
 
 1. Verify Trivy is finding vulnerabilities (check raw output)
 2. Check jq transformation is correct
-3. Verify Parseable stream accepts the payload format
+3. Verify Parseable dataset accepts the payload format
 
 ### Large Payloads
 

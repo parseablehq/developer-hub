@@ -108,9 +108,9 @@ from datetime import datetime
 from typing import Optional, Dict, Any
 
 class OpenAILogger:
-    def __init__(self, parseable_url: str, stream: str, username: str, password: str):
+    def __init__(self, parseable_url: str, dataset: str, username: str, password: str):
         self.parseable_url = parseable_url
-        self.stream = stream
+        self.dataset = dataset
         self.auth = (username, password)
         self.client = openai.OpenAI()
     
@@ -120,7 +120,7 @@ class OpenAILogger:
                 f"{self.parseable_url}/api/v1/ingest",
                 json=[entry],
                 auth=self.auth,
-                headers={"X-P-Stream": self.stream},
+                headers={"X-P-Stream": self.dataset},
                 timeout=5
             )
         except Exception as e:
@@ -177,7 +177,7 @@ class OpenAILogger:
 # Usage
 logger = OpenAILogger(
     parseable_url="http://parseable:8000",
-    stream="openai-logs",
+    dataset="openai-logs",
     username="admin",
     password="admin"
 )

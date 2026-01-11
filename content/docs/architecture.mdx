@@ -44,7 +44,7 @@ Another node called Prism node responds to all the role, user management, datase
 
 ![Parseable Query Architecture](./static/query-architecture.png)
 
-## Design choices highlights
+## Design choices
 
 ### Low latency writes
 Ingested data is staged on local disk upon successful return by Parseable API. Data is then asynchronously committed to object store like S3. This ensures low latency, high throughput ingestion. To ensure data durability, we recommend using a small, reliable storage (EFS, Azure Files, NFS or equivalent) attached to the ingesting nodes. This ensures that data is not lost in case of a node failure.

@@ -145,7 +145,7 @@ app.post('/webhook', async (req, res) => {
           },
           {
             type: "mrkdwn",
-            text: `*Stream:*\n${alert.stream || 'N/A'}`
+            text: `*Stream:*\n${alert.dataset || 'N/A'}`
           }
         ]
       },
@@ -202,7 +202,7 @@ Configure your Parseable alert to send to the webhook endpoint:
 ```json
 {
   "name": "High Error Rate",
-  "stream": "application-logs",
+  "dataset": "application-logs",
   "alertType": "threshold",
   "condition": {
     "field": "level",
@@ -239,7 +239,7 @@ pipeline:
   filters:
     - name: record_modifier
       match: parseable
-      record: slack_message "🔴 Error in ${stream}: ${message}"
+      record: slack_message "🔴 Error in ${dataset}: ${message}"
 
   outputs:
     - name: slack
@@ -251,7 +251,7 @@ pipeline:
 
 1. **Filter Critical Logs** - Only send important events to avoid notification fatigue
 2. **Use Channels Wisely** - Create dedicated channels for different alert severities
-3. **Include Context** - Add relevant metadata like stream name, timestamp, and severity
+3. **Include Context** - Add relevant metadata like dataset name, timestamp, and severity
 4. **Rate Limiting** - Implement rate limiting to prevent Slack API throttling
 5. **Test Webhooks** - Verify webhook connectivity before production deployment
 

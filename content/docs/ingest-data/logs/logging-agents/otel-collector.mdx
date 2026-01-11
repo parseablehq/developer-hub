@@ -40,9 +40,9 @@ service:
         - otlphttp
 ```
 
-The configuration above sets up the OTLP receiver to receive logs and the OTEL HTTP exporter to send logs to Parseable. The exporter configuration includes the Parseable endpoint, authorization headers, and the log source and stream names.
+The configuration above sets up the OTLP receiver to receive logs and the OTEL HTTP exporter to send logs to Parseable. The exporter configuration includes the Parseable endpoint, authorization headers, and the log source and dataset names.
 
-Please ensure to change the `[PARSEABLE_URL]`, `[BASIC_AUTH_TOKEN]`, and `[NAME_OF THE_STREAM_TO_SEND_LOGS_TO]` placeholders with the actual values. The `[PARSEABLE_URL]` is the Parseable ingestor's endpoint to send logs to, like `http://ingestor.demo.parseable.com`. The `[BASIC_AUTH_TOKEN]` is the basic auth token to authenticate with Parseable. The `[NAME_OF THE_STREAM_TO_SEND_LOGS_TO]` is the name of the stream in Parseable to send logs to.
+Please ensure to change the `[PARSEABLE_URL]`, `[BASIC_AUTH_TOKEN]`, and `[NAME_OF THE_STREAM_TO_SEND_LOGS_TO]` placeholders with the actual values. The `[PARSEABLE_URL]` is the Parseable ingestor's endpoint to send logs to, like `http://ingestor.demo.parseable.com`. The `[BASIC_AUTH_TOKEN]` is the basic auth token to authenticate with Parseable. The `[NAME_OF THE_STREAM_TO_SEND_LOGS_TO]` is the name of the dataset in Parseable to send logs to.
 
 ### Start the OpenTelemetry Collector
 After you have update the configuration file successfully (replaced the placeholders), start the OpenTelemetry Collector with the updated configuration file. For example, for a configuration file named `config.yaml` with OTEL Collector binary named `otel`, you can start the collector with the following command:

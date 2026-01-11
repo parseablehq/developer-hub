@@ -66,7 +66,7 @@ Schema defines the fields in an event and their types. Parseable supports two ty
 
 Datasets by default have dynamic schema. This means you don't need to define a schema for a dataset. The Parseable server detects the schema from first event. If there are subsequent events (with new schema), it updates internal schema accordingly.
 
-Log data formats evolve over time, and users prefer a dynamic schema approach, where they don't have to worry about schema changes, and they are still able to ingest events to a given stream.
+Log data formats evolve over time, and users prefer a dynamic schema approach, where they don't have to worry about schema changes, and they are still able to ingest events to a given dataset.
 
 <Callout type="info">
 For dynamic schema, Parseable doesn't allow changing the type of an existing column whose type is already set. For example, if a column is detected as string in the first event, it can't be changed to int or timestamp in a later event. If you'd like to enforce a specific schema, please use static schema.

@@ -58,14 +58,14 @@ app.post('/webhook', async (req, res) => {
   const pagerdutyEvent = {
     routing_key: PAGERDUTY_ROUTING_KEY,
     event_action: 'trigger',
-    dedup_key: `parseable-${alert.name}-${alert.stream}`,
+    dedup_key: `parseable-${alert.name}-${alert.dataset}`,
     payload: {
       summary: `[Parseable] ${alert.name || 'Alert Triggered'}`,
       severity: mapSeverity(alert.severity),
-      source: alert.stream || 'parseable',
+      source: alert.dataset || 'parseable',
       timestamp: new Date().toISOString(),
       custom_details: {
-        stream: alert.stream,
+        dataset: alert.dataset,
         query: alert.query,
         threshold: alert.threshold,
         current_value: alert.value,
@@ -74,7 +74,7 @@ app.post('/webhook', async (req, res) => {
     },
     links: [
       {
-        href: `https://your-parseable-instance.com/streams/${alert.stream}`,
+        href: `https://your-parseable-instance.com/streams/${alert.dataset}`,
         text: 'View in Parseable'
       }
     ]
@@ -113,7 +113,7 @@ app.post('/webhook/resolve', async (req, res) => {
   const pagerdutyEvent = {
     routing_key: PAGERDUTY_ROUTING_KEY,
     event_action: 'resolve',
-    dedup_key: `parseable-${alert.name}-${alert.stream}`
+    dedup_key: `parseable-${alert.name}-${alert.dataset}`
   };
 
   try {
@@ -150,7 +150,7 @@ Configure your Parseable alert to send to the webhook endpoint:
 ```json
 {
   "name": "Critical Error Rate",
-  "stream": "production-logs",
+  "dataset": "production-logs",
   "alertType": "threshold",
   "condition": {
     "field": "level",
@@ -190,7 +190,7 @@ Configure your Parseable alert to send to the webhook endpoint:
 Use the `dedup_key` to group related alerts into a single incident:
 
 ```javascript
-dedup_key: `parseable-${alert.name}-${alert.stream}`
+dedup_key: `parseable-${alert.name}-${alert.dataset}`
 ```
 
 This prevents alert storms from creating multiple incidents for the same issue.
@@ -203,7 +203,7 @@ Add custom details to provide more context:
 
 ```javascript
 custom_details: {
-  stream: alert.stream,
+  dataset: alert.dataset,
   query: alert.query,
   threshold: alert.threshold,
   current_value: alert.value,
@@ -231,7 +231,7 @@ const priorityMapping = {
 1. **Use Deduplication** - Prevent duplicate incidents with consistent dedup keys
 2. **Include Runbook Links** - Add links to troubleshooting documentation
 3. **Set Appropriate Severity** - Map alert severity correctly to avoid alert fatigue
-4. **Add Context** - Include relevant details like stream, query, and thresholds
+4. **Add Context** - Include relevant details like dataset, query, and thresholds
 5. **Test Integration** - Verify the integration works before production deployment
 
 ## Troubleshooting

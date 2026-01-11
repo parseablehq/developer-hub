@@ -12,8 +12,8 @@ MediaType mediaType = MediaType.parse("text/plain");
 RequestBody body = RequestBody.create(mediaType, "");
 Request request = new Request.Builder()
     // highlight-start 
-    // TODO: Replace the url with your Parseable URL and stream name
-    .url("https://<parseable-url>/api/v1/logstream/<stream-name>")
+    // TODO: Replace the url with your Parseable URL and dataset name
+    .url("https://<parseable-url>/api/v1/logstream/<dataset-name>")
     // highlight-end
     .method("PUT", body)
     // highlight-start 
@@ -35,8 +35,8 @@ MediaType mediaType = MediaType.parse("application/json");
 RequestBody body = RequestBody.create(mediaType, "[\n    {\n        \"id\": \"434a5f5e-2f5f-11ed-a261-asdasdafgdfd\",\n        \"datetime\": \"24/Jun/2022:14:12:15 +0000\",\n        \"host\": \"153.10.110.81\", \n        \"user-identifier\": \"Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:64.0) Gecko/20100101 Firefox/64.0\", \n        \"method\": \"PUT\", \n        \"status\": 500, \n        \"referrer\": \"http://www.google.com/\"\n    }\n]");
 Request request = new Request.Builder()
     // highlight-start
-    // TODO: Replace the url with your Parseable URL and stream name
-    .url("https://<parseable-url>/api/v1/logstream/<stream-name>")
+    // TODO: Replace the url with your Parseable URL and dataset name
+    .url("https://<parseable-url>/api/v1/logstream/<dataset-name>")
     // highlight-end
     .method("POST", body)
     // highlight-start

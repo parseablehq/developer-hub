@@ -48,7 +48,7 @@ Let's take a deeper look at the Vector sink configuration in `values.yaml`. Impo
         password: admin
       request:
         headers:
-          X-P-Stream: vectordemo  ## dataset/stream name
+          X-P-Stream: vectordemo  ## dataset/dataset name
       healthcheck:
         enabled: true
         path: 'http://parseable.parseable.svc.cluster.local/api/v1/liveness'
@@ -67,4 +67,4 @@ If you've not already done so, port-forward Parseable service to access the dash
 kubectl port-forward svc/parseable 8000:80 -n parseable
 ```
 
-You can now check the Parseable server `vectordemo` stream to see the logs from this setup.
+You can now check the Parseable server `vectordemo` dataset to see the logs from this setup.

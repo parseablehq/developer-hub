@@ -30,13 +30,13 @@ Integrate PHP with Parseable to:
 class ParseableLogger
 {
     private string $url;
-    private string $stream;
+    private string $dataset;
     private string $auth;
 
-    public function __construct(string $url, string $stream, string $username, string $password)
+    public function __construct(string $url, string $dataset, string $username, string $password)
     {
         $this->url = rtrim($url, '/') . '/api/v1/ingest';
-        $this->stream = $stream;
+        $this->dataset = $dataset;
         $this->auth = base64_encode("$username:$password");
     }
 
@@ -78,7 +78,7 @@ class ParseableLogger
             CURLOPT_HTTPHEADER => [
                 'Content-Type: application/json',
                 "Authorization: Basic {$this->auth}",
-                "X-P-Stream: {$this->stream}"
+                "X-P-Stream: {$this->dataset}"
             ],
             CURLOPT_TIMEOUT => 5
         ]);
@@ -115,11 +115,11 @@ use GuzzleHttp\Client;
 class ParseableLogger
 {
     private Client $client;
-    private string $stream;
+    private string $dataset;
 
-    public function __construct(string $url, string $stream, string $username, string $password)
+    public function __construct(string $url, string $dataset, string $username, string $password)
     {
-        $this->stream = $stream;
+        $this->dataset = $dataset;
         $this->client = new Client([
             'base_uri' => $url,
             'auth' => [$username, $password],
@@ -140,7 +140,7 @@ class ParseableLogger
             $this->client->post('/api/v1/ingest', [
                 'json' => [$entry],
                 'headers' => [
-                    'X-P-Stream' => $this->stream
+                    'X-P-Stream' => $this->dataset
                 ]
             ]);
         } catch (\Exception $e) {
@@ -165,14 +165,14 @@ use Monolog\LogRecord;
 class ParseableHandler extends AbstractProcessingHandler
 {
     private string $url;
-    private string $stream;
+    private string $dataset;
     private string $auth;
     private array $buffer = [];
     private int $batchSize;
 
     public function __construct(
         string $url,
-        string $stream,
+        string $dataset,
         string $username,
         string $password,
         int $batchSize = 100,
@@ -181,7 +181,7 @@ class ParseableHandler extends AbstractProcessingHandler
     ) {
         parent::__construct($level, $bubble);
         $this->url = rtrim($url, '/') . '/api/v1/ingest';
-        $this->stream = $stream;
+        $this->dataset = $dataset;
         $this->auth = base64_encode("$username:$password");
         $this->batchSize = $batchSize;
     }
@@ -219,7 +219,7 @@ class ParseableHandler extends AbstractProcessingHandler
             CURLOPT_HTTPHEADER => [
                 'Content-Type: application/json',
                 "Authorization: Basic {$this->auth}",
-                "X-P-Stream: {$this->stream}"
+                "X-P-Stream: {$this->dataset}"
             ]
         ]);
         curl_exec($ch);
@@ -246,7 +246,7 @@ In `config/logging.php`:
         'driver' => 'custom',
         'via' => App\Logging\CreateParseableLogger::class,
         'url' => env('PARSEABLE_URL'),
-        'stream' => env('PARSEABLE_STREAM', 'laravel-app'),
+        'dataset' => env('PARSEABLE_STREAM', 'laravel-app'),
         'username' => env('PARSEABLE_USERNAME'),
         'password' => env('PARSEABLE_PASSWORD'),
     ],
@@ -270,7 +270,7 @@ class CreateParseableLogger
         
         $logger->pushHandler(new ParseableHandler(
             $config['url'],
-            $config['stream'],
+            $config['dataset'],
             $config['username'],
             $config['password']
         ));
@@ -296,7 +296,7 @@ services:
     App\Logging\ParseableHandler:
         arguments:
             $url: '%env(PARSEABLE_URL)%'
-            $stream: '%env(PARSEABLE_STREAM)%'
+            $dataset: '%env(PARSEABLE_STREAM)%'
             $username: '%env(PARSEABLE_USERNAME)%'
             $password: '%env(PARSEABLE_PASSWORD)%'
 ```
@@ -331,7 +331,7 @@ monolog:
 ### Missing Logs
 
 1. Check buffer is being flushed
-2. Verify stream name
+2. Verify dataset name
 3. Check for cURL errors
 
 ## Next Steps

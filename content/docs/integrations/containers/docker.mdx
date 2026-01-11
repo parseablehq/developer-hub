@@ -166,10 +166,10 @@ import json
 from datetime import datetime
 
 class ParseableHandler(logging.Handler):
-    def __init__(self, url, stream, username, password):
+    def __init__(self, url, dataset, username, password):
         super().__init__()
         self.url = f"{url}/api/v1/ingest"
-        self.stream = stream
+        self.dataset = dataset
         self.auth = (username, password)
         self.buffer = []
         self.batch_size = 100
@@ -195,7 +195,7 @@ class ParseableHandler(logging.Handler):
                 self.url,
                 json=self.buffer,
                 auth=self.auth,
-                headers={"X-P-Stream": self.stream}
+                headers={"X-P-Stream": self.dataset}
             )
         except Exception as e:
             print(f"Failed to send logs: {e}")
@@ -205,7 +205,7 @@ class ParseableHandler(logging.Handler):
 # Usage
 handler = ParseableHandler(
     url="http://parseable:8000",
-    stream="app-logs",
+    dataset="app-logs",
     username="admin",
     password="admin"
 )
@@ -263,7 +263,7 @@ services:
   app:
     image: your-app:latest
     labels:
-      - "logging.parseable.stream=app-logs"
+      - "logging.parseable.dataset=app-logs"
       - "logging.parseable.service=my-app"
       - "logging.parseable.environment=production"
 ```

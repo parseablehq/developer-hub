@@ -27,7 +27,7 @@ Use Firehose for managed delivery to Parseable's HTTP endpoint.
 ### Create Delivery Stream
 
 1. Go to **Kinesis** → **Data Firehose**
-2. Click **Create delivery stream**
+2. Click **Create delivery dataset**
 3. Configure source (Direct PUT or Kinesis Data Stream)
 4. Select **HTTP Endpoint** as destination
 5. Configure endpoint:
@@ -125,9 +125,9 @@ functions:
   kinesisConsumer:
     handler: index.handler
     events:
-      - stream:
+      - dataset:
           type: kinesis
-          arn: arn:aws:kinesis:region:account:stream/your-stream
+          arn: arn:aws:kinesis:region:account:dataset/your-dataset
           batchSize: 100
           startingPosition: LATEST
     environment:
@@ -145,7 +145,7 @@ Use OTel Collector with Kinesis receiver.
 ```yaml
 receivers:
   awskinesis:
-    stream_name: your-kinesis-stream
+    stream_name: your-kinesis-dataset
     region: us-east-1
     encoding: json
 

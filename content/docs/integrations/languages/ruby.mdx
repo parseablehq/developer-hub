@@ -30,9 +30,9 @@ require 'json'
 require 'uri'
 
 class ParseableLogger
-  def initialize(url:, stream:, username:, password:)
+  def initialize(url:, dataset:, username:, password:)
     @uri = URI.parse("#{url}/api/v1/ingest")
-    @stream = stream
+    @dataset = dataset
     @auth = Base64.strict_encode64("#{username}:#{password}")
   end
 
@@ -68,7 +68,7 @@ class ParseableLogger
     request = Net::HTTP::Post.new(@uri.path)
     request['Content-Type'] = 'application/json'
     request['Authorization'] = "Basic #{@auth}"
-    request['X-P-Stream'] = @stream
+    request['X-P-Stream'] = @dataset
     request.body = entries.to_json
 
     response = http.request(request)
@@ -79,7 +79,7 @@ end
 # Usage
 logger = ParseableLogger.new(
   url: 'http://parseable:8000',
-  stream: 'ruby-app',
+  dataset: 'ruby-app',
   username: 'admin',
   password: 'admin'
 )
@@ -95,8 +95,8 @@ require 'faraday'
 require 'json'
 
 class ParseableLogger
-  def initialize(url:, stream:, username:, password:)
-    @stream = stream
+  def initialize(url:, dataset:, username:, password:)
+    @dataset = dataset
     @conn = Faraday.new(url: url) do |f|
       f.request :json
       f.request :authorization, :basic, username, password
@@ -113,7 +113,7 @@ class ParseableLogger
     }
 
     @conn.post('/api/v1/ingest') do |req|
-      req.headers['X-P-Stream'] = @stream
+      req.headers['X-P-Stream'] = @dataset
       req.body = [entry].to_json
     end
   end
@@ -131,10 +131,10 @@ require 'net/http'
 require 'json'
 
 class ParseableLogger < Logger
-  def initialize(url:, stream:, username:, password:)
+  def initialize(url:, dataset:, username:, password:)
     super(nil)
     @uri = URI.parse("#{url}/api/v1/ingest")
-    @stream = stream
+    @dataset = dataset
     @auth = Base64.strict_encode64("#{username}:#{password}")
     @buffer = []
     @mutex = Mutex.new
@@ -191,7 +191,7 @@ class ParseableLogger < Logger
     request = Net::HTTP::Post.new(@uri.path)
     request['Content-Type'] = 'application/json'
     request['Authorization'] = "Basic #{@auth}"
-    request['X-P-Stream'] = @stream
+    request['X-P-Stream'] = @dataset
     request.body = entries.to_json
 
     http.request(request)
@@ -208,7 +208,7 @@ In `config/environments/production.rb`:
 ```ruby
 config.logger = ParseableLogger.new(
   url: ENV['PARSEABLE_URL'],
-  stream: 'rails-app',
+  dataset: 'rails-app',
   username: ENV['PARSEABLE_USERNAME'],
   password: ENV['PARSEABLE_PASSWORD']
 )
@@ -226,10 +226,10 @@ gem 'semantic_logger'
 require 'semantic_logger'
 
 class ParseableAppender < SemanticLogger::Subscriber
-  def initialize(url:, stream:, username:, password:)
+  def initialize(url:, dataset:, username:, password:)
     super()
     @uri = URI.parse("#{url}/api/v1/ingest")
-    @stream = stream
+    @dataset = dataset
     @auth = Base64.strict_encode64("#{username}:#{password}")
   end
 
@@ -257,7 +257,7 @@ end
 
 SemanticLogger.add_appender(appender: ParseableAppender.new(
   url: ENV['PARSEABLE_URL'],
-  stream: 'rails-app',
+  dataset: 'rails-app',
   username: ENV['PARSEABLE_USERNAME'],
   password: ENV['PARSEABLE_PASSWORD']
 ))
@@ -282,7 +282,7 @@ SemanticLogger.add_appender(appender: ParseableAppender.new(
 ### Missing Logs
 
 1. Check buffer is being flushed
-2. Verify stream name is correct
+2. Verify dataset name is correct
 3. Check for exceptions in send thread
 
 ## Next Steps

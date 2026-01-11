@@ -41,10 +41,10 @@ PARSEABLE_AUTH = (os.getenv('PARSEABLE_USER'), os.getenv('PARSEABLE_PASS'))
 SIEM_URL = os.getenv('SIEM_URL')
 SIEM_TOKEN = os.getenv('SIEM_TOKEN')
 
-def export_to_siem(stream, start_time, end_time):
+def export_to_siem(dataset, start_time, end_time):
     # Query Parseable
     query = f"""
-    SELECT * FROM "{stream}"
+    SELECT * FROM "{dataset}"
     WHERE p_timestamp >= '{start_time}'
       AND p_timestamp < '{end_time}'
     """
@@ -66,7 +66,7 @@ def export_to_siem(stream, start_time, end_time):
         event = {
             "timestamp": log.get('p_timestamp'),
             "source": "parseable",
-            "stream": stream,
+            "dataset": dataset,
             "event": log
         }
         siem_events.append(event)
@@ -88,13 +88,13 @@ end_time = datetime.utcnow()
 start_time = end_time - timedelta(hours=1)
 
 streams = ['security-logs', 'audit-logs', 'access-logs']
-for stream in streams:
+for dataset in streams:
     count = export_to_siem(
-        stream,
+        dataset,
         start_time.isoformat() + 'Z',
         end_time.isoformat() + 'Z'
     )
-    print(f"Exported {count} events from {stream}")
+    print(f"Exported {count} events from {dataset}")
 ```
 
 ### Kubernetes CronJob
@@ -189,7 +189,7 @@ Set up Parseable alerts to forward to Fluent Bit:
 ```json
 {
   "name": "SIEM Forward",
-  "stream": "security-logs",
+  "dataset": "security-logs",
   "alertType": "threshold",
   "condition": {
     "field": "level",
@@ -309,7 +309,7 @@ Map Parseable fields to SIEM fields:
 ### Missing Events
 
 1. Check time range queries
-2. Verify stream names
+2. Verify dataset names
 3. Check export schedule
 
 ## Next Steps

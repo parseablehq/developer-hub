@@ -42,7 +42,7 @@ helm repo add fluent https://fluent.github.io/helm-charts
 helm install fluent-bit fluent/fluent-bit --values values.yaml -n fluentbit --create-namespace
 ```
 
-Let's take a deeper look at the Fluent Bit configuration in `values.yaml`. Here we use the kubernetes filter to enrich the logs with Kubernetes metadata. We then use the http output plugin to send logs to Parseable. Notice the Match section in the http output plugin. We use `kube.*` to match all logs from Kubernetes filter. With the header `X-P-Stream fluentbitdemo`, we tell Parseable to send the logs to the `fluentbitdemo` stream.
+Let's take a deeper look at the Fluent Bit configuration in `values.yaml`. Here we use the kubernetes filter to enrich the logs with Kubernetes metadata. We then use the http output plugin to send logs to Parseable. Notice the Match section in the http output plugin. We use `kube.*` to match all logs from Kubernetes filter. With the header `X-P-Stream fluentbitdemo`, we tell Parseable to send the logs to the `fluentbitdemo` dataset.
 
 ```ini
   filters: |
@@ -134,7 +134,7 @@ This section defines where Fluent Bit sends logs.
 
 - `header Content-Type application/json` → Ensures correct content type for the API.
 
-- `header X-P-Stream fluentbitdemo` → Assigns logs to the "fluentbitdemo" stream in Parseable.
+- `header X-P-Stream fluentbitdemo` → Assigns logs to the "fluentbitdemo" dataset in Parseable.
 
 - `json_date_key timestamp` → Sets the timestamp field in logs as "timestamp".
 
@@ -147,7 +147,7 @@ Port forward Parseable service to access the dashboard with:
 kubectl port-forward svc/parseable 8000:80 -n parseable
 ```
 
-You can now check the Parseable server `fluentbitdemo` stream to see the logs from this setup.
+You can now check the Parseable server `fluentbitdemo` dataset to see the logs from this setup.
 
 ### Batching and Compression
 Parseable supports batching and compressing the log data before sending it via HTTP POST. Fluent Bit supports this feature via the compress and buffer_max_size option. We recommend enabling both of these options to reduce the number of HTTP requests and to reduce the size of the HTTP payload.
@@ -405,7 +405,7 @@ Configuration
 
     - `http_User admin` / `http_Passwd admin` → Uses authentication.
 
-    - `Header X-P-Stream kubernetes_logs` → Adds a stream name (kubernetes_logs).
+    - `Header X-P-Stream kubernetes_logs` → Adds a dataset name (kubernetes_logs).
 
     - `Json_date_key timestamp` → Uses "timestamp" as the JSON key.
 
@@ -441,7 +441,7 @@ This configuration sets up Fluent Bit to:
 1. **Receive** OpenTelemetry data on port 4318 (OTLP/HTTP standard port)
 2. **Route** different telemetry types (logs, metrics, traces) to appropriate Parseable endpoints
 3. **Authenticate** using basic authentication
-4. **Tag** data with stream names and sources for organization in Parseable
+4. **Tag** data with dataset names and sources for organization in Parseable
 
 ```ini
 [SERVICE]
@@ -521,7 +521,7 @@ This configuration sets up Fluent Bit to:
 
 Once configured, Fluent Bit will:
 1. Accept OpenTelemetry data from applications or other collectors at `http://fluent-bit:4318`
-2. Automatically route logs to the `otellogs` stream, metrics to `otelmetrics`, and traces to `oteltraces`
+2. Automatically route logs to the `otellogs` dataset, metrics to `otelmetrics`, and traces to `oteltraces`
 3. Preserve the OpenTelemetry semantic conventions and structure
 4. Forward all data to Parseable with proper authentication and metadata
 

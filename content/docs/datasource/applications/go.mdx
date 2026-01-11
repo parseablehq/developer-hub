@@ -17,8 +17,8 @@ import (
 
 func main() {
 	// highlight-start
-	// TODO: Replace the url with your Parseable URL and stream name
-	url := "https://<parseable-url>/api/v1/logstream/<stream-name>"
+	// TODO: Replace the url with your Parseable URL and dataset name
+	url := "https://<parseable-url>/api/v1/logstream/<dataset-name>"
 	// highlight-end
 	method := "PUT"
 
@@ -68,8 +68,8 @@ import (
 func main() {
 
 	// highlight-start
-	// TODO: Replace the url with your Parseable URL and stream name
-	url := "https://<parseable-url>/api/v1/logstream/<stream-name>"
+	// TODO: Replace the url with your Parseable URL and dataset name
+	url := "https://<parseable-url>/api/v1/logstream/<dataset-name>"
 	// highlight-end
 	method := "POST"
 
@@ -139,7 +139,7 @@ func main() {
 
 	payload := strings.NewReader(`{
     // highlight-start
-    // TODO: Replace the stream name with your dataset name
+    // TODO: Replace the dataset name with your dataset name
     "query": "select * from <dataset-name>",
     // TODO: Replace the time range with your desired time range
     "startTime": "2022-09-10T08:20:00+00:00",

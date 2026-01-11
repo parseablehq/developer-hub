@@ -1,8 +1,7 @@
 {
-  "title": "Logs Ingestion",
+  "title": "Logs",
   "pages": [
     "logging-agents",
-    "opentelemetry",
     "programming-languages"
   ]
 }

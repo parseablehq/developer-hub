@@ -114,7 +114,7 @@ data:
         include: [/var/log/containers/*.log]
         operators:
           - type: regex_parser
-            regex: '^(?P<time>[^ ]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
+            regex: '^(?P<time>[^ ]+) (?P<dataset>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
             timestamp:
               parse_from: attributes.time
               layout: '%Y-%m-%dT%H:%M:%S.%LZ'

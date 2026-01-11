@@ -91,8 +91,8 @@ inputs:
   parseable_auth:
     description: Base64 encoded credentials
     required: true
-  stream:
-    description: Parseable stream name
+  dataset:
+    description: Parseable dataset name
     default: github-actions
   status:
     description: Job status
@@ -109,7 +109,7 @@ runs:
       run: |
         curl -X POST "${{ inputs.parseable_url }}/api/v1/ingest" \
           -H "Authorization: Basic ${{ inputs.parseable_auth }}" \
-          -H "X-P-Stream: ${{ inputs.stream }}" \
+          -H "X-P-Stream: ${{ inputs.dataset }}" \
           -H "Content-Type: application/json" \
           -d '[{
             "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'",
@@ -312,7 +312,7 @@ Add these secrets to your repository:
 1. **Use Secrets** - Never hardcode credentials in workflows
 2. **Log on Failure** - Always capture failure information
 3. **Include Context** - Add repository, workflow, and run details
-4. **Use Consistent Streams** - Organize logs by stream
+4. **Use Consistent Streams** - Organize logs by dataset
 5. **Set Retention** - Configure appropriate log retention
 
 ## Troubleshooting
@@ -321,7 +321,7 @@ Add these secrets to your repository:
 
 1. Verify Parseable URL is accessible from GitHub runners
 2. Check authentication credentials are correct
-3. Verify the stream exists or auto-creation is enabled
+3. Verify the dataset exists or auto-creation is enabled
 4. Check workflow logs for curl errors
 
 ### Authentication Failures

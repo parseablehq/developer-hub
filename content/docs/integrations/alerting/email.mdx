@@ -92,7 +92,7 @@ function generateEmailHtml(alert) {
       </div>
       <div class="content">
         <div class="field">
-          <span class="label">Stream:</span> ${alert.stream || 'N/A'}
+          <span class="label">Stream:</span> ${alert.dataset || 'N/A'}
         </div>
         <div class="field">
           <span class="label">Severity:</span> ${alert.severity || 'Unknown'}
@@ -110,7 +110,7 @@ function generateEmailHtml(alert) {
           <span class="label">Time:</span> ${new Date().toISOString()}
         </div>
         <p>
-          <a href="https://your-parseable.com/streams/${alert.stream}">View in Parseable</a>
+          <a href="https://your-parseable.com/streams/${alert.dataset}">View in Parseable</a>
         </p>
       </div>
       <div class="footer">
@@ -125,14 +125,14 @@ function generateEmailText(alert) {
   return `
 Parseable Alert: ${alert.name || 'Alert Triggered'}
 
-Stream: ${alert.stream || 'N/A'}
+Stream: ${alert.dataset || 'N/A'}
 Severity: ${alert.severity || 'Unknown'}
 Current Value: ${alert.value || 'N/A'}
 Threshold: ${alert.threshold || 'N/A'}
 Message: ${alert.message || 'No message'}
 Time: ${new Date().toISOString()}
 
-View in Parseable: https://your-parseable.com/streams/${alert.stream}
+View in Parseable: https://your-parseable.com/streams/${alert.dataset}
   `;
 }
 
