@@ -2,12 +2,8 @@
   "title": "Cloud Providers",
   "pages": [
     "aws-cloudwatch",
-    "aws-s3",
     "aws-kinesis",
     "azure-event-hubs",
-    "azure-blob-storage",
-    "gcp-pubsub",
-    "gcp-storage",
-    "digitalocean-spaces"
+    "gcp-pubsub"
   ]
 }

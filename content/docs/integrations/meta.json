@@ -4,6 +4,7 @@
     "alerting",
     "auth",
     "oauth",
+    "storage",
     "visualization"
   ]
 }

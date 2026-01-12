@@ -1,0 +1,9 @@
+{
+  "title": "Storage",
+  "pages": [
+    "aws-s3",
+    "azure-blob-storage",
+    "gcp-storage",
+    "digitalocean-spaces"
+  ]
+}
