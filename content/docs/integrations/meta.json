@@ -3,11 +3,7 @@
   "pages": [
     "alerting",
     "auth",
-    "cicd",
-    "cloud",
-    "llm-agents",
     "oauth",
-    "security",
     "visualization"
   ]
 }
