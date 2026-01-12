@@ -17,8 +17,9 @@ Using AWS S3 with Parseable provides:
 ## Prerequisites
 
 - AWS account with S3 access
-- S3 bucket created for Parseable data
+- S3 bucket created for Parseable data (must be fully empty for new clusters)
 - AWS credentials with S3 read/write permissions
+- For optimum performance, ensure the S3 bucket is in the same region as your compute instances
 
 ### IAM Permissions
 
@@ -83,6 +84,17 @@ services:
       - P_PASSWORD=admin
     command: ["parseable", "s3-store"]
 ```
+
+### Instance Metadata Service (IMDS)
+
+For Parseable instances running on EC2, AWS credentials can be sourced from the Instance Metadata Service (IMDS), avoiding the need for explicit access keys:
+
+- Ensure that `Instance Metadata Service (IMDS)` is enabled when creating the EC2 instance (under Advanced details section)
+- Select the Metadata version to `V1` and `V2` (token optional)
+- Set `P_AWS_IMDSV1_FALLBACK` to true if you want to use the V1 method
+- Use `P_AWS_METADATA_ENDPOINT` to specify a custom endpoint URL if needed
+
+Refer to the [AWS metadata service docs](https://docs.aws.amazon.com/sdkref/latest/guide/feature-imds-credentials.html) for more details.
 
 ### Kubernetes with IRSA
 
@@ -193,6 +205,33 @@ aws s3api put-bucket-encryption \
     ]
   }'
 ```
+
+### SSE-C (Customer-Provided Keys)
+
+Parseable supports [server-side encryption with customer-provided keys (SSE-C)](https://docs.aws.amazon.com/AmazonS3/latest/userguide/ServerSideEncryptionCustomerKeys.html). With SSE-C, you store your data encrypted with your own encryption keys while Amazon S3 manages encryption/decryption transparently.
+
+<Callout type="info">
+SSE-C requires HTTPS. Amazon S3 will reject requests made over HTTP when using SSE-C.
+</Callout>
+
+Generate a 256-bit AES key and Base64 encode it:
+
+```bash
+ENCRYPTION_KEY=$(openssl rand -base64 32)
+echo "Encryption Key: $ENCRYPTION_KEY"
+```
+
+Add the Base64 encoded encryption key to the environment variable:
+
+```bash
+P_S3_SSEC_ENCRYPTION_KEY=SSE-C:AES256:$ENCRYPTION_KEY
+```
+
+For distributed deployments, set `P_S3_SSEC_ENCRYPTION_KEY` on both Query and Ingestor nodes.
+
+<Callout type="warn">
+If you lose the encryption key, you'll lose access to the log data. We recommend secure storage such as [AWS Secrets Manager](https://aws.amazon.com/secrets-manager/).
+</Callout>
 
 ## Configuration Options
 

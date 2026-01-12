@@ -1,7 +1,6 @@
 {
   "title": "Storage Targets",
   "pages": [
-    "awss3",
     "aws-s3",
     "azure-blob-storage",
     "gcp-storage",
