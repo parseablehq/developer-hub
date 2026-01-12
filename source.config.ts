@@ -5,13 +5,19 @@ import {
   metaSchema,
 } from 'fumadocs-mdx/config';
 import { remarkAdmonition } from 'fumadocs-core/mdx-plugins';
+import { z } from 'zod';
+
+// Extend frontmatter schema to include 'full' property for full-width pages
+const extendedFrontmatterSchema = frontmatterSchema.extend({
+  full: z.boolean().default(false),
+});
 
 // Define the documentation collection
 export const docs = defineDocs({
   // The root directory for all documentation
   dir: 'content/docs',
   docs: {
-    schema: frontmatterSchema,
+    schema: extendedFrontmatterSchema,
     postprocess: {
       // Only include processed markdown in production (for LLM endpoints)
       includeProcessedMarkdown: process.env.NODE_ENV === 'production',

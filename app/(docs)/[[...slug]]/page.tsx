@@ -9,6 +9,8 @@ import { notFound, redirect } from 'next/navigation';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { getMDXComponents } from '@/mdx-components';
 import { CopyPageDropdown } from '@/components/CopyPageDropdown';
+import { Feedback } from '@/components/feedback/client';
+import { onPageFeedbackAction } from '@/components/feedback/actions';
 
 export default async function Page(props: {
   params: Promise<{ slug?: string[] }>;
@@ -49,6 +51,7 @@ export default async function Page(props: {
           })}
         />
       </DocsBody>
+      <Feedback onSendAction={onPageFeedbackAction} />
     </DocsPage>
   );
 }
