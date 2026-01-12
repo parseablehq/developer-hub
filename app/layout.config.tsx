@@ -17,6 +17,7 @@ export const baseOptions: BaseLayoutProps = {
           alt="Parseable"
           width={180}
           height={24}
+          className="dark:invert"
         />
       </div>
     ),

@@ -5,14 +5,9 @@
     "auth",
     "cicd",
     "cloud",
-    "containers",
-    "databases",
-    "languages",
     "llm-agents",
-    "log-shippers",
     "oauth",
     "security",
-    "streaming",
     "visualization"
   ]
 }
