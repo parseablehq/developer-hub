@@ -19,6 +19,11 @@ import {
   type PageFeedback,
 } from './schema';
 import { z } from 'zod/mini';
+import posthog from 'posthog-js';
+
+// PostHog config from environment variables
+const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
+const POSTHOG_HOST = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
 
 const rateButtonVariants = cva(
   'inline-flex items-center gap-2 px-3 py-2 rounded-full font-medium border text-sm [&_svg]:size-4 disabled:cursor-not-allowed',
@@ -45,8 +50,28 @@ export function Feedback({
 }: {
   onSendAction: (feedback: PageFeedback) => Promise<ActionResponse>;
 }) {
-  const url = usePathname();
-  const { previous, setPrevious } = useSubmissionStorage(url, (v) => {
+  const pathname = usePathname();
+  const [fullUrl, setFullUrl] = useState(pathname);
+  const [posthogReady, setPosthogReady] = useState(false);
+  
+  // Initialize PostHog on client-side
+  useEffect(() => {
+    if (POSTHOG_KEY && !posthog.__loaded) {
+      posthog.init(POSTHOG_KEY, {
+        api_host: POSTHOG_HOST,
+        capture_pageview: false,
+      });
+    }
+    setPosthogReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setFullUrl(window.location.href);
+    }
+  }, [pathname]);
+
+  const { previous, setPrevious } = useSubmissionStorage(pathname, (v) => {
     const result = pageFeedbackResult.safeParse(v);
     return result.success ? result.data : null;
   });
@@ -59,10 +84,17 @@ export function Feedback({
 
     startTransition(async () => {
       const feedback: PageFeedback = {
-        url,
+        url: fullUrl,
         opinion,
         message,
       };
+
+      // Capture feedback event with client-side PostHog
+      posthog.capture('on_rate_docs', {
+        url: fullUrl,
+        opinion,
+        message,
+      });
 
       const response = await onSendAction(feedback);
       setPrevious({
