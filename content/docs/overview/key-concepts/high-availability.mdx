@@ -37,7 +37,7 @@ The high availability architecture in Parseable Enterprise consists of four spec
 | Ingest | Processes incoming log event | Independently scalable | P_INGESTOR_ENDPOINT |
 | Index | Manages indexing and search | Single Node (multi node planned) | P_INDEXER_ENDPOINT |
 
-Details of the environment variables are available in the [Environment Variables](/docs/env-variables).
+Details of the environment variables are available in the [Environment Variables](/docs/self-hosted/configuration).
 
 Each node in the cluster generates and maintains its own NodeMetadata file containing domain name information, authentication tokens, and node-specific configuration. These metadata files are stored in the configured S3 bucket and serve as the foundation for inter-node communication.
 

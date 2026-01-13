@@ -96,7 +96,7 @@ gcloud logging sinks create gke-to-pubsub \
   --log-filter='resource.type="k8s_container"'
 ```
 
-Then use [GCP Pub/Sub integration](/docs/integrations/cloud/gcp-pubsub) to forward to Parseable.
+Then use [GCP Pub/Sub integration](/docs/ingest-data/cloud/gcp-pubsub) to forward to Parseable.
 
 ## Method 3: OpenTelemetry Collector
 
@@ -204,6 +204,6 @@ For Autopilot clusters, use Cloud Logging export method as DaemonSets are not su
 
 ## Next Steps
 
-- Configure [Azure AKS](/docs/integrations/containers/azure-aks) for multi-cloud
+- Configure [Azure AKS](/docs/ingest-data/containers/azure-aks) for multi-cloud
 - Set up [alerts](/docs/user-guide/alerting) for GKE events
 - Create [dashboards](/docs/user-guide/dashboards) for cluster monitoring

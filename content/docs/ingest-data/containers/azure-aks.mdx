@@ -98,7 +98,7 @@ az monitor diagnostic-settings create \
   --logs '[{"category": "kube-apiserver", "enabled": true}, {"category": "kube-controller-manager", "enabled": true}]'
 ```
 
-Then use [Azure Event Hubs integration](/docs/integrations/cloud/azure-event-hubs) to forward to Parseable.
+Then use [Azure Event Hubs integration](/docs/ingest-data/cloud/azure-event-hubs) to forward to Parseable.
 
 ## Method 3: OpenTelemetry Collector
 
@@ -210,6 +210,6 @@ metadata:
 
 ## Next Steps
 
-- Configure [Amazon EKS](/docs/integrations/containers/amazon-eks) for multi-cloud
+- Configure [Amazon EKS](/docs/ingest-data/containers/amazon-eks) for multi-cloud
 - Set up [alerts](/docs/user-guide/alerting) for AKS events
 - Create [dashboards](/docs/user-guide/dashboards) for cluster monitoring
