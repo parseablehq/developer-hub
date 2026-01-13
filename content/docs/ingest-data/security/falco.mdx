@@ -48,7 +48,10 @@ helm install falco falcosecurity/falco \
   --create-namespace \
   --set falcosidekick.enabled=true \
   --set falcosidekick.config.webhook.address="http://parseable:8000/api/v1/ingest" \
-  --set falcosidekick.config.webhook.customHeaders="Authorization:Basic YWRtaW46YWRtaW4=,X-P-Stream:falco-events"
+  --set falcosidekick.config.webhook.customHeaders="Authorization:Basic <YOUR_BASE64_AUTH>,X-P-Stream:falco-events"
+
+# Note: Replace <YOUR_BASE64_AUTH> with your base64-encoded credentials
+# Generate with: echo -n 'username:password' | base64
 ```
 
 ### Sidekick Configuration
@@ -340,4 +343,4 @@ Create Parseable alerts for critical security events:
 
 - Set up [alerts](/docs/user-guide/alerting) for security events
 - Create [dashboards](/docs/user-guide/dashboards) for security monitoring
-- Configure [Trivy](/docs/integrations/security/trivy) for vulnerability scanning
+- Configure [Trivy](/docs/ingest-data/security/trivy) for vulnerability scanning

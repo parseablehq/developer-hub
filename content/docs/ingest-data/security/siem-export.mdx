@@ -211,6 +211,7 @@ Set up Parseable alerts to forward to Fluent Bit:
 
 ```python
 def send_to_splunk(events):
+    # Splunk HEC expects individual events or batch format
     for event in events:
         payload = {
             "time": event.get('timestamp'),
@@ -225,6 +226,25 @@ def send_to_splunk(events):
             headers={"Authorization": f"Splunk {SPLUNK_TOKEN}"},
             json=payload
         )
+
+# For batch sending (more efficient for high volume)
+def send_to_splunk_batch(events):
+    # Splunk HEC batch format: newline-delimited JSON
+    batch_payload = "\n".join([
+        json.dumps({
+            "time": event.get('timestamp'),
+            "host": "parseable",
+            "source": "parseable",
+            "sourcetype": "_json",
+            "event": event
+        }) for event in events
+    ])
+    
+    requests.post(
+        f"{SPLUNK_URL}/services/collector/event",
+        headers={"Authorization": f"Splunk {SPLUNK_TOKEN}"},
+        data=batch_payload
+    )
 ```
 
 ### Microsoft Sentinel
@@ -315,5 +335,5 @@ Map Parseable fields to SIEM fields:
 ## Next Steps
 
 - Set up [alerts](/docs/user-guide/alerting) for security events
-- Configure [Falco](/docs/integrations/security/falco) for runtime security
+- Configure [Falco](/docs/ingest-data/security/falco) for runtime security
 - Create [dashboards](/docs/user-guide/dashboards) for security monitoring
