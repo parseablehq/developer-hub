@@ -1,27 +1,44 @@
 ---
-title: Zero Instrumentation
-description: Collect logs without modifying your application code
+title: eBPF
 ---
 
-## Zero Instrumentation
+[Tetragon](https://github.com/cilium/tetragon) is an open-source project from Cilium that provides runtime security, deep observability, and kernel-level transparency using eBPF. Tetragon monitors processes, syscalls, file and network activity in the kernel, correlating threats with network data to identify responsible binaries. It shares insights via JSON logs and a gRPC endpoint.
 
-Parseable supports zero-instrumentation log collection, allowing you to capture logs from your applications without any code changes.
+This Document will walk you through how to set up Tetragon Connector to extract eBPF logs on Parseable using Vector. It is used to build observability pipelines that collect, transform, and route logs, metrics, and traces.
 
-### Benefits
+![Tetragon](../static/ebpf-tetragon.png)
 
-- **No Code Changes** - Start collecting logs immediately without modifying your application
-- **Minimal Overhead** - Lightweight collection with minimal performance impact
-- **Universal Compatibility** - Works with any application that writes to stdout/stderr
+## Prerequisites
 
-### How It Works
+- A Kubernetes with admin accesss.
+- Kubectl installed on your machine.
 
-Zero instrumentation leverages existing log outputs from your applications. By configuring log collectors to capture stdout/stderr streams, you can send logs to Parseable without adding any instrumentation libraries to your code.
+## Deploy Tetragon
 
-### Getting Started
+You can deploy Tetragon using Helm on your Kubernetes cluster using the commands:
 
-1. Deploy Parseable
-2. Configure your log collector (Fluent Bit, Vector, etc.) to capture application logs
-3. Point the collector to your Parseable endpoint
-4. Start querying your logs
+```bash
+helm repo add cilium https://helm.cilium.io
+helm repo update
+helm install tetragon cilium/tetragon -n kube-system
+```
 
-See the [Logging Agents](/docs/ingest-data/logs-ingestion/logging-agents) section for detailed setup guides.
+## Deploy Vector
+
+You can deploy Vector using Helm on your Kubernetes cluster. We have created a vector-tetragon-values.yaml file to configure Vector to collect logs from Tetragon and send them to Parseable.
+
+```bash
+helm repo add vector https://helm.vector.dev
+wget https://www.parseable.com/blog/vector/vector-tetragon-values.yaml
+helm install vector vector/vector --namespace vector --create-namespace --values vector-tetragon-values.yaml
+```
+
+It will take some time to deploy Vector. You can check the status using the command:
+
+```bash
+kubectl get pods -n vector
+```
+
+Now Vector is ready to send the events stored in `/var/run/cilium/tetragon/tetragon.log` file to the Parseable tetrademo dataset. Once this is done, you can verify the log events inPrism.
+
+We have a blog post which guides you through the process of tracking sensitive file access using Tetragon and Parseable. You can read it here.

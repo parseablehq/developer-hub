@@ -1,7 +1,0 @@
-{
-  "title": "Log Shippers",
-  "pages": [
-    "filebeat",
-    "promtail"
-  ]
-}
