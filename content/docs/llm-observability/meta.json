@@ -1,0 +1,15 @@
+{
+  "title": "LLM Observability",
+  "icon": "sparkles",
+  "pages": [
+    "index",
+    "openai",
+    "anthropic",
+    "langchain",
+    "llamaindex",
+    "autogen",
+    "crewai",
+    "dspy",
+    "n8n"
+  ]
+}
