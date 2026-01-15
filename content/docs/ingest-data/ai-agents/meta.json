@@ -1,8 +1,6 @@
 {
-  "title": "LLM Observability",
-  "icon": "sparkles",
+  "title": "LLMs & AI Agents",
   "pages": [
-    "index",
     "openai",
     "anthropic",
     "langchain",

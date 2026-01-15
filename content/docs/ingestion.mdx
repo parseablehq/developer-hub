@@ -1,13 +1,13 @@
 ---
 title: Ingestion
 ---
-import { IconPlug, IconCode, IconWand, IconSettings, IconDatabase, IconChartDots, IconTimeline } from '@tabler/icons-react';
+import { IconPlug, IconCode, IconWand, IconSettings, IconDatabase, IconChartDots, IconTimeline,IconBrandAws,IconBrandAzure,IconBrandGoogle } from '@tabler/icons-react';
 
-Ingestion is the process of sending Telemetry signals (Metrics, Events, Logs, Traces) into Parseable. To allow for flexible and scalable ingestion, Parseable supports ingesting data in JSON format over HTTP.
+Ingestion is the process of sending Telemetry signals (Metrics, Events, Logs, Traces) into Parseable. 
 
-This means that any log agent, metric collector, or tracing library that can send data over HTTP in JSON format can be used to ingest data into Parseable.
+You can ingest data to Parseable in JSON format over HTTP(s). This means that any log agent, metric collector, or tracing library that can send data over HTTP in JSON format can be used to ingest data into Parseable.
 
-For log data you can use the HTTP output plugins of all the common logging agents like [Fluent Bit](/docs/datasource/log-agents/fluent-bit), [Vector](/docs/datasource/log-agents/vector), [syslog-ng](/docs/datasource/log-agents/syslog), [LogStash](/docs/datasource/log-agents/logstash), among others to send log events to Parseable.
+For log data you can use the HTTP output plugins of all the logging agents/shippers like [Fluent Bit](/docs/datasource/log-agents/fluent-bit), [Vector](/docs/datasource/log-agents/vector), [syslog-ng](/docs/datasource/log-agents/syslog), [LogStash](/docs/datasource/log-agents/logstash), among others to send log events to Parseable.
 
 You can also directly integrate Parseable with your application via [REST API](/docs/api/v1/ingest).
 
@@ -17,12 +17,12 @@ Parseable also supports the OTel native data ingestion via the Protobuf over HTT
 
 Explore the different methods to ingest data into Parseable. Choose the method that best fits your infrastructure and use case.
 
-### Zero Instrumentation
+### Zero instrumentation
 
 <Cards>
 
-<Card href="/docs/ingest-data/zero-instrumentation" icon={<IconWand className="text-purple-600" />} title='Zero Instrumentation'>
-Collect logs without modifying your application code. Start immediately with minimal overhead.
+<Card href="/docs/ingest-data/zero-instrumentation" icon={<IconWand className="text-purple-600" />} title='eBPF Agents'>
+Collect logs without modifying your application code. 
 </Card>
 
 </Cards>
@@ -30,10 +30,6 @@ Collect logs without modifying your application code. Start immediately with min
 ### OpenTelemetry
 
 <Cards>
-
-<Card href="/docs/ingest-data/otel" icon={<IconTimeline className="text-purple-600" />} title='OpenTelemetry'>
-Vendor-agnostic observability framework for traces, metrics, and logs.
-</Card>
 
 <Card href="/docs/ingest-data/otel/traces" icon={<IconTimeline className="text-purple-600" />} title='OTel Traces'>
 Ingest distributed traces using OpenTelemetry Protocol (OTLP).
@@ -49,7 +45,7 @@ Ingest metrics using OpenTelemetry Protocol (OTLP).
 
 </Cards>
 
-### Logging Agents
+### Log agents and shippers
 
 <Cards>
 
@@ -95,7 +91,45 @@ Monitoring system and time series database for metrics collection.
 
 </Cards>
 
-### Programming Languages
+### LLM & AI Agents
+
+<Cards>
+
+<Card href="/docs/ingest-data/ai-agents/openai" icon={<IconCode className="text-purple-600" />} title='OpenAI'>
+Track and log OpenAI API calls and responses.
+</Card>
+
+<Card href="/docs/ingest-data/ai-agents/anthropic" icon={<IconCode className="text-purple-600" />} title='Anthropic'>
+Monitor and log Anthropic Claude API interactions.
+</Card>
+
+<Card href="/docs/ingest-data/ai-agents/langchain" icon={<IconCode className="text-purple-600" />} title='LangChain'>
+Ingest traces and logs from LangChain applications.
+</Card>
+
+<Card href="/docs/ingest-data/ai-agents/llamaindex" icon={<IconCode className="text-purple-600" />} title='LlamaIndex'>
+Collect observability data from LlamaIndex applications.
+</Card>
+
+<Card href="/docs/ingest-data/ai-agents/dspy" icon={<IconCode className="text-purple-600" />} title='DSPy'>
+Monitor DSPy framework executions and outputs.
+</Card>
+
+<Card href="/docs/ingest-data/ai-agents/autogen" icon={<IconCode className="text-purple-600" />} title='AutoGen'>
+Track multi-agent conversations and AutoGen workflows.
+</Card>
+
+<Card href="/docs/ingest-data/ai-agents/crewai" icon={<IconCode className="text-purple-600" />} title='CrewAI'>
+Ingest logs from CrewAI agent orchestration.
+</Card>
+
+<Card href="/docs/ingest-data/ai-agents/n8n" icon={<IconCode className="text-purple-600" />} title='n8n'>
+Collect workflow execution logs from n8n automation platform.
+</Card>
+
+</Cards>
+
+### Programming languages
 
 <Cards>
 
@@ -167,23 +201,27 @@ Ingest logs from Google Kubernetes Engine clusters.
 
 </Cards>
 
-### Cloud Services
+### Cloud services
 
 <Cards>
 
-<Card href="/docs/ingest-data/cloud/aws-cloudwatch" icon={<IconSettings className="text-blue-600" />} title='AWS CloudWatch'>
+<Card href="/docs/ingest-data/cloud/aws-cloudwatch" icon={<IconBrandAws className="text-blue-600" />} title='AWS CloudWatch'>
 Ingest logs and metrics from AWS CloudWatch service.
 </Card>
 
-<Card href="/docs/ingest-data/cloud/aws-kinesis" icon={<IconSettings className="text-blue-600" />} title='AWS Kinesis'>
+<Card href="/docs/ingest-data/cloud/aws-kinesis" icon={<IconBrandAws className="text-blue-600" />} title='AWS Kinesis'>
 Stream data from AWS Kinesis Data Streams to Parseable.
 </Card>
 
-<Card href="/docs/ingest-data/cloud/azure-event-hubs" icon={<IconSettings className="text-blue-600" />} title='Azure Event Hubs'>
+<Card href="/docs/ingest-data/cloud/azure-event-hubs" icon={<IconBrandAzure className="text-blue-600" />} title='Azure Event Hubs'>
 Ingest streaming data from Azure Event Hubs.
 </Card>
 
-<Card href="/docs/ingest-data/cloud/gcp-pubsub" icon={<IconSettings className="text-blue-600" />} title='GCP Pub/Sub'>
+<Card href="/docs/ingest-data/cloud/azure-api-service" icon={<IconBrandAzure className="text-blue-600" />} title='Azure API Service'>
+Ingest streaming data from Azure API Service.
+</Card>
+
+<Card href="/docs/ingest-data/cloud/gcp-pubsub" icon={<IconBrandGoogle className="text-blue-600" />} title='GCP Pub/Sub'>
 Stream data from Google Cloud Pub/Sub messaging service.
 </Card>
 
@@ -263,44 +301,6 @@ Collect logs from ArgoCD GitOps deployments.
 
 <Card href="/docs/ingest-data/cicd/terraform" icon={<IconSettings className="text-green-600" />} title='Terraform'>
 Ingest infrastructure deployment logs from Terraform.
-</Card>
-
-</Cards>
-
-### LLM & AI Agents
-
-<Cards>
-
-<Card href="/docs/ingest-data/llm-agents/openai" icon={<IconCode className="text-purple-600" />} title='OpenAI'>
-Track and log OpenAI API calls and responses.
-</Card>
-
-<Card href="/docs/ingest-data/llm-agents/anthropic" icon={<IconCode className="text-purple-600" />} title='Anthropic'>
-Monitor and log Anthropic Claude API interactions.
-</Card>
-
-<Card href="/docs/ingest-data/llm-agents/langchain" icon={<IconCode className="text-purple-600" />} title='LangChain'>
-Ingest traces and logs from LangChain applications.
-</Card>
-
-<Card href="/docs/ingest-data/llm-agents/llamaindex" icon={<IconCode className="text-purple-600" />} title='LlamaIndex'>
-Collect observability data from LlamaIndex applications.
-</Card>
-
-<Card href="/docs/ingest-data/llm-agents/dspy" icon={<IconCode className="text-purple-600" />} title='DSPy'>
-Monitor DSPy framework executions and outputs.
-</Card>
-
-<Card href="/docs/ingest-data/llm-agents/autogen" icon={<IconCode className="text-purple-600" />} title='AutoGen'>
-Track multi-agent conversations and AutoGen workflows.
-</Card>
-
-<Card href="/docs/ingest-data/llm-agents/crewai" icon={<IconCode className="text-purple-600" />} title='CrewAI'>
-Ingest logs from CrewAI agent orchestration.
-</Card>
-
-<Card href="/docs/ingest-data/llm-agents/n8n" icon={<IconCode className="text-purple-600" />} title='n8n'>
-Collect workflow execution logs from n8n automation platform.
 </Card>
 
 </Cards>

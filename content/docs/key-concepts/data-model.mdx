@@ -10,17 +10,15 @@ Think of a dataset as a logical grouping of similar telemetry data. Proper datas
 
 Every dataset is identified by a unique name. A dataset has a assigned schema (can be dynamic i.e. inferred from incoming data or static i.e. explicitly defined). Role based access control, alerts, retention and notifications are supported at the dataset level.
 
-## Creating a dataset
-
-You can create a dataset using the "Create Dataset" button on Datasets page. You'll be prompted to enter the dataset name, schema type, and partition column.
-
-You can set the schema type to be [static](#static) (schema has to be explicitly provided at the time of creation of dataset) or [dynamic](#dynamic) (let server infer the schema from the incoming data). Once set, the schema type cannot be changed. Read more about schema types in the [Dataset Schema](#dataset-schema) section.
-
-Partition column is an optional field. If you want to partition the dataset based on a specific field, you can specify that field here. If you don't specify a partition field, Parseable will use the internal `p_timestamp` field as the partition field. Read more about partitioning in the [Partitioning](/docs/key-concepts/partitioning) section.
-
 ## Mapping sources to datasets
 
-A source is anything that generates data, i.e. agents like FluentBit, FluentD, Vector, LogStash, agents from the OTel ecosystem, or the application itself. While ingesting data, you'll need to specify the dataset name to which the data should be sent. This allows mapping sources to datasets. Technically it is possible to map any number of data sources any number of data sources. Parseable allows this to ensure flexibility for varying use cases. 
+As SREs and DevOps engineers, you often deal with multiple data sources generating telemetry data. These sources can include applications, infrastructure components, and third-party services. Each of these sources can produce different types of data with varying schemas.
+
+When debugging or investigating issues, it's common to correlate data from multiple sources. For example, you might want to correlate application logs with infrastructure metrics to identify performance bottlenecks.
+
+Hence it is crucial to thoughtfully map data sources to datasets in Parseable. This mapping ensures that related data is stored together, making it easier to query and analyze.
+
+A data source is anything that generates data, i.e. agents like FluentBit, FluentD, Vector, LogStash, agents from the OTel ecosystem, or the application itself. While ingesting data, you'll need to specify the dataset name to which the data should be sent. This allows mapping sources to datasets. Technically it is possible to map any number of data sources any number of data sources. Parseable allows this to ensure flexibility for varying use cases. 
 
 But, it is important to critically think about mapping data sources to datasets. This is a key design decision that can impact the performance and usability of your observability data. Too many unrelated columns in a dataset can lead to poor compression and slower query performance. On the other hand, too many datasets can lead to increased complexity in managing the data.
 
@@ -47,6 +45,20 @@ Let's understand this with some examples:
 <Callout type="warn">
 Beyond 800 columns in a dataset, consider splitting the dataset into multiple datasets based on schema similarity or query patterns. Beyond 1000 columns, the server will reject the ingestion request with an error.
 </Callout>
+
+## Adding data to Parseable
+
+### Identify the data source
+
+Refer the ingestion guides for various data sources in the [Ingestion](/docs/getting-started/ingestion) section.
+
+### Create or use an existing dataset
+
+You can create a dataset using the "Create Dataset" button on Datasets page. You'll be prompted to enter the dataset name, schema type, and partition column.
+
+You can set the schema type to be [static](#static) (schema has to be explicitly provided at the time of creation of dataset) or [dynamic](#dynamic) (let server infer the schema from the incoming data). Once set, the schema type cannot be changed. Read more about schema types in the [Dataset Schema](#dataset-schema) section.
+
+Partition column is an optional field. If you want to partition the dataset based on a specific field, you can specify that field here. If you don't specify a partition field, Parseable will use the internal `p_timestamp` field as the partition field. Read more about partitioning in the [Partitioning](/docs/key-concepts/partitioning) section.
 
 ## Dataset vs index
 
