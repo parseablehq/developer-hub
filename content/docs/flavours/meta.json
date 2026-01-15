@@ -1,8 +1,9 @@
 {
   "title": "Flavours",
+  "display": "hidden",
   "pages": [
+    "pro",
     "enterprise",
-    "cloud",
     "oss"
   ]
 }

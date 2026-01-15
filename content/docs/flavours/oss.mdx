@@ -1,28 +1,58 @@
 ---
-title: OSS
+title: OSS Features
 description: Parseable Open Source - High performance log analytics for everyone
 ---
 
-## Parseable OSS
-
 Parseable OSS is the open-source edition of Parseable, licensed under AGPLv3. It provides a high-performance, cost-effective solution for log analytics.
 
-### Features
+## Core Features
 
-- **High Performance** - Optimized for speed and efficiency
-- **Single Binary** - Easy deployment with built-in Prism UI
-- **RBAC** - Role-based access control for secure multi-tenant deployments
-- **OIDC Integrations** - Connect with your existing identity providers
-- **Regular Updates** - Feature releases based on community feedback
+| Feature | Availability |
+|---------|-------------|
+| [Add user](/user-guide/rbac) | ✅ |
+| [Add role](/user-guide/rbac) | ✅ |
+| [Add alert target](/user-guide/alerting) | ✅ |
+| [Retention period](/features/retention) | ✅ |
+| [Dataset](/key-concepts/data-model) | ✅ |
+| Ingestion quota | ✅ |
+| Query quota | ✅ |
+| Validity | ✅ |
 
-### Perfect For
+## Alerting
 
-- Individuals and hobbyists
-- Smaller teams
-- Non-mission-critical deployments
-- Learning and experimentation
+| Feature | Availability |
+|---------|-------------|
+| [Alert](/user-guide/alerting) | [Threshold alert](/user-guide/alerting/standard-threshold) only |
 
-### Getting Started
+## Help & Support
+
+| Feature | Availability |
+|---------|-------------|
+| Join Community | ✅ |
+| Talk to sales | ✅ |
+
+## Not Available in OSS
+
+- [Keystone](/ai-features/keystone)
+- [Fix with AI](/user-guide/ai-native/text-to-sql)
+- [Generate with AI](/user-guide/ai-native/text-to-sql)
+- [Smart cache](/features/smart-cache)
+- [Custom partition field](/key-concepts/partitioning)
+- [Summarize my data](/user-guide/ai-native/summary)
+- [Forecast (on/off)](/ai-features/forecasting)
+- GPT-5 Enterprise
+- Assistant history
+- Assistant new chat
+- (Teams) User assign group option
+- (Teams) Group create
+- [LLM Providers](/llm)
+- Support center
+- [Cluster](/key-concepts/high-availability)
+- (Logs) system
+- Manage workspace
+- Alert (Analyze option) with [Keystone](/ai-features/keystone)
+
+## Getting Started
 
 Get started with Parseable OSS in minutes:
 
@@ -38,14 +68,14 @@ docker run -p 8000:8000 \
   -v /tmp/parseable/staging:/parseable/staging \
   -e P_FS_DIR=/parseable/data \
   -e P_STAGING_DIR=/parseable/staging \
-  parseable/parseable:latest \
+  parseable/parseable:edge \
   parseable local-store
 ```
 
-### Community
+## Community
 
 Join our community on [Slack](https://logg.ing/community) to get help, share feedback, and connect with other users.
 
-### Source Code
+## Source Code
 
 Parseable OSS is available on [GitHub](https://github.com/parseablehq/parseable).
