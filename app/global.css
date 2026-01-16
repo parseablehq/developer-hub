@@ -40,7 +40,6 @@
 :root {
   --color-fd-primary: hsl(217, 100%, 58%);
   --color-fd-primary-foreground: white;
-  --fd-layout-width: 100vw;
 }
 
 .dark {
@@ -66,4 +65,14 @@ figure{ padding: 15px;}
 
 .dark [data-rmiz-modal-content] img {
   filter: invert(1) hue-rotate(180deg);
+}
+
+/* Fix banner overlap on mobile sidebar */
+@media (max-width: 768px) {
+  .fd-banner,
+  [id^="radix-"] .sticky,
+  article .sticky:first-child {
+    position: relative !important;
+    z-index: 1 !important;
+  }
 }
