@@ -40,6 +40,7 @@
 :root {
   --color-fd-primary: hsl(217, 100%, 58%);
   --color-fd-primary-foreground: white;
+  --fd-layout-width: 100vw;
 }
 
 .dark {

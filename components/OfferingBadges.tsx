@@ -53,7 +53,7 @@ export function ProBadge({ className = '' }: BadgeProps) {
         target="_blank"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={() => setShowTooltip(false)}
-        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors cursor-pointer no-underline ${className}`}
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#F3E8FF] text-[#7E22CE] dark:bg-[#1F162A] dark:text-[#C084FC] hover:bg-[#E9D5FF] dark:hover:bg-[#2A1E3A] transition-colors cursor-pointer no-underline ${className}`}
       >
         Pro
       </Link>
@@ -83,7 +83,7 @@ export function EnterpriseBadge({ className = '' }: BadgeProps) {
         target="_blank"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={() => setShowTooltip(false)}
-        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors cursor-pointer no-underline ${className}`}
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#EAF2FF] text-[#1D4ED8] dark:bg-[#141C2A] dark:text-[#60A5FA] hover:bg-[#DBEAFE] dark:hover:bg-[#1C2A44] transition-colors cursor-pointer no-underline ${className}`}
       >
         Enterprise
       </Link>
