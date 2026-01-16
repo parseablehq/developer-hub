@@ -18,42 +18,57 @@ Integrate Parseable with Apache Superset to:
 
 - Apache Superset instance
 - Parseable instance with data
-- PostgreSQL connector (Superset connects via Parseable's PostgreSQL-compatible interface)
+- Python 3.11.6 or higher
+
+## Installation
+
+### Install Parseable SQLAlchemy Driver
+
+Install the Parseable connector for Apache Superset:
+
+```bash
+# Create and activate a virtual environment (recommended)
+python -m venv superset-env
+source superset-env/bin/activate  # On Windows: superset-env\Scripts\activate
+
+# Install Apache Superset
+pip install apache-superset
+
+# Install Parseable SQLAlchemy driver
+pip install sqlalchemy-parseable
+
+# Initialize Superset
+superset db upgrade
+superset fab create-admin
+superset init
+
+# Run Superset
+superset run -p 8088 --with-threads --reload --debugger
+```
 
 ## Connection Setup
 
 ### Add Database Connection
 
-1. Log in to Apache Superset
-2. Go to **Data** → **Databases**
-3. Click **+ Database**
-4. Select **PostgreSQL** as the database type
-5. Configure the connection:
+1. Log in to Apache Superset at `http://localhost:8088`
+2. Go to **Data** → **Databases** → **+ Database**
+3. Select **Other** as the database type
+4. Use the following SQLAlchemy URI format:
 
 ```
-Host: your-parseable-host
-Port: 8000
-Database: parseable
-Username: your-username
-Password: your-password
+parseable://username:password@host:port/dataset_name
 ```
 
-### SQLAlchemy URI
-
-Use this connection string format:
+### Example Connection String
 
 ```
-postgresql://username:password@parseable-host:8000/parseable
+parseable://admin:admin@demo.parseable.com:443/ingress-nginx
 ```
 
-### Advanced Configuration
+For local Parseable instance:
 
-```json
-{
-  "connect_args": {
-    "sslmode": "prefer"
-  }
-}
+```
+parseable://admin:admin@localhost:8000/application-logs
 ```
 
 ## Creating Visualizations

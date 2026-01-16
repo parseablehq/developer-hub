@@ -14,37 +14,47 @@ Integrate Parseable with Tableau to:
 - **Data Blending** - Combine log data with other data sources
 - **Sharing** - Publish and share insights across your organization
 
-## Prerequisites
+## Integration Options
 
-- Tableau Desktop or Tableau Server
-- Parseable instance with data
-- PostgreSQL connector
+Parseable can be connected to Tableau through the following methods:
 
-## Connection Setup
+### Option 1: Export Data via API
 
-### Tableau Desktop
+Export data from Parseable using the Query API and import into Tableau:
 
-1. Open Tableau Desktop
-2. Click **Connect** → **To a Server** → **PostgreSQL**
-3. Enter connection details:
+```python
+import requests
+import pandas as pd
 
-| Field | Value |
-|-------|-------|
-| Server | your-parseable-host |
-| Port | 8000 |
-| Database | parseable |
-| Username | your-username |
-| Password | your-password |
+# Query Parseable
+response = requests.post(
+    "http://your-parseable-host:8000/api/v1/query",
+    auth=("username", "password"),
+    json={
+        "query": "SELECT * FROM \"application-logs\" WHERE p_timestamp > NOW() - INTERVAL '24 hours'",
+        "startTime": "2024-01-01T00:00:00Z",
+        "endTime": "2024-01-02T00:00:00Z"
+    }
+)
 
-4. Click **Sign In**
+# Convert to DataFrame and save as CSV
+df = pd.DataFrame(response.json())
+df.to_csv("parseable_logs.csv", index=False)
+```
 
-### Select Data
+Then import the CSV into Tableau Desktop.
 
-1. In the **Database** dropdown, select `parseable`
-2. Drag your dataset (table) to the canvas
-3. Click **Update Now** to preview data
+### Option 2: Use Apache Superset
 
-## Creating Visualizations
+For real-time connectivity, we recommend using [Apache Superset](/docs/integrations/visualization/apache-superset) which has native Parseable support via the `sqlalchemy-parseable` driver.
+
+### Option 3: Arrow Flight (Advanced)
+
+Parseable exposes an Arrow Flight endpoint on port 8002 (`P_FLIGHT_PORT`) for high-performance data transfer. You can use Arrow Flight clients to fetch data and load into Tableau.
+
+## Working with Exported Data
+
+Once you have your data in Tableau (via CSV export or other methods):
 
 ### Time Series Analysis
 
@@ -60,71 +70,15 @@ Integrate Parseable with Tableau to:
 3. Change mark type to **Bar**
 4. Add color by `level`
 
-### Top Error Sources
-
-1. Create calculated field for errors:
-   ```
-   IF [level] = 'error' THEN 1 ELSE 0 END
-   ```
-2. Drag `service` to Rows
-3. Drag error count to Columns
-4. Sort descending
-
-## Building Dashboards
-
-### Create Dashboard
-
-1. Click **Dashboard** → **New Dashboard**
-2. Drag sheets from the left panel
-3. Add filters and parameters
-4. Configure interactivity
-
-### Add Filters
-
-1. Drag a filter field to the Filters shelf
-2. Right-click → **Apply to Worksheets** → **All Using This Data Source**
-3. Show filter control on dashboard
-
-## Tableau Server Publishing
-
-### Publish Workbook
-
-1. **Server** → **Publish Workbook**
-2. Select your Tableau Server
-3. Configure:
-   - Project location
-   - Permissions
-   - Data source embedding
-
-### Schedule Refreshes
-
-1. On Tableau Server, go to your workbook
-2. Click **Schedules**
-3. Set refresh frequency
-
 ## Best Practices
 
-1. **Use Extracts** - Create extracts for better performance
-2. **Filter Early** - Apply filters at the data source level
-3. **Optimize Queries** - Use custom SQL for complex aggregations
-4. **Cache Results** - Enable caching on Tableau Server
-
-## Troubleshooting
-
-### Connection Failed
-
-1. Verify PostgreSQL driver is installed
-2. Check network connectivity
-3. Verify credentials
-
-### Slow Performance
-
-1. Use data extracts instead of live connections
-2. Add context filters
-3. Reduce data granularity
+1. **Schedule Exports** - Automate data exports using cron jobs or scheduled tasks
+2. **Filter Early** - Apply time range filters in the Parseable query to reduce data volume
+3. **Use Incremental Exports** - Only export new data since the last export
+4. **Consider Apache Superset** - For real-time dashboards, use [Apache Superset](/docs/integrations/visualization/apache-superset) with native Parseable support
 
 ## Next Steps
 
-- Create [dashboards](/docs/user-guide/dashboards) in Parseable
+- Create [dashboards](/docs/user-guide/dashboards) in Parseable's built-in UI
 - Set up [alerts](/docs/user-guide/alerting) for anomalies
-- Explore [Metabase](/docs/integrations/visualization/metabase) as an alternative
+- Explore [Apache Superset](/docs/integrations/visualization/apache-superset) for native integration

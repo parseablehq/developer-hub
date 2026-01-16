@@ -8,8 +8,10 @@ import { remarkAdmonition } from 'fumadocs-core/mdx-plugins';
 import { z } from 'zod';
 
 // Extend frontmatter schema to include 'full' property for full-width pages
+// and 'redirect_from' for URL redirects
 const extendedFrontmatterSchema = frontmatterSchema.extend({
   full: z.boolean().default(false),
+  redirect_from: z.array(z.string()).optional(),
 });
 
 // Define the documentation collection

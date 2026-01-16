@@ -14,187 +14,53 @@ Integrate Parseable with Looker to:
 - **Embedded Analytics** - Embed dashboards in applications
 - **Governed Metrics** - Maintain consistent metric definitions
 
-## Prerequisites
+## Integration Options
 
-- Looker instance (Google Cloud or self-hosted)
-- Parseable instance with data
-- PostgreSQL dialect support
+<Callout type="info">
+Parseable does not have a native Looker connector. Use one of the following methods to integrate.
+</Callout>
 
-## Connection Setup
+### Option 1: Export Data via API
 
-### Add Database Connection
+Export data from Parseable and load into a Looker-supported database:
 
-1. Go to **Admin** → **Database** → **Connections**
-2. Click **Add Connection**
-3. Configure:
+```python
+import requests
+import pandas as pd
 
-| Field | Value |
-|-------|-------|
-| Name | Parseable |
-| Dialect | PostgreSQL |
-| Host | your-parseable-host |
-| Port | 8000 |
-| Database | parseable |
-| Username | your-username |
-| Password | your-password |
+# Query Parseable
+response = requests.post(
+    "http://your-parseable-host:8000/api/v1/query",
+    auth=("username", "password"),
+    json={
+        "query": "SELECT * FROM \"application-logs\" WHERE p_timestamp > NOW() - INTERVAL '24 hours'",
+        "startTime": "2024-01-01T00:00:00Z",
+        "endTime": "2024-01-02T00:00:00Z"
+    }
+)
 
-4. Click **Test** then **Connect**
-
-## LookML Modeling
-
-### Create Project
-
-1. Go to **Develop** → **Manage LookML Projects**
-2. Click **New LookML Project**
-3. Select your Parseable connection
-4. Generate initial model from tables
-
-### Example Model
-
-```yaml
-# models/parseable.model.lkml
-connection: "parseable"
-
-include: "/views/*.view.lkml"
-
-explore: application_logs {
-  label: "Application Logs"
-  description: "Explore application log data"
-  
-  join: services {
-    type: left_outer
-    sql_on: ${application_logs.service} = ${services.name} ;;
-    relationship: many_to_one
-  }
-}
+# Load into your data warehouse (BigQuery, Snowflake, etc.)
+df = pd.DataFrame(response.json())
+# Then use your preferred method to load into the data warehouse
 ```
 
-### Example View
+### Option 2: Use Apache Superset
 
-```yaml
-# views/application_logs.view.lkml
-view: application_logs {
-  sql_table_name: "application-logs" ;;
+For real-time connectivity to Parseable, we recommend using [Apache Superset](/docs/integrations/visualization/apache-superset) which has native Parseable support via the `sqlalchemy-parseable` driver.
 
-  dimension: id {
-    primary_key: yes
-    type: string
-    sql: ${TABLE}.id ;;
-  }
+### Option 3: Arrow Flight (Advanced)
 
-  dimension_group: timestamp {
-    type: time
-    timeframes: [raw, time, date, hour, day, week, month]
-    sql: ${TABLE}.p_timestamp ;;
-  }
-
-  dimension: level {
-    type: string
-    sql: ${TABLE}.level ;;
-  }
-
-  dimension: service {
-    type: string
-    sql: ${TABLE}.service ;;
-  }
-
-  dimension: message {
-    type: string
-    sql: ${TABLE}.message ;;
-  }
-
-  dimension: is_error {
-    type: yesno
-    sql: ${level} = 'error' ;;
-  }
-
-  measure: count {
-    type: count
-    drill_fields: [timestamp_time, level, service, message]
-  }
-
-  measure: error_count {
-    type: count
-    filters: [is_error: "yes"]
-  }
-
-  measure: error_rate {
-    type: number
-    sql: ${error_count} / NULLIF(${count}, 0) * 100 ;;
-    value_format: "0.00\%"
-  }
-}
-```
-
-## Creating Explores
-
-### Build Explore
-
-1. Go to **Explore** → **Application Logs**
-2. Select dimensions and measures
-3. Add filters
-4. Run query
-5. Save as Look or add to dashboard
-
-### Example Analysis
-
-**Error Rate by Service:**
-1. Dimensions: `service`
-2. Measures: `error_rate`, `count`
-3. Filter: `timestamp_date` is in the past 7 days
-4. Sort by `error_rate` descending
-
-## Building Dashboards
-
-### Create Dashboard
-
-1. Click **New** → **Dashboard**
-2. Add tiles from saved Looks
-3. Add text and filters
-4. Configure layout
-5. Save and share
-
-### Dashboard Filters
-
-Add cross-filtering:
-
-```yaml
-# In dashboard LookML
-- dashboard: application_monitoring
-  title: Application Monitoring
-  filters:
-  - name: Date Range
-    type: date_filter
-    default_value: 7 days
-  - name: Service
-    type: field_filter
-    explore: application_logs
-    field: application_logs.service
-```
+Parseable exposes an Arrow Flight endpoint on port 8002 (`P_FLIGHT_PORT`) for high-performance data transfer. You can build a custom pipeline to fetch data via Arrow Flight and load into your Looker-connected data warehouse.
 
 ## Best Practices
 
-1. **Use LookML** - Define metrics centrally for consistency
-2. **Aggregate Awareness** - Create aggregate tables for performance
-3. **Access Controls** - Set appropriate model permissions
-4. **Documentation** - Add descriptions to fields and explores
-
-## Troubleshooting
-
-### Connection Issues
-
-1. Verify network connectivity
-2. Check SSL settings
-3. Verify credentials
-
-### Performance Issues
-
-1. Add persistent derived tables
-2. Use aggregate awareness
-3. Optimize LookML joins
+1. **Schedule Data Exports** - Set up automated pipelines to export Parseable data to your data warehouse
+2. **Use Incremental Loads** - Only export new data since the last sync
+3. **Filter at Source** - Apply time range filters in Parseable queries to reduce data volume
+4. **Consider Native Options** - For real-time dashboards, use [Apache Superset](/docs/integrations/visualization/apache-superset) or Parseable's built-in [dashboards](/docs/user-guide/dashboards)
 
 ## Next Steps
 
-- Create [dashboards](/docs/user-guide/dashboards) in Parseable
+- Create [dashboards](/docs/user-guide/dashboards) in Parseable's built-in UI
 - Set up [alerts](/docs/user-guide/alerting) for monitoring
-- Explore [Metabase](/docs/integrations/visualization/metabase) as an alternative
+- Explore [Apache Superset](/docs/integrations/visualization/apache-superset) for native integration

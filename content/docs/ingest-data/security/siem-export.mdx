@@ -42,17 +42,16 @@ SIEM_URL = os.getenv('SIEM_URL')
 SIEM_TOKEN = os.getenv('SIEM_TOKEN')
 
 def export_to_siem(dataset, start_time, end_time):
-    # Query Parseable
-    query = f"""
-    SELECT * FROM "{dataset}"
-    WHERE p_timestamp >= '{start_time}'
-      AND p_timestamp < '{end_time}'
-    """
-    
+    # Query Parseable using the Query API
     response = requests.post(
         f"{PARSEABLE_URL}/api/v1/query",
         auth=PARSEABLE_AUTH,
-        json={"query": query}
+        json={
+            "query": f"SELECT * FROM {dataset}",
+            "startTime": start_time,
+            "endTime": end_time,
+            "streamName": dataset
+        }
     )
     
     logs = response.json()
@@ -71,7 +70,7 @@ def export_to_siem(dataset, start_time, end_time):
         }
         siem_events.append(event)
     
-    # Send to SIEM
+    # Send to SIEM (Splunk HEC example)
     siem_response = requests.post(
         f"{SIEM_URL}/services/collector/event",
         headers={
@@ -87,12 +86,12 @@ def export_to_siem(dataset, start_time, end_time):
 end_time = datetime.utcnow()
 start_time = end_time - timedelta(hours=1)
 
-streams = ['security-logs', 'audit-logs', 'access-logs']
-for dataset in streams:
+datasets = ['security-logs', 'audit-logs', 'access-logs']
+for dataset in datasets:
     count = export_to_siem(
         dataset,
-        start_time.isoformat() + 'Z',
-        end_time.isoformat() + 'Z'
+        start_time.strftime('%Y-%m-%d %H:%M:%S.%f'),
+        end_time.strftime('%Y-%m-%d %H:%M:%S.%f')
     )
     print(f"Exported {count} events from {dataset}")
 ```

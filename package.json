@@ -3,11 +3,12 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "build": "next build",
+    "build": "node scripts/generate-redirects.mjs && next build",
     "dev": "next dev --turbo",
     "start": "next start",
     "postinstall": "fumadocs-mdx",
-    "check-links": "node scripts/check-links.mjs"
+    "check-links": "node scripts/check-links.mjs",
+    "generate-redirects": "node scripts/generate-redirects.mjs"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

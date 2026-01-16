@@ -1,5 +1,7 @@
 ---
 title: Data modelling
+redirect_from:
+  - /key-concepts/data-model
 ---
 
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
@@ -50,7 +52,7 @@ Beyond 800 columns in a dataset, consider splitting the dataset into multiple da
 
 ### Identify the data source
 
-Refer the ingestion guides for various data sources in the [Ingestion](/docs/getting-started/ingestion) section.
+Refer the ingestion guides for various data sources in the [Data Sources](/docs/datasource) section.
 
 ### Create or use an existing dataset
 
@@ -108,7 +110,7 @@ Some of common questions related to datasets are answered below. If you have any
     </Accordion>
 
     <Accordion id='how-many-columns' title="How many columns are too many in datasets?">
-    We recommend keeping the number of columns in a dataset to a reasonable limit, ideally less than 200. Too many columns can lead to poor compression and slower query performance. If you have more than 200 columns, query performance may degrade, and you may need to consider splitting the dataset into multiple datasets based on schema similarity or query patterns. Beyond 250 columns, the server will reject the ingestion request with an error.
+    We recommend keeping the number of columns in a dataset to a reasonable limit, ideally less than 800. Too many columns can lead to poor compression and slower query performance. If you have more than 800 columns, consider splitting the dataset into multiple datasets based on schema similarity or query patterns. Beyond 1000 columns, the server will reject the ingestion request with an error.
     </Accordion>
 
 </Accordions>

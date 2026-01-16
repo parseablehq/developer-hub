@@ -14,43 +14,49 @@ Integrate Parseable with Redash to:
 - **Dashboards** - Combine visualizations into dashboards
 - **Alerts** - Set up query-based alerts
 
-## Prerequisites
+## Integration Options
 
-- Redash instance (self-hosted or cloud)
-- Parseable instance with data
-- PostgreSQL data source support
+<Callout type="info">
+Parseable does not have a native Redash connector. Use one of the following methods to integrate.
+</Callout>
 
-## Connection Setup
+### Option 1: Custom Query Runner
 
-### Add Data Source
+You can create a custom Redash query runner that uses Parseable's HTTP API. This requires modifying your Redash installation.
 
-1. Log in to Redash
-2. Go to **Settings** → **Data Sources**
-3. Click **New Data Source**
-4. Select **PostgreSQL**
-5. Configure:
+### Option 2: Export to Supported Database
 
-| Field | Value |
-|-------|-------|
-| Name | Parseable |
-| Host | your-parseable-host |
-| Port | 8000 |
-| User | your-username |
-| Password | your-password |
-| Database | parseable |
+Export data from Parseable to a Redash-supported database (PostgreSQL, MySQL, etc.):
 
-6. Click **Create** then **Test Connection**
+```python
+import requests
+import pandas as pd
+from sqlalchemy import create_engine
 
-## Creating Queries
+# Query Parseable
+response = requests.post(
+    "http://your-parseable-host:8000/api/v1/query",
+    auth=("username", "password"),
+    json={
+        "query": "SELECT * FROM \"application-logs\" WHERE p_timestamp > NOW() - INTERVAL '24 hours'",
+        "startTime": "2024-01-01T00:00:00Z",
+        "endTime": "2024-01-02T00:00:00Z"
+    }
+)
 
-### New Query
+# Load into PostgreSQL for Redash
+df = pd.DataFrame(response.json())
+engine = create_engine('postgresql://user:pass@localhost/analytics')
+df.to_sql('parseable_logs', engine, if_exists='replace', index=False)
+```
 
-1. Click **Create** → **Query**
-2. Select **Parseable** data source
-3. Write your SQL query
-4. Click **Execute**
+### Option 3: Use Apache Superset
 
-### Example Queries
+For real-time connectivity to Parseable, we recommend using [Apache Superset](/docs/integrations/visualization/apache-superset) which has native Parseable support via the `sqlalchemy-parseable` driver and offers similar functionality to Redash.
+
+## Example Parseable Queries
+
+These SQL queries can be used with Parseable's Query API:
 
 **Error Count by Hour:**
 ```sql
@@ -77,102 +83,15 @@ ORDER BY count DESC
 LIMIT 10;
 ```
 
-**Response Time Stats:**
-```sql
-SELECT 
-  service,
-  AVG(response_time) as avg_response,
-  MAX(response_time) as max_response,
-  COUNT(*) as request_count
-FROM "api-logs"
-WHERE p_timestamp > NOW() - INTERVAL '1 hour'
-GROUP BY service
-ORDER BY avg_response DESC;
-```
-
-## Creating Visualizations
-
-### Add Visualization
-
-1. After executing a query, click **New Visualization**
-2. Select visualization type:
-   - **Chart** - Line, bar, area, pie
-   - **Counter** - Single number display
-   - **Table** - Tabular data
-   - **Map** - Geographic data
-
-### Chart Configuration
-
-For time-series data:
-- **X Column**: hour/timestamp column
-- **Y Columns**: metric columns
-- **Group by**: optional grouping
-
-## Building Dashboards
-
-### Create Dashboard
-
-1. Click **Create** → **Dashboard**
-2. Name your dashboard
-3. Click **Add Widget**
-4. Select queries and visualizations
-5. Arrange widgets as needed
-
-### Add Parameters
-
-Make queries interactive with parameters:
-
-```sql
-SELECT *
-FROM "application-logs"
-WHERE level = '{{log_level}}'
-  AND p_timestamp > NOW() - INTERVAL '{{time_range}}'
-LIMIT 100;
-```
-
-## Setting Up Alerts
-
-### Query-Based Alerts
-
-1. Create a query that returns a number
-2. Click **Add Alert**
-3. Configure:
-   - **Trigger when**: value condition
-   - **Rearm seconds**: cooldown period
-   - **Destinations**: notification channels
-
-### Example Alert Query
-
-```sql
-SELECT COUNT(*) as error_count
-FROM "application-logs"
-WHERE level = 'error'
-  AND p_timestamp > NOW() - INTERVAL '5 minutes';
-```
-
 ## Best Practices
 
-1. **Use Parameters** - Make queries reusable
-2. **Schedule Refreshes** - Keep dashboards up to date
-3. **Organize Queries** - Use tags and naming conventions
-4. **Share Carefully** - Set appropriate permissions
-
-## Troubleshooting
-
-### Connection Issues
-
-1. Verify Parseable host is accessible
-2. Check firewall rules
-3. Verify credentials
-
-### Query Timeout
-
-1. Add time range filters
-2. Use LIMIT clauses
-3. Optimize query structure
+1. **Schedule Data Syncs** - Automate exports from Parseable to your analytics database
+2. **Use Incremental Loads** - Only export new data since the last sync
+3. **Filter at Source** - Apply time range filters in Parseable queries to reduce data volume
+4. **Consider Native Options** - For real-time dashboards, use [Apache Superset](/docs/integrations/visualization/apache-superset) or Parseable's built-in [dashboards](/docs/user-guide/dashboards)
 
 ## Next Steps
 
-- Create [dashboards](/docs/user-guide/dashboards) in Parseable
+- Create [dashboards](/docs/user-guide/dashboards) in Parseable's built-in UI
 - Set up [alerts](/docs/user-guide/alerting) for monitoring
-- Explore [Grafana](/docs/integrations/visualization/grafana) for advanced visualization
+- Explore [Apache Superset](/docs/integrations/visualization/apache-superset) for native integration

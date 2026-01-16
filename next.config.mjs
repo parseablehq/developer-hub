@@ -1,6 +1,21 @@
 import { createMDX } from 'fumadocs-mdx/next';
+import { createRequire } from 'module';
+import { existsSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const withMDX = createMDX();
+
+// Load generated redirects if available
+let generatedRedirects = [];
+const redirectsPath = join(__dirname, 'redirects.json');
+if (existsSync(redirectsPath)) {
+  const require = createRequire(import.meta.url);
+  generatedRedirects = require('./redirects.json');
+}
 
 /** @type {import('next').NextConfig} */
 const config = {
@@ -24,11 +39,14 @@ const config = {
   },
   async redirects() {
     return [
+      // Static redirects
       {
         source: '/server/opentelemetry',
         destination: '/docs/OpenTelemetry',
         permanent: true, // 301 redirect
       },
+      // Generated redirects from frontmatter redirect_from
+      ...generatedRedirects,
     ]
   },
   async headers() {

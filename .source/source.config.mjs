@@ -8,7 +8,8 @@ import {
 import { remarkAdmonition } from "fumadocs-core/mdx-plugins";
 import { z } from "zod";
 var extendedFrontmatterSchema = frontmatterSchema.extend({
-  full: z.boolean().default(false)
+  full: z.boolean().default(false),
+  redirect_from: z.array(z.string()).optional()
 });
 var docs = defineDocs({
   // The root directory for all documentation
