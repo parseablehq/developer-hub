@@ -18,6 +18,7 @@ export const baseOptions: BaseLayoutProps = {
           width={180}
           height={24}
           className="dark:invert"
+          unoptimized
         />
       </div>
     ),
