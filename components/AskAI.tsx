@@ -86,7 +86,7 @@ function AskAIPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/ai-search', {
+      const res = await fetch('/docs/api/ai-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: userMessage.content }),
