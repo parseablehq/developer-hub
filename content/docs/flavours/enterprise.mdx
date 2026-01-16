@@ -1,74 +1,60 @@
 ---
-title: Enterprise Self-Hosted Features
-description: Parseable Enterprise - On-premise deployment of our cloud platform
+title: Enterprise Features
+description: Parseable Enterprise - Mission critical observability with advanced features
 ---
 
-Parseable Enterprise is the on-premise version of our cloud platform. It provides all the features of Parseable Pro, deployed in your own infrastructure for complete control over your data.
+Parseable Enterprise is for mission-critical workloads requiring advanced observability. Available as Parseable Cloud, BYOC (Bring Your Own Cloud), or On-Premises deployment. Custom pricing with minimum $999/month.
 
-## Core Features
+## Data Infrastructure
 
-| Feature | Availability |
-|---------|-------------|
-| [Add user](/user-guide/rbac) | ✅ |
-| [Add role](/user-guide/rbac) | ✅ |
-| [Add alert target](/user-guide/alerting) | ✅ |
-| [Retention period](/features/retention) | ✅ |
-| [Keystone](/ai-features/keystone) | ✅ |
-| [Dataset](/key-concepts/data-model) | ✅ |
-| Ingestion quota | ✅ |
-| Query quota | ✅ |
-| Validity | ✅ |
+| Feature | Description | Availability |
+|---------|-------------|--------------|
+| Max Recommended Ingestion | Total ingestion across logs, metrics, traces | Unlimited |
+| Query Volume | Volume of data scanned for queries | 20x of ingested volume included, additional at $0.02/GB |
+| [Retention](/docs/features/retention) | Retention of ingested data | Customizable |
+| Infrastructure | Cloud provider and region | Dedicated infrastructure with data residency options |
+| Deployment Options | Where Parseable runs | Parseable Cloud, BYOC, or On-Premises |
 
-## AI Features
+## Native Intelligence
 
-| Feature | Availability |
-|---------|-------------|
-| [Fix with AI](/user-guide/ai-native/text-to-sql) | ✅ |
-| [Generate with AI](/user-guide/ai-native/text-to-sql) | ✅ |
-| [Summarize my data](/user-guide/ai-native/summary) | ✅ |
-| GPT-5 Enterprise | ✅ |
-| [LLM Providers](/llm) | ✅ |
+| Feature | Description | Availability |
+|---------|-------------|--------------|
+| [Keystone](/docs/ai-features/keystone) | Natural language Q&A for observability data | ✅ |
+| [Anomaly Detection](/docs/user-guide/alerting/anomaly) | ML-based unusual pattern detection | ✅ |
+| [Summarization](/docs/user-guide/ai-native/summary) | One-click data insights | ✅ |
+| [Forecasting Alerts](/docs/user-guide/alerting/forecasting) | Alerts based on predicted patterns | ✅ |
+| [AI SQL Generation](/docs/user-guide/ai-native/text-to-sql) | Generate SQL from natural language | ✅ |
 
-## Alerting
+## Enterprise Features
 
-| Feature | Availability |
-|---------|-------------|
-| [Alert](/user-guide/alerting) | [Anomaly Detection](/user-guide/alerting/anomaly), [Threshold alert](/user-guide/alerting/standard-threshold), [Forecasting Alerts](/user-guide/alerting/forecasting) |
-| [Forecast (on/off)](/ai-features/forecasting) | ✅ |
-| Alert (Analyze option) with [Keystone](/ai-features/keystone) | ✅ |
+| Feature | Description | Availability |
+|---------|-------------|--------------|
+| [Role Based Access Control](/docs/user-guide/rbac) | Granular access controls for users and teams | ✅ |
+| Bring Your Own [Cloud, LLM, OAuth] | Use your own cloud, LLM, or OAuth system | ✅ |
+| Team Quotas | Configure ingestion, scanning, and retention quotas | ✅ |
+| SLA/SLO Configuration | Native SLA/SLO setup | ✅ |
+| MTTD/MTTR Metrics | Track Mean Time to Detect and Resolve | ✅ |
+| Audit Logging | Complete audit trail | ✅ |
+| Live Tailing | Real-time log streaming | ✅ |
+| [Smart Cache](/docs/features/smart-cache) | Sub-second queries with configurable caching | ✅ |
+| [Custom Partitioning](/docs/key-concepts/partitioning) | Optimize query performance | ✅ |
 
-## Assistant
+## Support
 
-| Feature | Availability |
-|---------|-------------|
-| Assistant history | ✅ |
-| Assistant new chat | ✅ |
+| Feature | Description | Availability |
+|---------|-------------|--------------|
+| Architectural Support | Engineering guidance and consulting | ✅ |
+| Product Support | 24x7 access to support teams | ✅ |
+| Ingestion Agent Management | Setup and management assistance | ✅ |
+| Dedicated SLA | Guaranteed uptime and response times | ✅ |
 
-## Teams
+## Getting Started
 
-| Feature | Availability |
-|---------|-------------|
-| User assign group option | ✅ |
-| Group create | ✅ |
-
-## Infrastructure
-
-| Feature | Availability |
-|---------|-------------|
-| [Smart cache](/features/smart-cache) | ✅ |
-| [Custom partition field](/key-concepts/partitioning) | ✅ |
-| [Cluster](/key-concepts/high-availability) | ✅ |
-| (Logs) system | ✅ |
-| Manage workspace | ✅ |
-
-## Help & Support
-
-| Feature | Availability |
-|---------|-------------|
-| Support center | ✅ |
-| Join Community | ❌ |
-| Talk to sales | ❌ |
-
-## How to access Parseable Enterprise
-
-Drop us a note at [sales@parseable.com](mailto:sales@parseable.com) to set up a quick discovery call and discuss your needs.
+<Cards>
+<Card href="mailto:sales@parseable.com" title="Contact Sales">
+Set up a discovery call to discuss your needs
+</Card>
+<Card href="https://logg.ing/quick-chat" title="Quick Chat">
+Schedule a quick conversation with our team
+</Card>
+</Cards>

@@ -3,58 +3,44 @@ title: OSS Features
 description: Parseable Open Source - High performance log analytics for everyone
 ---
 
-Parseable OSS is the open-source edition of Parseable, licensed under AGPLv3. It provides a high-performance, cost-effective solution for log analytics.
+Parseable OSS is the open-source edition of Parseable, licensed under AGPLv3. It provides a high-performance, cost-effective solution for log analytics. **Free forever**.
+
+## Data Infrastructure
+
+| Feature | Description | Availability |
+|---------|-------------|--------------|
+| Ingestion | Total ingestion across logs, metrics, traces | Unlimited |
+| Query Volume | Volume of data scanned for queries | Unlimited |
+| [Retention](/docs/features/retention) | Retention of ingested data | Configurable |
+| [Storage](/docs/key-concepts/storage) | Object storage backend | S3, GCS, Azure Blob, MinIO |
 
 ## Core Features
 
-| Feature | Availability |
-|---------|-------------|
-| [Add user](/user-guide/rbac) | ✅ |
-| [Add role](/user-guide/rbac) | ✅ |
-| [Add alert target](/user-guide/alerting) | ✅ |
-| [Retention period](/features/retention) | ✅ |
-| [Dataset](/key-concepts/data-model) | ✅ |
-| Ingestion quota | ✅ |
-| Query quota | ✅ |
-| Validity | ✅ |
-
-## Alerting
-
-| Feature | Availability |
-|---------|-------------|
-| [Alert](/user-guide/alerting) | [Threshold alert](/user-guide/alerting/standard-threshold) only |
-
-## Help & Support
-
-| Feature | Availability |
-|---------|-------------|
-| Join Community | ✅ |
-| Talk to sales | ✅ |
+| Feature | Description | Availability |
+|---------|-------------|--------------|
+| [Role Based Access Control](/docs/user-guide/rbac) | User and role management | ✅ |
+| [Threshold Alerts](/docs/user-guide/alerting/standard-threshold) | Alert when metrics cross thresholds | ✅ |
+| [Dashboards](/docs/user-guide/dashboards) | Custom visualization dashboards | ✅ |
+| [SQL Query](/docs/key-concepts/query) | PostgreSQL-compatible SQL queries | ✅ |
+| [Datasets](/docs/key-concepts/data-model) | Logical grouping of telemetry data | ✅ |
+| [OpenID Connect](/docs/user-guide/openid) | SSO authentication | ✅ |
 
 ## Not Available in OSS
 
-- [Keystone](/ai-features/keystone)
-- [Fix with AI](/user-guide/ai-native/text-to-sql)
-- [Generate with AI](/user-guide/ai-native/text-to-sql)
-- [Smart cache](/features/smart-cache)
-- [Custom partition field](/key-concepts/partitioning)
-- [Summarize my data](/user-guide/ai-native/summary)
-- [Forecast (on/off)](/ai-features/forecasting)
-- GPT-5 Enterprise
-- Assistant history
-- Assistant new chat
-- (Teams) User assign group option
-- (Teams) Group create
-- [LLM Providers](/llm)
-- Support center
-- [Cluster](/key-concepts/high-availability)
-- (Logs) system
-- Manage workspace
-- Alert (Analyze option) with [Keystone](/ai-features/keystone)
+| Feature | Available In |
+|---------|--------------|
+| [Keystone](/docs/ai-features/keystone) | Pro, Enterprise |
+| [Anomaly Detection](/docs/user-guide/alerting/anomaly) | Pro, Enterprise |
+| [Forecasting Alerts](/docs/user-guide/alerting/forecasting) | Pro, Enterprise |
+| [AI SQL Generation](/docs/user-guide/ai-native/text-to-sql) | Pro, Enterprise |
+| [Summarization](/docs/user-guide/ai-native/summary) | Pro, Enterprise |
+| [Smart Cache](/docs/features/smart-cache) | Pro, Enterprise |
+| [Custom Partitioning](/docs/key-concepts/partitioning) | Enterprise |
+| [High Availability Cluster](/docs/key-concepts/high-availability) | Pro, Enterprise |
+| Team Quotas | Enterprise |
+| 24x7 Support | Enterprise |
 
 ## Getting Started
-
-Get started with Parseable OSS in minutes:
 
 ```bash
 curl -fsSL https://logg.ing/install | bash
@@ -68,14 +54,17 @@ docker run -p 8000:8000 \
   -v /tmp/parseable/staging:/parseable/staging \
   -e P_FS_DIR=/parseable/data \
   -e P_STAGING_DIR=/parseable/staging \
-  parseable/parseable:edge \
+  parseable/parseable:latest \
   parseable local-store
 ```
 
-## Community
+## Community & Support
 
-Join our community on [Slack](https://logg.ing/community) to get help, share feedback, and connect with other users.
-
-## Source Code
-
-Parseable OSS is available on [GitHub](https://github.com/parseablehq/parseable).
+<Cards>
+<Card href="https://logg.ing/community" title="Join Slack Community">
+Get help, share feedback, and connect with other users
+</Card>
+<Card href="https://github.com/parseablehq/parseable" title="GitHub Repository">
+View source code, report issues, contribute
+</Card>
+</Cards>

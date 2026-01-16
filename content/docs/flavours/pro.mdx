@@ -3,77 +3,55 @@ title: Pro Features
 description: Parseable Pro - Fully managed cloud observability platform
 ---
 
-Parseable Pro is our fully managed cloud offering. It provides enterprise-grade features with managed infrastructure so you can focus on your applications.
+Parseable Pro is our fully managed cloud offering at **$0.37 per GB ingested** (minimum $29/month). It provides enterprise-grade features with managed infrastructure so you can focus on your applications.
+
+## Data Infrastructure
+
+| Feature | Description | Availability |
+|---------|-------------|--------------|
+| Max Recommended Ingestion | Total ingestion across logs, metrics, traces | Up to 30 TB/month |
+| Query Volume | Volume of data scanned for queries | 10x of ingested volume included, additional at $0.02/GB |
+| [Retention](/docs/features/retention) | Retention of ingested data | 21 days |
+| Infrastructure | Cloud provider and region | Shared infrastructure |
+
+## Native Intelligence
+
+| Feature | Description | Availability |
+|---------|-------------|--------------|
+| [Keystone](/docs/ai-features/keystone) | Natural language Q&A for observability data | ✅ |
+| [Anomaly Detection](/docs/user-guide/alerting/anomaly) | ML-based unusual pattern detection | ✅ |
+| [Summarization](/docs/user-guide/ai-native/summary) | One-click data insights | ✅ |
+| [Forecasting Alerts](/docs/user-guide/alerting/forecasting) | Alerts based on predicted patterns | ✅ |
+| [AI SQL Generation](/docs/user-guide/ai-native/text-to-sql) | Generate SQL from natural language | ✅ |
 
 ## Core Features
 
-| Feature | Availability |
-|---------|-------------|
-| [Add user](/user-guide/rbac) | ✅ |
-| [Add role](/user-guide/rbac) | ✅ |
-| [Add alert target](/user-guide/alerting) | ✅ |
-| [Retention period](/features/retention) | 30 days (non-editable) |
-| [Keystone](/ai-features/keystone) | ✅ |
-| [Dataset](/key-concepts/data-model) | ✅ |
-| Ingestion quota | ✅ |
-| Query quota | ✅ |
-| Validity | ✅ |
+| Feature | Description | Availability |
+|---------|-------------|--------------|
+| [Role Based Access Control](/docs/user-guide/rbac) | User and role management | ✅ |
+| [Alerting](/docs/user-guide/alerting) | Threshold, Anomaly, and Forecasting alerts | ✅ |
+| [Dashboards](/docs/user-guide/dashboards) | Custom visualization dashboards | ✅ |
+| Unlimited Users | No limit on team members | ✅ |
+| Unlimited Hosts | No limit on monitored hosts | ✅ |
 
-## AI Features
+## Not Available in Pro
 
-| Feature | Availability |
-|---------|-------------|
-| [Fix with AI](/user-guide/ai-native/text-to-sql) | ✅ |
-| [Generate with AI](/user-guide/ai-native/text-to-sql) | ✅ |
-| [Summarize my data](/user-guide/ai-native/summary) | ✅ |
-| GPT-5 Enterprise | ✅ |
-| [LLM Providers](/llm) | ✅ |
-
-## Alerting
-
-| Feature | Availability |
-|---------|-------------|
-| [Alert](/user-guide/alerting) | [Anomaly Detection](/user-guide/alerting/anomaly), [Threshold alert](/user-guide/alerting/standard-threshold), [Forecasting Alerts](/user-guide/alerting/forecasting) |
-| [Forecast (on/off)](/ai-features/forecasting) | ✅ |
-| Alert (Analyze option) with [Keystone](/ai-features/keystone) | ✅ |
-
-## Assistant
-
-| Feature | Availability |
-|---------|-------------|
-| Assistant history | ✅ |
-| Assistant new chat | ✅ |
-
-## Teams
-
-| Feature | Availability |
-|---------|-------------|
-| User assign group option | ✅ |
-| Group create | ✅ |
-
-## Infrastructure
-
-| Feature | Availability |
-|---------|-------------|
-| [Smart cache](/features/smart-cache) | Enabled (non-editable) |
-| [Cluster](/key-concepts/high-availability) | ✅ |
-| (Logs) system | ✅ |
-| Manage workspace | ✅ |
-
-## Help & Support
-
-| Feature | Availability |
-|---------|-------------|
-| Support center | ✅ |
-| Join Community | ❌ |
-| Talk to sales | ❌ |
-
-## Limitations vs Enterprise
-
-- **Custom partition field**: ❌ (Not available)
-- **Retention period**: Fixed at 30 days
-- **Smart cache**: Enabled but non-editable
+| Feature | Available In |
+|---------|--------------|
+| [Custom Partitioning](/docs/key-concepts/partitioning) | Enterprise |
+| Custom Retention | Enterprise |
+| [Smart Cache Configuration](/docs/features/smart-cache) | Enterprise |
+| Dedicated Infrastructure | Enterprise |
+| Data Residency Options | Enterprise |
+| Team Quotas | Enterprise |
+| SLA/SLO Configuration | Enterprise |
+| Architectural Support | Enterprise |
+| 24x7 Product Support | Enterprise |
 
 ## Getting Started
 
-Get started with Parseable Pro at [app.parseable.com](https://app.parseable.com).
+<Cards>
+<Card href="https://app.parseable.com" title="Start Free Trial">
+14-day free trial, no credit card required
+</Card>
+</Cards>
