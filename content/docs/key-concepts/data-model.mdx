@@ -22,7 +22,7 @@ Hence it is crucial to thoughtfully map data sources to datasets in Parseable. T
 
 A data source is anything that generates data, i.e. agents like FluentBit, FluentD, Vector, LogStash, agents from the OTel ecosystem, or the application itself. While ingesting data, you'll need to specify the dataset name to which the data should be sent. This allows mapping sources to datasets. Technically it is possible to map any number of data sources any number of data sources. Parseable allows this to ensure flexibility for varying use cases. 
 
-But, it is important to critically think about mapping data sources to datasets. This is a key design decision that can impact the performance and usability of your observability data. Too many unrelated columns in a dataset can lead to poor compression and slower query performance. On the other hand, too many datasets can lead to increased complexity in managing the data.
+But, it is important to critically think about mapping data sources to datasets. Too many unrelated columns in a dataset can lead to poor compression and slower query performance. On the other hand, too many datasets can lead to increased complexity in managing the data.
 
 When deciding how to map sources to datasets, consider the following:
 
@@ -52,7 +52,7 @@ Beyond 800 columns in a dataset, consider splitting the dataset into multiple da
 
 ### Identify the data source
 
-Refer the ingestion guides for various data sources in the [Data Sources](/docs/datasource) section.
+Refer the ingestion guides for various data sources in the [Ingestion](/ingestion) section.
 
 ### Create or use an existing dataset
 
