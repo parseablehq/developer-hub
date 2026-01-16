@@ -1,0 +1,327 @@
+---
+title: .NET
+description: Send logs from .NET applications to Parseable
+---
+
+Send logs from .NET applications to Parseable using HTTP or logging libraries.
+
+## Overview
+
+Integrate .NET with Parseable to:
+
+- **Application Logs** - Send structured logs from .NET apps
+- **ASP.NET Core** - Native integration with Microsoft.Extensions.Logging
+- **Serilog Support** - Use with Serilog sink
+- **Structured Logging** - JSON-formatted log entries
+
+## Prerequisites
+
+- .NET 6.0+
+- Parseable instance accessible
+- HttpClient or Serilog
+
+## Basic HTTP Integration
+
+### Using HttpClient
+
+```csharp
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+
+public class ParseableLogger : IDisposable
+{
+    private readonly HttpClient _client;
+    private readonly string _stream;
+    private readonly List<object> _buffer = new();
+    private readonly object _lock = new();
+    private readonly int _batchSize;
+    private readonly Timer _flushTimer;
+
+    public ParseableLogger(string url, string dataset, string username, string password, int batchSize = 100)
+    {
+        _stream = dataset;
+        _batchSize = batchSize;
+        
+        _client = new HttpClient { BaseAddress = new Uri(url) };
+        var auth = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}"));
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", auth);
+        
+        _flushTimer = new Timer(_ => Flush(), null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
+    }
+
+    public void Log(string level, string message, object? data = null)
+    {
+        var entry = new
+        {
+            timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+            level,
+            message,
+            data
+        };
+
+        lock (_lock)
+        {
+            _buffer.Add(entry);
+            if (_buffer.Count >= _batchSize)
+            {
+                FlushInternal();
+            }
+        }
+    }
+
+    public void Info(string message, object? data = null) => Log("info", message, data);
+    public void Error(string message, object? data = null) => Log("error", message, data);
+    public void Warning(string message, object? data = null) => Log("warning", message, data);
+
+    public void Flush()
+    {
+        lock (_lock)
+        {
+            FlushInternal();
+        }
+    }
+
+    private void FlushInternal()
+    {
+        if (_buffer.Count == 0) return;
+
+        var entries = _buffer.ToList();
+        _buffer.Clear();
+
+        Task.Run(async () =>
+        {
+            try
+            {
+                var json = JsonSerializer.Serialize(entries);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                content.Headers.Add("X-P-Stream", _stream);
+                
+                await _client.PostAsync("/api/v1/ingest", content);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Failed to send logs: {ex.Message}");
+            }
+        });
+    }
+
+    public void Dispose()
+    {
+        _flushTimer.Dispose();
+        Flush();
+        _client.Dispose();
+    }
+}
+
+// Usage
+using var logger = new ParseableLogger(
+    "http://parseable:8000",
+    "dotnet-app",
+    "admin",
+    "admin"
+);
+
+logger.Info("Application started", new { Version = "1.0.0" });
+logger.Error("Database error", new { Error = "Connection refused" });
+```
+
+## Serilog Integration
+
+### Install Package
+
+```bash
+dotnet add package Serilog
+dotnet add package Serilog.Sinks.Http
+```
+
+### Custom Sink
+
+```csharp
+using Serilog;
+using Serilog.Core;
+using Serilog.Events;
+using System.Text;
+using System.Text.Json;
+
+public class ParseableSink : ILogEventSink, IDisposable
+{
+    private readonly HttpClient _client;
+    private readonly string _stream;
+    private readonly List<object> _buffer = new();
+    private readonly object _lock = new();
+    private readonly Timer _flushTimer;
+
+    public ParseableSink(string url, string dataset, string username, string password)
+    {
+        _stream = dataset;
+        _client = new HttpClient { BaseAddress = new Uri(url) };
+        var auth = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}"));
+        _client.DefaultRequestHeaders.Authorization = 
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", auth);
+        
+        _flushTimer = new Timer(_ => Flush(), null, 
+            TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
+    }
+
+    public void Emit(LogEvent logEvent)
+    {
+        var entry = new
+        {
+            timestamp = logEvent.Timestamp.UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+            level = logEvent.Level.ToString().ToLower(),
+            message = logEvent.RenderMessage(),
+            exception = logEvent.Exception?.ToString(),
+            properties = logEvent.Properties.ToDictionary(
+                p => p.Key, 
+                p => p.Value.ToString().Trim('"'))
+        };
+
+        lock (_lock)
+        {
+            _buffer.Add(entry);
+            if (_buffer.Count >= 100)
+            {
+                FlushInternal();
+            }
+        }
+    }
+
+    public void Flush()
+    {
+        lock (_lock) { FlushInternal(); }
+    }
+
+    private void FlushInternal()
+    {
+        if (_buffer.Count == 0) return;
+
+        var entries = _buffer.ToList();
+        _buffer.Clear();
+
+        Task.Run(async () =>
+        {
+            var json = JsonSerializer.Serialize(entries);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            content.Headers.Add("X-P-Stream", _stream);
+            await _client.PostAsync("/api/v1/ingest", content);
+        });
+    }
+
+    public void Dispose()
+    {
+        _flushTimer.Dispose();
+        Flush();
+        _client.Dispose();
+    }
+}
+
+// Extension method
+public static class ParseableSinkExtensions
+{
+    public static LoggerConfiguration Parseable(
+        this LoggerSinkConfiguration config,
+        string url,
+        string dataset,
+        string username,
+        string password)
+    {
+        return config.Sink(new ParseableSink(url, dataset, username, password));
+    }
+}
+```
+
+### Usage
+
+```csharp
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Parseable(
+        url: "http://parseable:8000",
+        dataset: "dotnet-app",
+        username: "admin",
+        password: "admin")
+    .CreateLogger();
+
+Log.Information("Application started");
+Log.Error("Something went wrong", new { ErrorCode = 500 });
+```
+
+## ASP.NET Core Integration
+
+### Configure in Program.cs
+
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+
+// Add Serilog with Parseable
+builder.Host.UseSerilog((context, config) =>
+{
+    config
+        .ReadFrom.Configuration(context.Configuration)
+        .WriteTo.Parseable(
+            url: context.Configuration["Parseable:Url"]!,
+            dataset: context.Configuration["Parseable:Stream"]!,
+            username: context.Configuration["Parseable:Username"]!,
+            password: context.Configuration["Parseable:Password"]!);
+});
+
+var app = builder.Build();
+app.UseSerilogRequestLogging();
+app.Run();
+```
+
+### Configuration
+
+```json
+{
+  "Parseable": {
+    "Url": "http://parseable:8000",
+    "Stream": "aspnet-app",
+    "Username": "admin",
+    "Password": "admin"
+  }
+}
+```
+
+## OpenTelemetry Integration
+
+```csharp
+using OpenTelemetry.Logs;
+
+builder.Logging.AddOpenTelemetry(options =>
+{
+    options.AddOtlpExporter(otlp =>
+    {
+        otlp.Endpoint = new Uri("http://parseable:8000/v1/logs");
+        otlp.Headers = "Authorization=Basic YWRtaW46YWRtaW4=,X-P-Stream=dotnet-otel";
+    });
+});
+```
+
+## Best Practices
+
+1. **Use Batching** - Buffer logs and send in batches
+2. **Async Sending** - Don't block application threads
+3. **Handle Failures** - Log locally on send failures
+4. **Add Context** - Include correlation ID, user ID
+5. **Dispose Properly** - Flush on application shutdown
+
+## Troubleshooting
+
+### Connection Errors
+
+1. Verify Parseable URL is accessible
+2. Check SSL certificate if using HTTPS
+3. Verify credentials
+
+### Missing Logs
+
+1. Ensure Flush is called on shutdown
+2. Check for exceptions in background tasks
+3. Verify dataset name
+
+## Next Steps
+
+- Configure [alerts](/docs/user-guide/alerting) for error patterns
+- Create [dashboards](/docs/user-guide/dashboards) for .NET metrics
+- Explore [OpenTelemetry](/docs/ingest-data/otel) for tracing

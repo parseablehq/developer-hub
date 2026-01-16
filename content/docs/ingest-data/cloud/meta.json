@@ -1,0 +1,9 @@
+{
+  "title": "Cloud Providers",
+  "pages": [
+    "aws-cloudwatch",
+    "aws-kinesis",
+    "azure-event-hubs",
+    "gcp-pubsub"
+  ]
+}

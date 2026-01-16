@@ -1,0 +1,139 @@
+---
+title: Keycloak
+description: Configure Keycloak for SSO authentication with Parseable
+---
+
+Configure Keycloak as an identity provider for Parseable using OpenID Connect.
+
+## Overview
+
+Integrate Keycloak with Parseable to:
+
+- **Single Sign-On** - Use existing Keycloak identities
+- **Role-Based Access** - Map Keycloak roles to Parseable permissions
+- **Centralized Auth** - Manage users in one place
+- **Multi-Factor Auth** - Leverage Keycloak's MFA capabilities
+
+## Prerequisites
+
+- Keycloak server running
+- Admin access to Keycloak
+- Parseable instance with OIDC support
+
+## Keycloak Configuration
+
+### Create Realm (Optional)
+
+1. Log in to Keycloak Admin Console
+2. Click **Create Realm**
+3. Name it (e.g., `parseable`)
+4. Click **Create**
+
+### Create Client
+
+1. Go to **Clients** → **Create client**
+2. Configure:
+   - **Client ID**: `parseable`
+   - **Client Protocol**: `openid-connect`
+3. Click **Next**
+4. Configure capability:
+   - **Client authentication**: On
+   - **Authorization**: Off
+5. Click **Next**
+6. Configure URLs:
+   - **Root URL**: `https://your-parseable.com`
+   - **Valid redirect URIs**: `https://your-parseable.com/callback`
+   - **Web origins**: `https://your-parseable.com`
+7. Click **Save**
+
+### Get Client Secret
+
+1. Go to **Clients** → **parseable** → **Credentials**
+2. Copy the **Client secret**
+
+### Configure Mappers (Optional)
+
+Map Keycloak roles to Parseable:
+
+1. Go to **Clients** → **parseable** → **Client scopes**
+2. Click **parseable-dedicated**
+3. Add mapper:
+   - **Name**: `roles`
+   - **Mapper type**: `User Realm Role`
+   - **Token Claim Name**: `roles`
+   - **Add to ID token**: On
+
+## Parseable Configuration
+
+### Environment Variables
+
+```bash
+P_OIDC_CLIENT_ID=parseable
+P_OIDC_CLIENT_SECRET=your-client-secret
+P_OIDC_ISSUER=https://keycloak.example.com/realms/parseable
+P_OIDC_REDIRECT_URI=https://your-parseable.com/callback
+```
+
+### Docker Compose
+
+```yaml
+version: '3.8'
+services:
+  parseable:
+    image: parseable/parseable:latest
+    environment:
+      - P_OIDC_CLIENT_ID=parseable
+      - P_OIDC_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
+      - P_OIDC_ISSUER=https://keycloak.example.com/realms/parseable
+      - P_OIDC_REDIRECT_URI=https://your-parseable.com/callback
+```
+
+## OIDC Endpoints
+
+Keycloak OIDC endpoints follow this pattern:
+
+| Endpoint | URL |
+|----------|-----|
+| Issuer | `https://keycloak/realms/{realm}` |
+| Authorization | `https://keycloak/realms/{realm}/protocol/openid-connect/auth` |
+| Token | `https://keycloak/realms/{realm}/protocol/openid-connect/token` |
+| UserInfo | `https://keycloak/realms/{realm}/protocol/openid-connect/userinfo` |
+| JWKS | `https://keycloak/realms/{realm}/protocol/openid-connect/certs` |
+
+## Role Mapping
+
+Map Keycloak roles to Parseable roles:
+
+| Keycloak Role | Parseable Permission |
+|---------------|---------------------|
+| `admin` | Full access |
+| `editor` | Read/write streams |
+| `viewer` | Read-only access |
+
+## Best Practices
+
+1. **Use Dedicated Realm** - Isolate Parseable users
+2. **Enable MFA** - Add security with multi-factor auth
+3. **Configure Session Timeout** - Set appropriate session lengths
+4. **Use Groups** - Organize users with Keycloak groups
+
+## Troubleshooting
+
+### Login Fails
+
+1. Verify client ID and secret
+2. Check redirect URI matches exactly
+3. Verify issuer URL is correct
+4. Check Keycloak logs
+
+### Role Mapping Issues
+
+1. Verify mapper configuration
+2. Check token contains roles claim
+3. Verify role names match
+
+## Next Steps
+
+- Configure [OAuth](/docs/user-guide/openid) for other providers
+- Set up [RBAC](/docs/user-guide/rbac) in Parseable
+- Review [security best practices](/docs/user-guide/rbac)

@@ -1,0 +1,256 @@
+---
+title: Google Cloud Pub/Sub
+description: Ingest logs from Google Cloud Pub/Sub into Parseable
+---
+
+Stream logs from Google Cloud Pub/Sub to Parseable using the OpenTelemetry Collector.
+
+## Overview
+
+Integrate Google Cloud Pub/Sub with Parseable to:
+
+- **Stream GCP Logs** - Collect logs from Cloud Logging via Pub/Sub
+- **Real-time Ingestion** - Process logs as they arrive
+- **Unified Observability** - Combine GCP logs with other sources
+- **Scalable Collection** - Handle high-volume log streams
+
+## Prerequisites
+
+- Google Cloud project with Pub/Sub enabled
+- Pub/Sub subscription for log messages
+- Service account with Pub/Sub permissions
+- OpenTelemetry Collector with `googlecloudpubsub` receiver
+- Parseable instance running and accessible
+
+### IAM Permissions
+
+Create a service account with the required permissions:
+
+```bash
+# Create service account
+gcloud iam service-accounts create otel-collector \
+  --display-name="OpenTelemetry Collector"
+
+# Grant Pub/Sub Subscriber role
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:otel-collector@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/pubsub.subscriber"
+
+# Create and download key
+gcloud iam service-accounts keys create key.json \
+  --iam-account=otel-collector@YOUR_PROJECT_ID.iam.gserviceaccount.com
+```
+
+## Setting Up Cloud Logging Export
+
+### Create a Pub/Sub Topic
+
+```bash
+gcloud pubsub topics create parseable-logs
+```
+
+### Create a Subscription
+
+```bash
+gcloud pubsub subscriptions create parseable-logs-sub \
+  --topic=parseable-logs \
+  --ack-deadline=60
+```
+
+### Create a Log Sink
+
+Export Cloud Logging logs to Pub/Sub:
+
+```bash
+gcloud logging sinks create parseable-sink \
+  pubsub.googleapis.com/projects/YOUR_PROJECT_ID/topics/parseable-logs \
+  --log-filter='resource.type="gce_instance" OR resource.type="cloud_function"'
+```
+
+### Grant Sink Permissions
+
+```bash
+# Get the sink's writer identity
+SINK_IDENTITY=$(gcloud logging sinks describe parseable-sink --format='value(writerIdentity)')
+
+# Grant publish permission
+gcloud pubsub topics add-iam-policy-binding parseable-logs \
+  --member="$SINK_IDENTITY" \
+  --role="roles/pubsub.publisher"
+```
+
+## OpenTelemetry Collector Configuration
+
+### Basic Configuration
+
+Create an `otel-collector-config.yaml` file:
+
+```yaml
+receivers:
+  googlecloudpubsub:
+    project: your-gcp-project-id
+    subscription: projects/your-gcp-project-id/subscriptions/parseable-logs-sub
+    encoding: cloud_logging
+
+exporters:
+  otlphttp/parseable:
+    endpoint: "http://parseable:8000"
+    headers:
+      Authorization: "Basic YWRtaW46YWRtaW4="
+      X-P-Stream: "gcp-logs"
+      X-P-Log-Source: "otel-logs"
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    logs:
+      receivers: [googlecloudpubsub]
+      exporters: [otlphttp/parseable]
+```
+
+### With Processing
+
+Add processors to transform logs:
+
+```yaml
+receivers:
+  googlecloudpubsub:
+    project: your-gcp-project-id
+    subscription: projects/your-gcp-project-id/subscriptions/parseable-logs-sub
+    encoding: cloud_logging
+
+processors:
+  batch:
+    timeout: 10s
+    send_batch_size: 1000
+  
+  attributes:
+    actions:
+      - key: cloud.provider
+        value: gcp
+        action: insert
+
+exporters:
+  otlphttp/parseable:
+    endpoint: "http://parseable:8000"
+    headers:
+      Authorization: "Basic YWRtaW46YWRtaW4="
+      X-P-Stream: "gcp-logs"
+      X-P-Log-Source: "otel-logs"
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    logs:
+      receivers: [googlecloudpubsub]
+      processors: [batch, attributes]
+      exporters: [otlphttp/parseable]
+```
+
+## Configuration Options
+
+| Parameter | Description |
+|-----------|-------------|
+| `project` | GCP project ID |
+| `subscription` | Full subscription path |
+| `encoding` | Message encoding (`cloud_logging`, `raw_text`, `raw_json`) |
+
+## Running the Collector
+
+### Docker with Service Account Key
+
+```bash
+docker run -d \
+  --name otel-collector \
+  -v $(pwd)/otel-collector-config.yaml:/etc/otelcol/config.yaml \
+  -v $(pwd)/key.json:/etc/gcp/key.json \
+  -e GOOGLE_APPLICATION_CREDENTIALS=/etc/gcp/key.json \
+  otel/opentelemetry-collector-contrib:latest
+```
+
+### Kubernetes with Workload Identity
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: otel-collector
+  annotations:
+    iam.gke.io/gcp-service-account: otel-collector@YOUR_PROJECT_ID.iam.gserviceaccount.com
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+spec:
+  template:
+    spec:
+      serviceAccountName: otel-collector
+      containers:
+        - name: otel-collector
+          image: otel/opentelemetry-collector-contrib:latest
+          volumeMounts:
+            - name: config
+              mountPath: /etc/otelcol/config.yaml
+              subPath: config.yaml
+      volumes:
+        - name: config
+          configMap:
+            name: otel-collector-config
+```
+
+## Querying GCP Logs in Parseable
+
+Once data is flowing, query your GCP logs:
+
+```sql
+-- Get recent GCP logs
+SELECT p_timestamp, resource_type, severity, text_payload 
+FROM "gcp-logs" 
+ORDER BY p_timestamp DESC 
+LIMIT 100
+
+-- Find Cloud Function errors
+SELECT p_timestamp, resource_labels, text_payload
+FROM "gcp-logs"
+WHERE resource_type = 'cloud_function'
+  AND severity IN ('ERROR', 'CRITICAL')
+ORDER BY p_timestamp DESC
+
+-- Count logs by resource type
+SELECT resource_type, COUNT(*) as log_count
+FROM "gcp-logs"
+WHERE p_timestamp > NOW() - INTERVAL '1 hour'
+GROUP BY resource_type
+ORDER BY log_count DESC
+```
+
+## Troubleshooting
+
+### Authentication Issues
+
+1. Verify service account key is valid
+2. Check IAM permissions include Pub/Sub Subscriber role
+3. Verify GOOGLE_APPLICATION_CREDENTIALS is set
+4. Check Workload Identity binding if using GKE
+
+### Missing Messages
+
+1. Verify the subscription exists and is active
+2. Check the log sink filter matches your logs
+3. Verify the sink has publish permission on the topic
+4. Check for message acknowledgment issues
+
+### High Latency
+
+1. Increase batch size for higher throughput
+2. Reduce ack deadline if messages are timing out
+3. Scale the collector horizontally
+
+## Next Steps
+
+- Set up [alerts](/docs/user-guide/alerting) for GCP log patterns
+- Create [dashboards](/docs/user-guide/dashboards) for GCP monitoring
+- Configure [AWS CloudWatch](/docs/ingest-data/cloud/aws-cloudwatch) for multi-cloud

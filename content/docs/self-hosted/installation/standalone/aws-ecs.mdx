@@ -1,0 +1,105 @@
+---
+title: AWS ECS
+redirect_from:
+  - /installation/standalone/aws-ecs
+---
+
+This guide will help you setup Parseable on AWS ECS with Fargate. Amazon ECS is a highly scalable and fast container management service that makes it easy to run, stop, and manage containers on a cluster. Amazon ECS can use EC2 or Fargate to manage the underlying infrastructure.
+
+AWS Fargate is a serverless technology that you can use with ECS to run containers without having to manage servers or clusters of Amazon EC2 instances. Read more about Fargate in the [AWS documentation](https://aws.amazon.com/fargate/).
+
+## Prerequisites
+
+- AWS account with access to ECS and Fargate.
+- VPC and Security Group are configured to allow inbound traffic on port 80/443.
+- Define the Task IAM role and set policies according to [Task IAM Roles](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html).
+
+Refer the [ECS Prerequisites section of AWS documentation](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/prerequisites.html) for specific details on VPC and Security Group configuration.
+
+### Create a ECS cluster
+On the AWS management console, navigate to ECS and click on Clusters. Click on Create Cluster. Enter a name for the cluster and click on Create.
+
+AWS Docs - [Create a Cluster](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/getting-started-fargate.html#get-started-windows-fargate-cluster)
+
+### Create Task Definition
+
+To create Parseable task definition, choose Task Definitions in the navigation pane. Then Choose **Create new Task Definition** and then **Create new revision with JSON**.
+
+Copy the following JSON to a local text editor and replace the values for `P_S3_BUCKET`, `P_S3_ACCESS_KEY`, `P_S3_SECRET_KEY`, `P_S3_REGION`, `P_USERNAME` and `P_PASSWORD` with your own values. Also replace the image value with the relevant Parseable Docker image version.
+
+Then paste the updated JSON in the Task Definition text box and click on Save.
+
+```json
+{
+    "family": "parseable-server", 
+    "networkMode": "awsvpc", 
+    "containerDefinitions": [
+        {
+            "name": "parseable", 
+            "image": "parseable/parseable:latest", 
+            "portMappings": [
+                {
+                    "containerPort": 80, 
+                    "hostPort": 80, 
+                    "protocol": "tcp"
+                }
+            ], 
+            "environment": [
+                {
+                    "name": "P_ADDR",
+                    "value": "0.0.0.0:80"
+                },
+                {
+                    "name": "P_S3_URL",
+                    "value": "https://s3.<region>.amazonaws.com"
+                },
+                {
+                    "name": "P_S3_BUCKET",
+                    "value": "<replace-with-bucket-name>"
+                },
+                {
+                    "name": "P_S3_REGION",
+                    "value": "<replace-with-region>"
+                },
+                {
+                    "name": "P_USERNAME",
+                    "value": "<replace-with-difficult-to-guess-string>"
+                },
+                {
+                    "name": "P_PASSWORD",
+                    "value": "<replace-with-difficult-to-guess-string>"
+                }
+            ],
+            "essential": true, 
+            "command": [
+                "parseable", "s3-store"
+            ]
+        }
+    ], 
+    "requiresCompatibilities": [
+        "FARGATE"
+    ], 
+    "cpu": "4000", 
+    "memory": "4096"
+}
+```
+You can add additional environment variables to the task definition as needed. You can find the details of all the environment variables in the [Environment Variables](/docs/self-hosted/configuration) section.
+
+### Create Service
+
+Create a service using the task definition.
+
+- In the navigation pane, choose Clusters, and then select the cluster you created in the first step.
+- From the Services tab, choose Create.
+- Under Deployment configuration, specify how your application is deployed.
+
+    - For Task definition, choose the task definition from family `parseable-server` and revision 1.
+
+    - For Service name, enter a name for your service.
+
+    - For Desired tasks, enter 1 (we recommend starting with 1 task).
+
+- Choose Deploy.
+
+### Access Parseable
+You can access Parseable using the public IP address of the task. To find the public IP address, choose the task from the Tasks tab. Then choose the Configuration tab and look for the public IP address.

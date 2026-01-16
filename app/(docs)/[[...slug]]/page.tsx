@@ -5,42 +5,42 @@ import {
   DocsDescription,
   DocsTitle,
 } from 'fumadocs-ui/page';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { getMDXComponents } from '@/mdx-components';
-import { EditOnGitHub } from './page.client';
-
-const owner = 'parseablehq';
-const repo = 'developer-hub';
-
-import { HomepageContent } from './homepage.client';
+import { CopyPageDropdown } from '@/components/CopyPageDropdown';
+import { Feedback } from '@/components/feedback/client';
+import { onPageFeedbackAction } from '@/components/feedback/actions';
 
 export default async function Page(props: {
   params: Promise<{ slug?: string[] }>;
 }) {
   const params = await props.params;
   
-  // If we're at the root /docs path, show the homepage content
-  if (!params.slug || params.slug.length === 0) {
-    return <HomepageContent />;
-  }
+  // If we're at the root path, show the index page (Get Started)
+  // No redirect needed - the index page will be shown
   
   // Otherwise, show the regular docs page
   const page = source.getPage(params.slug);
   if (!page) notFound();
-  const path = `content/docs/${page.file.path}`;
 
   const MDXContent = page.data.body;
 
   return (
-    <DocsPage toc={page.data.toc} full={page.data.full}>
+    <DocsPage 
+      toc={page.data.toc} 
+      full={page.data.full}
+      tableOfContent={{
+        style: 'clerk',
+      }}
+      tableOfContentPopover={{
+        style: 'clerk',
+      }}
+    >
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
       <div className="flex flex-row gap-2 items-center mb-4">
-        {/* <LLMCopyButton slug={params.slug} /> */}
-        <EditOnGitHub
-          url={`https://github.com/${owner}/${repo}/tree/main/${path}`}
-        />
+        <CopyPageDropdown slug={params.slug ?? []} filePath={`${params.slug?.join('/') || 'index'}.mdx`} />
       </div>
       <hr/>
       <DocsBody>
@@ -51,6 +51,7 @@ export default async function Page(props: {
           })}
         />
       </DocsBody>
+      <Feedback onSendAction={onPageFeedbackAction} />
     </DocsPage>
   );
 }
@@ -65,6 +66,15 @@ export async function generateMetadata(props: {
   params: Promise<{ slug?: string[] }>;
 }) {
   const params = await props.params;
+  
+  // Handle root /docs path - will redirect, but provide metadata just in case
+  if (!params.slug || params.slug.length === 0) {
+    return {
+      title: 'Parseable Documentation',
+      description: 'Welcome to the Parseable documentation',
+    };
+  }
+  
   const page = source.getPage(params.slug);
   if (!page) notFound();
 

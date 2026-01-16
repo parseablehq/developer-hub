@@ -1,0 +1,43 @@
+---
+title: Quickstart Guide
+icon: Rocket
+---
+import { IconChartCohort, IconDirections, IconCloudDataConnection, IconBrandInertia, IconFileTypeSql, IconServerBolt,
+ IconSchema, IconFileDigitFilled, IconCloudComputing, IconCloud } from '@tabler/icons-react';
+
+## Parseable Pro
+<OfferingPills pro/>
+
+The fastest way to get started is Parseable Cloud Pro tier. Sign up for Parseable Pro for a free 14 days trial. No credit card needed.
+
+<Cards>
+<Card href="https://telemetry.new" icon={<IconCloud className="text-blue-500" />}  title='Parseable Pro' className="text-blue-500 col-span-2">
+Sign up for fully featured trial.
+</Card>
+</Cards>
+
+## Run locally
+
+You can also run Parseable Open Source edition locally. To run Parseable locally, run the following command to start Parseable in local mode on your machine:
+
+```bash
+docker run -p 8000:8000 \
+parseable/parseable:edge \
+parseable local-store
+```
+
+Once the container is running successfully, go to [http://localhost:8000](http://localhost:8000) and login with the default credentials `admin` / `admin`.
+
+You'll see the setup screen where you can import sample data in one click. This will also create few dashboards and queries to get you started.
+
+## Production installation
+
+To deploy Parseable in a production environment, refer to the self-hosted installation guide:
+
+<Cards>
+
+<Card href="/docs/self-hosted/installation" icon={<IconSchema className="text-blue-500" />} title='Self-hosted installation' className="col-span-2 text-blue-500">
+Deploy Parseable in your own environment.
+</Card>
+
+</Cards>

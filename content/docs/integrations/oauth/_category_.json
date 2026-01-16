@@ -1,0 +1,12 @@
+{
+  "label": "OAuth",
+  "collapsible": true,
+  "collapsed": true,
+  "position": 7,
+  "link": {
+    "type": "generated-index",
+    "title": "OAuth",
+    "description": "OAuth guide for Parseable."
+  },
+  "customProps": {}
+}

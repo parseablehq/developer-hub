@@ -1,0 +1,125 @@
+---
+title: Linux
+redirect_from:
+  - /installation/distributed/linux
+---
+
+This page explains the steps required to setup systemd service for Parseable distributed cluster in S3 storage mode.
+
+## Prerequisites
+
+- Parseable binary is available at `/usr/local/bin/`. Download the relevant binary from the release page.
+- S3 or compatible object store URL, access key, secret key, and bucket name to be used as storage.
+- Identify at least two servers to run Parseable ingestor and query services.
+
+## Set up Parseable query server
+
+Log on to the query node and create a configuration file for the query. Please ensure to replace the placeholders with the relevant values.
+
+```bash
+cat <<EOT >> /etc/default/parseable
+P_USERNAME=admin
+P_PASSWORD=admin
+P_STAGING_DIR="/var/lib/parseable/staging"
+P_ADDR=0.0.0.0:8000
+P_S3_URL="https://s3.<region>.amazonaws.com"
+P_S3_BUCKET=<s3-bucket>
+P_S3_ACCESS_KEY=<access-key>
+P_S3_SECRET_KEY=<secret-key>
+P_S3_REGION=<region>
+P_MODE=query
+EOT
+```
+
+You can add additional environment variables to the `/etc/default/parseable` file as needed. You can find the details of all the environment variables in the [Environment Variables](/docs/self-hosted/configuration) section.
+
+Download `parseable.s3.service` in `/etc/systemd/system/`:
+
+```bash
+cd /etc/systemd/system/
+curl -O https://raw.githubusercontent.com/parseablehq/parseable/main/systemd/parseable.s3.service
+```
+
+### Start/Stop the query service
+
+Once the service file is created, reload the systemd daemon and start the service.
+
+```bash
+systemctl enable parseable.s3.service
+service parseable.s3 start
+```
+
+You can check the status of the service using the following command:
+
+```bash
+service parseable.s3 status
+```
+
+You can now access Parseable at the address http://localhost:8000 (default configuration). If you added P_ADDR in config file, please access the correct URL accordingly.
+
+To check logs, use journalctl, like:
+
+```bash
+journalctl -eu parseable.s3.service
+```
+
+In case you want to disable / uninstall Parseable, run the below command:
+
+```bash
+systemctl disable parseable.s3.service
+```
+
+### Set up Parseable ingestor server
+
+Log on to each ingestor node and create a configuration file for the ingestor. Please make sure to replace the placeholders with the appropriate values.
+
+```bash
+cat <<EOT >> /etc/default/parseable
+P_USERNAME=admin
+P_PASSWORD=admin
+P_STAGING_DIR="/var/lib/parseable/staging"
+P_ADDR=0.0.0.0:8000
+P_S3_URL="https://s3.<region>.amazonaws.com"
+P_S3_BUCKET=<s3-bucket>
+P_S3_ACCESS_KEY=<access-key>
+P_S3_SECRET_KEY=<secret-key>
+P_S3_REGION=<region>
+P_MODE=ingest
+P_INGESTOR_ENDPOINT="<public IP of this server>:<port>"
+EOT
+```
+
+Download `parseable.s3.service` in `/etc/systemd/system/`:
+
+```bash
+cd /etc/systemd/system/
+curl -O https://raw.githubusercontent.com/parseablehq/parseable/main/systemd/parseable.s3.service
+```
+
+#### Start/Stop the ingest service
+Once the service file is created, reload the systemd daemon and start the service.
+
+```bash
+systemctl enable parseable.s3.service
+service parseable.s3 start
+```
+
+You can check the status of the service using the following command.
+
+```bash
+service parseable.s3 status
+```
+
+You can now access Parseable at the address http://localhost:8000 (default configuration). If you added P_ADDR to the config file, please access the correct URL accordingly.
+
+To check logs, use journalctl, like:
+
+```bash
+journalctl -eu parseable.s3.service
+```
+
+In case you want to disable / uninstall Parseable, run the below command:
+
+```bash
+systemctl disable parseable.s3.service
+```

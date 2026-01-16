@@ -1,5 +1,5 @@
 ---
-title: Query a log stream
+title: Query a log dataset
 full: true
 _openapi:
   method: POST
@@ -16,7 +16,7 @@ _openapi:
           - **query**: The SQL query to execute (required)
           - **startTime**: The start time for the query range (optional)
           - **endTime**: The end time for the query range (optional)
-          - **streamName**: The name of the log stream to query (required)
+          - **streamName**: The name of the log dataset to query (required)
 
           Example request body:
           ```json
@@ -24,7 +24,7 @@ _openapi:
             "query": "SELECT * FROM log WHERE log ILIKE '%error%';",
             "startTime": "2023-01-01 00:00:00.000000",
             "endTime": "2023-01-01 23:59:59.999999",
-            "streamName": "example-stream"
+            "streamName": "example-dataset"
           }
           ```
 ---
@@ -38,7 +38,7 @@ The query API accepts the following parameters:
 - **query**: The SQL query to execute (required)
 - **startTime**: The start time for the query range (optional)
 - **endTime**: The end time for the query range (optional)
-- **streamName**: The name of the log stream to query (required)
+- **streamName**: The name of the log dataset to query (required)
 
 Example request body:
 ```json
@@ -46,7 +46,7 @@ Example request body:
   "query": "SELECT * FROM log WHERE log ILIKE '%error%';",
   "startTime": "2023-01-01 00:00:00.000000",
   "endTime": "2023-01-01 23:59:59.999999",
-  "streamName": "example-stream"
+  "streamName": "example-dataset"
 }
 ```
 

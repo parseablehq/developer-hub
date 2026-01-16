@@ -2,10 +2,9 @@
   "title": "Key Concepts",
   "pages": [
     "data-model",
-    "ingestion",
     "partitioning",
-    "storage",
     "query",
+    "storage",
     "high-availability"
   ]
 }

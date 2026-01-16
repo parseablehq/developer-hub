@@ -2,11 +2,16 @@ import { ImageZoom } from 'fumadocs-ui/components/image-zoom';
 import defaultMdxComponents from 'fumadocs-ui/mdx';
 import { Callout } from 'fumadocs-ui/components/callout';
 import { Card, Cards } from 'fumadocs-ui/components/card';
-import { APIPage } from 'fumadocs-openapi/ui';
+import { createAPIPage } from 'fumadocs-openapi/ui';
 import { openapi } from './lib/source'; 
 import type { MDXComponents } from 'mdx/types';
-import { EnterpriseBadge } from './components/EnterpriseBadge';
+import { ProBadge, EnterpriseBadge, OfferingPills } from './components/OfferingBadges';
 import { YouTubeEmbed } from './components/YouTubeEmbed';
+import CurlTerminal from './components/CurlTerminal';
+import EditableCode from './components/EditableCode';
+
+// Create the APIPage component using the new Fumadocs 16.x API
+const APIPage = createAPIPage(openapi);
 
 // This function provides MDX components for rendering MDX content
 export function getMDXComponents(components: MDXComponents = {}): MDXComponents {
@@ -18,9 +23,13 @@ export function getMDXComponents(components: MDXComponents = {}): MDXComponents 
     Callout,
     Card,
     Cards,
+    ProBadge,
     EnterpriseBadge,
+    OfferingPills,
     YouTubeEmbed,
-    APIPage: (props) => <APIPage {...openapi.getAPIPageProps(props)} />,
+    CurlTerminal,
+    EditableCode,
+    APIPage,
     
     // Override any components if needed
     // For example, you could customize the appearance of certain HTML elements

@@ -1,0 +1,11 @@
+{
+  "title": "API Documentation",
+  "pages": [
+    "---v1---",
+    "v1/ingest",
+    "v1/query",
+    "v1/logstream/stream_name/put",
+    "v1/logstream/stream_name/post",
+    "v1/logstream/stream_name/delete"
+  ]
+}

@@ -1,0 +1,168 @@
+---
+title: Microsoft Teams
+description: Send alerts and notifications to Microsoft Teams channels
+---
+
+Send Parseable alerts to Microsoft Teams channels for team collaboration and incident awareness.
+
+## Overview
+
+Integrate Parseable with Microsoft Teams to:
+
+- **Team Notifications** - Alert your team in dedicated channels
+- **Rich Messages** - Send formatted cards with alert details
+- **Collaboration** - Discuss and resolve issues in context
+- **Mobile Alerts** - Receive notifications on mobile devices
+
+## Prerequisites
+
+- Microsoft Teams workspace
+- Incoming Webhook connector configured
+- Parseable instance with alerting configured
+
+## Setting Up Teams Webhook
+
+### Create an Incoming Webhook
+
+1. Open Microsoft Teams
+2. Navigate to the channel for alerts
+3. Click **...** → **Connectors**
+4. Find **Incoming Webhook** and click **Configure**
+5. Name your webhook (e.g., "Parseable Alerts")
+6. Optionally upload an icon
+7. Click **Create**
+8. Copy the webhook URL
+
+## Webhook Integration
+
+Create a webhook service to transform Parseable alerts to Teams format:
+
+```javascript
+// webhook-to-teams.js
+const express = require('express');
+const axios = require('axios');
+
+const app = express();
+app.use(express.json());
+
+const TEAMS_WEBHOOK_URL = process.env.TEAMS_WEBHOOK_URL;
+
+app.post('/webhook', async (req, res) => {
+  const alert = req.body;
+  
+  const teamsMessage = {
+    "@type": "MessageCard",
+    "@context": "http://schema.org/extensions",
+    "themeColor": getThemeColor(alert.severity),
+    "summary": `Parseable Alert: ${alert.name}`,
+    "sections": [{
+      "activityTitle": `🚨 ${alert.name || 'Alert Triggered'}`,
+      "activitySubtitle": `Stream: ${alert.dataset}`,
+      "activityImage": "https://parseable.com/logo.png",
+      "facts": [
+        { "name": "Severity", "value": alert.severity || 'Unknown' },
+        { "name": "Stream", "value": alert.dataset || 'N/A' },
+        { "name": "Current Value", "value": String(alert.value || 'N/A') },
+        { "name": "Threshold", "value": String(alert.threshold || 'N/A') },
+        { "name": "Time", "value": new Date().toISOString() }
+      ],
+      "markdown": true
+    }],
+    "potentialAction": [{
+      "@type": "OpenUri",
+      "name": "View in Parseable",
+      "targets": [{
+        "os": "default",
+        "uri": `https://your-parseable.com/streams/${alert.dataset}`
+      }]
+    }]
+  };
+
+  try {
+    await axios.post(TEAMS_WEBHOOK_URL, teamsMessage);
+    res.status(200).json({ status: 'sent' });
+  } catch (error) {
+    console.error('Error sending to Teams:', error);
+    res.status(500).json({ error: 'Failed to send to Teams' });
+  }
+});
+
+function getThemeColor(severity) {
+  const colors = {
+    'critical': 'FF0000',
+    'high': 'FFA500',
+    'medium': 'FFFF00',
+    'low': '00FF00',
+    'info': '0000FF'
+  };
+  return colors[severity?.toLowerCase()] || 'FFA500';
+}
+
+app.listen(3000);
+```
+
+### Adaptive Cards (Modern Format)
+
+For richer formatting, use Adaptive Cards:
+
+```javascript
+const adaptiveCard = {
+  "type": "message",
+  "attachments": [{
+    "contentType": "application/vnd.microsoft.card.adaptive",
+    "content": {
+      "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+      "type": "AdaptiveCard",
+      "version": "1.4",
+      "body": [
+        {
+          "type": "TextBlock",
+          "size": "Large",
+          "weight": "Bolder",
+          "text": `🚨 ${alert.name}`,
+          "color": alert.severity === 'critical' ? 'Attention' : 'Warning'
+        },
+        {
+          "type": "FactSet",
+          "facts": [
+            { "title": "Stream", "value": alert.dataset },
+            { "title": "Severity", "value": alert.severity },
+            { "title": "Value", "value": String(alert.value) }
+          ]
+        }
+      ],
+      "actions": [{
+        "type": "Action.OpenUrl",
+        "title": "View in Parseable",
+        "url": `https://your-parseable.com/streams/${alert.dataset}`
+      }]
+    }
+  }]
+};
+```
+
+## Docker Compose
+
+```yaml
+version: '3.8'
+services:
+  webhook-to-teams:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - TEAMS_WEBHOOK_URL=https://outlook.office.com/webhook/...
+```
+
+## Best Practices
+
+1. **Use Dedicated Channels** - Create separate channels for different alert severities
+2. **Include Action Links** - Add buttons to view alerts in Parseable
+3. **Format Messages** - Use cards for better readability
+4. **Rate Limiting** - Implement rate limiting to avoid flooding channels
+
+## Next Steps
+
+- Set up [Parseable alerts](/docs/user-guide/alerting) for automated notifications
+- Configure [Slack](/docs/integrations/alerting/slack) as an alternative
+- Create [dashboards](/docs/user-guide/dashboards) for monitoring

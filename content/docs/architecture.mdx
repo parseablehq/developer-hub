@@ -4,7 +4,7 @@ title: Architecture
 
 This document outlines the overall architecture of the Parseable Observability Platform, detailing the flow of MELT data from ingestion to storage and querying. 
 
-This document is organiszed into specific sections for each sub-system like ingestion, query, search, and index. To understand the specific decisions and trade-offs, refer the [design choices document](./design-choices.mdx).
+This document is organized into specific sections for each sub-system like ingestion, query, search, and index. To understand the specific decisions and trade-offs, refer the [design choices document](./design-choices.mdx).
 
 ![Parseable Architecture](./static/architecture-overview.png)
 
@@ -33,7 +33,7 @@ A background job then reads the staged Arrow files, converts them into highly co
 ## Query
 
 <Callout type="info">
-  <EnterpriseBadge /> Distributed Query nodes are Enterprise-only features and cannot be deployed with OSS versions.
+  Distributed Query nodes are Enterprise only features available in pro and enterprise versions and cannot be deployed with OSS versions.
 </Callout>
 
 Query node is primarily responsible responding to query API. The query workflow starts when someone calls the query API with (a PostgreSQL compatible) SQL query, and a start and end timestamp. The query node looks up the metadata locally first, falling back to object store only if not found. 
@@ -44,16 +44,39 @@ Another node called Prism node responds to all the role, user management, datase
 
 ![Parseable Query Architecture](./static/query-architecture.png)
 
-## Benchmarking
+## Design choices
 
-ParseableDB is an OLAP database purpose built for high volume ingestion, and fast querying of observability signals. It uses object storage as the primary data store, for cost efficiency and scale. For fast query response, it uses caching mechanisms to keep the frequently accessed data in memory and on local disk. 
+### Low latency writes
+Ingested data is staged on local disk upon successful return by Parseable API. Data is then asynchronously committed to object store like S3. This ensures low latency, high throughput ingestion. To ensure data durability, we recommend using a small, reliable storage (EFS, Azure Files, NFS or equivalent) attached to the ingesting nodes. This ensures that data is not lost in case of a node failure.
 
-Parseable ranks among the **fastest databases** on ClickBench, outperforming several OLAP systems in structured query benchmarks.
-Parseable benchmarks are available on [ClickBench](https://benchmark.clickhouse.com/).
+### Atomic ingestion
+Each ingestion batch received via API is concurrently appended to the same file within a one-minute window. When converted from Arrow to Parquet, entries are reordered to ensure the latest data appears first.
 
-Refer to the benchmark results here: [ParseableDB Benchmark](http://logg.ing/clickbench)
+### Efficient storage
+Parseable stores heavily compressed Parquet format to one of the most cost efficient storage, i.e. object storage. This leads to significant cost savings, especially for large datasets. 
 
-Steps on how to run the benchmarks are available in the [ClickBench documentation](https://github.com/ClickHouse/ClickBench/tree/main/parseable).
+### Smart caching 
+Frequently accessed logs are cached in memory and NVMe SSDs on query nodes for faster access. The system prioritizes recent data, manages cache eviction automatically, and minimizes object store API calls using Parseable manifest files and Parquet footers.
 
-![Parseable Benchmark](./static/benchmark.png)
+### Index on demand
+By default data is stored in columnar Parquet files, allowing fast aggregations, filtering numerical columns and SQL queries. Parseable allows indexing specific chunks of data, on demand - to allow text search on log data as and when needed.
 
+### Stateless high availability
+High availability (HA) is ensured through a distributed mode in which multiple ingestion and query servers operate independently. 
+
+### Object storage first
+There is no separate consensus layer, eliminating complex coordination and reducing operational overhead. Object storage manages all concurrency control.
+
+### SQL for querying 
+We chose SQL as the query language for Parseable because it is widely used and understood, making it easier for users to interact with the system. SQL allows users to filter, aggregate, and join data from multiple sources. SQL is also very well supported by modern LLMs to generate queries from plain text.
+
+## Trade-offs
+
+### Staged writes
+Staging data locally on the ingestor node for at least a minute, leads to a minor lag in querying the data. We trades immediate persistence for low latency ingestion.
+
+### Occasional Cold Queries
+The query layer fetches indexes from object storage (e.g., S3) and uses intelligent caching to accelerate future access. During the initial cache warm-up, some queries may access data directly from cold storage, resulting in higher latencies.
+
+### Timed queries
+A query call requires start and end timestamp. This ensures data is queried across a fixed, definite set of files. Parseable ensures query response includes the staging and committed data on object storage as required.

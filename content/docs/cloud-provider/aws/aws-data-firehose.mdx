@@ -5,27 +5,27 @@ title: "AWS Data Firehose"
 ### Introduction
 Amazon Data Firehose is a fully managed service for delivering real-time streaming data to various destination.
 
-- Firehose stream: The underlying entity of Amazon Data Firehose. You use Amazon Data Firehose by creating a Firehose stream and then sending data to it.
-- Record: The data of interest that your data producer sends to a Firehose stream. A record can be as large as 1,000 KB.
-- Data producer: Producers send records to Firehose streams. For example, a web server that sends log data to a Firehose stream is a data producer. You can also configure your Firehose stream to automatically read data from an existing Kinesis data stream, and load it into destinations.
+- Firehose dataset: The underlying entity of Amazon Data Firehose. You use Amazon Data Firehose by creating a Firehose dataset and then sending data to it.
+- Record: The data of interest that your data producer sends to a Firehose dataset. A record can be as large as 1,000 KB.
+- Data producer: Producers send records to Firehose streams. For example, a web server that sends log data to a Firehose dataset is a data producer. You can also configure your Firehose dataset to automatically read data from an existing Kinesis data dataset, and load it into destinations.
 - Buffer size and buffer interval: Amazon Data Firehose buffers incoming streaming data to a certain size or for a certain period of time before delivering it to destinations. Buffer Size is in MBs and Buffer Interval is in seconds.
 
 ### Overview
-You can send data to Parseable using Amazon Data Firehose stream, and Parseable will automatically ingest the data and make it available for you to query and analyze.
+You can send data to Parseable using Amazon Data Firehose dataset, and Parseable will automatically ingest the data and make it available for you to query and analyze.
 
 Once logs are unified in Parseable, you can easily monitor and analyze the logs in real-time, and get insights into the performance and usage of your APIs.
 
 ### Pre-requisites
-- Parseable deployed and running in your environment. Refer the [installation guide](/docs/installation) for more information.
+- Parseable deployed and running in your environment. Refer the [installation guide](/docs/self-hosted/installation) for more information.
 - AWS account with access to Amazon Data Firehose service.
 
-### Create a Firehose stream
-First step is to create a Firehose stream to ingest data from various sources and send it to Parseable. In the AWS Management Console, navigate to the Amazon Data Firehose service and click on `Create Firehose stream`.
+### Create a Firehose dataset
+First step is to create a Firehose dataset to ingest data from various sources and send it to Parseable. In the AWS Management Console, navigate to the Amazon Data Firehose service and click on `Create Firehose dataset`.
 
-In the next screen, you can choose from various sources like Kinesis data stream, Amazon MSK (Kafka), and Direct PUT (i.e. send data directly to Firehose stream from an application).
+In the next screen, you can choose from various sources like Kinesis data dataset, Amazon MSK (Kafka), and Direct PUT (i.e. send data directly to Firehose dataset from an application).
 
 ### Destination settings
-In the next step, you can configure the destination settings. Choose HTTP Endpoint as the destination. After that we'll need to provide the endpoint URL, Basic Auth token, and the Parseable stream where you want to send the data.
+In the next step, you can configure the destination settings. Choose HTTP Endpoint as the destination. After that we'll need to provide the endpoint URL, Basic Auth token, and the Parseable dataset where you want to send the data.
 
 For example to send events to the demo Parseable instance at `https://demo.parseable.com`:
 
@@ -44,4 +44,4 @@ For example to send events to the demo Parseable instance at `https://demo.parse
 ### Backup settings
 To ensure that no data is lost, you can configure the backup settings. You can choose to deliver the data to an S3 bucket in case the data can't be delivered to Parseable.
 
-That's it. You have successfully created a Firehose stream to ingest data from various sources and send it to Parseable. Now you can start sending data to the Firehose stream and you'll see the data in Parseable available for query and analysis.
+That's it. You have successfully created a Firehose dataset to ingest data from various sources and send it to Parseable. Now you can start sending data to the Firehose dataset and you'll see the data in Parseable available for query and analysis.

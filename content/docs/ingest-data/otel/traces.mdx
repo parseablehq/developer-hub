@@ -1,0 +1,325 @@
+---
+title: OpenTelemetry Traces
+redirect_from:
+  - /OpenTelemetry/traces
+---
+
+Parseable enables ingesting the OpenTelemetry traces sent from the OTEL collectors in the JSON format. In order to do so, Parseable exposes default endpoint /v1/traces at which the OTEL collector sends the span data.
+
+Below is the sample configuration of the OTEL collector to send the traces to Parseable
+
+```yaml
+exporters:
+  otlphttp/parseabletraces:
+    endpoint: "<parseable-endpoint> eg. http://localhost:8000"
+    headers:
+      Authorization: "Basic <base64 encoded string of username:password>"
+      X-P-Stream: otel-traces       # dataset/dataset name
+      X-P-Log-Source: otel-traces
+      Content-Type: application/json
+    encoding: json
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    traces:
+      exporters: [otlphttp/parseabletraces]
+```
+## Support for Protocol Buffers
+
+<OfferingPills pro enterprise className="mb-4" />
+
+Parseable also supports ingesting the OpenTelemetry Traces sent from the OTEL collectors in the Protocol Buffers format. Below is an example configuration of the OTEL collector to send the traces to Parseable in the Protocol Buffers format.
+
+```yaml
+exporters:
+  otlphttp/parseabletraces:
+    endpoint: "http://parseable:8000"
+    headers:
+      Authorization: "Basic YWRtaW46YWRtaW4="  # admin:admin in base64
+      X-P-Stream: otel-traces        # dataset/dataset name
+      X-P-Log-Source: otel-traces
+      Content-Type: application/x-protobuf
+    encoding: proto
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    traces:
+      exporters: [otlphttp/parseabletraces]
+```
+
+## Data Flattening
+The OpenTelemetry traces that are in the form of a nested JSON. When the log event is received at `/v1/traces` endpoint, Parseable will flatten the nested JSON to a flat JSON object. This is done to make the data more queryable and filterable. Here's a quick comparison of the nested JSON and the flattened JSON:
+
+OTEL JSON format sample:
+
+```json
+{
+  "resourceSpans": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "frontend-web"
+            }
+          },
+          {
+            "key": "telemetry.sdk.language",
+            "value": {
+              "stringValue": "webjs"
+            }
+          },
+          {
+            "key": "telemetry.sdk.name",
+            "value": {
+              "stringValue": "opentelemetry"
+            }
+          },
+          {
+            "key": "telemetry.sdk.version",
+            "value": {
+              "stringValue": "1.25.1"
+            }
+          },
+          {
+            "key": "process.runtime.name",
+            "value": {
+              "stringValue": "browser"
+            }
+          },
+          {
+            "key": "process.runtime.description",
+            "value": {
+              "stringValue": "Web Browser"
+            }
+          },
+          {
+            "key": "process.runtime.version",
+            "value": {
+              "stringValue": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/120.0.6099.28 Safari/537.36"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "@opentelemetry/instrumentation-fetch",
+            "version": "0.52.1"
+          },
+          "spans": [
+            {
+              "traceId": "d43eb15c7303ad1951047e10bd22b5c3",
+              "spanId": "c1250f476d1acff9",
+              "parentSpanId": "",
+              "name": "HTTP GET",
+              "kind": 3,
+              "startTimeUnixNano": "1734185431811000000",
+              "endTimeUnixNano": "1734185431956000000",
+              "attributes": [
+                {
+                  "key": "component",
+                  "value": {
+                    "stringValue": "fetch"
+                  }
+                },
+                {
+                  "key": "http.method",
+                  "value": {
+                    "stringValue": "GET"
+                  }
+                },
+                {
+                  "key": "http.url",
+                  "value": {
+                    "stringValue": "http://frontend-proxy:8080/api/recommendations?productIds=\\u0026sessionId=8b1a837b-17a5-40a4-abed-c7bc419eb91e\\u0026currencyCode=USD"
+                  }
+                },
+                {
+                  "key": "session.id",
+                  "value": {
+                    "stringValue": "8b1a837b-17a5-40a4-abed-c7bc419eb91e"
+                  }
+                },
+                {
+                  "key": "app.synthetic_request",
+                  "value": {
+                    "stringValue": "true"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "http.status_text",
+                  "value": {
+                    "stringValue": "OK"
+                  }
+                },
+                {
+                  "key": "http.host",
+                  "value": {
+                    "stringValue": "frontend-proxy:8080"
+                  }
+                },
+                {
+                  "key": "http.scheme",
+                  "value": {
+                    "stringValue": "http"
+                  }
+                },
+                {
+                  "key": "http.user_agent",
+                  "value": {
+                    "stringValue": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/120.0.6099.28 Safari/537.36"
+                  }
+                },
+                {
+                  "key": "http.response_content_length",
+                  "value": {
+                    "intValue": "1165"
+                  }
+                },
+                {
+                  "key": "http.response_content_length_uncompressed",
+                  "value": {
+                    "intValue": "2547"
+                  }
+                }
+              ],
+              "events": [
+                {
+                  "timeUnixNano": "1734185431811799902",
+                  "name": "fetchStart"
+                },
+                {
+                  "timeUnixNano": "1734185431811799902",
+                  "name": "domainLookupStart"
+                }
+              ],
+              "status": {}
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}   
+```
+
+## Flattened JSON
+
+```json
+[
+    {
+      "app.synthetic_request": "true",
+      "component": "fetch",
+      "event_dropped_attributes_count": 0,
+      "event_name": "fetchStart",
+      "event_time_unix_nano": 1734185431811799800,
+      "http.host": "frontend-proxy:8080",
+      "http.method": "GET",
+      "http.response_content_length": "1165",
+      "http.response_content_length_uncompressed": "2547",
+      "http.scheme": "http",
+      "http.status_code": "200",
+      "http.status_text": "OK",
+      "http.url": "http://frontend-proxy:8080/api/recommendations?productIds=\\u0026sessionId=8b1a837b-17a5-40a4-abed-c7bc419eb91e\\u0026currencyCode=USD",
+      "http.user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/120.0.6099.28 Safari/537.36",
+      "p_metadata": "",
+      "p_tags": "",
+      "p_timestamp": "2025-01-01T23:47:50.691+05:30",
+      "process.runtime.description": "Web Browser",
+      "process.runtime.name": "browser",
+      "process.runtime.version": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/120.0.6099.28 Safari/537.36",
+      "resource_dropped_attributes_count": 0,
+      "schema_url": "",
+      "scope_dropped_attributes_count": 0,
+      "scope_name": "@opentelemetry/instrumentation-fetch",
+      "scope_version": "0.52.1",
+      "service.name": "frontend-web",
+      "session.id": "8b1a837b-17a5-40a4-abed-c7bc419eb91e",
+      "span_dropped_attributes_count": 0,
+      "span_dropped_events_count": 0,
+      "span_dropped_links_count": 0,
+      "span_end_time_unix_nano": 1734185431956000000,
+      "span_flags": 0,
+      "span_flags_description": "SPAN_FLAGS_DO_NOT_USE",
+      "span_kind": 3,
+      "span_kind_description": "SPAN_KIND_CLIENT",
+      "span_name": "HTTP GET",
+      "span_parent_span_id": "",
+      "span_span_id": "d43eb15c7303ad1951047e10bd22b5c3",
+      "span_start_time_unix_nano": 1734185431811000000,
+      "span_status_code": 0,
+      "span_status_description": "STATUS_CODE_UNSET",
+      "span_status_message": "",
+      "span_trace_id": "c1250f476d1acff9",
+      "span_trace_state": "",
+      "telemetry.sdk.language": "webjs",
+      "telemetry.sdk.name": "opentelemetry",
+      "telemetry.sdk.version": "1.25.1"
+    },
+    {
+      "app.synthetic_request": "true",
+      "component": "fetch",
+      "event_dropped_attributes_count": 0,
+      "event_name": "domainLookupStart",
+      "event_time_unix_nano": 1734185431811799800,
+      "http.host": "frontend-proxy:8080",
+      "http.method": "GET",
+      "http.response_content_length": "1165",
+      "http.response_content_length_uncompressed": "2547",
+      "http.scheme": "http",
+      "http.status_code": "200",
+      "http.status_text": "OK",
+      "http.url": "http://frontend-proxy:8080/api/recommendations?productIds=\\u0026sessionId=8b1a837b-17a5-40a4-abed-c7bc419eb91e\\u0026currencyCode=USD",
+      "http.user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/120.0.6099.28 Safari/537.36",
+      "p_metadata": "",
+      "p_tags": "",
+      "p_timestamp": "2025-01-01T23:47:50.695+05:30",
+      "process.runtime.description": "Web Browser",
+      "process.runtime.name": "browser",
+      "process.runtime.version": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/120.0.6099.28 Safari/537.36",
+      "resource_dropped_attributes_count": 0,
+      "schema_url": "",
+      "scope_dropped_attributes_count": 0,
+      "scope_name": "@opentelemetry/instrumentation-fetch",
+      "scope_version": "0.52.1",
+      "service.name": "frontend-web",
+      "session.id": "8b1a837b-17a5-40a4-abed-c7bc419eb91e",
+      "span_dropped_attributes_count": 0,
+      "span_dropped_events_count": 0,
+      "span_dropped_links_count": 0,
+      "span_end_time_unix_nano": 1734185431956000000,
+      "span_flags": 0,
+      "span_flags_description": "SPAN_FLAGS_DO_NOT_USE",
+      "span_kind": 3,
+      "span_kind_description": "SPAN_KIND_CLIENT",
+      "span_name": "HTTP GET",
+      "span_parent_span_id": "",
+      "span_span_id": "d43eb15c7303ad1951047e10bd22b5c3",
+      "span_start_time_unix_nano": 1734185431811000000,
+      "span_status_code": 0,
+      "span_status_description": "STATUS_CODE_UNSET",
+      "span_status_message": "",
+      "span_trace_id": "c1250f476d1acff9",
+      "span_trace_state": "",
+      "telemetry.sdk.language": "webjs",
+      "telemetry.sdk.name": "opentelemetry",
+      "telemetry.sdk.version": "1.25.1"
+    }
+]
+```
+
+All the resource attributes are stored as key-value pair where each attribute key becomes the field and the value, which may be of one of `stringValue/intValue/doubleValue etc`, becomes the value for that particular field.
+    
+Each event under span record in the incoming log event is stored as individual record in Parseable and all resource or span attributes, scope name, version, span elements such as traceId, spanId, name, kind etc which are at the parent level of event are copied in each ingested record. In the above example, there are 2 events `fetchStart` and `domainLookupStart` under the span record, thus, Parseable stores the incoming event as 2 records making it simpler to query and analyse.

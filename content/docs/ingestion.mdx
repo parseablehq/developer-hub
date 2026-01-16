@@ -1,0 +1,464 @@
+---
+title: Ingestion
+---
+import { IconPlug, IconCode, IconWand, IconSettings, IconDatabase, IconChartDots, IconTimeline,IconBrandAws,IconBrandAzure,IconBrandGoogle } from '@tabler/icons-react';
+
+Ingestion is the process of sending Telemetry signals (Metrics, Events, Logs, Traces) into Parseable. 
+
+You can ingest data to Parseable in JSON format over HTTP(s). This means that any log agent, metric collector, or tracing library that can send data over HTTP in JSON format can be used to ingest data into Parseable.
+
+For log data you can use the HTTP output plugins of all the logging agents/shippers like [Fluent Bit](/docs/datasource/log-agents/fluent-bit), [Vector](/docs/datasource/log-agents/vector), [syslog-ng](/docs/datasource/log-agents/syslog), [LogStash](/docs/datasource/log-agents/logstash), among others to send log events to Parseable.
+
+You can also directly integrate Parseable with your application via [REST API](/docs/api/v1/ingest).
+
+Parseable also supports the OTel native data ingestion via the Protobuf over HTTP. This allows you to use any OpenTelemetry compatible log agent or library to send logs to Parseable.
+
+## Ingestion reference
+
+Explore the different methods to ingest data into Parseable. Choose the method that best fits your infrastructure and use case.
+
+### OpenTelemetry
+
+<Cards>
+
+<Card href="/docs/ingest-data/otel/traces" icon={<IconTimeline className="text-purple-600" />} title='OTel Traces'>
+Ingest distributed traces using OpenTelemetry Protocol (OTLP).
+</Card>
+
+<Card href="/docs/ingest-data/otel/logs" icon={<IconTimeline className="text-purple-600" />} title='OTel Logs'>
+Ingest structured logs using OpenTelemetry Protocol (OTLP).
+</Card>
+
+<Card href="/docs/ingest-data/otel/metrics" icon={<IconChartDots className="text-purple-600" />} title='OTel Metrics'>
+Ingest metrics using OpenTelemetry Protocol (OTLP).
+</Card>
+
+</Cards>
+
+### Zero instrumentation
+
+<Cards>
+
+<Card href="/docs/ingest-data/zero-instrumentation" icon={<IconWand className="text-purple-600" />} title='eBPF Agents'>
+Collect logs without modifying your application code.
+</Card>
+
+</Cards>
+
+### LLM & AI Agents
+
+<Cards>
+
+<Card href="/docs/ingest-data/ai-agents/openai" icon={<IconCode className="text-purple-600" />} title='OpenAI'>
+Track and log OpenAI API calls and responses.
+</Card>
+
+<Card href="/docs/ingest-data/ai-agents/anthropic" icon={<IconCode className="text-purple-600" />} title='Anthropic'>
+Monitor and log Anthropic Claude API interactions.
+</Card>
+
+<Card href="/docs/ingest-data/ai-agents/langchain" icon={<IconCode className="text-purple-600" />} title='LangChain'>
+Ingest traces and logs from LangChain applications.
+</Card>
+
+<Card href="/docs/ingest-data/ai-agents/llamaindex" icon={<IconCode className="text-purple-600" />} title='LlamaIndex'>
+Collect observability data from LlamaIndex applications.
+</Card>
+
+<Card href="/docs/ingest-data/ai-agents/autogen" icon={<IconCode className="text-purple-600" />} title='AutoGen'>
+Track multi-agent conversations and AutoGen workflows.
+</Card>
+
+<Card href="/docs/ingest-data/ai-agents/crewai" icon={<IconCode className="text-purple-600" />} title='CrewAI'>
+Ingest logs from CrewAI agent orchestration.
+</Card>
+
+<Card href="/docs/ingest-data/ai-agents/dspy" icon={<IconCode className="text-purple-600" />} title='DSPy'>
+Monitor DSPy framework executions and outputs.
+</Card>
+
+<Card href="/docs/ingest-data/ai-agents/n8n" icon={<IconCode className="text-purple-600" />} title='n8n'>
+Collect workflow execution logs from n8n automation platform.
+</Card>
+
+</Cards>
+
+### Log agents and shippers
+
+<Cards>
+
+<Card href="/docs/ingest-data/logging-agents/fluent-bit" icon={<IconPlug className="text-blue-600" />} title='Fluent Bit'>
+Lightweight and scalable logging processor. Perfect for Kubernetes and Docker environments.
+</Card>
+
+<Card href="/docs/ingest-data/logging-agents/vector" icon={<IconPlug className="text-blue-600" />} title='Vector'>
+High-performance observability data pipeline for logs, metrics, and traces.
+</Card>
+
+<Card href="/docs/ingest-data/logging-agents/fluentd" icon={<IconPlug className="text-blue-600" />} title='Fluentd'>
+Unified logging layer that collects data from multiple sources and routes to destinations.
+</Card>
+
+<Card href="/docs/ingest-data/logging-agents/otel-collector" icon={<IconPlug className="text-blue-600" />} title='OpenTelemetry Collector'>
+Vendor-agnostic way to receive, process, and export telemetry data.
+</Card>
+
+<Card href="/docs/ingest-data/logging-agents/apache-log-4j" icon={<IconPlug className="text-blue-600" />} title='Apache Log4j'>
+Send logs directly from Log4j applications to Parseable.
+</Card>
+
+<Card href="/docs/ingest-data/logging-agents/logstash" icon={<IconPlug className="text-blue-600" />} title='Logstash'>
+Server-side data processing pipeline that ingests data from multiple sources.
+</Card>
+
+<Card href="/docs/ingest-data/logging-agents/syslog" icon={<IconPlug className="text-blue-600" />} title='Syslog'>
+Standard protocol for message logging across network devices and servers.
+</Card>
+
+<Card href="/docs/ingest-data/logging-agents/filebeat" icon={<IconPlug className="text-blue-600" />} title='Filebeat'>
+Lightweight shipper for forwarding and centralizing log data from files.
+</Card>
+
+<Card href="/docs/ingest-data/logging-agents/promtail" icon={<IconPlug className="text-blue-600" />} title='Promtail'>
+Agent that ships the contents of local logs to a centralized store.
+</Card>
+
+<Card href="/docs/ingest-data/logging-agents/prometheus" icon={<IconChartDots className="text-blue-600" />} title='Prometheus'>
+Monitoring system and time series database for metrics collection.
+</Card>
+
+</Cards>
+
+### Databases
+
+<Cards>
+
+<Card href="/docs/ingest-data/databases/postgresql" icon={<IconDatabase className="text-gray-600" />} title='PostgreSQL'>
+Ingest logs and metrics from PostgreSQL databases.
+</Card>
+
+<Card href="/docs/ingest-data/databases/mysql" icon={<IconDatabase className="text-gray-600" />} title='MySQL'>
+Collect logs and metrics from MySQL databases.
+</Card>
+
+<Card href="/docs/ingest-data/databases/mongodb" icon={<IconDatabase className="text-gray-600" />} title='MongoDB'>
+Ingest logs and metrics from MongoDB databases.
+</Card>
+
+<Card href="/docs/ingest-data/databases/redis" icon={<IconDatabase className="text-gray-600" />} title='Redis'>
+Collect logs and metrics from Redis databases.
+</Card>
+
+<Card href="/docs/ingest-data/databases/elasticsearch" icon={<IconDatabase className="text-gray-600" />} title='Elasticsearch'>
+Migrate or sync data from Elasticsearch to Parseable.
+</Card>
+
+</Cards>
+
+### Containers
+
+<Cards>
+
+<Card href="/docs/ingest-data/containers/docker" icon={<IconDatabase className="text-orange-600" />} title='Docker'>
+Collect logs from Docker containers using logging drivers.
+</Card>
+
+<Card href="/docs/ingest-data/containers/kubernetes" icon={<IconDatabase className="text-orange-600" />} title='Kubernetes'>
+Ingest logs from Kubernetes clusters using DaemonSets and sidecars.
+</Card>
+
+<Card href="/docs/ingest-data/containers/amazon-ecs" icon={<IconDatabase className="text-orange-600" />} title='Amazon ECS'>
+Collect logs from Amazon Elastic Container Service tasks.
+</Card>
+
+<Card href="/docs/ingest-data/containers/amazon-eks" icon={<IconDatabase className="text-orange-600" />} title='Amazon EKS'>
+Ingest logs from Amazon Elastic Kubernetes Service clusters.
+</Card>
+
+<Card href="/docs/ingest-data/containers/google-gke" icon={<IconDatabase className="text-orange-600" />} title='Google GKE'>
+Ingest logs from Google Kubernetes Engine clusters.
+</Card>
+
+<Card href="/docs/ingest-data/containers/azure-aks" icon={<IconDatabase className="text-orange-600" />} title='Azure AKS'>
+Collect logs from Azure Kubernetes Service clusters.
+</Card>
+
+</Cards>
+
+### Streaming Platforms
+
+<Cards>
+
+<Card href="/docs/ingest-data/streaming/kafka" icon={<IconTimeline className="text-purple-600" />} title='Kafka'>
+Ingest real-time streaming data from Apache Kafka topics.
+</Card>
+
+<Card href="/docs/ingest-data/streaming/redpanda" icon={<IconTimeline className="text-purple-600" />} title='Redpanda'>
+Stream data from Redpanda, a Kafka-compatible streaming platform.
+</Card>
+
+<Card href="/docs/ingest-data/streaming/rabbitmq" icon={<IconTimeline className="text-purple-600" />} title='RabbitMQ'>
+Collect messages from RabbitMQ message broker.
+</Card>
+
+<Card href="/docs/ingest-data/streaming/nats" icon={<IconTimeline className="text-purple-600" />} title='NATS'>
+Ingest messages from NATS messaging system.
+</Card>
+
+</Cards>
+
+### CI/CD Tools
+
+<Cards>
+
+<Card href="/docs/ingest-data/cicd/github-actions" icon={<IconSettings className="text-green-600" />} title='GitHub Actions'>
+Collect logs and metrics from GitHub Actions workflows.
+</Card>
+
+<Card href="/docs/ingest-data/cicd/jenkins" icon={<IconSettings className="text-green-600" />} title='Jenkins'>
+Collect build and deployment logs from Jenkins.
+</Card>
+
+<Card href="/docs/ingest-data/cicd/gitlab-ci" icon={<IconSettings className="text-green-600" />} title='GitLab CI'>
+Ingest logs from GitLab CI/CD pipelines.
+</Card>
+
+<Card href="/docs/ingest-data/cicd/circleci" icon={<IconSettings className="text-green-600" />} title='CircleCI'>
+Ingest logs from CircleCI build pipelines.
+</Card>
+
+<Card href="/docs/ingest-data/cicd/argocd" icon={<IconSettings className="text-green-600" />} title='ArgoCD'>
+Collect logs from ArgoCD GitOps deployments.
+</Card>
+
+<Card href="/docs/ingest-data/cicd/terraform" icon={<IconSettings className="text-green-600" />} title='Terraform'>
+Ingest infrastructure deployment logs from Terraform.
+</Card>
+
+</Cards>
+
+### Cloud services
+
+<Cards>
+
+<Card href="/docs/ingest-data/cloud/aws-cloudwatch" icon={<IconBrandAws className="text-blue-600" />} title='AWS CloudWatch'>
+Ingest logs and metrics from AWS CloudWatch service.
+</Card>
+
+<Card href="/docs/ingest-data/cloud/aws-kinesis" icon={<IconBrandAws className="text-blue-600" />} title='AWS Kinesis'>
+Stream data from AWS Kinesis Data Streams to Parseable.
+</Card>
+
+<Card href="/docs/ingest-data/cloud/azure-event-hubs" icon={<IconBrandAzure className="text-blue-600" />} title='Azure Event Hubs'>
+Ingest streaming data from Azure Event Hubs.
+</Card>
+
+<Card href="/docs/ingest-data/cloud/gcp-pubsub" icon={<IconBrandGoogle className="text-blue-600" />} title='GCP Pub/Sub'>
+Stream data from Google Cloud Pub/Sub messaging service.
+</Card>
+
+</Cards>
+
+### Security Tools
+
+<Cards>
+
+<Card href="/docs/ingest-data/security/falco" icon={<IconSettings className="text-red-600" />} title='Falco'>
+Ingest runtime security events from Falco.
+</Card>
+
+<Card href="/docs/ingest-data/security/trivy" icon={<IconSettings className="text-red-600" />} title='Trivy'>
+Collect vulnerability scan results from Trivy.
+</Card>
+
+<Card href="/docs/ingest-data/security/siem-export" icon={<IconSettings className="text-red-600" />} title='SIEM Export'>
+Export security events to SIEM platforms.
+</Card>
+
+</Cards>
+
+### Programming languages
+
+<Cards>
+
+<Card href="/docs/ingest-data/programming-languages/python" icon={<IconCode className="text-green-600" />} title='Python'>
+Integrate Parseable with Python applications using standard logging libraries.
+</Card>
+
+<Card href="/docs/ingest-data/programming-languages/javascript" icon={<IconCode className="text-green-600" />} title='JavaScript/Node.js'>
+Integrate Parseable with Node.js applications and browser-based logging.
+</Card>
+
+<Card href="/docs/ingest-data/programming-languages/go" icon={<IconCode className="text-green-600" />} title='Go'>
+Send logs from Go applications using HTTP client or OpenTelemetry SDK.
+</Card>
+
+<Card href="/docs/ingest-data/programming-languages/java" icon={<IconCode className="text-green-600" />} title='Java'>
+Send logs from Java applications using Log4j, Logback, or OpenTelemetry.
+</Card>
+
+<Card href="/docs/ingest-data/programming-languages/rust" icon={<IconCode className="text-green-600" />} title='Rust'>
+Send logs from Rust applications using tracing or log crates.
+</Card>
+
+<Card href="/docs/ingest-data/programming-languages/csharp" icon={<IconCode className="text-green-600" />} title='C#'>
+Integrate Parseable with C# applications using Serilog or NLog.
+</Card>
+
+<Card href="/docs/ingest-data/programming-languages/dotnet" icon={<IconCode className="text-green-600" />} title='.NET'>
+Integrate Parseable with .NET applications using structured logging.
+</Card>
+
+<Card href="/docs/ingest-data/programming-languages/php" icon={<IconCode className="text-green-600" />} title='PHP'>
+Send logs from PHP applications using Monolog or custom implementations.
+</Card>
+
+<Card href="/docs/ingest-data/programming-languages/ruby" icon={<IconCode className="text-green-600" />} title='Ruby'>
+Integrate Parseable with Ruby applications using standard logging frameworks.
+</Card>
+
+</Cards>
+
+## Ingestion HTTP headers
+
+You can use HTTP headers to control how data is ingested and processed.
+
+### Required headers
+
+| Header | Description | Example | Possible Values |
+|--------|-------------|---------|-----------------|
+| `X-P-Stream` | Target dataset name. Creates the dataset if it doesn't exist. | `nginx-logs` | Valid dataset name |
+| `Authorization` | Basic auth credentials (base64 encoded `username:password`) | `Basic YWRtaW46YWRtaW4=` | Valid credentials |
+| `Content-Type` | Content type of the request body | `application/json` | `application/json`,`application/protobuf` |
+
+### Optional headers
+
+| Header | Description | Example |
+|--------|-------------|---------|
+| `X-P-Tag-{field}` | Add custom tags/metadata to events. Replace `{field}` with tag name. | `X-P-Tag-environment: production` |
+
+## Log processing
+
+<OfferingPills pro enterprise className="mb-4" />
+
+When agents like Fluent Bit or Vector send logs to Parseable, they typically send the entire log line in a single field (usually named `log` or `message`). With log extraction enabled, Parseable can automatically parse this raw log line and extract structured fields using regex patterns.
+
+**The flow:**
+
+1. Agent sends JSON log data with the raw log line in a field (e.g., `{"log": "192.168.1.1 - - [10/Jan/2026:12:00:00] ..."}`)
+2. Agent sets `X-P-Extract-Log` header to the field name containing the raw log (e.g., `log`)
+3. Agent sets `X-P-Log-Source` header to the log format name (e.g., `nginx_access`)
+4. Parseable reads the value from the specified field, applies the matching regex pattern, and adds all extracted fields to the event
+
+### Headers for log extraction
+
+| Header | Description | Example | Possible Values |
+|--------|-------------|---------|-----------------|
+| `X-P-Log-Source` | Log format name - Parseable applies regex patterns to extract fields | `nginx_access`, `syslog_log` | See [Supported log source formats](#supported-log-source-formats) |
+| `X-P-Extract-Log` | Field name in the JSON payload that contains the raw log line | `log`, `message` | Any valid field name |
+
+### Supported log source formats 
+
+| # | Format Name |
+|---|-------------|
+| 1 | `access_log` |
+| 2 | `alb_log` |
+| 3 | `block_log` |
+| 4 | `candlepin_log` |
+| 5 | `choose_repo_log` |
+| 6 | `cloudvm_ram_log` |
+| 7 | `cups_log` |
+| 8 | `dpkg_log` |
+| 9 | `elb_log` |
+| 10 | `engine_log` |
+| 11 | `env_logger_log` |
+| 12 | `error_log` |
+| 13 | `esx_syslog_log` |
+| 14 | `haproxy_log` |
+| 15 | `java` |
+| 16 | `katello_log` |
+| 17 | `klog` |
+| 18 | `kubernetes_log` |
+| 19 | `lnav_debug_log` |
+| 20 | `nextflow_log` |
+| 21 | `nginx_access` |
+| 22 | `openam_log` |
+| 23 | `openamdb_log` |
+| 24 | `openstack_log` |
+| 25 | `page_log` |
+| 26 | `parseable_server_logs` |
+| 27 | `postgres` |
+| 28 | `postgresql_log` |
+| 29 | `procstate_log` |
+| 30 | `proxifier_log` |
+| 31 | `rails_log` |
+| 32 | `redis_log` |
+| 33 | `s3_log` |
+| 34 | `simple_rs_log` |
+| 35 | `snaplogic_log` |
+| 36 | `sssd_log` |
+| 37 | `strace_log` |
+| 38 | `sudo_log` |
+| 39 | `syslog_log` |
+| 40 | `tcf_log` |
+| 41 | `tcsh_history` |
+| 42 | `uwsgi_log` |
+| 43 | `vmk_log` |
+| 44 | `vmw_log` |
+| 45 | `vmw_py_log` |
+| 46 | `vmw_vc_svc_log` |
+| 47 | `vpostgres_log` |
+| 48 | `web_robot_log` |
+| 49 | `xmlrpc_log` |
+| 50 | `zookeeper` |
+| 51 | `zookeeper_log` |
+
+## Flattening
+
+Nested JSON objects are automatically flattened. For example, the following JSON object
+
+```json
+{
+  "foo": {
+    "bar": "baz"
+  }
+}
+```
+
+will be flattened to
+
+```json
+{
+  "foo_bar": "baz"
+}
+```
+
+before it gets stored. While querying, this field should be referred to as foo_bar. For example, select `foo_bar` from `<dataset-name>`. The flattened field will be available in the schema as well.
+
+## Batching and Compression
+
+Wherever applicable, we recommend enabling the log agent's compression and batching features to reduce network traffic and improve ingestion performance. The maximum payload size in Parseable is 10 MiB (10485760 Bytes). The payload can contain single log event as a JSON object or multiple log events in a JSON array. There is no limit to the number of batched events in a single call.
+
+## Timestamp
+
+Correct time is critical to understand the proper sequence of events. Timestamps are important for debugging, analytics, and deriving transactions. We recommend that you include a timestamp in your log events formatted in RFC3339 format.
+
+Parseable uses the event-received timestamp and adds it to the log event in the field `p_timestamp`. This ensures there is a time reference in the log event, even if the original event doesn't have a timestamp.
+
+## Staging
+
+Staging in Parseable refers to the process of storing log data on locally attached storage before it is pushed to a long term and persistent store like S3 or something similar. Staging acts as a buffer for incoming events and allows a stable approach to pushing events to the persistent store.
+
+Once an HTTP call is received on the Parseable server, events are parsed and converted to Arrow format in memory. This Arrow data is then written to the staging directory (defaults to `$PWD/staging`). Every minute, the server converts the Arrow data to Parquet format and pushes it to the persistent store. We chose a minute as the default interval, so there is a clear boundary between events, and the prefix structure on S3 is predictable.
+
+The query flow in Parseable allows transparent access to the data in the staging directory. This means that the data in the staging directory is queryable in real-time. As a user, you won't see any difference in the data fetched from the staging directory or the persistent store.
+
+The staging directory can be configured using the `P_STAGING_DIR` environment variable, as explained in the environment vars section.
+
+## Planning for Production
+
+When planning for the production deployment of Parseable, the two most important considerations from a staging perspective are:
+
+Storage size: Ensure that the staging area has sufficient capacity to handle the anticipated log volume. This prevents data loss due to disk space exhaustion. To calculate the storage size, consider the average log event size, the expected log volume for 5-10 minutes. This is done as under high loads, the conversion to Parquet and subsequent push to S3 may lag behind.
+
+Local storage redundancy: Data in staging has not been committed to persistent store, it is important to have the staging itself reliable and redundant. This way, the staging data is protected from data loss due to simple disk failures. If using AWS, choose from services like EBS (Elastic Block Store) or EFS (Elastic File System), and mount these volumes on the Parseable server. Similarly, on Azure chose from Managed Disks or Azure Files. If you're using a private cloud, a reliable mounted volume from a NAS or SAN can be used.

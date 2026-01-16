@@ -1,0 +1,223 @@
+---
+title: Amazon ECS
+description: Collect logs from Amazon ECS containers
+---
+
+Collect and forward logs from Amazon ECS (Elastic Container Service) to Parseable.
+
+## Overview
+
+Integrate Amazon ECS with Parseable to:
+
+- **Container Logs** - Collect logs from ECS tasks
+- **Centralized Observability** - Unified view of container logs
+- **AWS Integration** - Native AWS log routing
+- **Fargate Support** - Works with both EC2 and Fargate
+
+## Prerequisites
+
+- AWS account with ECS
+- ECS cluster running
+- Parseable instance accessible from AWS
+- IAM permissions for log routing
+
+## Method 1: FireLens (Fluent Bit)
+
+Use AWS FireLens with Fluent Bit sidecar for log routing.
+
+### Task Definition
+
+```json
+{
+  "family": "my-app",
+  "containerDefinitions": [
+    {
+      "name": "log-router",
+      "image": "amazon/aws-for-fluent-bit:latest",
+      "essential": true,
+      "firelensConfiguration": {
+        "type": "fluentbit",
+        "options": {
+          "config-file-type": "file",
+          "config-file-value": "/fluent-bit/configs/parse-json.conf"
+        }
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/firelens",
+          "awslogs-region": "us-east-1",
+          "awslogs-dataset-prefix": "firelens"
+        }
+      },
+      "memoryReservation": 50
+    },
+    {
+      "name": "app",
+      "image": "my-app:latest",
+      "essential": true,
+      "logConfiguration": {
+        "logDriver": "awsfirelens",
+        "options": {
+          "Name": "http",
+          "Host": "parseable.example.com",
+          "Port": "8000",
+          "URI": "/api/v1/ingest",
+          "Format": "json",
+          "Header": "Authorization Basic YWRtaW46YWRtaW4=",
+          "Header": "X-P-Stream ecs-logs"
+        }
+      }
+    }
+  ]
+}
+```
+
+### Custom Fluent Bit Config
+
+Store in S3 or include in custom image:
+
+```ini
+[OUTPUT]
+    Name http
+    Match *
+    Host parseable.example.com
+    Port 8000
+    URI /api/v1/ingest
+    Format json
+    Header Authorization Basic YWRtaW46YWRtaW4=
+    Header X-P-Stream ecs-logs
+    tls On
+    tls.verify Off
+```
+
+## Method 2: CloudWatch to Parseable
+
+Route logs through CloudWatch, then forward to Parseable.
+
+### Task Definition with awslogs
+
+```json
+{
+  "containerDefinitions": [
+    {
+      "name": "app",
+      "image": "my-app:latest",
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/my-app",
+          "awslogs-region": "us-east-1",
+          "awslogs-dataset-prefix": "app"
+        }
+      }
+    }
+  ]
+}
+```
+
+Then use [AWS CloudWatch integration](/docs/ingest-data/cloud/aws-cloudwatch) to forward to Parseable.
+
+## Method 3: Sidecar Container
+
+Deploy a log collector sidecar alongside your application.
+
+### Task Definition with Sidecar
+
+```json
+{
+  "family": "my-app-with-collector",
+  "containerDefinitions": [
+    {
+      "name": "app",
+      "image": "my-app:latest",
+      "essential": true,
+      "mountPoints": [
+        {
+          "sourceVolume": "logs",
+          "containerPath": "/var/log/app"
+        }
+      ]
+    },
+    {
+      "name": "log-collector",
+      "image": "fluent/fluent-bit:latest",
+      "essential": false,
+      "mountPoints": [
+        {
+          "sourceVolume": "logs",
+          "containerPath": "/var/log/app",
+          "readOnly": true
+        }
+      ],
+      "environment": [
+        {"name": "PARSEABLE_URL", "value": "http://parseable:8000"},
+        {"name": "PARSEABLE_AUTH", "value": "YWRtaW46YWRtaW4="}
+      ]
+    }
+  ],
+  "volumes": [
+    {
+      "name": "logs",
+      "host": {}
+    }
+  ]
+}
+```
+
+## IAM Permissions
+
+Required IAM permissions for FireLens:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogStream",
+        "logs:CreateLogGroup",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject"
+      ],
+      "Resource": "arn:aws:s3:::your-config-bucket/*"
+    }
+  ]
+}
+```
+
+## Best Practices
+
+1. **Use FireLens** - AWS-native log routing
+2. **Add Metadata** - Include task ID, cluster name
+3. **Configure Retries** - Handle transient failures
+4. **Monitor Log Router** - Watch sidecar health
+5. **Use Secrets** - Store credentials in Secrets Manager
+
+## Troubleshooting
+
+### Logs Not Appearing
+
+1. Check FireLens container logs
+2. Verify Parseable endpoint is accessible
+3. Check IAM permissions
+4. Verify log configuration syntax
+
+### High Memory Usage
+
+1. Configure buffer limits
+2. Reduce batch sizes
+3. Check for log volume spikes
+
+## Next Steps
+
+- Configure [Amazon EKS](/docs/ingest-data/containers/amazon-eks) for Kubernetes
+- Set up [alerts](/docs/user-guide/alerting) for container metrics
+- Create [dashboards](/docs/user-guide/dashboards) for monitoring

@@ -1,0 +1,219 @@
+---
+title: MongoDB
+description: Monitor MongoDB metrics with Parseable using OpenTelemetry
+---
+
+Monitor your MongoDB databases by collecting metrics using the OpenTelemetry Collector and sending them to Parseable.
+
+## Overview
+
+The OpenTelemetry Collector's MongoDB receiver collects metrics from standalone MongoDB clusters including:
+
+- **Server Statistics** - Connections, operations, network traffic
+- **Database Metrics** - Document counts, storage sizes
+- **Collection Metrics** - Index usage, document operations
+- **Replication Metrics** - Replica set status and lag
+
+## Prerequisites
+
+- MongoDB 4.0+ (supports 4.0, 5.0, 6.0, 7.0)
+- OpenTelemetry Collector with `mongodb` receiver
+- Parseable instance running and accessible
+
+### Database User Setup
+
+Create a monitoring user with the `clusterMonitor` role:
+
+```javascript
+// Connect to admin database
+use admin
+
+// Create monitoring user
+db.createUser({
+  user: "otel",
+  pwd: "your-secure-password",
+  roles: [
+    { role: "clusterMonitor", db: "admin" },
+    { role: "read", db: "local" }
+  ]
+})
+```
+
+## OpenTelemetry Collector Configuration
+
+### Basic Configuration
+
+Create an `otel-collector-config.yaml` file:
+
+```yaml
+receivers:
+  mongodb:
+    hosts:
+      - endpoint: localhost:27017
+    username: otel
+    password: ${env:MONGODB_PASSWORD}
+    collection_interval: 60s
+    initial_delay: 1s
+    tls:
+      insecure: true
+
+exporters:
+  otlphttp/parseable:
+    endpoint: "http://parseable:8000"
+    headers:
+      Authorization: "Basic YWRtaW46YWRtaW4="
+      X-P-Stream: "mongodb-metrics"
+      X-P-Log-Source: "otel-metrics"
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    metrics:
+      receivers: [mongodb]
+      exporters: [otlphttp/parseable]
+```
+
+### Replica Set Configuration
+
+For monitoring MongoDB replica sets:
+
+```yaml
+receivers:
+  mongodb:
+    hosts:
+      - endpoint: mongo1:27017
+      - endpoint: mongo2:27017
+      - endpoint: mongo3:27017
+    username: otel
+    password: ${env:MONGODB_PASSWORD}
+    replica_set: rs0
+    collection_interval: 60s
+    timeout: 1m
+    tls:
+      insecure: false
+      insecure_skip_verify: false
+      ca_file: /path/to/ca.crt
+
+exporters:
+  otlphttp/parseable:
+    endpoint: "http://parseable:8000"
+    headers:
+      Authorization: "Basic YWRtaW46YWRtaW4="
+      X-P-Stream: "mongodb-metrics"
+      X-P-Log-Source: "otel-metrics"
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    metrics:
+      receivers: [mongodb]
+      exporters: [otlphttp/parseable]
+```
+
+## Configuration Options
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `hosts` | `localhost:27017` | List of MongoDB endpoints |
+| `username` | - | Database username |
+| `password` | - | Database password |
+| `replica_set` | - | Replica set name for autodiscovery |
+| `collection_interval` | `1m` | Metrics collection interval |
+| `timeout` | `1m` | Command timeout |
+| `direct_connection` | `false` | Disable autodiscovery |
+| `tls.insecure` | - | Disable TLS |
+
+## Collected Metrics
+
+The MongoDB receiver collects the following metrics:
+
+| Metric | Description |
+|--------|-------------|
+| `mongodb.cache.operations` | Cache operations count |
+| `mongodb.collection.count` | Number of collections |
+| `mongodb.connection.count` | Active connections |
+| `mongodb.cursor.count` | Open cursors |
+| `mongodb.cursor.timeout.count` | Timed out cursors |
+| `mongodb.database.count` | Number of databases |
+| `mongodb.document.operation.count` | Document operations |
+| `mongodb.global_lock.time` | Global lock time |
+| `mongodb.index.count` | Number of indexes |
+| `mongodb.index.size` | Index size in bytes |
+| `mongodb.memory.usage` | Memory usage |
+| `mongodb.network.io.receive` | Network bytes received |
+| `mongodb.network.io.transmit` | Network bytes transmitted |
+| `mongodb.operation.count` | Operation counts by type |
+| `mongodb.storage.size` | Storage size in bytes |
+
+## Running the Collector
+
+### Docker
+
+```bash
+docker run -d \
+  --name otel-collector \
+  -v $(pwd)/otel-collector-config.yaml:/etc/otelcol/config.yaml \
+  -e MONGODB_PASSWORD=your-password \
+  otel/opentelemetry-collector-contrib:latest
+```
+
+### Docker Compose
+
+```yaml
+version: '3.8'
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol/config.yaml
+    environment:
+      - MONGODB_PASSWORD=${MONGODB_PASSWORD}
+    depends_on:
+      - mongodb
+      - parseable
+```
+
+## Querying MongoDB Metrics in Parseable
+
+Once data is flowing, query your MongoDB metrics:
+
+```sql
+-- Get connection counts over time
+SELECT p_timestamp, connection_count 
+FROM "mongodb-metrics" 
+ORDER BY p_timestamp DESC 
+LIMIT 100
+
+-- Find databases with high storage usage
+SELECT database_name, storage_size, index_size
+FROM "mongodb-metrics"
+WHERE p_timestamp > NOW() - INTERVAL '1 hour'
+ORDER BY storage_size DESC
+```
+
+## Troubleshooting
+
+### Connection Issues
+
+If the collector can't connect to MongoDB:
+
+1. Verify MongoDB is accepting connections on the configured port
+2. Check the user has `clusterMonitor` role
+3. Verify authentication database is correct (usually `admin`)
+4. Check firewall rules allow the connection
+
+### Missing Metrics
+
+If some metrics are not appearing:
+
+1. Ensure the monitoring user has proper roles
+2. Verify the replica set name is correct (if using replica sets)
+3. Check timeout settings if MongoDB is slow to respond
+
+## Next Steps
+
+- Set up [alerts](/docs/user-guide/alerting) for database performance thresholds
+- Create [dashboards](/docs/user-guide/dashboards) for MongoDB monitoring
+- Explore [SQL queries](/docs/user-guide/sql-editor) for custom analysis

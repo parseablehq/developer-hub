@@ -1,0 +1,9 @@
+{
+  "title": "Integrations",
+  "pages": [
+    "alerting",
+    "auth",
+    "oauth",
+    "visualization"
+  ]
+}

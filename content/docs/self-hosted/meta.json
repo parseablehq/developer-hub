@@ -1,0 +1,13 @@
+{
+  "title": "Self-hosted",
+  "description": "Self-hosted deployment documentation",
+  "icon": "Server",
+  "defaultOpen": true,
+  "pages": [
+    "installation",
+    "configuration",
+    "storage-targets",
+    "metrics",
+    "telemetry"
+  ]
+}

@@ -1,0 +1,279 @@
+---
+title: Slack
+description: Send alerts and log notifications to Slack channels
+---
+
+Send alerts and important log events to Slack channels using Fluent Bit or custom webhooks.
+
+## Overview
+
+Integrate Parseable with Slack to:
+
+- **Receive Alert Notifications** - Get notified when alerts trigger
+- **Stream Critical Logs** - Send error logs directly to Slack channels
+- **Team Collaboration** - Share observability insights with your team
+
+## Prerequisites
+
+- Slack workspace with admin access
+- Slack Incoming Webhook URL
+- Fluent Bit (for log streaming) or Parseable alerts configured
+
+## Setting Up Slack Webhook
+
+### Create an Incoming Webhook
+
+1. Go to [Slack API Apps](https://api.slack.com/apps)
+2. Click **Create New App** → **From scratch**
+3. Name your app (e.g., "Parseable Alerts") and select your workspace
+4. Go to **Incoming Webhooks** in the sidebar
+5. Toggle **Activate Incoming Webhooks** to On
+6. Click **Add New Webhook to Workspace**
+7. Select the channel for notifications
+8. Copy the Webhook URL (format: `https://hooks.slack.com/services/T.../B.../xxx`)
+
+## Method 1: Fluent Bit Log Streaming
+
+Stream logs from Parseable to Slack using Fluent Bit as an intermediary.
+
+### Architecture
+
+```
+Parseable → Fluent Bit → Slack
+```
+
+### Fluent Bit Configuration
+
+Create a `fluent-bit.yaml` configuration:
+
+```yaml
+service:
+  flush: 5
+  log_level: info
+
+pipeline:
+  inputs:
+    - name: http
+      listen: 0.0.0.0
+      port: 8888
+      tag: parseable
+
+  filters:
+    # Filter for error logs only
+    - name: grep
+      match: parseable
+      regex: level error|ERROR|critical|CRITICAL
+
+  outputs:
+    - name: slack
+      match: parseable
+      webhook: https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
+```
+
+### Classic Config Format
+
+```ini
+[SERVICE]
+    Flush        5
+    Log_Level    info
+
+[INPUT]
+    Name         http
+    Listen       0.0.0.0
+    Port         8888
+    Tag          parseable
+
+[FILTER]
+    Name         grep
+    Match        parseable
+    Regex        level error|ERROR|critical|CRITICAL
+
+[OUTPUT]
+    Name         slack
+    Match        parseable
+    Webhook      https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
+```
+
+### Running Fluent Bit
+
+```bash
+docker run -d \
+  --name fluent-bit-slack \
+  -p 8888:8888 \
+  -v $(pwd)/fluent-bit.yaml:/fluent-bit/etc/fluent-bit.yaml \
+  fluent/fluent-bit:latest \
+  /fluent-bit/bin/fluent-bit -c /fluent-bit/etc/fluent-bit.yaml
+```
+
+## Method 2: Webhook Integration
+
+Use Parseable's alerting system with a custom webhook to send notifications to Slack.
+
+### Create a Webhook Endpoint
+
+Create a simple webhook service that transforms Parseable alerts to Slack format:
+
+```javascript
+// webhook-to-slack.js (Node.js example)
+const express = require('express');
+const axios = require('axios');
+
+const app = express();
+app.use(express.json());
+
+const SLACK_WEBHOOK = process.env.SLACK_WEBHOOK_URL;
+
+app.post('/webhook', async (req, res) => {
+  const alert = req.body;
+  
+  const slackMessage = {
+    blocks: [
+      {
+        type: "header",
+        text: {
+          type: "plain_text",
+          text: `🚨 Alert: ${alert.name || 'Parseable Alert'}`,
+          emoji: true
+        }
+      },
+      {
+        type: "section",
+        fields: [
+          {
+            type: "mrkdwn",
+            text: `*Severity:*\n${alert.severity || 'Unknown'}`
+          },
+          {
+            type: "mrkdwn",
+            text: `*Stream:*\n${alert.dataset || 'N/A'}`
+          }
+        ]
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `*Message:*\n${alert.message || JSON.stringify(alert)}`
+        }
+      },
+      {
+        type: "context",
+        elements: [
+          {
+            type: "mrkdwn",
+            text: `Triggered at: ${new Date().toISOString()}`
+          }
+        ]
+      }
+    ]
+  };
+
+  try {
+    await axios.post(SLACK_WEBHOOK, slackMessage);
+    res.status(200).json({ status: 'sent' });
+  } catch (error) {
+    console.error('Error sending to Slack:', error);
+    res.status(500).json({ error: 'Failed to send to Slack' });
+  }
+});
+
+app.listen(3000, () => {
+  console.log('Webhook server listening on port 3000');
+});
+```
+
+### Docker Compose Setup
+
+```yaml
+version: '3.8'
+services:
+  webhook-to-slack:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T.../B.../xxx
+```
+
+### Configure Parseable Alert
+
+Configure your Parseable alert to send to the webhook endpoint:
+
+```json
+{
+  "name": "High Error Rate",
+  "dataset": "application-logs",
+  "alertType": "threshold",
+  "condition": {
+    "field": "level",
+    "operator": "equals",
+    "value": "error"
+  },
+  "threshold": 100,
+  "duration": "5m",
+  "webhook": {
+    "url": "http://webhook-to-slack:3000/webhook",
+    "method": "POST"
+  }
+}
+```
+
+## Configuration Options
+
+### Fluent Bit Slack Output
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `webhook` | - | Slack webhook URL (required) |
+| `workers` | `0` | Number of worker threads |
+| `match` | - | Tag pattern to match |
+
+## Message Formatting
+
+### Custom Message Template
+
+You can customize the Slack message format by using Fluent Bit's record modifier:
+
+```yaml
+pipeline:
+  filters:
+    - name: record_modifier
+      match: parseable
+      record: slack_message "🔴 Error in ${dataset}: ${message}"
+
+  outputs:
+    - name: slack
+      match: parseable
+      webhook: ${SLACK_WEBHOOK_URL}
+```
+
+## Best Practices
+
+1. **Filter Critical Logs** - Only send important events to avoid notification fatigue
+2. **Use Channels Wisely** - Create dedicated channels for different alert severities
+3. **Include Context** - Add relevant metadata like dataset name, timestamp, and severity
+4. **Rate Limiting** - Implement rate limiting to prevent Slack API throttling
+5. **Test Webhooks** - Verify webhook connectivity before production deployment
+
+## Troubleshooting
+
+### Messages Not Appearing
+
+1. Verify the webhook URL is correct
+2. Check Fluent Bit logs for errors
+3. Ensure the Slack app has permission to post to the channel
+4. Verify network connectivity to Slack
+
+### Rate Limiting
+
+If you're hitting Slack's rate limits:
+
+1. Increase the flush interval in Fluent Bit
+2. Aggregate similar events before sending
+3. Filter to reduce message volume
+
+## Next Steps
+
+- Set up [Parseable alerts](/docs/user-guide/alerting) for automated notifications
+- Configure [PagerDuty](/docs/integrations/alerting/pagerduty) for on-call escalation
+- Create [dashboards](/docs/user-guide/dashboards) for visual monitoring

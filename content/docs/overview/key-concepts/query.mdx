@@ -1,0 +1,36 @@
+---
+title: Query
+---
+
+Parseable uses [Apache DataFusion](https://datafusion.apache.org/) as its query engine, providing PostgreSQL-compatible SQL for telemetry data analysis.
+
+## How It Works
+
+1. Query is parsed and an execution plan is created
+2. Data manifest file filters relevant [Parquet](https://parquet.apache.org/) files based on column metadata and time range
+3. DataFusion reads only the required data via S3 `GetRange` API
+4. Results are returned with minimal I/O and cost
+
+## Supported Functions
+
+Parseable supports all DataFusion SQL functions:
+
+- [Aggregate Functions](https://datafusion.apache.org/user-guide/sql/aggregate_functions.html) - COUNT, SUM, AVG, etc.
+- [Window Functions](https://datafusion.apache.org/user-guide/sql/window_functions.html) - ROW_NUMBER, RANK, etc.
+- [Scalar Functions](https://datafusion.apache.org/user-guide/sql/scalar_functions.html) - String, Math, Date/Time, etc.
+
+## Key Capabilities
+
+| Feature | Description |
+| --- | --- |
+| PostgreSQL syntax | Familiar SQL with regex operators (`~`, `~*`, `!~`, `!~*`) |
+| Query analysis | `EXPLAIN ANALYZE` for performance insights |
+| Time-range filtering | Efficient filtering via `p_timestamp` |
+| AI query builder | Natural language to SQL (Enterprise) |
+
+---
+
+**References:**
+- [SQL Editor User Guide](/docs/user-guide/sql-editor) - Query examples and usage
+- [Text to SQL](/docs/user-guide/ai-native/text-to-sql) - AI-powered query generation
+- [Query API](/docs/api) - REST API documentation

@@ -1,0 +1,51 @@
+---
+title: High Availability
+---
+
+<OfferingPills pro enterprise className="mb-4" />
+
+Parseable supports a distributed, high-availability mode for production use cases where downtime is not an option. The distributed setup is designed to ensure fault tolerance and high availability for log ingestion.
+
+The distributed setup consists of multiple ingestion and query server and a S3 (or other object store) bucket. 
+
+The Query servers use metadata stored in the object store to query the data. The query server uses the Parseable manifest file and the Parquet footers in tandem to ensure that the data is read in fewest possible object store API calls.
+
+## Node Functions
+
+- **Prism Node**: Handles the Parseable UI and all user requests except for query and search operations. The Prism node is designed to be as compute efficient as the querier node.
+
+- **Querier Node**: Processes data queries and analytics. Queriers use metadata stored in the object store to efficiently read data with minimal API calls.
+
+- **Ingestor Node**: Processes incoming log events. Each ingestor creates its own set of metadata and data files in the object storage system, allowing for simple scaling as workloads change.
+
+- **Indexer Node**: Manages indexing and search functionality.
+
+## High Availability
+
+Parseable Enterprise builds upon the distributed architecture of Parseable OSS, enhancing it with an even more robust high availability framework. This feature allows you to independently scale the query nodes along with the independently scalable ingest nodes.
+
+The high availability architecture in Parseable Enterprise consists of four specialized node types, each serving a distinct function within the cluster:
+
+### Node specific Environment variables 
+
+| Node Type | Role | Scalability | Node specific Env var |
+| --- | --- | --- | --- |
+| Prism (Leader) | Manages UI, dataset configuration, and RBAC | Single Node | - |
+| Query | Handles data querying and analytics | Independently scalable | P_QUERIER_ENDPOINT |
+| Ingest | Processes incoming log event | Independently scalable | P_INGESTOR_ENDPOINT |
+| Index | Manages indexing and search | Single Node (multi node planned) | P_INDEXER_ENDPOINT |
+
+Details of the environment variables are available in the [Environment Variables](/docs/self-hosted/configuration).
+
+Each node in the cluster generates and maintains its own NodeMetadata file containing domain name information, authentication tokens, and node-specific configuration. These metadata files are stored in the configured S3 bucket and serve as the foundation for inter-node communication.
+
+For optimal performance, we recommend the following specifications for each node type:
+
+| Node Type | vCPU | Memory |
+| --- | --- | --- |
+| Prism (leader) | 16 | 32 GiB |
+| Query | 16 | 32 GiB |
+| Ingest | 8 | 16 GiB |
+| Index | 16 | 32 GiB |
+
+The Prism node requires similar compute and storage resources as the querier node because it handles all user interface operations and administrative requests. 

@@ -1,35 +1,35 @@
 ---
 title: Key Concepts
+redirect_from:
+  - /key-concepts
+  - /key-concepts/index
 ---
 import { IconChartCohort,IconDirections,IconCloudDataConnection,IconBrandInertia,IconFileTypeSql,IconServerBolt
  } from '@tabler/icons-react';
 
 
-Dive deeper into the key concepts of Parseable to understand how it works, its architecture, and how it can help you with your observability needs. Whether you're new to Parseable or looking to deepen your understanding, these concepts will provide a solid foundation for using Parseable effectively.
+Dive deeper into the key concepts of Parseable to understand how to best leverage Parseable for your specific observability needs. Whether you're new to Parseable or looking to deepen your understanding, these concepts will provide a solid foundation for using Parseable effectively.
 
 <Cards>
 
-<Card href="/docs/key-concepts/data-model" icon={<IconChartCohort className="text-purple-600" />} title='Modelling Data'>
+<Card href="/docs/key-concepts/data-model" icon={<IconChartCohort className="text-purple-600" />} title='Data modelling'>
 Learn when to create datasets, how to aggregate observability data, use schemas, and manage your data effectively.
 </Card>
 
-<Card href="/docs/key-concepts/ingestion" icon={<IconBrandInertia className="text-purple-600" />} title='Ingestion'>
-Learn how to ingest, manage and query OpenTelemetry logs, metrics or traces natively. Zero configuration needed. 
+<Card href="/docs/key-concepts/partitioning" icon={<IconDirections className="text-purple-600" />} title='Partitioning'>
+Optimize query performance by partitioning datasets based on frequently filtered columns.
+</Card>
+
+<Card href="/docs/key-concepts/query" icon={<IconFileTypeSql className="text-purple-600" />} title='Query'>
+Use PostgreSQL-compatible SQL to query your telemetry data with powerful filtering and aggregation.
 </Card>
 
 <Card href="/docs/key-concepts/storage" icon={<IconCloudDataConnection className="text-purple-600" />} title='Storage'>
 Achieve storage efficiency and cost with object stores like S3, GCS, Azure Blob as the primary storage layer.
 </Card>
 
-<Card href="/docs/key-concepts/query" icon={<IconFileTypeSql className="text-purple-600" />} title='Query'>
-Acheive fast query response with Rust based design, modern query techniques, and intelligent caching on SSDs / NVMe and memory.
-</Card>
-
-<Card href="/docs/key-concepts/partitioning" icon={<IconDirections className="text-purple-600" />} title='Partitioning'>
-Ingest, manage and query OpenTelemetry logs, metrics or traces natively. Zero configuration needed. 
-</Card>
-
-<Card href="/docs/key-concepts/high-availability" icon={<IconServerBolt className="text-purple-600" />} title='High Availability'>
+<Card href="/docs/key-concepts/high-availability" icon={<IconServerBolt className="text-purple-600" />} title='High availability' className="col-span-2">
+Ensure your Parseable deployment is resilient and always available with built-in high availability features.
 Deploy across public or private clouds, containers, VMs, or bare metal environments with complete data security and privacy.
 </Card>
 

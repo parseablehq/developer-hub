@@ -1,0 +1,290 @@
+---
+title: Terraform
+description: Send Terraform logs and state changes to Parseable
+---
+
+Collect Terraform execution logs and state changes in Parseable.
+
+## Overview
+
+Integrate Terraform with Parseable to:
+
+- **Execution Logs** - Track plan and apply operations
+- **State Changes** - Monitor infrastructure changes
+- **Audit Trail** - Compliance and change history
+- **Cost Tracking** - Monitor resource changes
+
+## Prerequisites
+
+- Terraform CLI or Terraform Cloud
+- Parseable instance accessible
+- CI/CD pipeline (recommended)
+
+## Method 1: CI/CD Integration
+
+Send Terraform logs from your CI/CD pipeline.
+
+### GitHub Actions
+
+```yaml
+name: Terraform
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+      
+      - name: Terraform Init
+        id: init
+        run: terraform init
+      
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -out=tfplan -json > plan.json 2>&1
+        continue-on-error: true
+      
+      - name: Send Plan to Parseable
+        run: |
+          # Parse plan output
+          ADDS=$(jq '[.resource_changes[]? | select(.change.actions | contains(["create"]))] | length' plan.json 2>/dev/null || echo 0)
+          CHANGES=$(jq '[.resource_changes[]? | select(.change.actions | contains(["update"]))] | length' plan.json 2>/dev/null || echo 0)
+          DESTROYS=$(jq '[.resource_changes[]? | select(.change.actions | contains(["delete"]))] | length' plan.json 2>/dev/null || echo 0)
+          
+          curl -X POST "${{ secrets.PARSEABLE_URL }}/api/v1/ingest" \
+            -H "Authorization: Basic ${{ secrets.PARSEABLE_AUTH }}" \
+            -H "X-P-Stream: terraform-logs" \
+            -H "Content-Type: application/json" \
+            -d "[{
+              \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+              \"event\": \"plan\",
+              \"repository\": \"${{ github.repository }}\",
+              \"ref\": \"${{ github.ref }}\",
+              \"sha\": \"${{ github.sha }}\",
+              \"actor\": \"${{ github.actor }}\",
+              \"status\": \"${{ steps.plan.outcome }}\",
+              \"resources_to_add\": ${ADDS},
+              \"resources_to_change\": ${CHANGES},
+              \"resources_to_destroy\": ${DESTROYS}
+            }]"
+      
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        id: apply
+        run: terraform apply -auto-approve tfplan
+      
+      - name: Send Apply to Parseable
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          curl -X POST "${{ secrets.PARSEABLE_URL }}/api/v1/ingest" \
+            -H "Authorization: Basic ${{ secrets.PARSEABLE_AUTH }}" \
+            -H "X-P-Stream: terraform-logs" \
+            -H "Content-Type: application/json" \
+            -d "[{
+              \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+              \"event\": \"apply\",
+              \"repository\": \"${{ github.repository }}\",
+              \"sha\": \"${{ github.sha }}\",
+              \"actor\": \"${{ github.actor }}\",
+              \"status\": \"${{ steps.apply.outcome }}\"
+            }]"
+```
+
+### GitLab CI
+
+```yaml
+stages:
+  - plan
+  - apply
+
+variables:
+  TF_ROOT: ${CI_PROJECT_DIR}
+
+plan:
+  stage: plan
+  image: hashicorp/terraform:latest
+  script:
+    - terraform init
+    - terraform plan -out=tfplan -json > plan.json
+    - |
+      ADDS=$(jq '[.resource_changes[]? | select(.change.actions | contains(["create"]))] | length' plan.json)
+      CHANGES=$(jq '[.resource_changes[]? | select(.change.actions | contains(["update"]))] | length' plan.json)
+      DESTROYS=$(jq '[.resource_changes[]? | select(.change.actions | contains(["delete"]))] | length' plan.json)
+      
+      curl -X POST "${PARSEABLE_URL}/api/v1/ingest" \
+        -H "Authorization: Basic ${PARSEABLE_AUTH}" \
+        -H "X-P-Stream: terraform-logs" \
+        -H "Content-Type: application/json" \
+        -d "[{
+          \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+          \"event\": \"plan\",
+          \"project\": \"${CI_PROJECT_PATH}\",
+          \"ref\": \"${CI_COMMIT_REF_NAME}\",
+          \"sha\": \"${CI_COMMIT_SHA}\",
+          \"actor\": \"${GITLAB_USER_LOGIN}\",
+          \"resources_to_add\": ${ADDS},
+          \"resources_to_change\": ${CHANGES},
+          \"resources_to_destroy\": ${DESTROYS}
+        }]"
+  artifacts:
+    paths:
+      - tfplan
+
+apply:
+  stage: apply
+  image: hashicorp/terraform:latest
+  script:
+    - terraform init
+    - terraform apply -auto-approve tfplan
+    - |
+      curl -X POST "${PARSEABLE_URL}/api/v1/ingest" \
+        -H "Authorization: Basic ${PARSEABLE_AUTH}" \
+        -H "X-P-Stream: terraform-logs" \
+        -H "Content-Type: application/json" \
+        -d "[{
+          \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+          \"event\": \"apply\",
+          \"project\": \"${CI_PROJECT_PATH}\",
+          \"sha\": \"${CI_COMMIT_SHA}\",
+          \"status\": \"success\"
+        }]"
+  only:
+    - main
+```
+
+## Method 2: Terraform Cloud Webhooks
+
+Use Terraform Cloud run notifications.
+
+### Webhook Receiver
+
+```javascript
+const express = require('express');
+const axios = require('axios');
+
+const app = express();
+app.use(express.json());
+
+const PARSEABLE_URL = process.env.PARSEABLE_URL;
+const PARSEABLE_AUTH = process.env.PARSEABLE_AUTH;
+
+app.post('/webhook', async (req, res) => {
+  const notification = req.body;
+  
+  const logEntry = {
+    timestamp: new Date().toISOString(),
+    event: 'terraform_cloud',
+    run_id: notification.run_id,
+    run_status: notification.run_status,
+    workspace: notification.workspace_name,
+    organization: notification.organization_name,
+    message: notification.run_message,
+    created_by: notification.run_created_by,
+    is_destroy: notification.run_is_destroy,
+    plan_resource_additions: notification.plan_resource_additions,
+    plan_resource_changes: notification.plan_resource_changes,
+    plan_resource_destructions: notification.plan_resource_destructions
+  };
+  
+  try {
+    await axios.post(`${PARSEABLE_URL}/api/v1/ingest`, [logEntry], {
+      headers: {
+        'Authorization': `Basic ${PARSEABLE_AUTH}`,
+        'X-P-Stream': 'terraform-cloud',
+        'Content-Type': 'application/json'
+      }
+    });
+  } catch (error) {
+    console.error('Error:', error);
+  }
+  
+  res.status(200).json({ status: 'received' });
+});
+
+app.listen(3000);
+```
+
+### Configure in Terraform Cloud
+
+1. Go to **Workspace Settings** → **Notifications**
+2. Click **Create Notification**
+3. Select **Webhook**
+4. Enter your webhook URL
+5. Select triggers (Run completed, needs attention, etc.)
+
+## Querying Terraform Logs
+
+```sql
+-- Recent Terraform operations
+SELECT timestamp, event, repository, actor, status,
+       resources_to_add, resources_to_change, resources_to_destroy
+FROM "terraform-logs"
+ORDER BY timestamp DESC
+LIMIT 100
+
+-- Failed applies
+SELECT timestamp, repository, actor, status
+FROM "terraform-logs"
+WHERE event = 'apply' AND status != 'success'
+ORDER BY timestamp DESC
+
+-- Resource change summary
+SELECT 
+  DATE_TRUNC('day', timestamp) as day,
+  SUM(resources_to_add) as total_added,
+  SUM(resources_to_change) as total_changed,
+  SUM(resources_to_destroy) as total_destroyed
+FROM "terraform-logs"
+WHERE event = 'plan'
+GROUP BY day
+ORDER BY day DESC
+
+-- Most active repositories
+SELECT 
+  repository,
+  COUNT(*) as operations,
+  SUM(resources_to_add + resources_to_change + resources_to_destroy) as total_changes
+FROM "terraform-logs"
+WHERE timestamp > NOW() - INTERVAL '30 days'
+GROUP BY repository
+ORDER BY operations DESC
+```
+
+## Best Practices
+
+1. **Log Plans and Applies** - Track both operations
+2. **Include Resource Counts** - Monitor change volume
+3. **Track Actors** - Know who made changes
+4. **Alert on Destroys** - Notify on resource deletions
+5. **Store Plan Files** - Keep for audit purposes
+
+## Troubleshooting
+
+### Missing Logs
+
+1. Check CI/CD pipeline logs
+2. Verify Parseable endpoint
+3. Check authentication
+
+### Incorrect Counts
+
+1. Verify JSON parsing
+2. Check plan output format
+3. Handle empty plans
+
+## Next Steps
+
+- Set up [alerts](/docs/user-guide/alerting) for infrastructure changes
+- Create [dashboards](/docs/user-guide/dashboards) for IaC metrics
+- Configure [ArgoCD](/docs/ingest-data/cicd/argocd) for GitOps

@@ -1,0 +1,410 @@
+---
+title: Jenkins
+description: Send Jenkins build logs to Parseable for CI/CD observability
+---
+
+Collect and analyze Jenkins build logs in Parseable for comprehensive CI/CD observability.
+
+## Overview
+
+Integrate Jenkins with Parseable to:
+
+- **Centralize Build Logs** - Collect all Jenkins logs in one place
+- **Debug Failures** - Quickly find and analyze failed builds
+- **Track Performance** - Monitor build times and trends
+- **Audit Pipelines** - Maintain compliance with log retention
+
+## Prerequisites
+
+- Jenkins instance with Pipeline support
+- Parseable instance accessible from Jenkins
+- Jenkins HTTP Request plugin (optional)
+
+## Method 1: Pipeline Script
+
+Send logs directly from your Jenkinsfile.
+
+### Declarative Pipeline
+
+```groovy
+pipeline {
+    agent any
+    
+    environment {
+        PARSEABLE_URL = credentials('parseable-url')
+        PARSEABLE_AUTH = credentials('parseable-auth')
+    }
+    
+    stages {
+        stage('Build') {
+            steps {
+                script {
+                    sendToParseable('started', 'Build started')
+                }
+                sh 'npm ci'
+                sh 'npm run build'
+            }
+        }
+        
+        stage('Test') {
+            steps {
+                sh 'npm test'
+            }
+        }
+    }
+    
+    post {
+        success {
+            script {
+                sendToParseable('success', 'Build completed successfully')
+            }
+        }
+        failure {
+            script {
+                sendToParseable('failure', 'Build failed')
+            }
+        }
+        always {
+            script {
+                sendToParseable(currentBuild.result ?: 'unknown', 'Build finished')
+            }
+        }
+    }
+}
+
+def sendToParseable(String status, String message) {
+    def payload = """[{
+        "timestamp": "${new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone('UTC'))}",
+        "job_name": "${env.JOB_NAME}",
+        "build_number": ${env.BUILD_NUMBER},
+        "build_url": "${env.BUILD_URL}",
+        "node": "${env.NODE_NAME}",
+        "status": "${status}",
+        "message": "${message}",
+        "duration": ${currentBuild.duration},
+        "user": "${currentBuild.getBuildCauses()[0]?.userId ?: 'system'}"
+    }]"""
+    
+    httpRequest(
+        url: "${PARSEABLE_URL}/api/v1/ingest",
+        httpMode: 'POST',
+        contentType: 'APPLICATION_JSON',
+        customHeaders: [
+            [name: 'Authorization', value: "Basic ${PARSEABLE_AUTH}"],
+            [name: 'X-P-Stream', value: 'jenkins-builds']
+        ],
+        requestBody: payload,
+        validResponseCodes: '200:299'
+    )
+}
+```
+
+### Scripted Pipeline
+
+```groovy
+node {
+    def parseableUrl = env.PARSEABLE_URL
+    def parseableAuth = env.PARSEABLE_AUTH
+    
+    try {
+        stage('Build') {
+            sendLog('started', 'Build started')
+            sh 'npm ci && npm run build'
+        }
+        
+        stage('Test') {
+            sh 'npm test'
+        }
+        
+        sendLog('success', 'Build completed successfully')
+        
+    } catch (Exception e) {
+        sendLog('failure', "Build failed: ${e.message}")
+        throw e
+    }
+}
+
+def sendLog(String status, String message) {
+    def payload = [
+        [
+            timestamp: new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'"),
+            job_name: env.JOB_NAME,
+            build_number: env.BUILD_NUMBER as Integer,
+            build_url: env.BUILD_URL,
+            status: status,
+            message: message
+        ]
+    ]
+    
+    httpRequest(
+        url: "${env.PARSEABLE_URL}/api/v1/ingest",
+        httpMode: 'POST',
+        contentType: 'APPLICATION_JSON',
+        customHeaders: [
+            [name: 'Authorization', value: "Basic ${env.PARSEABLE_AUTH}"],
+            [name: 'X-P-Stream', value: 'jenkins-builds']
+        ],
+        requestBody: groovy.json.JsonOutput.toJson(payload)
+    )
+}
+```
+
+## Method 2: Fluent Bit Sidecar
+
+Collect Jenkins logs using Fluent Bit.
+
+### Fluent Bit Configuration
+
+```yaml
+service:
+  flush: 5
+  log_level: info
+
+pipeline:
+  inputs:
+    - name: tail
+      path: /var/jenkins_home/jobs/*/builds/*/log
+      tag: jenkins.build
+      parser: jenkins
+      refresh_interval: 5
+
+  parsers:
+    - name: jenkins
+      format: regex
+      regex: ^(?<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z)\s+(?<message>.*)$
+      time_key: timestamp
+      time_format: "%Y-%m-%dT%H:%M:%S.%LZ"
+
+  outputs:
+    - name: http
+      match: jenkins.*
+      host: parseable
+      port: 8000
+      uri: /api/v1/ingest
+      format: json
+      header: Authorization Basic YWRtaW46YWRtaW4=
+      header: X-P-Stream jenkins-logs
+```
+
+### Docker Compose
+
+```yaml
+version: '3.8'
+services:
+  jenkins:
+    image: jenkins/jenkins:lts
+    volumes:
+      - jenkins_home:/var/jenkins_home
+    ports:
+      - "8080:8080"
+  
+  fluent-bit:
+    image: fluent/fluent-bit:latest
+    volumes:
+      - jenkins_home:/var/jenkins_home:ro
+      - ./fluent-bit.yaml:/fluent-bit/etc/fluent-bit.yaml
+    depends_on:
+      - jenkins
+      - parseable
+
+volumes:
+  jenkins_home:
+```
+
+## Method 3: Logstash Integration
+
+Use Logstash to collect and forward Jenkins logs.
+
+### Logstash Configuration
+
+```ruby
+input {
+  file {
+    path => "/var/jenkins_home/jobs/*/builds/*/log"
+    start_position => "beginning"
+    sincedb_path => "/var/logstash/sincedb"
+    codec => multiline {
+      pattern => "^\d{4}-\d{2}-\d{2}"
+      negate => true
+      what => "previous"
+    }
+  }
+}
+
+filter {
+  grok {
+    match => { 
+      "path" => "/var/jenkins_home/jobs/(?<job_name>[^/]+)/builds/(?<build_number>\d+)/log" 
+    }
+  }
+  
+  mutate {
+    add_field => {
+      "source" => "jenkins"
+    }
+  }
+}
+
+output {
+  http {
+    url => "http://parseable:8000/api/v1/ingest"
+    http_method => "post"
+    format => "json"
+    headers => {
+      "Authorization" => "Basic YWRtaW46YWRtaW4="
+      "X-P-Stream" => "jenkins-logs"
+    }
+  }
+}
+```
+
+## Method 4: Jenkins Webhook
+
+Use Jenkins webhooks to send build notifications.
+
+### Shared Library
+
+Create a shared library for consistent logging:
+
+```groovy
+// vars/parseableNotify.groovy
+def call(Map config = [:]) {
+    def status = config.status ?: currentBuild.result ?: 'UNKNOWN'
+    def message = config.message ?: "Build ${status}"
+    
+    def payload = [
+        [
+            timestamp: new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone('UTC')),
+            job_name: env.JOB_NAME,
+            build_number: env.BUILD_NUMBER as Integer,
+            build_url: env.BUILD_URL,
+            git_commit: env.GIT_COMMIT,
+            git_branch: env.GIT_BRANCH,
+            node: env.NODE_NAME,
+            status: status,
+            message: message,
+            duration_ms: currentBuild.duration,
+            executor: currentBuild.getBuildCauses()[0]?.userId ?: 'system'
+        ]
+    ]
+    
+    httpRequest(
+        url: "${env.PARSEABLE_URL}/api/v1/ingest",
+        httpMode: 'POST',
+        contentType: 'APPLICATION_JSON',
+        customHeaders: [
+            [name: 'Authorization', value: "Basic ${env.PARSEABLE_AUTH}"],
+            [name: 'X-P-Stream', value: config.dataset ?: 'jenkins-builds']
+        ],
+        requestBody: groovy.json.JsonOutput.toJson(payload),
+        validResponseCodes: '200:299',
+        quiet: true
+    )
+}
+```
+
+Use in your pipeline:
+
+```groovy
+@Library('my-shared-library') _
+
+pipeline {
+    agent any
+    
+    stages {
+        stage('Build') {
+            steps {
+                parseableNotify(status: 'STARTED', message: 'Build started')
+                sh 'make build'
+            }
+        }
+    }
+    
+    post {
+        success {
+            parseableNotify(status: 'SUCCESS')
+        }
+        failure {
+            parseableNotify(status: 'FAILURE')
+        }
+    }
+}
+```
+
+## Jenkins Credentials
+
+Add these credentials in Jenkins:
+
+| Credential ID | Type | Description |
+|---------------|------|-------------|
+| `parseable-url` | Secret text | Parseable instance URL |
+| `parseable-auth` | Secret text | Base64 encoded `username:password` |
+
+## Querying Jenkins Logs
+
+Query your Jenkins logs in Parseable:
+
+```sql
+-- Get recent builds
+SELECT timestamp, job_name, build_number, status, duration
+FROM "jenkins-builds"
+ORDER BY timestamp DESC
+LIMIT 100
+
+-- Find failed builds
+SELECT timestamp, job_name, build_number, message, build_url
+FROM "jenkins-builds"
+WHERE status = 'FAILURE'
+ORDER BY timestamp DESC
+
+-- Average build duration by job
+SELECT 
+  job_name,
+  COUNT(*) as total_builds,
+  AVG(duration_ms) / 1000 as avg_duration_seconds,
+  MAX(duration_ms) / 1000 as max_duration_seconds
+FROM "jenkins-builds"
+WHERE timestamp > NOW() - INTERVAL '7 days'
+GROUP BY job_name
+ORDER BY avg_duration_seconds DESC
+
+-- Build success rate
+SELECT 
+  job_name,
+  COUNT(*) as total,
+  SUM(CASE WHEN status = 'SUCCESS' THEN 1 ELSE 0 END) as successful,
+  ROUND(SUM(CASE WHEN status = 'SUCCESS' THEN 1 ELSE 0 END)::float / COUNT(*) * 100, 2) as success_rate
+FROM "jenkins-builds"
+WHERE timestamp > NOW() - INTERVAL '30 days'
+GROUP BY job_name
+ORDER BY success_rate ASC
+```
+
+## Best Practices
+
+1. **Use Shared Libraries** - Centralize logging logic
+2. **Include Git Context** - Add commit, branch, and author info
+3. **Log Stage Transitions** - Track each stage separately
+4. **Capture Build Causes** - Know who/what triggered builds
+5. **Set Up Alerts** - Notify on repeated failures
+
+## Troubleshooting
+
+### HTTP Request Plugin Errors
+
+1. Install the HTTP Request plugin
+2. Verify Parseable URL is accessible from Jenkins
+3. Check credentials are properly configured
+4. Review Jenkins console output for errors
+
+### Missing Logs
+
+1. Verify the log file paths are correct
+2. Check Fluent Bit/Logstash has read permissions
+3. Verify the Parseable dataset exists
+
+## Next Steps
+
+- Set up [alerts](/docs/user-guide/alerting) for failed builds
+- Create [dashboards](/docs/user-guide/dashboards) for CI/CD metrics
+- Configure [GitHub Actions](/docs/ingest-data/cicd/github-actions) for additional pipelines

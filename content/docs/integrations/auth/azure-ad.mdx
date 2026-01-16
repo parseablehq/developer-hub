@@ -1,0 +1,146 @@
+---
+title: Azure AD / Entra ID
+description: Configure Azure Active Directory for SSO with Parseable
+---
+
+Configure Microsoft Entra ID (formerly Azure AD) for Parseable authentication.
+
+## Overview
+
+Integrate Azure AD with Parseable to:
+
+- **Microsoft SSO** - Use Microsoft 365 identities
+- **Enterprise Integration** - Connect with existing Azure infrastructure
+- **Conditional Access** - Apply Azure AD security policies
+- **Group-Based Access** - Use Azure AD groups for authorization
+
+## Prerequisites
+
+- Azure subscription
+- Azure AD tenant
+- Global Administrator or Application Administrator role
+- Parseable instance with OIDC support
+
+## Azure AD Configuration
+
+### Register Application
+
+1. Go to **Azure Portal** → **Azure Active Directory**
+2. Click **App registrations** → **New registration**
+3. Configure:
+   - **Name**: Parseable
+   - **Supported account types**: Choose appropriate option
+   - **Redirect URI**: Web - `https://your-parseable.com/callback`
+4. Click **Register**
+
+### Configure Authentication
+
+1. Go to **Authentication**
+2. Add platform if needed
+3. Configure:
+   - **Redirect URIs**: `https://your-parseable.com/callback`
+   - **Front-channel logout URL**: `https://your-parseable.com`
+   - **ID tokens**: Check this box
+4. Click **Save**
+
+### Create Client Secret
+
+1. Go to **Certificates & secrets**
+2. Click **New client secret**
+3. Add description and expiry
+4. Click **Add**
+5. **Copy the secret value immediately** (shown only once)
+
+### Get Application Details
+
+From **Overview**, copy:
+- **Application (client) ID**
+- **Directory (tenant) ID**
+
+## Parseable Configuration
+
+### Environment Variables
+
+```bash
+P_OIDC_CLIENT_ID=your-application-id
+P_OIDC_CLIENT_SECRET=your-client-secret
+P_OIDC_ISSUER=https://login.microsoftonline.com/{tenant-id}/v2.0
+P_OIDC_REDIRECT_URI=https://your-parseable.com/callback
+```
+
+### Docker Compose
+
+```yaml
+version: '3.8'
+services:
+  parseable:
+    image: parseable/parseable:latest
+    environment:
+      - P_OIDC_CLIENT_ID=${AZURE_CLIENT_ID}
+      - P_OIDC_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
+      - P_OIDC_ISSUER=https://login.microsoftonline.com/${AZURE_TENANT_ID}/v2.0
+      - P_OIDC_REDIRECT_URI=https://your-parseable.com/callback
+```
+
+## OIDC Endpoints
+
+Azure AD v2.0 endpoints:
+
+| Endpoint | URL |
+|----------|-----|
+| Issuer | `https://login.microsoftonline.com/{tenant}/v2.0` |
+| Authorization | `https://login.microsoftonline.com/{tenant}/oauth2/v2.0/authorize` |
+| Token | `https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token` |
+| JWKS | `https://login.microsoftonline.com/{tenant}/discovery/v2.0/keys` |
+
+## Group Claims
+
+Include group membership in tokens:
+
+1. Go to **Token configuration**
+2. Click **Add groups claim**
+3. Select group types to include
+4. Configure token properties
+5. Click **Add**
+
+## API Permissions
+
+Add required permissions:
+
+1. Go to **API permissions**
+2. Click **Add a permission**
+3. Select **Microsoft Graph**
+4. Add:
+   - `openid`
+   - `profile`
+   - `email`
+5. Click **Grant admin consent**
+
+## Best Practices
+
+1. **Use Managed Identity** - For Azure-hosted Parseable
+2. **Configure Conditional Access** - Apply security policies
+3. **Enable MFA** - Require multi-factor authentication
+4. **Monitor Sign-ins** - Review Azure AD sign-in logs
+
+## Troubleshooting
+
+### AADSTS Error Codes
+
+| Code | Description | Solution |
+|------|-------------|----------|
+| AADSTS50011 | Reply URL mismatch | Check redirect URI |
+| AADSTS700016 | App not found | Verify client ID |
+| AADSTS7000215 | Invalid secret | Check client secret |
+
+### Token Issues
+
+1. Verify tenant ID is correct
+2. Check v2.0 endpoint is used
+3. Verify permissions are granted
+
+## Next Steps
+
+- Configure [OAuth](/docs/user-guide/openid) for other providers
+- Set up [RBAC](/docs/user-guide/rbac) in Parseable
+- Review [security best practices](/docs/user-guide/rbac)

@@ -1,0 +1,188 @@
+---
+title: Azure Blob Storage
+description: Use Azure Blob Storage as storage backend for Parseable
+---
+
+Configure Azure Blob Storage as the storage backend for Parseable.
+
+## Overview
+
+Using Azure Blob Storage with Parseable provides:
+
+- **Scalable Storage** - Virtually unlimited capacity
+- **Cost Effective** - Multiple storage tiers
+- **Durability** - Geo-redundant storage options
+- **Azure Integration** - Native Azure ecosystem support
+
+## Prerequisites
+
+- Azure subscription
+- Storage account created
+- Container for Parseable data
+- Access credentials or managed identity
+
+## Parseable Configuration
+
+### Environment Variables
+
+```bash
+# Azure Blob Storage Configuration
+P_BLOB_URL=https://youraccount.blob.core.windows.net
+P_BLOB_CONTAINER=parseable-data
+P_BLOB_ACCOUNT=yourstorageaccount
+P_BLOB_ACCESS_KEY=your-access-key
+
+# Or use connection string
+P_BLOB_CONNECTION_STRING=DefaultEndpointsProtocol=https;AccountName=...
+```
+
+### Docker Compose
+
+```yaml
+version: '3.8'
+services:
+  parseable:
+    image: parseable/parseable:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - P_BLOB_URL=https://youraccount.blob.core.windows.net
+      - P_BLOB_CONTAINER=parseable-data
+      - P_BLOB_ACCOUNT=${AZURE_STORAGE_ACCOUNT}
+      - P_BLOB_ACCESS_KEY=${AZURE_STORAGE_KEY}
+      - P_USERNAME=admin
+      - P_PASSWORD=admin
+    command: ["parseable", "blob-store"]
+```
+
+### Kubernetes with Managed Identity
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: parseable
+  annotations:
+    azure.workload.identity/client-id: your-client-id
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: parseable
+spec:
+  template:
+    metadata:
+      labels:
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: parseable
+      containers:
+        - name: parseable
+          image: parseable/parseable:latest
+          env:
+            - name: P_BLOB_URL
+              value: "https://youraccount.blob.core.windows.net"
+            - name: P_BLOB_CONTAINER
+              value: "parseable-data"
+          args: ["parseable", "blob-store"]
+```
+
+## Storage Account Setup
+
+### Create Storage Account
+
+```bash
+# Create resource group
+az group create --name parseable-rg --location eastus
+
+# Create storage account
+az storage account create \
+  --name parseablestorage \
+  --resource-group parseable-rg \
+  --location eastus \
+  --sku Standard_LRS \
+  --kind StorageV2
+
+# Create container
+az storage container create \
+  --name parseable-data \
+  --account-name parseablestorage
+```
+
+### Access Control
+
+Grant access using RBAC:
+
+```bash
+# Assign Storage Blob Data Contributor role
+az role assignment create \
+  --role "Storage Blob Data Contributor" \
+  --assignee your-principal-id \
+  --scope /subscriptions/.../resourceGroups/parseable-rg/providers/Microsoft.Storage/storageAccounts/parseablestorage
+```
+
+## Storage Tiers
+
+Configure lifecycle management for cost optimization:
+
+```json
+{
+  "rules": [
+    {
+      "name": "MoveToCool",
+      "type": "Lifecycle",
+      "definition": {
+        "filters": {
+          "blobTypes": ["blockBlob"],
+          "prefixMatch": ["parseable-data/"]
+        },
+        "actions": {
+          "baseBlob": {
+            "tierToCool": { "daysAfterModificationGreaterThan": 30 },
+            "tierToArchive": { "daysAfterModificationGreaterThan": 90 }
+          }
+        }
+      }
+    }
+  ]
+}
+```
+
+## Configuration Options
+
+| Parameter | Description |
+|-----------|-------------|
+| `P_BLOB_URL` | Blob storage endpoint URL |
+| `P_BLOB_CONTAINER` | Container name |
+| `P_BLOB_ACCOUNT` | Storage account name |
+| `P_BLOB_ACCESS_KEY` | Storage account access key |
+| `P_BLOB_CONNECTION_STRING` | Full connection string |
+
+## Best Practices
+
+1. **Use Managed Identity** - Avoid storing credentials
+2. **Enable Soft Delete** - Protect against accidental deletion
+3. **Configure Lifecycle** - Optimize storage costs
+4. **Use Private Endpoints** - Secure network access
+5. **Enable Versioning** - Track changes
+
+## Troubleshooting
+
+### Access Denied
+
+1. Verify credentials are correct
+2. Check RBAC permissions
+3. Verify container exists
+4. Check network rules
+
+### Performance Issues
+
+1. Use Premium storage for high throughput
+2. Enable hierarchical namespace
+3. Check network latency
+
+## Next Steps
+
+- Configure [Azure Event Hubs](/docs/ingest-data/cloud/azure-event-hubs) for streaming
+- Set up [alerts](/docs/user-guide/alerting) for storage metrics
+- Create [dashboards](/docs/user-guide/dashboards) for monitoring

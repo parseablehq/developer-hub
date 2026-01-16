@@ -1,0 +1,97 @@
+---
+title: Redash
+description: Connect Parseable to Redash for querying and visualization
+---
+
+Connect Parseable to Redash for SQL-based querying and dashboard creation.
+
+## Overview
+
+Integrate Parseable with Redash to:
+
+- **SQL Queries** - Write and save SQL queries against log data
+- **Visualizations** - Create charts from query results
+- **Dashboards** - Combine visualizations into dashboards
+- **Alerts** - Set up query-based alerts
+
+## Integration Options
+
+<Callout type="info">
+Parseable does not have a native Redash connector. Use one of the following methods to integrate.
+</Callout>
+
+### Option 1: Custom Query Runner
+
+You can create a custom Redash query runner that uses Parseable's HTTP API. This requires modifying your Redash installation.
+
+### Option 2: Export to Supported Database
+
+Export data from Parseable to a Redash-supported database (PostgreSQL, MySQL, etc.):
+
+```python
+import requests
+import pandas as pd
+from sqlalchemy import create_engine
+
+# Query Parseable
+response = requests.post(
+    "http://your-parseable-host:8000/api/v1/query",
+    auth=("username", "password"),
+    json={
+        "query": "SELECT * FROM \"application-logs\" WHERE p_timestamp > NOW() - INTERVAL '24 hours'",
+        "startTime": "2024-01-01T00:00:00Z",
+        "endTime": "2024-01-02T00:00:00Z"
+    }
+)
+
+# Load into PostgreSQL for Redash
+df = pd.DataFrame(response.json())
+engine = create_engine('postgresql://user:pass@localhost/analytics')
+df.to_sql('parseable_logs', engine, if_exists='replace', index=False)
+```
+
+### Option 3: Use Apache Superset
+
+For real-time connectivity to Parseable, we recommend using [Apache Superset](/docs/integrations/visualization/apache-superset) which has native Parseable support via the `sqlalchemy-parseable` driver and offers similar functionality to Redash.
+
+## Example Parseable Queries
+
+These SQL queries can be used with Parseable's Query API:
+
+**Error Count by Hour:**
+```sql
+SELECT 
+  date_trunc('hour', p_timestamp) as hour,
+  COUNT(*) as error_count
+FROM "application-logs"
+WHERE level = 'error'
+  AND p_timestamp > NOW() - INTERVAL '24 hours'
+GROUP BY hour
+ORDER BY hour;
+```
+
+**Top Error Messages:**
+```sql
+SELECT 
+  message,
+  COUNT(*) as count
+FROM "application-logs"
+WHERE level = 'error'
+  AND p_timestamp > NOW() - INTERVAL '1 hour'
+GROUP BY message
+ORDER BY count DESC
+LIMIT 10;
+```
+
+## Best Practices
+
+1. **Schedule Data Syncs** - Automate exports from Parseable to your analytics database
+2. **Use Incremental Loads** - Only export new data since the last sync
+3. **Filter at Source** - Apply time range filters in Parseable queries to reduce data volume
+4. **Consider Native Options** - For real-time dashboards, use [Apache Superset](/docs/integrations/visualization/apache-superset) or Parseable's built-in [dashboards](/docs/user-guide/dashboards)
+
+## Next Steps
+
+- Create [dashboards](/docs/user-guide/dashboards) in Parseable's built-in UI
+- Set up [alerts](/docs/user-guide/alerting) for monitoring
+- Explore [Apache Superset](/docs/integrations/visualization/apache-superset) for native integration

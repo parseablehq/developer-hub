@@ -1,0 +1,35 @@
+---
+title: Benchmarks
+icon: Gauge
+---
+
+Performance is a core requirement for observability platforms. As telemetry data volumes grow exponentially, it is critical for observability solutions to deliver high performance, at crucial times when teams need to troubleshoot and resolve issues quickly.
+
+Parseable's telemetry data lake architecture is designed from the ground up for high performance ingestion and querying of telemetry data at scale. 
+
+We use modern storage formats, efficient indexing techniques, and optimized query execution strategies to deliver fast performance, additionally local NVMe and memory caching further accelerates query response times.
+
+## ClickBench
+
+[ClickBench](https://benchmark.clickhouse.com/) is an industry-standard benchmark for analytical databases. While originally designed for clickstream data, it has been widely adopted to evaluate performance of databases for various analytical workloads, including observability data.
+
+Parseable is a top performer on the ClickBench. [View Parseable on ClickBench](http://logg.ing/clickbench)
+
+![Parseable Benchmark](./static/benchmark.png)
+
+Read more about our performance philosophy in our post: [Performance is Table Stakes](https://www.parseable.com/blog/performance-is-table-stakes).
+
+## Real world performance
+
+Understanding Parseable's performance with a real-world scenario of ingesting and querying 100 TB of telemetry data per day.
+
+Test Results at a Glance
+
+| Metric                | Result                               |
+| --------------------- | ------------------------------------ |
+| **Ingestion Rate**    | **2 TB/hour** (sustained)            |
+| **Query Latency**     | **Millisecond-range** (even at load) |
+| **Monthly Cost**      | **~$11,810** (for a 4-node cluster)  |
+| **Compression Ratio** | **Up to 90%**                        |
+
+For more details, see our blog post: [The Economics and Physics of 100 TB Telemetry Data Per Day](https://www.parseable.com/blog/the-economics-and-physics-of-100-tb-telemetry-data-per-day).

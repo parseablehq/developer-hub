@@ -1,0 +1,70 @@
+---
+title: OSS Features
+description: Parseable Open Source - High performance log analytics for everyone
+---
+
+Parseable OSS is the open-source edition of Parseable, licensed under AGPLv3. It provides a high-performance, cost-effective solution for log analytics. **Free forever**.
+
+## Data Infrastructure
+
+| Feature | Description | Availability |
+|---------|-------------|--------------|
+| Ingestion | Total ingestion across logs, metrics, traces | Unlimited |
+| Query Volume | Volume of data scanned for queries | Unlimited |
+| [Retention](/docs/features/retention) | Retention of ingested data | Configurable |
+| [Storage](/docs/key-concepts/storage) | Object storage backend | S3, GCS, Azure Blob, MinIO |
+
+## Core Features
+
+| Feature | Description | Availability |
+|---------|-------------|--------------|
+| [Role Based Access Control](/docs/user-guide/rbac) | User and role management | ✅ |
+| [Threshold Alerts](/docs/user-guide/alerting/standard-threshold) | Alert when metrics cross thresholds | ✅ |
+| [Dashboards](/docs/user-guide/dashboards) | Custom visualization dashboards | ✅ |
+| [SQL Query](/docs/key-concepts/query) | PostgreSQL-compatible SQL queries | ✅ |
+| [Datasets](/docs/key-concepts/data-model) | Logical grouping of telemetry data | ✅ |
+| [OpenID Connect](/docs/user-guide/openid) | SSO authentication | ✅ |
+
+## Not Available in OSS
+
+| Feature | Available In |
+|---------|--------------|
+| [Keystone](/docs/ai-features/keystone) | Pro, Enterprise |
+| [Anomaly Detection](/docs/user-guide/alerting/anomaly) | Pro, Enterprise |
+| [Forecasting Alerts](/docs/user-guide/alerting/forecasting) | Pro, Enterprise |
+| [AI SQL Generation](/docs/user-guide/ai-native/text-to-sql) | Pro, Enterprise |
+| [Summarization](/docs/user-guide/ai-native/summary) | Pro, Enterprise |
+| [Smart Cache](/docs/features/smart-cache) | Pro, Enterprise |
+| [Custom Partitioning](/docs/key-concepts/partitioning) | Enterprise |
+| [High Availability Cluster](/docs/key-concepts/high-availability) | Pro, Enterprise |
+| Team Quotas | Enterprise |
+| 24x7 Support | Enterprise |
+
+## Getting Started
+
+```bash
+curl -fsSL https://logg.ing/install | bash
+```
+
+Or run with Docker:
+
+```bash
+docker run -p 8000:8000 \
+  -v /tmp/parseable/data:/parseable/data \
+  -v /tmp/parseable/staging:/parseable/staging \
+  -e P_FS_DIR=/parseable/data \
+  -e P_STAGING_DIR=/parseable/staging \
+  parseable/parseable:latest \
+  parseable local-store
+```
+
+## Community & Support
+
+<Cards>
+<Card href="https://logg.ing/community" title="Join Slack Community">
+Get help, share feedback, and connect with other users
+</Card>
+<Card href="https://github.com/parseablehq/parseable" title="GitHub Repository">
+View source code, report issues, contribute
+</Card>
+</Cards>

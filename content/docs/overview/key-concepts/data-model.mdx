@@ -1,0 +1,104 @@
+---
+title: Modelling Data
+---
+
+import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
+
+It is important to understand how to model the observability data effectively in Parseable. This helps in optimal storage, compression and faster query performance. This section will cover the key concepts of data modelling in Parseable.
+
+## Dataset
+
+A dataset is a logical collection of data designed to ensure optimal storage compression and fast retrieval via query. Datasets are identified by a unique name. Each dataset has its schema, which includes the fields and their types. Role based access control, alerts, retention and notifications are all supported at the dataset level granularity.
+
+Datasets are the primary unit of data storage in Parseable. Any MELT (Metrics, Events, Logs, Traces) data is ingested into one or other dataset. 
+
+### Creating a dataset
+
+You can create a dataset using the "Create Dataset" button on Datasets page. You'll be prompted to enter the dataset name, schema type, and partition column.
+
+You can set the schema type to be [static](#static) (schema has to be explicitly provided at the time of creation of dataset) or [dynamic](#dynamic) (let server infer the schema from the incoming data). Once set, the schema type cannot be changed later. Read more about schema types in the [Dataset Schema](#dataset-schema) section.
+
+Partition column is an optional field. If you want to partition the dataset based on a specific field, you can specify that field here. If you don't specify a partition field, Parseable will use the internal `p_timestamp` field as the partition field. Read more about partitioning in the [Partitioning](/docs/key-concepts/partitioning) section.
+
+### Mapping sources to datasets
+
+A source is anything that generates data, i.e. agents like FluentBit, FluentD, Vector, LogStash, agents from the OTel ecosystem, or the application itself. While ingesting data, you'll need to specify the dataset name to which the data should be sent. This allows mapping sources to datasets. Technically it is possible to map any number of data sources any number of data sources. Parseable allows this to ensure flexibility for varying use cases. 
+
+But, it is important to critically think about mapping data sources to datasets. This is a key design decision that can impact the performance and usability of your observability data. Too many unrelated columns in a dataset can lead to poor compression and slower query performance. On the other hand, too many datasets can lead to increased complexity in managing the data.
+
+When deciding how to map sources to datasets, consider the following:
+
+- **Schema similarity**: If the sources have similar schema, it is better to map them to a single dataset. This allows for better compression and faster query performance. Similar here means fields are matching for 80 percent or more of the events. If the schema is too different, it is better to create separate datasets for each source.
+
+- **Query patterns**: If you frequently query across multiple sources, it is better to map them to a single dataset. This allows you to query the data easily without having to join multiple datasets.
+
+- **Data retention**: If the sources have different data retention requirements, it is better to create separate datasets for each source. This allows you to set different retention policies for each dataset.
+
+- **Data ownership**: If different teams own different sources, it is better to create separate datasets for each source. This allows you to set different access controls for each dataset and manage the data better.
+
+Let's understand this with some examples:
+
+- **Kubernetes infrastructure logs**: Kubernetes infrastructure logs (e.g. kubelet, kube-proxy, etc.) can be mapped to a single dataset. This allows you to query the logs across all the Kubernetes components easily. Since these logs have similar schema, they fit well into a single dataset.
+
+- **Application logs with similar schema**: If you have logs from multiple applications that log in a common format for example [go-log](https://pkg.go.dev/log), you can create a single dataset for all of them. This allows you to query the logs across applications easily.
+
+- **Application logs with different schemas**: If you have logs from multiple applications that have completely different schemas, you can create a separate dataset for each application. This allows you to enforce a specific schema for each dataset and query them independently.
+
+- **Aggregated data**: If you have aggregated data (e.g. metrics, traces) that you want to store, you can create a separate dataset for that. This allows you to query the aggregated data separately from the raw logs.
+
+<Callout type="warn">
+Beyond 800 columns in a dataset, consider splitting the dataset into multiple datasets based on schema similarity or query patterns. Beyond 1000 columns, the server will reject the ingestion request with an error.
+</Callout>
+
+## Dataset vs index
+
+Traditional indices in systems like Elasticsearch are build to ingest textual data, index each field and allow for fast search and retrieval. This works well for pure search use cases, where you want to search for specific keywords or phrases in the data.
+
+But applying this concept to huge volumes of observability data (logs, metrics, traces) is not practical. Observability data is often structured, semi-structured or unstructured, and indexing every field can lead to excessive storage costs for little to no performance gain.
+
+Parseable datasets are designed to handle large volumes of observability data efficiently. They focus on optimal storage compression and fast retrieval via query, rather than indexing every field. This allows Parseable to handle high cardinality data, such as logs with many unique fields, without the performance and storage overhead of traditional indices.
+
+## Dataset schema
+
+Schema defines the fields in an event and their types. Parseable supports two types of schema - dynamic and static. You can choose the schema type while creating the dataset. Additionally, if you want to enforce a specific schema, you'll need to send that schema at the time of creating the dataset.
+
+### Dynamic
+
+Datasets by default have dynamic schema. This means you don't need to define a schema for a dataset. The Parseable server detects the schema from first event. If there are subsequent events (with new schema), it updates internal schema accordingly.
+
+Log data formats evolve over time, and users prefer a dynamic schema approach, where they don't have to worry about schema changes, and they are still able to ingest events to a given dataset.
+
+<Callout type="info">
+For dynamic schema, Parseable doesn't allow changing the type of an existing column whose type is already set. For example, if a column is detected as string in the first event, it can't be changed to int or timestamp in a later event. If you'd like to enforce a specific schema, please use static schema.
+</Callout>
+
+### Static
+
+In some cases, you may want to enforce a specific schema for a dataset. You can do this by setting the static schema type while creating the dataset. This schema will be enforced for all the events ingested to the dataset. You'll need to provide the schema in the form of a JSON object with field names and their types, with the create dataset API call. The following types are supported in the schema: `string`, `int`, `float`, `datetime`,`date`, `boolean`.
+
+## FAQ
+
+Some of common questions related to datasets are answered below. If you have any other questions, please reach out to us on [Slack](http://logg.ing/community) or [GitHub Discussions](http://github.com/parseablehq/parseable/discussions).
+
+<Accordions>
+    <Accordion id='dataset-vs-index' title="Is a dataset equivalent to an index in Elasticsearch?">
+    A dataset is not equivalent to an index in Elasticsearch. While both are used to store and retrieve data, datasets in Parseable are designed specifically for observability data (logs, metrics, traces) and focus on optimal storage compression and fast retrieval via query. Datasets can handle high cardinality data without the performance and storage overhead of traditional indices. Refer to the [Dataset vs index](#dataset-vs-index) section for more details.
+    </Accordion>
+
+    <Accordion id='new-vs-old-dataset' title='How do I decide between creating a new dataset or using an existing one?'>
+    General principle is to create a new dataset if the data has a different schema or if you want to enforce a specific schema. If the data has similar schema and you want to query it together, you can use an existing dataset. Refer to the [Mapping sources to datasets](#mapping-sources-to-datasets) section for more details.
+    </Accordion>
+
+    <Accordion id='static-vs-dynamic-schema' title="How do I decide static vs dynamic schema?">
+    If in doubt, use static schema. Static schema allows you to enforce a specific schema for the dataset, which can help in better compression and faster query performance. Dynamic schema is useful when you don't want to worry about schema changes and want to ingest events without specifying the schema. Refer to the [Dataset Schema](#dataset-schema) section for more details.
+    </Accordion>
+
+    <Accordion id='when-to-use-partitions' title="When should I use partitioning?">
+    Partitioning is useful when you want to optimize query performance for specific fields. If you frequently query on a specific field, you can partition the dataset based on that field. This allows Parseable to store the data in a way that makes it faster to retrieve the data for that field. Refer to the [Partitioning](/docs/key-concepts/partitioning) section for more details.
+    </Accordion>
+
+    <Accordion id='how-many-columns' title="How many columns are too many in datasets?">
+    We recommend keeping the number of columns in a dataset to a reasonable limit, ideally less than 200. Too many columns can lead to poor compression and slower query performance. If you have more than 200 columns, query performance may degrade, and you may need to consider splitting the dataset into multiple datasets based on schema similarity or query patterns. Beyond 250 columns, the server will reject the ingestion request with an error.
+    </Accordion>
+
+</Accordions>

@@ -1,0 +1,292 @@
+---
+title: Ruby
+description: Send logs from Ruby applications to Parseable
+---
+
+Send logs from Ruby applications to Parseable using HTTP or logging libraries.
+
+## Overview
+
+Integrate Ruby with Parseable to:
+
+- **Application Logs** - Send structured logs from Ruby apps
+- **Rails Integration** - Works with Ruby on Rails
+- **Multiple Frameworks** - Sinatra, Hanami, and more
+- **Structured Logging** - JSON-formatted log entries
+
+## Prerequisites
+
+- Ruby 2.7+
+- Parseable instance accessible
+- HTTP client gem (net/http, faraday, or httparty)
+
+## Basic HTTP Integration
+
+### Using Net::HTTP
+
+```ruby
+require 'net/http'
+require 'json'
+require 'uri'
+
+class ParseableLogger
+  def initialize(url:, dataset:, username:, password:)
+    @uri = URI.parse("#{url}/api/v1/ingest")
+    @dataset = dataset
+    @auth = Base64.strict_encode64("#{username}:#{password}")
+  end
+
+  def log(level:, message:, **metadata)
+    entry = {
+      timestamp: Time.now.utc.iso8601(3),
+      level: level.to_s,
+      message: message,
+      **metadata
+    }
+
+    send_log([entry])
+  end
+
+  def info(message, **metadata)
+    log(level: :info, message: message, **metadata)
+  end
+
+  def error(message, **metadata)
+    log(level: :error, message: message, **metadata)
+  end
+
+  def warn(message, **metadata)
+    log(level: :warn, message: message, **metadata)
+  end
+
+  private
+
+  def send_log(entries)
+    http = Net::HTTP.new(@uri.host, @uri.port)
+    http.use_ssl = @uri.scheme == 'https'
+
+    request = Net::HTTP::Post.new(@uri.path)
+    request['Content-Type'] = 'application/json'
+    request['Authorization'] = "Basic #{@auth}"
+    request['X-P-Stream'] = @dataset
+    request.body = entries.to_json
+
+    response = http.request(request)
+    raise "Failed to send log: #{response.code}" unless response.is_a?(Net::HTTPSuccess)
+  end
+end
+
+# Usage
+logger = ParseableLogger.new(
+  url: 'http://parseable:8000',
+  dataset: 'ruby-app',
+  username: 'admin',
+  password: 'admin'
+)
+
+logger.info('Application started', service: 'my-app', version: '1.0.0')
+logger.error('Database connection failed', error: 'Connection refused')
+```
+
+### Using Faraday
+
+```ruby
+require 'faraday'
+require 'json'
+
+class ParseableLogger
+  def initialize(url:, dataset:, username:, password:)
+    @dataset = dataset
+    @conn = Faraday.new(url: url) do |f|
+      f.request :json
+      f.request :authorization, :basic, username, password
+      f.adapter Faraday.default_adapter
+    end
+  end
+
+  def log(level:, message:, **metadata)
+    entry = {
+      timestamp: Time.now.utc.iso8601(3),
+      level: level.to_s,
+      message: message,
+      **metadata
+    }
+
+    @conn.post('/api/v1/ingest') do |req|
+      req.headers['X-P-Stream'] = @dataset
+      req.body = [entry].to_json
+    end
+  end
+end
+```
+
+## Rails Integration
+
+### Custom Logger
+
+Create `lib/parseable_logger.rb`:
+
+```ruby
+require 'net/http'
+require 'json'
+
+class ParseableLogger < Logger
+  def initialize(url:, dataset:, username:, password:)
+    super(nil)
+    @uri = URI.parse("#{url}/api/v1/ingest")
+    @dataset = dataset
+    @auth = Base64.strict_encode64("#{username}:#{password}")
+    @buffer = []
+    @mutex = Mutex.new
+    @batch_size = 100
+    @flush_interval = 5
+
+    start_flush_thread
+  end
+
+  def add(severity, message = nil, progname = nil)
+    message = yield if block_given?
+    
+    entry = {
+      timestamp: Time.now.utc.iso8601(3),
+      level: severity_name(severity),
+      message: message.to_s,
+      progname: progname
+    }
+
+    @mutex.synchronize do
+      @buffer << entry
+      flush_buffer if @buffer.size >= @batch_size
+    end
+  end
+
+  private
+
+  def severity_name(severity)
+    %w[DEBUG INFO WARN ERROR FATAL UNKNOWN][severity] || 'UNKNOWN'
+  end
+
+  def start_flush_thread
+    Thread.new do
+      loop do
+        sleep @flush_interval
+        @mutex.synchronize { flush_buffer }
+      end
+    end
+  end
+
+  def flush_buffer
+    return if @buffer.empty?
+
+    entries = @buffer.dup
+    @buffer.clear
+
+    Thread.new { send_logs(entries) }
+  end
+
+  def send_logs(entries)
+    http = Net::HTTP.new(@uri.host, @uri.port)
+    http.use_ssl = @uri.scheme == 'https'
+
+    request = Net::HTTP::Post.new(@uri.path)
+    request['Content-Type'] = 'application/json'
+    request['Authorization'] = "Basic #{@auth}"
+    request['X-P-Stream'] = @dataset
+    request.body = entries.to_json
+
+    http.request(request)
+  rescue => e
+    STDERR.puts "Failed to send logs to Parseable: #{e.message}"
+  end
+end
+```
+
+### Configure in Rails
+
+In `config/environments/production.rb`:
+
+```ruby
+config.logger = ParseableLogger.new(
+  url: ENV['PARSEABLE_URL'],
+  dataset: 'rails-app',
+  username: ENV['PARSEABLE_USERNAME'],
+  password: ENV['PARSEABLE_PASSWORD']
+)
+```
+
+## Semantic Logger Integration
+
+Use Semantic Logger for structured logging:
+
+```ruby
+# Gemfile
+gem 'semantic_logger'
+
+# config/initializers/semantic_logger.rb
+require 'semantic_logger'
+
+class ParseableAppender < SemanticLogger::Subscriber
+  def initialize(url:, dataset:, username:, password:)
+    super()
+    @uri = URI.parse("#{url}/api/v1/ingest")
+    @dataset = dataset
+    @auth = Base64.strict_encode64("#{username}:#{password}")
+  end
+
+  def log(log)
+    entry = {
+      timestamp: log.time.utc.iso8601(3),
+      level: log.level.to_s,
+      message: log.message,
+      name: log.name,
+      duration: log.duration,
+      payload: log.payload,
+      exception: log.exception&.message,
+      backtrace: log.exception&.backtrace&.first(10)
+    }.compact
+
+    send_log([entry])
+  end
+
+  private
+
+  def send_log(entries)
+    # Same as above
+  end
+end
+
+SemanticLogger.add_appender(appender: ParseableAppender.new(
+  url: ENV['PARSEABLE_URL'],
+  dataset: 'rails-app',
+  username: ENV['PARSEABLE_USERNAME'],
+  password: ENV['PARSEABLE_PASSWORD']
+))
+```
+
+## Best Practices
+
+1. **Use Batching** - Buffer logs and send in batches
+2. **Async Sending** - Don't block application threads
+3. **Handle Failures** - Implement retry logic
+4. **Add Context** - Include request ID, user ID
+5. **Use Structured Logs** - Send JSON-formatted entries
+
+## Troubleshooting
+
+### Connection Errors
+
+1. Verify Parseable URL is accessible
+2. Check SSL certificate if using HTTPS
+3. Verify credentials
+
+### Missing Logs
+
+1. Check buffer is being flushed
+2. Verify dataset name is correct
+3. Check for exceptions in send thread
+
+## Next Steps
+
+- Configure [alerts](/docs/user-guide/alerting) for error patterns
+- Create [dashboards](/docs/user-guide/dashboards) for Ruby metrics
+- Explore [OpenTelemetry](/docs/ingest-data/otel) for tracing

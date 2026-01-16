@@ -1,0 +1,210 @@
+---
+title: Email
+description: Send alert notifications via email
+---
+
+Send Parseable alerts via email for universal notification delivery.
+
+## Overview
+
+Integrate Parseable with email to:
+
+- **Universal Delivery** - Reach anyone with an email address
+- **Detailed Reports** - Send formatted HTML alert emails
+- **Audit Trail** - Maintain email records for compliance
+- **Escalation** - Use email as a fallback notification method
+
+## Prerequisites
+
+- SMTP server access (or email service API)
+- Email credentials configured
+- Parseable instance with alerting configured
+
+## Webhook Integration
+
+Create a webhook service to send email notifications:
+
+### Using Nodemailer (SMTP)
+
+```javascript
+// webhook-to-email.js
+const express = require('express');
+const nodemailer = require('nodemailer');
+
+const app = express();
+app.use(express.json());
+
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: process.env.SMTP_PORT || 587,
+  secure: process.env.SMTP_SECURE === 'true',
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS
+  }
+});
+
+app.post('/webhook', async (req, res) => {
+  const alert = req.body;
+  
+  const mailOptions = {
+    from: process.env.EMAIL_FROM || 'alerts@parseable.com',
+    to: process.env.EMAIL_TO,
+    subject: `[${alert.severity?.toUpperCase() || 'ALERT'}] ${alert.name || 'Parseable Alert'}`,
+    html: generateEmailHtml(alert),
+    text: generateEmailText(alert)
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    res.status(200).json({ status: 'sent' });
+  } catch (error) {
+    console.error('Error sending email:', error);
+    res.status(500).json({ error: 'Failed to send email' });
+  }
+});
+
+function generateEmailHtml(alert) {
+  const severityColor = {
+    'critical': '#FF0000',
+    'high': '#FFA500',
+    'medium': '#FFFF00',
+    'low': '#00FF00',
+    'info': '#0000FF'
+  }[alert.severity?.toLowerCase()] || '#FFA500';
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; }
+        .header { background: ${severityColor}; color: white; padding: 20px; }
+        .content { padding: 20px; }
+        .field { margin: 10px 0; }
+        .label { font-weight: bold; }
+        .footer { background: #f5f5f5; padding: 10px; font-size: 12px; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>🚨 ${alert.name || 'Alert Triggered'}</h1>
+      </div>
+      <div class="content">
+        <div class="field">
+          <span class="label">Stream:</span> ${alert.dataset || 'N/A'}
+        </div>
+        <div class="field">
+          <span class="label">Severity:</span> ${alert.severity || 'Unknown'}
+        </div>
+        <div class="field">
+          <span class="label">Current Value:</span> ${alert.value || 'N/A'}
+        </div>
+        <div class="field">
+          <span class="label">Threshold:</span> ${alert.threshold || 'N/A'}
+        </div>
+        <div class="field">
+          <span class="label">Message:</span> ${alert.message || 'No message'}
+        </div>
+        <div class="field">
+          <span class="label">Time:</span> ${new Date().toISOString()}
+        </div>
+        <p>
+          <a href="https://your-parseable.com/streams/${alert.dataset}">View in Parseable</a>
+        </p>
+      </div>
+      <div class="footer">
+        This alert was sent by Parseable Alert System
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+function generateEmailText(alert) {
+  return `
+Parseable Alert: ${alert.name || 'Alert Triggered'}
+
+Stream: ${alert.dataset || 'N/A'}
+Severity: ${alert.severity || 'Unknown'}
+Current Value: ${alert.value || 'N/A'}
+Threshold: ${alert.threshold || 'N/A'}
+Message: ${alert.message || 'No message'}
+Time: ${new Date().toISOString()}
+
+View in Parseable: https://your-parseable.com/streams/${alert.dataset}
+  `;
+}
+
+app.listen(3000);
+```
+
+### Using SendGrid
+
+```javascript
+const sgMail = require('@sendgrid/mail');
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+app.post('/webhook', async (req, res) => {
+  const alert = req.body;
+  
+  const msg = {
+    to: process.env.EMAIL_TO,
+    from: process.env.EMAIL_FROM,
+    subject: `[${alert.severity?.toUpperCase()}] ${alert.name}`,
+    html: generateEmailHtml(alert),
+    text: generateEmailText(alert)
+  };
+
+  try {
+    await sgMail.send(msg);
+    res.status(200).json({ status: 'sent' });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Failed to send' });
+  }
+});
+```
+
+## Docker Compose
+
+```yaml
+version: '3.8'
+services:
+  webhook-to-email:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USER=your-email@gmail.com
+      - SMTP_PASS=your-app-password
+      - EMAIL_FROM=alerts@yourdomain.com
+      - EMAIL_TO=team@yourdomain.com
+```
+
+## Configuration Options
+
+| Variable | Description |
+|----------|-------------|
+| `SMTP_HOST` | SMTP server hostname |
+| `SMTP_PORT` | SMTP port (587 for TLS, 465 for SSL) |
+| `SMTP_USER` | SMTP username |
+| `SMTP_PASS` | SMTP password |
+| `EMAIL_FROM` | Sender email address |
+| `EMAIL_TO` | Recipient email address(es) |
+
+## Best Practices
+
+1. **Use HTML and Text** - Include both formats for compatibility
+2. **Clear Subject Lines** - Include severity and alert name
+3. **Include Links** - Add direct links to Parseable
+4. **Rate Limiting** - Avoid sending too many emails
+5. **Distribution Lists** - Use mailing lists for team alerts
+
+## Next Steps
+
+- Set up [Parseable alerts](/docs/user-guide/alerting) for automated notifications
+- Configure [Slack](/docs/integrations/alerting/slack) for instant notifications
+- Create [dashboards](/docs/user-guide/dashboards) for monitoring

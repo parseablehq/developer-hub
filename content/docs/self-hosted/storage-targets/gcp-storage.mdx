@@ -1,0 +1,177 @@
+---
+title: Google Cloud Storage
+description: Use Google Cloud Storage as storage backend for Parseable
+---
+
+Configure Google Cloud Storage (GCS) as the storage backend for Parseable.
+
+## Overview
+
+Using GCS with Parseable provides:
+
+- **Scalable Storage** - Virtually unlimited capacity
+- **Cost Effective** - Multiple storage classes
+- **Durability** - 99.999999999% durability
+- **GCP Integration** - Native Google Cloud support
+
+## Prerequisites
+
+- Google Cloud project
+- GCS bucket created
+- Service account with Storage permissions
+- Parseable instance
+
+## Parseable Configuration
+
+### Environment Variables
+
+```bash
+# GCS Configuration
+P_GCS_URL=https://storage.googleapis.com
+P_GCS_BUCKET=parseable-data
+P_GCS_REGION=us-central1
+
+# Service account key (if not using workload identity)
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json
+```
+
+### Docker Compose
+
+```yaml
+version: '3.8'
+services:
+  parseable:
+    image: parseable/parseable:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - P_GCS_URL=https://storage.googleapis.com
+      - P_GCS_BUCKET=parseable-data
+      - P_GCS_REGION=us-central1
+      - P_USERNAME=admin
+      - P_PASSWORD=admin
+    volumes:
+      - ./service-account.json:/etc/gcp/key.json
+    command: ["parseable", "gcs-store"]
+```
+
+### Kubernetes with Workload Identity
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: parseable
+  annotations:
+    iam.gke.io/gcp-service-account: parseable@project.iam.gserviceaccount.com
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: parseable
+spec:
+  template:
+    spec:
+      serviceAccountName: parseable
+      containers:
+        - name: parseable
+          image: parseable/parseable:latest
+          env:
+            - name: P_GCS_URL
+              value: "https://storage.googleapis.com"
+            - name: P_GCS_BUCKET
+              value: "parseable-data"
+          args: ["parseable", "gcs-store"]
+```
+
+## GCS Bucket Setup
+
+### Create Bucket
+
+```bash
+# Create bucket
+gsutil mb -l us-central1 gs://parseable-data
+
+# Set lifecycle policy
+gsutil lifecycle set lifecycle.json gs://parseable-data
+```
+
+### Lifecycle Policy
+
+```json
+{
+  "rule": [
+    {
+      "action": {"type": "SetStorageClass", "storageClass": "NEARLINE"},
+      "condition": {"age": 30}
+    },
+    {
+      "action": {"type": "SetStorageClass", "storageClass": "COLDLINE"},
+      "condition": {"age": 90}
+    },
+    {
+      "action": {"type": "SetStorageClass", "storageClass": "ARCHIVE"},
+      "condition": {"age": 365}
+    }
+  ]
+}
+```
+
+### IAM Permissions
+
+```bash
+# Create service account
+gcloud iam service-accounts create parseable \
+  --display-name="Parseable Storage"
+
+# Grant Storage Object Admin
+gsutil iam ch \
+  serviceAccount:parseable@project.iam.gserviceaccount.com:objectAdmin \
+  gs://parseable-data
+```
+
+## Configuration Options
+
+| Parameter | Description |
+|-----------|-------------|
+| `P_GCS_URL` | GCS endpoint URL |
+| `P_GCS_BUCKET` | Bucket name |
+| `P_GCS_REGION` | Bucket region |
+
+## Storage Classes
+
+| Class | Use Case | Retrieval Cost |
+|-------|----------|----------------|
+| Standard | Frequently accessed | None |
+| Nearline | Monthly access | Low |
+| Coldline | Quarterly access | Medium |
+| Archive | Yearly access | High |
+
+## Best Practices
+
+1. **Use Workload Identity** - Avoid service account keys
+2. **Configure Lifecycle** - Optimize storage costs
+3. **Enable Versioning** - Protect against deletion
+4. **Use Uniform Access** - Simplify permissions
+5. **Set Retention Policies** - Compliance requirements
+
+## Troubleshooting
+
+### Access Denied
+
+1. Verify service account permissions
+2. Check bucket IAM policy
+3. Verify workload identity binding
+4. Check project permissions
+
+### Performance Issues
+
+1. Use regional buckets for low latency
+2. Enable parallel uploads
+3. Check network configuration
+
+## Next Steps
+
+- Configure [GCP Pub/Sub](/docs/ingest-data/cloud/gcp-pubsub) for streaming
+- Set up [alerts](/docs/user-guide/alerting) for storage metrics
+- Create [dashboards](/docs/user-guide/dashboards) for monitoring

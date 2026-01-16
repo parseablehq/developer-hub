@@ -1,0 +1,162 @@
+---
+title: Dashboards
+---
+
+Parseable Dashboards are customizable and support querying multiple data streams for comprehensive insights. You can also leverage text to SQL conversion for quick query creation.
+
+![](../static/dashboards.png)
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/mXO2WtV0vBU?si=t1aW3PQUdN0oc9VC" title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen></iframe>
+
+## Creating a Dashboard
+
+1. **Start from the Side Nav:** Head over to Dashboards in the sidebar and hit Create New
+2. **Name & Tag:** Give your dashboard a name and a tag (for easy organizing), then click Create Dashboard
+3. **Build Your Canvas:** Select your new dashboard to land on the dashboard canvas. Click Add Tiles to start building charts
+4. **Save and Favorite:** Add as many tiles as you need, then save your dashboard. You can also mark dashboards as favorites for quick access later
+
+## Adding Charts to Dashboards
+
+Charts can be added to dashboards from multiple sources:
+
+- **SQL Editor**: Run queries in the SQL editor, visualize results, and add charts directly to dashboards
+- **Keystone**: AI-generated insights can be added as dashboard tiles
+- **Chart Builder**: Build visualizations using the built-in chart builder
+
+## Chart Builder Types
+
+There are two ways to build charts:
+
+### 1. SQL Editor
+
+Write custom SQL queries, visualize the results, and add them to your dashboard. The SQL editor supports up to 3 datasets simultaneously for complex joins and comparative analysis.
+
+After running a query, you can use the chart view customization options and add these charts to dashboards directly.
+
+![](../release-notes/static/chart-builder-new.png)
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/VjwFONGGqaE?si=hMkSWfwGWmfb4HfY" title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen></iframe>
+
+### 2. Visual Chart Builder
+
+![](../static/chart-builder.png)
+
+The chart builder follows a 3-step process to create powerful visualizations:
+
+### Step 1: Initialize
+
+**Chart Type Selection:**
+- **Timeseries**: For time-based data visualization
+- **Line**: For trend analysis and continuous data
+- **Bar**: For categorical comparisons
+- **Area**: For cumulative values over time
+- **Pie**: For showing proportions of a whole
+- **Donut**: Similar to pie with a hollow center
+- **Query Value**: For displaying single metric values
+- **Gauge**: For showing progress or thresholds
+
+**Dataset Selection:**
+Choose your data source from the dropdown menu (e.g., vLLMmetrics or your custom log streams).
+
+### Step 2: Plot Configuration
+
+The configuration options vary based on your selected chart type:
+
+#### For Timeseries, Line, Bar, and Area Charts:
+- **Y-Axis**: Select the plot field (e.g., `aggregation_temporality_desc`)
+- **Aggregate**: Choose aggregation method (COUNT)
+- **Filters**: Add conditions to filter your data
+- **Group by**: Group data by specific fields for segmentation
+- **Sort by**: Order your results (ascending or descending)
+- **X-Axis**: Select the dimension field (e.g., `aggregation_temporality`)
+
+![](../static/timeseries-plot.png)
+
+#### For Pie and Donut Charts:
+- **Plot**: Select the field to visualize
+- **Aggregate**: Choose how to aggregate values (COUNT)
+- **Filters**: Apply data filters as needed
+- **Note**: Grouping and sorting options are not available for these chart types
+
+![](../static/donut.png)
+
+#### For Query Value and Gauge:
+- **Plot**: Select the metric field
+- **Aggregate**: Define the aggregation method
+- **Filters**: Filter data to focus on specific values
+- **Note**: These visualizations display single values, no grouping or sorting needed
+
+![](../static/gauage-plot-style.png)
+
+### Step 3: Style Your Visualization
+
+**Customization Options:**
+- **X-axis Label**: Custom label for the X-axis
+- **Y-axis Label**: Custom label for the Y-axis
+- **Colour Scheme**: Choose from predefined color palettes (Forest, Ocean, Sunset, etc.)
+- **Legend Position**: Place legend where it best fits your layout
+- **Grid Lines**: Toggle grid visibility for better readability
+- **Data Labels**: Show/hide values on the chart
+
+**Chart-Specific Styling:**
+- **Line/Area**: Smooth curves, fill opacity, stroke width
+- **Bar**: Orientation (vertical/horizontal), bar spacing
+- **Pie/Donut**: Inner radius (for donut), label display
+
+**Gauge and Query Value Specific Styling:**
+- **Units**: Add unit labels (e.g., %, ms, GB)
+- **Auto-formatting**: Enable automatic number formatting
+- **Precision**: Set decimal places for displayed values
+- **Range**: Define min and max values (from 0 to 100 for percentages)
+- **Segments**: Configure color-coded thresholds
+  - Set breakpoints (e.g., 10, 90 for three segments)
+  - Assign colors to each segment (green, yellow, red)
+  - Use visual indicators for performance levels
+
+**Quick Table View:**
+Want to see raw data? Click the **Table** button in the top right corner to skip chart setup and view your query results in a tabular format.
+
+## How it works
+
+Dashboards in Parseable are a collection of tiles, each representing a visualization of a query result. You can create multiple tiles on a dashboard, each with its own query and chart type. Further, a tile's chart can be configured for different colors, units and formatting. Each tile can be based on a query targeting different dataset. The tiles can be resized, repositioned, and exported in various formats for easy sharing and collaboration.
+
+Dashboard tiles can be dragged and repositioned anywhere on the dashboard. You can also adjust the tile size to fit your layout preferences, selecting from small, medium, large, or full screen widths (1/4, 2/4, 3/4, and full screen).
+
+## Visualization Types
+
+Parseable offers eight distinct visualization types, each optimized for different data patterns:
+
+### Time-Series Charts
+- **Timeseries**: Specialized for temporal data with automatic time formatting
+- **Line**: Connect data points for trend visualization
+- **Area**: Show cumulative values with filled areas
+
+These charts support full configuration: Y-axis plotting, filtering, grouping, and sorting.
+
+### Comparison Charts
+- **Bar**: Compare categories with vertical or horizontal bars
+  - Supports: Y-axis plot, filters, grouping, sorting
+  - Best for: Categorical comparisons, distributions
+
+### Proportion Charts
+- **Pie**: Display parts of a whole in circular format
+- **Donut**: Similar to pie with hollow center for modern aesthetics
+  - Supports: Plot selection, aggregation, filtering
+  - Best for: Showing percentages and proportions
+
+### Metric Displays
+- **Query Value**: Single metric display for KPIs
+- **Gauge**: Visual progress indicator with thresholds
+  - Supports: Plot selection, aggregation, filtering
+  - Best for: Performance indicators, threshold monitoring
+
+### Data Table
+- **Simple Table**: Raw data view with sorting and filtering
+  - Access via the Table button in any chart builder
+  - Export capabilities for further analysis
+
+Each visualization includes customizable styling options for colors, labels, and formatting to match your dashboard aesthetic.
+
+## Time Range
+
+Set a fixed time range for your dashboard to ensure all tiles load data consistently. You can save this time range with the dashboard, allowing for synchronized data views across all visualizations.

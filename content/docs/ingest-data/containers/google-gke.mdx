@@ -1,0 +1,209 @@
+---
+title: Google GKE
+description: Collect logs from Google Kubernetes Engine clusters
+---
+
+Collect and forward logs from Google GKE to Parseable.
+
+## Overview
+
+Integrate Google GKE with Parseable to:
+
+- **Kubernetes Logs** - Collect pod and container logs
+- **GCP Integration** - Native Google Cloud support
+- **Autopilot Support** - Works with GKE Autopilot
+- **Rich Metadata** - Include GCP and K8s context
+
+## Prerequisites
+
+- GKE cluster running
+- kubectl configured
+- Helm (recommended)
+- Parseable instance accessible from GKE
+
+## Method 1: Fluent Bit DaemonSet
+
+Deploy Fluent Bit for log collection.
+
+### Install with Helm
+
+```bash
+helm repo add fluent https://fluent.github.io/helm-charts
+helm repo update
+
+helm install fluent-bit fluent/fluent-bit \
+  --namespace logging \
+  --create-namespace \
+  -f fluent-bit-values.yaml
+```
+
+### Values File
+
+```yaml
+config:
+  inputs: |
+    [INPUT]
+        Name tail
+        Path /var/log/containers/*.log
+        Parser cri
+        Tag kube.*
+        Mem_Buf_Limit 5MB
+
+  filters: |
+    [FILTER]
+        Name kubernetes
+        Match kube.*
+        Merge_Log On
+        Keep_Log Off
+        K8S-Logging.Parser On
+
+    [FILTER]
+        Name modify
+        Match *
+        Add cloud.provider gcp
+        Add cluster.name ${CLUSTER_NAME}
+
+  outputs: |
+    [OUTPUT]
+        Name http
+        Match *
+        Host parseable.example.com
+        Port 8000
+        URI /api/v1/ingest
+        Format json
+        Header Authorization Basic YWRtaW46YWRtaW4=
+        Header X-P-Stream gke-logs
+        tls On
+
+env:
+  - name: CLUSTER_NAME
+    value: "my-gke-cluster"
+
+tolerations:
+  - operator: Exists
+    effect: NoSchedule
+```
+
+## Method 2: Google Cloud Logging Export
+
+Export from Cloud Logging to Pub/Sub, then to Parseable.
+
+### Create Log Sink
+
+```bash
+gcloud logging sinks create gke-to-pubsub \
+  pubsub.googleapis.com/projects/PROJECT_ID/topics/gke-logs \
+  --log-filter='resource.type="k8s_container"'
+```
+
+Then use [GCP Pub/Sub integration](/docs/ingest-data/cloud/gcp-pubsub) to forward to Parseable.
+
+## Method 3: OpenTelemetry Collector
+
+### Collector Configuration
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+data:
+  config.yaml: |
+    receivers:
+      filelog:
+        include: [/var/log/containers/*.log]
+        operators:
+          - type: regex_parser
+            regex: '^(?P<time>[^ ]+) (?P<dataset>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
+            timestamp:
+              parse_from: attributes.time
+              layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+
+    processors:
+      k8sattributes:
+        extract:
+          metadata:
+            - k8s.pod.name
+            - k8s.namespace.name
+            - k8s.deployment.name
+      batch:
+        timeout: 10s
+
+    exporters:
+      otlphttp:
+        endpoint: "http://parseable:8000"
+        headers:
+          Authorization: "Basic YWRtaW46YWRtaW4="
+          X-P-Stream: "gke-logs"
+
+    service:
+      pipelines:
+        logs:
+          receivers: [filelog]
+          processors: [k8sattributes, batch]
+          exporters: [otlphttp]
+```
+
+## Workload Identity
+
+Use Workload Identity for secure authentication:
+
+```bash
+# Create GCP service account
+gcloud iam service-accounts create fluent-bit-sa
+
+# Grant permissions
+gcloud projects add-iam-policy-binding PROJECT_ID \
+  --member="serviceAccount:fluent-bit-sa@PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/logging.viewer"
+
+# Bind to Kubernetes service account
+gcloud iam service-accounts add-iam-policy-binding \
+  fluent-bit-sa@PROJECT_ID.iam.gserviceaccount.com \
+  --role="roles/iam.workloadIdentityUser" \
+  --member="serviceAccount:PROJECT_ID.svc.id.goog[logging/fluent-bit]"
+```
+
+### Kubernetes Service Account
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fluent-bit
+  namespace: logging
+  annotations:
+    iam.gke.io/gcp-service-account: fluent-bit-sa@PROJECT_ID.iam.gserviceaccount.com
+```
+
+## GKE Autopilot
+
+For Autopilot clusters, use Cloud Logging export method as DaemonSets are not supported.
+
+## Best Practices
+
+1. **Use Workload Identity** - Secure credential management
+2. **Add GCP Metadata** - Include project, cluster info
+3. **Filter Logs** - Exclude system namespaces if needed
+4. **Monitor Resources** - Watch collector resource usage
+5. **Use Labels** - Leverage GKE labels for filtering
+
+## Troubleshooting
+
+### Permission Denied
+
+1. Verify Workload Identity binding
+2. Check service account permissions
+3. Verify RBAC configuration
+
+### Missing Logs
+
+1. Check collector pod logs
+2. Verify log paths
+3. Check network policies
+
+## Next Steps
+
+- Configure [Azure AKS](/docs/ingest-data/containers/azure-aks) for multi-cloud
+- Set up [alerts](/docs/user-guide/alerting) for GKE events
+- Create [dashboards](/docs/user-guide/dashboards) for cluster monitoring

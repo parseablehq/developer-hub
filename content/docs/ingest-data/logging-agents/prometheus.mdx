@@ -1,0 +1,106 @@
+---
+title: Prometheus
+---
+
+Parseable supports ingesting metrics from Prometheus and Prometheus-compatible sources. You can use native remote write, or collect metrics via Fluent Bit or OpenTelemetry Collector.
+
+## Remote Write
+
+To configure Prometheus to send metrics directly to Parseable using remote write, add the following to your Prometheus configuration file:
+
+```yaml
+remote_write:
+  - url: "http://<parseable-endpoint>:8000/api/v1/ingest"
+    basic_auth:
+      username: <username>
+      password: <password>
+    headers:
+      X-P-Stream: prometheus-metrics
+```
+
+## Fluent Bit with OpenTelemetry Output
+
+Fluent Bit can scrape Prometheus metrics from any application exposing a `/metrics` endpoint and forward them to Parseable using the OpenTelemetry output plugin.
+
+```ini
+[SERVICE]
+    Flush              5
+    Log_Level          info
+
+[INPUT]
+    Name               prometheus_scrape
+    Host               my-app           # Target host exposing Prometheus metrics
+    Port               9090             # Prometheus metrics port
+    Metrics_Path       /metrics         # Standard Prometheus metrics endpoint
+    Scrape_Interval    2s               # Scrape metrics every 2 seconds
+
+[OUTPUT]
+    Name                  opentelemetry
+    Match                 *
+    Host                  parseable
+    Port                  8000
+    Metrics_uri           /v1/metrics
+    Log_response_payload  True
+    Tls                   Off
+    Http_User             admin
+    Http_Passwd           admin
+    Header                X-P-Stream prometheus-metrics
+    Header                X-P-Log-Source otel-metrics
+    Add_label             app fluent-bit
+```
+
+### Example Targets
+
+Adjust `Host` and `Port` to scrape different sources:
+
+| Target | Host | Port |
+| --- | --- | --- |
+| Node Exporter | `node-exporter` | `9100` |
+| Kubernetes API | `kube-apiserver` | `6443` |
+| Custom App | `my-app` | `8080` |
+
+## OpenTelemetry Collector with Prometheus Receiver
+
+Use the OpenTelemetry Collector to scrape Prometheus metrics and export to Parseable:
+
+```yaml
+receivers:
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'my-app'
+          scrape_interval: 15s
+          static_configs:
+            - targets: ['my-app:9090']
+
+exporters:
+  otlphttp/parseable:
+    endpoint: "http://parseable:8000"
+    headers:
+      Authorization: "Basic <base64 encoded username:password>"
+      X-P-Stream: prometheus-metrics
+      X-P-Log-Source: otel-metrics
+      Content-Type: application/json
+    encoding: json
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    metrics:
+      receivers: [prometheus]
+      exporters: [otlphttp/parseable]
+```
+
+## Features
+
+- **Long-term Storage**: Store your Prometheus metrics in Parseable for long-term retention and analysis.
+- **SQL Queries**: Query your metrics using standard SQL syntax.
+- **Cost Effective**: Leverage Parseable's efficient storage to reduce costs compared to traditional time-series databases.
+- **Unified Observability**: Store metrics alongside logs and traces for correlated analysis.
+
+## Best Practices
+
+1. **Stream Naming**: Use descriptive dataset names to organize your metrics by application or environment.
+2. **Retention Policies**: Configure appropriate retention policies based on your compliance and analysis needs.
+3. **Query Optimization**: Use appropriate time ranges and filters when querying large metric datasets.

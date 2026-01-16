@@ -1,0 +1,8 @@
+{
+  "title": "Architecture",
+  "pages": [
+    "design-choices",
+    "architecture",
+    "key-concepts"
+  ]
+}

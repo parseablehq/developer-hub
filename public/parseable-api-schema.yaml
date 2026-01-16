@@ -18,11 +18,11 @@ paths:
     put:
       tags:
         - Dataset Management
-      summary: Create a log stream
+      summary: Create a log dataset
       operationId: createLogStream
       description: |
-        This endpoint is used to create a new log stream within Parseable.  
-        A **log stream** is a group of similar logs. For example, you can create a log stream for a specific application's logs, another log stream for your database logs, and so on. You can create as many log streams as needed to organize and manage logs efficiently.  
+        This endpoint is used to create a new log dataset within Parseable.  
+        A **log dataset** is a group of similar logs. For example, you can create a log dataset for a specific application's logs, another log dataset for your database logs, and so on. You can create as many log streams as needed to organize and manage logs efficiently.  
       security:
         - basicAuth: []
       parameters:
@@ -39,7 +39,7 @@ paths:
     delete:
       tags:
         - Dataset Management
-      summary: Delete a log stream
+      summary: Delete a log dataset
       operationId: deleteLogStream
       security:
         - basicAuth: []
@@ -57,14 +57,14 @@ paths:
     post:
       tags:
         - Dataset Management
-      summary: Send logs to a log stream URL
+      summary: Send logs to a log dataset URL
       operationId: sendLogsToStream
       description: |
         **Log Ingestion API via Stream Endpoint**  
-        In this approach, you need to create a stream first using the **Create Stream API**.  
-        Once the stream is created, you can send logs to the stream ingestion API endpoint:  
+        In this approach, you need to create a dataset first using the **Create Stream API**.  
+        Once the dataset is created, you can send logs to the dataset ingestion API endpoint:  
         **http://demo.parseable.com/api/v1/logstream/otellogs**  
-        This API does not require any headers for specifying the stream name.
+        This API does not require any headers for specifying the dataset name.
       requestBody:
         content:
           application/json:
@@ -129,7 +129,7 @@ paths:
     get:
       tags:
         - Dataset Management
-      summary: Get storage stats for a stream
+      summary: Get storage stats for a dataset
       operationId: getStreamStats
       security:
         - basicAuth: []
@@ -148,7 +148,7 @@ paths:
     post:
       tags:
         - Query
-      summary: Query a log stream
+      summary: Query a log dataset
       operationId: queryLogStream
       description: |
         **Parseable Log Query API**  
@@ -163,7 +163,7 @@ paths:
         - **query**: The query string (mandatory).
         - **startTime**: Start time for the query (mandatory).
         - **endTime**: End time for the query (mandatory).
-        - **streamName**: Name of the log stream (mandatory).
+        - **streamName**: Name of the log dataset (mandatory).
 
         #### Example Request
         ```json
@@ -171,7 +171,7 @@ paths:
           "query": "SELECT * FROM log WHERE log ILIKE '%error%';",
           "startTime": "2023-01-01 00:00:00.000000",
           "endTime": "2023-01-01 23:59:59.999999",
-          "streamName": "example-stream"
+          "streamName": "example-dataset"
         }
         ```
       x-codeSamples:
@@ -185,7 +185,7 @@ paths:
                 "query": "SELECT * FROM log WHERE log ILIKE \'%error%\'",
                 "startTime": "2023-01-01 00:00:00.000000",
                 "endTime": "2023-01-01 23:59:59.999999",
-                "streamName": "example-stream"
+                "streamName": "example-dataset"
               }'
       requestBody:
         content:
@@ -216,7 +216,7 @@ paths:
       operationId: ingestLogsWithHeaders
       description: |
         **Log Ingestion API via Custom Headers**  
-        This is another API for log ingestion where the stream name is passed as a custom header.  
+        This is another API for log ingestion where the dataset name is passed as a custom header.  
         **Header Name:** `X-PBL-Stream`  
         **Endpoint:** `http://demo.parseable.com/api/v1/ingest`  
 
@@ -259,10 +259,10 @@ paths:
     get:
       tags:
         - Dataset Management
-      summary: Get retention policy for a stream
+      summary: Get retention policy for a dataset
       operationId: getStreamRetention
       description: |
-        This endpoint is used to get the retention policy for a specific log stream.  
+        This endpoint is used to get the retention policy for a specific log dataset.  
         **Note:** This API endpoint is only available in the Parseable Enterprise version.
       security:
         - basicAuth: []
@@ -280,10 +280,10 @@ paths:
     put:
       tags:
         - Dataset Management
-      summary: Update retention policy for a stream
+      summary: Update retention policy for a dataset
       operationId: updateStreamRetention
       description: |
-        This endpoint is used to update the retention policy for a specific log stream.  
+        This endpoint is used to update the retention policy for a specific log dataset.  
         **Note:** This API endpoint is only available in the Parseable Enterprise version.  
 
         #### Request Body Parameters

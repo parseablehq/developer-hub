@@ -1,0 +1,129 @@
+---
+title: Okta
+description: Configure Okta for SSO authentication with Parseable
+---
+
+Configure Okta as an identity provider for Parseable using OpenID Connect.
+
+## Overview
+
+Integrate Okta with Parseable to:
+
+- **Enterprise SSO** - Use Okta for authentication
+- **User Management** - Centralized user provisioning
+- **MFA Support** - Leverage Okta's security features
+- **Compliance** - Meet enterprise security requirements
+
+## Prerequisites
+
+- Okta organization
+- Admin access to Okta
+- Parseable instance with OIDC support
+
+## Okta Configuration
+
+### Create Application
+
+1. Log in to Okta Admin Console
+2. Go to **Applications** → **Applications**
+3. Click **Create App Integration**
+4. Select:
+   - **Sign-in method**: OIDC - OpenID Connect
+   - **Application type**: Web Application
+5. Click **Next**
+
+### Configure Application
+
+1. **App integration name**: Parseable
+2. **Grant type**: Authorization Code
+3. **Sign-in redirect URIs**: `https://your-parseable.com/callback`
+4. **Sign-out redirect URIs**: `https://your-parseable.com`
+5. **Controlled access**: Select appropriate option
+6. Click **Save**
+
+### Get Credentials
+
+1. Go to your application's **General** tab
+2. Copy:
+   - **Client ID**
+   - **Client Secret**
+3. Note your Okta domain (e.g., `dev-123456.okta.com`)
+
+### Assign Users
+
+1. Go to **Assignments** tab
+2. Click **Assign** → **Assign to People** or **Assign to Groups**
+3. Select users/groups
+4. Click **Done**
+
+## Parseable Configuration
+
+### Environment Variables
+
+```bash
+P_OIDC_CLIENT_ID=your-client-id
+P_OIDC_CLIENT_SECRET=your-client-secret
+P_OIDC_ISSUER=https://dev-123456.okta.com
+P_OIDC_REDIRECT_URI=https://your-parseable.com/callback
+```
+
+### Docker Compose
+
+```yaml
+version: '3.8'
+services:
+  parseable:
+    image: parseable/parseable:latest
+    environment:
+      - P_OIDC_CLIENT_ID=${OKTA_CLIENT_ID}
+      - P_OIDC_CLIENT_SECRET=${OKTA_CLIENT_SECRET}
+      - P_OIDC_ISSUER=https://dev-123456.okta.com
+      - P_OIDC_REDIRECT_URI=https://your-parseable.com/callback
+```
+
+## OIDC Endpoints
+
+Okta OIDC endpoints:
+
+| Endpoint | URL |
+|----------|-----|
+| Issuer | `https://{domain}.okta.com` |
+| Authorization | `https://{domain}.okta.com/oauth2/v1/authorize` |
+| Token | `https://{domain}.okta.com/oauth2/v1/token` |
+| UserInfo | `https://{domain}.okta.com/oauth2/v1/userinfo` |
+| JWKS | `https://{domain}.okta.com/oauth2/v1/keys` |
+
+## Custom Authorization Server
+
+For custom claims, use a custom authorization server:
+
+```bash
+P_OIDC_ISSUER=https://dev-123456.okta.com/oauth2/default
+```
+
+## Best Practices
+
+1. **Use Groups** - Manage access with Okta groups
+2. **Enable MFA** - Require multi-factor authentication
+3. **Configure Session** - Set appropriate session policies
+4. **Audit Logs** - Monitor authentication events
+
+## Troubleshooting
+
+### Login Redirect Loop
+
+1. Verify redirect URI matches exactly
+2. Check client ID and secret
+3. Verify issuer URL format
+
+### User Not Authorized
+
+1. Check user is assigned to application
+2. Verify group assignments
+3. Check Okta system logs
+
+## Next Steps
+
+- Configure [OAuth](/docs/user-guide/openid) for other providers
+- Set up [RBAC](/docs/user-guide/rbac) in Parseable
+- Review [security best practices](/docs/user-guide/rbac)

@@ -1,0 +1,275 @@
+---
+title: Elasticsearch
+description: Migrate from Elasticsearch to Parseable
+---
+
+Migrate your log data and workflows from Elasticsearch to Parseable.
+
+## Overview
+
+Migrate from Elasticsearch to Parseable to:
+
+- **Reduce Costs** - Lower storage and operational costs
+- **Simplify Operations** - No cluster management
+- **Faster Queries** - Optimized for log analytics
+- **Native SQL** - Use familiar SQL syntax
+
+## Migration Strategies
+
+### Strategy 1: Parallel Ingestion
+
+Run both systems in parallel during migration.
+
+```
+Log Sources → [Fluent Bit] → Elasticsearch
+                          → Parseable
+```
+
+### Strategy 2: Historical Export
+
+Export historical data from Elasticsearch to Parseable.
+
+### Strategy 3: Cut-over
+
+Switch log ingestion from Elasticsearch to Parseable.
+
+## Parallel Ingestion Setup
+
+### Fluent Bit Configuration
+
+```yaml
+service:
+  flush: 5
+  log_level: info
+
+pipeline:
+  inputs:
+    - name: tail
+      path: /var/log/*.log
+      tag: logs
+
+  outputs:
+    # Continue sending to Elasticsearch
+    - name: es
+      match: '*'
+      host: elasticsearch
+      port: 9200
+      index: logs
+      type: _doc
+
+    # Also send to Parseable
+    - name: http
+      match: '*'
+      host: parseable
+      port: 8000
+      uri: /api/v1/ingest
+      format: json
+      header: Authorization Basic YWRtaW46YWRtaW4=
+      header: X-P-Stream application-logs
+```
+
+## Historical Data Export
+
+### Using Elasticdump
+
+Export data from Elasticsearch:
+
+```bash
+# Install elasticdump
+npm install -g elasticdump
+
+# Export to JSON
+elasticdump \
+  --input=http://elasticsearch:9200/logs \
+  --output=/tmp/logs.json \
+  --type=data \
+  --limit=10000
+```
+
+### Import to Parseable
+
+```python
+import json
+import requests
+from datetime import datetime
+
+PARSEABLE_URL = "http://parseable:8000"
+PARSEABLE_AUTH = ("admin", "admin")
+STREAM = "elasticsearch-import"
+
+def import_to_parseable(file_path):
+    batch = []
+    batch_size = 1000
+    
+    with open(file_path, 'r') as f:
+        for line in f:
+            doc = json.loads(line)
+            source = doc.get('_source', doc)
+            
+            # Transform Elasticsearch document
+            log_entry = {
+                'timestamp': source.get('@timestamp', datetime.utcnow().isoformat() + 'Z'),
+                'message': source.get('message', ''),
+                'level': source.get('level', source.get('log.level', 'info')),
+                **{k: v for k, v in source.items() if k not in ['@timestamp', 'message', 'level']}
+            }
+            
+            batch.append(log_entry)
+            
+            if len(batch) >= batch_size:
+                send_batch(batch)
+                batch = []
+        
+        if batch:
+            send_batch(batch)
+
+def send_batch(batch):
+    response = requests.post(
+        f"{PARSEABLE_URL}/api/v1/ingest",
+        json=batch,
+        auth=PARSEABLE_AUTH,
+        headers={'X-P-Stream': STREAM}
+    )
+    response.raise_for_status()
+    print(f"Imported {len(batch)} documents")
+
+import_to_parseable('/tmp/logs.json')
+```
+
+## Query Migration
+
+### Elasticsearch to SQL
+
+| Elasticsearch | Parseable SQL |
+|---------------|---------------|
+| `match: { message: "error" }` | `WHERE message LIKE '%error%'` |
+| `term: { level: "error" }` | `WHERE level = 'error'` |
+| `range: { @timestamp: { gte: "now-1h" } }` | `WHERE p_timestamp > NOW() - INTERVAL '1 hour'` |
+| `aggs: { count: { terms: { field: "level" } } }` | `SELECT level, COUNT(*) GROUP BY level` |
+
+### Example Queries
+
+**Elasticsearch:**
+```json
+{
+  "query": {
+    "bool": {
+      "must": [
+        { "match": { "level": "error" } },
+        { "range": { "@timestamp": { "gte": "now-24h" } } }
+      ]
+    }
+  },
+  "aggs": {
+    "by_service": {
+      "terms": { "field": "service.keyword" }
+    }
+  }
+}
+```
+
+**Parseable SQL:**
+```sql
+SELECT service, COUNT(*) as error_count
+FROM "application-logs"
+WHERE level = 'error'
+  AND p_timestamp > NOW() - INTERVAL '24 hours'
+GROUP BY service
+ORDER BY error_count DESC
+```
+
+## Index Pattern to Stream Mapping
+
+| Elasticsearch Index | Parseable Stream |
+|--------------------|------------------|
+| `logs-*` | `application-logs` |
+| `nginx-*` | `nginx-logs` |
+| `kubernetes-*` | `k8s-logs` |
+
+## Kibana to Parseable Dashboard
+
+### Visualization Mapping
+
+| Kibana | Parseable |
+|--------|-----------|
+| Discover | SQL Editor |
+| Lens | Dashboards |
+| Canvas | Dashboards |
+| Alerts | Alerts |
+
+### Recreate Dashboards
+
+1. Export Kibana dashboard JSON
+2. Map visualizations to Parseable queries
+3. Create equivalent dashboards in Parseable or Grafana
+
+## Logstash to Fluent Bit
+
+### Logstash Config
+
+```ruby
+input {
+  beats { port => 5044 }
+}
+filter {
+  grok { match => { "message" => "%{COMBINEDAPACHELOG}" } }
+}
+output {
+  elasticsearch { hosts => ["elasticsearch:9200"] }
+}
+```
+
+### Equivalent Fluent Bit
+
+```yaml
+pipeline:
+  inputs:
+    - name: tcp
+      listen: 0.0.0.0
+      port: 5044
+      format: json
+
+  filters:
+    - name: parser
+      match: '*'
+      key_name: message
+      parser: apache
+
+  outputs:
+    - name: http
+      match: '*'
+      host: parseable
+      port: 8000
+      uri: /api/v1/ingest
+      format: json
+      header: Authorization Basic YWRtaW46YWRtaW4=
+      header: X-P-Stream apache-logs
+```
+
+## Best Practices
+
+1. **Run Parallel First** - Validate data before switching
+2. **Map Fields** - Document field mappings
+3. **Test Queries** - Verify query results match
+4. **Migrate Gradually** - Start with non-critical logs
+5. **Update Dashboards** - Recreate visualizations
+
+## Troubleshooting
+
+### Data Mismatch
+
+1. Compare document counts
+2. Verify field mappings
+3. Check timestamp formats
+
+### Query Differences
+
+1. Elasticsearch full-text vs SQL LIKE
+2. Aggregation syntax differences
+3. Time zone handling
+
+## Next Steps
+
+- Set up [alerts](/docs/user-guide/alerting) in Parseable
+- Create [dashboards](/docs/user-guide/dashboards) for monitoring
+- Configure [Grafana](/docs/integrations/visualization/grafana) for visualization

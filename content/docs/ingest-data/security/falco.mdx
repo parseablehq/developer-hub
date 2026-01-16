@@ -1,0 +1,346 @@
+---
+title: Falco
+description: Send Falco security events to Parseable for runtime security monitoring
+---
+
+Collect and analyze Falco security events in Parseable for comprehensive runtime security monitoring.
+
+## Overview
+
+Integrate Falco with Parseable to:
+
+- **Runtime Security** - Detect suspicious behavior in containers and hosts
+- **Threat Detection** - Identify security threats in real-time
+- **Compliance Monitoring** - Track security policy violations
+- **Incident Response** - Investigate security incidents with full context
+
+## Prerequisites
+
+- Kubernetes cluster or Linux host
+- Falco installed and running
+- Parseable instance accessible from Falco
+- Falco Sidekick (recommended) or direct HTTP output
+
+## What is Falco?
+
+Falco is a cloud-native runtime security tool that detects unexpected application behavior and alerts on threats at runtime. It uses system calls to monitor:
+
+- Container activity
+- File system access
+- Network connections
+- Process execution
+- Privilege escalation
+
+## Method 1: Falco Sidekick
+
+Falco Sidekick is the recommended way to forward Falco events to multiple destinations.
+
+### Install Falco with Sidekick
+
+Using Helm:
+
+```bash
+helm repo add falcosecurity https://falcosecurity.github.io/charts
+helm repo update
+
+helm install falco falcosecurity/falco \
+  --namespace falco \
+  --create-namespace \
+  --set falcosidekick.enabled=true \
+  --set falcosidekick.config.webhook.address="http://parseable:8000/api/v1/ingest" \
+  --set falcosidekick.config.webhook.customHeaders="Authorization:Basic <YOUR_BASE64_AUTH>,X-P-Stream:falco-events"
+
+# Note: Replace <YOUR_BASE64_AUTH> with your base64-encoded credentials
+# Generate with: echo -n 'username:password' | base64
+```
+
+### Sidekick Configuration
+
+Create a custom values file for more control:
+
+```yaml
+# falco-values.yaml
+falcosidekick:
+  enabled: true
+  config:
+    webhook:
+      address: "http://parseable:8000/api/v1/ingest"
+      customHeaders:
+        Authorization: "Basic YWRtaW46YWRtaW4="
+        X-P-Stream: "falco-events"
+      minimumpriority: "warning"
+```
+
+Install with custom values:
+
+```bash
+helm install falco falcosecurity/falco \
+  --namespace falco \
+  --create-namespace \
+  -f falco-values.yaml
+```
+
+## Method 2: Direct HTTP Output
+
+Configure Falco to send events directly to Parseable.
+
+### Falco Configuration
+
+Edit `/etc/falco/falco.yaml`:
+
+```yaml
+json_output: true
+json_include_output_property: true
+json_include_tags_property: true
+
+http_output:
+  enabled: true
+  url: "http://parseable:8000/api/v1/ingest"
+  user_agent: "falco/0.35.0"
+  insecure: true
+  ca_cert: ""
+  ca_bundle: ""
+  client_cert: ""
+  client_key: ""
+  echo: false
+  headers:
+    Authorization: "Basic YWRtaW46YWRtaW4="
+    X-P-Stream: "falco-events"
+    Content-Type: "application/json"
+```
+
+### Kubernetes ConfigMap
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: falco-config
+  namespace: falco
+data:
+  falco.yaml: |
+    json_output: true
+    json_include_output_property: true
+    
+    http_output:
+      enabled: true
+      url: "http://parseable.parseable.svc.cluster.local:8000/api/v1/ingest"
+      headers:
+        Authorization: "Basic YWRtaW46YWRtaW4="
+        X-P-Stream: "falco-events"
+```
+
+## Method 3: Fluent Bit Collection
+
+Collect Falco logs using Fluent Bit.
+
+### Fluent Bit Configuration
+
+```yaml
+service:
+  flush: 5
+  log_level: info
+
+pipeline:
+  inputs:
+    - name: tail
+      path: /var/log/falco/events.json
+      tag: falco
+      parser: json
+      refresh_interval: 5
+
+  outputs:
+    - name: http
+      match: falco
+      host: parseable
+      port: 8000
+      uri: /api/v1/ingest
+      format: json
+      header: Authorization Basic YWRtaW46YWRtaW4=
+      header: X-P-Stream falco-events
+```
+
+### Docker Compose
+
+```yaml
+version: '3.8'
+services:
+  falco:
+    image: falcosecurity/falco:latest
+    privileged: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /dev:/host/dev
+      - /proc:/host/proc:ro
+      - /boot:/host/boot:ro
+      - /lib/modules:/host/lib/modules:ro
+      - /usr:/host/usr:ro
+      - /etc:/host/etc:ro
+      - falco_logs:/var/log/falco
+    command: ["/usr/bin/falco", "-o", "json_output=true", "-o", "file_output.enabled=true", "-o", "file_output.filename=/var/log/falco/events.json"]
+  
+  fluent-bit:
+    image: fluent/fluent-bit:latest
+    volumes:
+      - falco_logs:/var/log/falco:ro
+      - ./fluent-bit.yaml:/fluent-bit/etc/fluent-bit.yaml
+    depends_on:
+      - falco
+      - parseable
+
+volumes:
+  falco_logs:
+```
+
+## Falco Event Format
+
+Falco events sent to Parseable include:
+
+```json
+{
+  "uuid": "12345678-1234-1234-1234-123456789012",
+  "output": "19:23:45.123456789: Warning Shell spawned in container (user=root container_id=abc123)",
+  "priority": "Warning",
+  "rule": "Terminal shell in container",
+  "time": "2024-01-15T19:23:45.123456789Z",
+  "output_fields": {
+    "container.id": "abc123",
+    "container.name": "my-app",
+    "user.name": "root",
+    "proc.name": "bash",
+    "proc.cmdline": "bash"
+  },
+  "source": "syscall",
+  "tags": ["container", "shell", "mitre_execution"]
+}
+```
+
+## Custom Falco Rules
+
+Create custom rules for your environment:
+
+```yaml
+# custom-rules.yaml
+- rule: Detect Cryptocurrency Mining
+  desc: Detect cryptocurrency mining processes
+  condition: >
+    spawned_process and 
+    (proc.name in (xmrig, minerd, cpuminer) or
+     proc.cmdline contains "stratum+tcp")
+  output: >
+    Cryptocurrency miner detected 
+    (user=%user.name command=%proc.cmdline container=%container.name)
+  priority: CRITICAL
+  tags: [cryptomining, mitre_resource_hijacking]
+
+- rule: Sensitive File Access
+  desc: Detect access to sensitive files
+  condition: >
+    open_read and 
+    fd.name in (/etc/shadow, /etc/passwd, /etc/sudoers)
+  output: >
+    Sensitive file accessed 
+    (user=%user.name file=%fd.name container=%container.name)
+  priority: WARNING
+  tags: [filesystem, sensitive_files]
+```
+
+## Querying Falco Events
+
+Query your Falco security events in Parseable:
+
+```sql
+-- Get recent security events
+SELECT time, priority, rule, output
+FROM "falco-events"
+ORDER BY time DESC
+LIMIT 100
+
+-- Find critical security events
+SELECT time, rule, output, output_fields
+FROM "falco-events"
+WHERE priority IN ('Critical', 'Emergency')
+ORDER BY time DESC
+
+-- Count events by rule
+SELECT 
+  rule,
+  priority,
+  COUNT(*) as event_count
+FROM "falco-events"
+WHERE time > NOW() - INTERVAL '24 hours'
+GROUP BY rule, priority
+ORDER BY event_count DESC
+
+-- Find container shell access
+SELECT 
+  time,
+  output_fields->>'container.name' as container,
+  output_fields->>'user.name' as user,
+  output_fields->>'proc.cmdline' as command
+FROM "falco-events"
+WHERE rule = 'Terminal shell in container'
+ORDER BY time DESC
+
+-- Security events by container
+SELECT 
+  output_fields->>'container.name' as container,
+  COUNT(*) as event_count,
+  COUNT(DISTINCT rule) as unique_rules
+FROM "falco-events"
+WHERE time > NOW() - INTERVAL '1 hour'
+GROUP BY container
+ORDER BY event_count DESC
+```
+
+## Setting Up Alerts
+
+Create Parseable alerts for critical security events:
+
+```json
+{
+  "name": "Critical Security Event",
+  "dataset": "falco-events",
+  "alertType": "threshold",
+  "condition": {
+    "field": "priority",
+    "operator": "in",
+    "value": ["Critical", "Emergency"]
+  },
+  "threshold": 1,
+  "duration": "1m",
+  "webhook": {
+    "url": "https://your-pagerduty-webhook",
+    "method": "POST"
+  }
+}
+```
+
+## Best Practices
+
+1. **Tune Rules** - Reduce false positives by tuning rules for your environment
+2. **Set Priorities** - Use appropriate priority levels for different events
+3. **Add Context** - Include container, pod, and namespace information
+4. **Create Alerts** - Set up alerts for critical security events
+5. **Regular Review** - Regularly review and investigate security events
+
+## Troubleshooting
+
+### Events Not Appearing
+
+1. Verify Falco is running and generating events
+2. Check Falco Sidekick logs for errors
+3. Verify Parseable URL is accessible
+4. Check authentication credentials
+
+### High Volume
+
+1. Increase `minimumpriority` to reduce noise
+2. Add filters for specific rules
+3. Use sampling for high-volume events
+
+## Next Steps
+
+- Set up [alerts](/docs/user-guide/alerting) for security events
+- Create [dashboards](/docs/user-guide/dashboards) for security monitoring
+- Configure [Trivy](/docs/ingest-data/security/trivy) for vulnerability scanning

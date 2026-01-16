@@ -1,0 +1,66 @@
+---
+title: Looker
+description: Connect Parseable to Looker for business intelligence
+---
+
+Connect Parseable to Looker for enterprise business intelligence and analytics.
+
+## Overview
+
+Integrate Parseable with Looker to:
+
+- **Semantic Modeling** - Define metrics and dimensions with LookML
+- **Self-Service Analytics** - Enable teams to explore data
+- **Embedded Analytics** - Embed dashboards in applications
+- **Governed Metrics** - Maintain consistent metric definitions
+
+## Integration Options
+
+<Callout type="info">
+Parseable does not have a native Looker connector. Use one of the following methods to integrate.
+</Callout>
+
+### Option 1: Export Data via API
+
+Export data from Parseable and load into a Looker-supported database:
+
+```python
+import requests
+import pandas as pd
+
+# Query Parseable
+response = requests.post(
+    "http://your-parseable-host:8000/api/v1/query",
+    auth=("username", "password"),
+    json={
+        "query": "SELECT * FROM \"application-logs\" WHERE p_timestamp > NOW() - INTERVAL '24 hours'",
+        "startTime": "2024-01-01T00:00:00Z",
+        "endTime": "2024-01-02T00:00:00Z"
+    }
+)
+
+# Load into your data warehouse (BigQuery, Snowflake, etc.)
+df = pd.DataFrame(response.json())
+# Then use your preferred method to load into the data warehouse
+```
+
+### Option 2: Use Apache Superset
+
+For real-time connectivity to Parseable, we recommend using [Apache Superset](/docs/integrations/visualization/apache-superset) which has native Parseable support via the `sqlalchemy-parseable` driver.
+
+### Option 3: Arrow Flight (Advanced)
+
+Parseable exposes an Arrow Flight endpoint on port 8002 (`P_FLIGHT_PORT`) for high-performance data transfer. You can build a custom pipeline to fetch data via Arrow Flight and load into your Looker-connected data warehouse.
+
+## Best Practices
+
+1. **Schedule Data Exports** - Set up automated pipelines to export Parseable data to your data warehouse
+2. **Use Incremental Loads** - Only export new data since the last sync
+3. **Filter at Source** - Apply time range filters in Parseable queries to reduce data volume
+4. **Consider Native Options** - For real-time dashboards, use [Apache Superset](/docs/integrations/visualization/apache-superset) or Parseable's built-in [dashboards](/docs/user-guide/dashboards)
+
+## Next Steps
+
+- Create [dashboards](/docs/user-guide/dashboards) in Parseable's built-in UI
+- Set up [alerts](/docs/user-guide/alerting) for monitoring
+- Explore [Apache Superset](/docs/integrations/visualization/apache-superset) for native integration

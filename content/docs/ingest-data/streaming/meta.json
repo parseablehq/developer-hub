@@ -1,0 +1,9 @@
+{
+  "title": "Streaming",
+  "pages": [
+    "kafka",
+    "redpanda",
+    "rabbitmq",
+    "nats"
+  ]
+}

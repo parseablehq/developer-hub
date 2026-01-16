@@ -1,5 +1,5 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
-import { IconMonkeybar, IconApi, IconMapShare } from "@tabler/icons-react";
+import Image from "next/image";
 
 /**
  * Shared layout configurations
@@ -10,28 +10,19 @@ import { IconMonkeybar, IconApi, IconMapShare } from "@tabler/icons-react";
  */
 export const baseOptions: BaseLayoutProps = {
   nav: {
-    title: <span className="font-bold text-xl">Parseable Docs</span>,
+    title: (
+      <div className="flex items-center gap-2">
+        <Image
+          src="/images/parseable-icon.svg"
+          alt="Parseable"
+          width={180}
+          height={24}
+          className="dark:invert"
+        />
+      </div>
+    ),
   },
-  links: [
-    {
-      text: "Parseable Playground",
-      url: "https://demo.parseable.com/login?q=eyJ1c2VybmFtZSI6ImFkbWluIiwicGFzc3dvcmQiOiJhZG1pbiJ9",
-      external: true,
-      icon: <IconMonkeybar />, // Icon for the link
-    },
-    {
-      text: "Release Notes",
-      url: "/docs/release-notes",
-      external: false, // Internal link
-      icon: <IconMapShare />, // Icon for the link
-    },
-    {
-      text: "API Documentation",
-      url: "/docs/api",
-      external: false, // Internal link
-      icon: <IconApi />, // Icon for the link
-    },
-  ],
+  links: [],
   // Footer will be added in the layout component
   // Theme will be configured in the RootProvider
 };

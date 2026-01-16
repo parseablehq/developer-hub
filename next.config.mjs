@@ -1,6 +1,21 @@
 import { createMDX } from 'fumadocs-mdx/next';
+import { createRequire } from 'module';
+import { existsSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const withMDX = createMDX();
+
+// Load generated redirects if available
+let generatedRedirects = [];
+const redirectsPath = join(__dirname, 'redirects.json');
+if (existsSync(redirectsPath)) {
+  const require = createRequire(import.meta.url);
+  generatedRedirects = require('./redirects.json');
+}
 
 /** @type {import('next').NextConfig} */
 const config = {
@@ -8,18 +23,30 @@ const config = {
   trailingSlash: false,
   assetPrefix: "/docs",
   images: {
-    domains: ["lh3.googleusercontent.com"], // Add other domains as needed
+    domains: ["lh3.googleusercontent.com"],
     dangerouslyAllowSVG: true,
     contentDispositionType: "attachment",
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
+  async rewrites() {
+    return [
+      // Rewrite *.mdx requests to llms.mdx route for AI agents
+      {
+        source: '/:path*.mdx',
+        destination: '/llms.mdx/:path*',
+      },
+    ];
+  },
   async redirects() {
     return [
+      // Static redirects
       {
         source: '/server/opentelemetry',
         destination: '/docs/OpenTelemetry',
         permanent: true, // 301 redirect
       },
+      // Generated redirects from frontmatter redirect_from
+      ...generatedRedirects,
     ]
   },
   async headers() {

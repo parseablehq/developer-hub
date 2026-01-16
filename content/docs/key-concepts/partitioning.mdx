@@ -1,34 +1,32 @@
 ---
 title: Partitioning
+redirect_from:
+  - /key-concepts/partitioning
 ---
 
-## Context
+<OfferingPills pro enterprise className="mb-4" />
 
-Partitioning in databases generally refers to the splitting of data to achieve goals like high availability, scalability, or performance. Sometimes it is also confused with another data-splitting approach called **Sharding**. Sharding means spreading the data based on a shard key onto separate server instances to spread load.
+Partitioning allows splitting of telemetry based on specific columns and value pairs to improve query performance. The decision to choose specific columns for partitioning is based on the access patterns of the data. By partitioning log data, you can optimize query performance, reduce the amount of data scanned during queries, and improve storage efficiency.
 
-## Partitioning in Parseable
-
-Partitioning is the splitting of log data based on specific columns and value pairs to improve query performance and storage efficiency. The decision to choose specific columns for partitioning is based on the access patterns of the data. By partitioning log data, you can optimize query performance, reduce the amount of data scanned during queries, and improve storage efficiency.
-
-### When should you use partitioning?
+## When to use partitioning?
 
 Partitioning is useful when you have a clear understanding of the most common data access patterns for a given log dataset. More specifically, when the columns where users are most likely to `filter` or `group by` are well known.
 
 Also, a relatively larger dataset (at least few TBs or more) is better suited for partitioning. For tiny datasets, the overhead of managing partitions might outweigh the benefits.
 
-### Selecting a column for partitioning
+## Select a column for partitioning
 
 The first step is to find which column users are most likely to `filter` or `group by`. Once you have this information, it is important to know the variance in the column values (i.e. the number of unique values in the column). For example, if you have a column `log_level` with only a few unique values like `ERR`, `WARN`, and `INFO`, it would be a good candidate for partitioning. But if there is a column called `log_message` where each log event has a unique message, partitioning on this column will in fact make things worse.
 
 **Important**: In Parseable, you can select only one column per dataset for partitioning.
 
-### How to set up partitioning?
+## How to set up partitioning?
 
 You can specify a single column for partitioning while creating a dataset on the Parseable Console (Create Dataset >> Custom Partition Field). Once the dataset is created, Parseable will automatically create physical partitions based on the values in this column.
 
 You can also edit the partition column for an existing dataset (Dataset >> Manage >> Info >> Custom Partition Field). Note that this will have effect on all the new data that is ingested into the dataset, and not the existing data.
 
-### How does partitioning work?
+## How does partitioning work?
 
 When a dataset is created with partitioning enabled, Parseable will create physical partitions based on the values in the specified column. For example, if you have a column `log_level` with the values `ERR`, `WARN`, and `INFO`, Parseable will create three physical partitions, one for each value.
 
@@ -46,7 +44,7 @@ Physically on the storage (S3 bucket or disk), you'll see the data organized by 
 
 If you frequently filter by both `log_level` and another column like `os`, you'll need to decide which one provides the most query benefit as your partition column, since only one column can be used for partitioning.
 
-### Partitioning best practices
+## Best practices
 
 - **Choose the right column:** Choose the column that is most frequently used in query filters.
 

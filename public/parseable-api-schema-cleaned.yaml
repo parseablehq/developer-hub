@@ -5,7 +5,17 @@ info:
   description: |-
     Core APIs for Parseable - a simplified version of the API schema with only essential endpoints.
 servers:
-  - url: http://ENDPOINT
+  - url: '{protocol}://{host}:{port}'
+    variables:
+      protocol:
+        default: http
+        enum:
+          - http
+          - https
+      host:
+        default: localhost
+      port:
+        default: '8000'
 components:
   securitySchemes:
     basicAuth:
@@ -18,11 +28,11 @@ paths:
     put:
       tags:
         - Dataset Management
-      summary: Create a log stream
+      summary: Create a log dataset
       operationId: createLogStream
       description: |
-        This endpoint is used to create a new log stream within Parseable.  
-        A **log stream** is a group of similar logs. For example, you can create a log stream for a specific application's logs, another log stream for your database logs, and so on. You can create as many log streams as needed to organize and manage logs efficiently.  
+        This endpoint is used to create a new log dataset within Parseable.  
+        A **log dataset** is a group of similar logs. For example, you can create a log dataset for a specific application's logs, another log dataset for your database logs, and so on. You can create as many log streams as needed to organize and manage logs efficiently.  
       security:
         - basicAuth: []
       parameters:
@@ -39,11 +49,11 @@ paths:
     delete:
       tags:
         - Dataset Management
-      summary: Delete a log stream
+      summary: Delete a log dataset
       operationId: deleteLogStream
       description: |
-        This endpoint is used to delete an existing log stream.
-        When a log stream is deleted, all associated data is permanently removed.
+        This endpoint is used to delete an existing log dataset.
+        When a log dataset is deleted, all associated data is permanently removed.
       security:
         - basicAuth: []
       parameters:
@@ -60,14 +70,14 @@ paths:
     post:
       tags:
         - Dataset Management
-      summary: Send logs to a stream
+      summary: Send logs to a dataset
       operationId: sendLogsToStream
       description: |
         **Log Ingestion API via Stream Endpoint**  
-        In this approach, you need to create a stream first using the **Create Stream API**.  
-        Once the stream is created, you can send logs to the stream ingestion API endpoint:  
+        In this approach, you need to create a dataset first using the **Create Stream API**.  
+        Once the dataset is created, you can send logs to the dataset ingestion API endpoint:  
         **http://INGESTION_ENDPOINT/api/v1/logstream/{stream_name}**  
-        This API does not require any headers for specifying the stream name.
+        This API does not require any headers for specifying the dataset name.
       requestBody:
         content:
           application/json:
@@ -100,7 +110,7 @@ paths:
     post:
       tags:
         - Query API
-      summary: Query a log stream
+      summary: Query a log dataset
       operationId: queryLogStream
       description: |
         **Parseable Log Query API**  
@@ -110,7 +120,7 @@ paths:
         - **query**: The SQL query to execute (required)
         - **startTime**: The start time for the query range (optional)
         - **endTime**: The end time for the query range (optional)
-        - **streamName**: The name of the log stream to query (required)
+        - **streamName**: The name of the log dataset to query (required)
         
         Example request body:
         ```json
@@ -118,7 +128,7 @@ paths:
           "query": "SELECT * FROM log WHERE log ILIKE '%error%';",
           "startTime": "2023-01-01 00:00:00.000000",
           "endTime": "2023-01-01 23:59:59.999999",
-          "streamName": "example-stream"
+          "streamName": "example-dataset"
         }
         ```
       requestBody:
@@ -153,10 +163,10 @@ paths:
       operationId: ingestLogsWithHeaders
       description: |
         **Log Ingestion API via Custom Headers**  
-        This approach allows you to send logs to Parseable using custom headers to specify the target stream.  
+        This approach allows you to send logs to Parseable using custom headers to specify the target dataset.  
         
         Required headers:
-        - **X-P-Stream**: The name of the stream to ingest logs into
+        - **X-P-Stream**: The name of the dataset to ingest logs into
         
         The API accepts logs in JSON format. You can send single log entries or arrays of log entries.
         

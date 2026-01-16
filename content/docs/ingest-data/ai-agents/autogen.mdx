@@ -1,0 +1,267 @@
+---
+title: AutoGen
+description: Log AutoGen multi-agent conversations to Parseable
+---
+
+Log AutoGen multi-agent conversations, tool calls, and LLM interactions to Parseable.
+
+## Overview
+
+Integrate AutoGen with Parseable to:
+
+- **Conversation Logging** - Track multi-agent conversations
+- **Agent Monitoring** - Monitor individual agent behavior
+- **Tool Usage** - Track function/tool calls
+- **Token Tracking** - Aggregate token usage
+- **Debug Workflows** - Trace complex agent interactions
+
+## Prerequisites
+
+- AutoGen installed (`pip install pyautogen`)
+- Parseable instance accessible
+- Python application
+
+## Custom Logger
+
+```python
+import autogen
+import requests
+from datetime import datetime
+from typing import Dict, Any, List, Optional
+import uuid
+import json
+
+class ParseableAutogenLogger:
+    def __init__(self, parseable_url: str, dataset: str, username: str, password: str):
+        self.parseable_url = parseable_url
+        self.dataset = dataset
+        self.auth = (username, password)
+        self.conversation_id = str(uuid.uuid4())
+        self.message_count = 0
+    
+    def _log(self, entry: Dict[str, Any]):
+        entry["timestamp"] = datetime.utcnow().isoformat() + "Z"
+        entry["conversation_id"] = self.conversation_id
+        try:
+            requests.post(
+                f"{self.parseable_url}/api/v1/ingest",
+                json=[entry],
+                auth=self.auth,
+                headers={"X-P-Stream": self.dataset},
+                timeout=5
+            )
+        except Exception as e:
+            print(f"Logging failed: {e}")
+    
+    def log_message(self, sender: str, recipient: str, message: Dict[str, Any]):
+        self.message_count += 1
+        
+        content = message.get("content", "")
+        if isinstance(content, list):
+            content = json.dumps(content)
+        
+        log_entry = {
+            "event": "message",
+            "message_number": self.message_count,
+            "sender": sender,
+            "recipient": recipient,
+            "content_preview": str(content)[:500],
+            "content_length": len(str(content)),
+            "role": message.get("role", "unknown"),
+            "has_function_call": "function_call" in message or "tool_calls" in message
+        }
+        
+        # Log function calls
+        if "function_call" in message:
+            log_entry["function_name"] = message["function_call"].get("name")
+            log_entry["function_args"] = message["function_call"].get("arguments", "")[:200]
+        
+        if "tool_calls" in message:
+            log_entry["tool_calls"] = [
+                {"name": tc.get("function", {}).get("name")}
+                for tc in message.get("tool_calls", [])
+            ]
+        
+        self._log(log_entry)
+    
+    def log_llm_call(self, agent_name: str, model: str, messages: List[Dict], response: Any):
+        log_entry = {
+            "event": "llm_call",
+            "agent": agent_name,
+            "model": model,
+            "input_messages": len(messages)
+        }
+        
+        if hasattr(response, "usage"):
+            log_entry["prompt_tokens"] = response.usage.prompt_tokens
+            log_entry["completion_tokens"] = response.usage.completion_tokens
+            log_entry["total_tokens"] = response.usage.total_tokens
+        
+        self._log(log_entry)
+    
+    def log_function_execution(self, function_name: str, args: Dict, result: Any, duration_ms: float):
+        self._log({
+            "event": "function_execution",
+            "function_name": function_name,
+            "args": str(args)[:200],
+            "result_preview": str(result)[:200],
+            "duration_ms": duration_ms
+        })
+    
+    def log_conversation_start(self, agents: List[str], task: str):
+        self._log({
+            "event": "conversation_start",
+            "agents": agents,
+            "task_preview": task[:500]
+        })
+    
+    def log_conversation_end(self, summary: str, total_messages: int):
+        self._log({
+            "event": "conversation_end",
+            "summary": summary[:500],
+            "total_messages": total_messages
+        })
+    
+    def new_conversation(self):
+        self.conversation_id = str(uuid.uuid4())
+        self.message_count = 0
+```
+
+### Wrapped Agent
+
+```python
+from autogen import AssistantAgent, UserProxyAgent
+import time
+
+class LoggedAssistantAgent(AssistantAgent):
+    def __init__(self, logger: ParseableAutogenLogger, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.logger = logger
+    
+    def send(self, message, recipient, request_reply=None, silent=False):
+        self.logger.log_message(self.name, recipient.name, message)
+        return super().send(message, recipient, request_reply, silent)
+
+class LoggedUserProxyAgent(UserProxyAgent):
+    def __init__(self, logger: ParseableAutogenLogger, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.logger = logger
+        self._original_execute = self.execute_function
+    
+    def send(self, message, recipient, request_reply=None, silent=False):
+        self.logger.log_message(self.name, recipient.name, message)
+        return super().send(message, recipient, request_reply, silent)
+    
+    def execute_function(self, func_call):
+        start_time = time.time()
+        result = self._original_execute(func_call)
+        duration_ms = (time.time() - start_time) * 1000
+        
+        self.logger.log_function_execution(
+            func_call.get("name", "unknown"),
+            func_call.get("arguments", {}),
+            result,
+            duration_ms
+        )
+        return result
+```
+
+### Usage
+
+```python
+# Create logger
+logger = ParseableAutogenLogger(
+    parseable_url="http://parseable:8000",
+    dataset="autogen-logs",
+    username="admin",
+    password="admin"
+)
+
+# Create logged agents
+assistant = LoggedAssistantAgent(
+    logger=logger,
+    name="assistant",
+    llm_config={"model": "gpt-4"}
+)
+
+user_proxy = LoggedUserProxyAgent(
+    logger=logger,
+    name="user_proxy",
+    human_input_mode="NEVER",
+    code_execution_config={"work_dir": "coding"}
+)
+
+# Log conversation start
+logger.log_conversation_start(
+    agents=["assistant", "user_proxy"],
+    task="Write a Python function to calculate fibonacci numbers"
+)
+
+# Start conversation
+user_proxy.initiate_chat(
+    assistant,
+    message="Write a Python function to calculate fibonacci numbers"
+)
+
+# Log conversation end
+logger.log_conversation_end(
+    summary="Completed fibonacci function",
+    total_messages=logger.message_count
+)
+```
+
+## Querying AutoGen Logs
+
+```sql
+-- Conversation overview
+SELECT 
+  conversation_id,
+  MIN(timestamp) as started,
+  MAX(timestamp) as ended,
+  COUNT(*) as total_events,
+  SUM(CASE WHEN event = 'message' THEN 1 ELSE 0 END) as messages
+FROM "autogen-logs"
+GROUP BY conversation_id
+ORDER BY started DESC
+
+-- Agent activity
+SELECT 
+  sender,
+  COUNT(*) as messages_sent,
+  AVG(content_length) as avg_content_length
+FROM "autogen-logs"
+WHERE event = 'message'
+GROUP BY sender
+
+-- Function usage
+SELECT 
+  function_name,
+  COUNT(*) as calls,
+  AVG(duration_ms) as avg_duration
+FROM "autogen-logs"
+WHERE event = 'function_execution'
+GROUP BY function_name
+ORDER BY calls DESC
+
+-- Token usage per conversation
+SELECT 
+  conversation_id,
+  SUM(total_tokens) as total_tokens,
+  COUNT(CASE WHEN event = 'llm_call' THEN 1 END) as llm_calls
+FROM "autogen-logs"
+GROUP BY conversation_id
+ORDER BY total_tokens DESC
+```
+
+## Best Practices
+
+1. **Track Conversation IDs** - Correlate all events
+2. **Log All Agents** - Monitor each agent's behavior
+3. **Track Function Calls** - Monitor tool usage
+4. **Truncate Content** - Don't log full messages
+
+## Next Steps
+
+- Configure [CrewAI](/docs/llm-observability/crewai) logging
+- Set up [LangChain](/docs/llm-observability/langchain) tracing
+- Create [dashboards](/docs/user-guide/dashboards) for agent metrics

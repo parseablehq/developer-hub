@@ -1,0 +1,264 @@
+---
+title: ArgoCD
+description: Send ArgoCD events and logs to Parseable
+---
+
+Collect ArgoCD GitOps events and application logs in Parseable.
+
+## Overview
+
+Integrate ArgoCD with Parseable to:
+
+- **Deployment Events** - Track application sync events
+- **GitOps Audit** - Monitor configuration changes
+- **Health Status** - Track application health over time
+- **Troubleshooting** - Debug deployment issues
+
+## Prerequisites
+
+- ArgoCD installed in Kubernetes
+- Parseable instance accessible from cluster
+- ArgoCD notifications configured
+
+## Method 1: ArgoCD Notifications
+
+Use ArgoCD Notifications to send events to Parseable.
+
+### Install Notifications Controller
+
+```bash
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj-labs/argocd-notifications/release-1.0/manifests/install.yaml
+```
+
+### Configure Webhook Service
+
+Create notification configuration:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-notifications-cm
+  namespace: argocd
+data:
+  service.webhook.parseable: |
+    url: http://parseable:8000/api/v1/ingest
+    headers:
+      - name: Authorization
+        value: Basic YWRtaW46YWRtaW4=
+      - name: X-P-Stream
+        value: argocd-events
+      - name: Content-Type
+        value: application/json
+
+  template.app-sync-status: |
+    webhook:
+      parseable:
+        method: POST
+        body: |
+          [{
+            "timestamp": "{{.app.status.operationState.finishedAt}}",
+            "event": "sync",
+            "app_name": "{{.app.metadata.name}}",
+            "project": "{{.app.spec.project}}",
+            "repo": "{{.app.spec.source.repoURL}}",
+            "revision": "{{.app.status.sync.revision}}",
+            "sync_status": "{{.app.status.sync.status}}",
+            "health_status": "{{.app.status.health.status}}",
+            "message": "{{.app.status.operationState.message}}"
+          }]
+
+  template.app-health-degraded: |
+    webhook:
+      parseable:
+        method: POST
+        body: |
+          [{
+            "timestamp": "{{now | date \"2006-01-02T15:04:05Z\"}}",
+            "event": "health_degraded",
+            "app_name": "{{.app.metadata.name}}",
+            "project": "{{.app.spec.project}}",
+            "health_status": "{{.app.status.health.status}}",
+            "sync_status": "{{.app.status.sync.status}}"
+          }]
+
+  trigger.on-sync-succeeded: |
+    - when: app.status.operationState.phase in ['Succeeded']
+      send: [app-sync-status]
+
+  trigger.on-sync-failed: |
+    - when: app.status.operationState.phase in ['Failed', 'Error']
+      send: [app-sync-status]
+
+  trigger.on-health-degraded: |
+    - when: app.status.health.status == 'Degraded'
+      send: [app-health-degraded]
+```
+
+### Subscribe Applications
+
+Add annotation to applications:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: my-app
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-succeeded.parseable: ""
+    notifications.argoproj.io/subscribe.on-sync-failed.parseable: ""
+    notifications.argoproj.io/subscribe.on-health-degraded.parseable: ""
+```
+
+## Method 2: Event Collector
+
+Deploy a collector to watch ArgoCD events.
+
+### Collector Deployment
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-event-collector
+  namespace: argocd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: argocd-event-collector
+  template:
+    spec:
+      serviceAccountName: argocd-event-collector
+      containers:
+        - name: collector
+          image: bitnami/kubectl:latest
+          command:
+            - /bin/bash
+            - -c
+            - |
+              while true; do
+                kubectl get events -n argocd --watch -o json | while read event; do
+                  curl -s -X POST "${PARSEABLE_URL}/api/v1/ingest" \
+                    -H "Authorization: Basic ${PARSEABLE_AUTH}" \
+                    -H "X-P-Stream: argocd-events" \
+                    -H "Content-Type: application/json" \
+                    -d "[${event}]"
+                done
+              done
+          env:
+            - name: PARSEABLE_URL
+              value: "http://parseable:8000"
+            - name: PARSEABLE_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: parseable-credentials
+                  key: auth
+```
+
+## Method 3: ArgoCD Logs
+
+Collect ArgoCD component logs using Fluent Bit.
+
+### Fluent Bit Configuration
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluent-bit-config
+  namespace: argocd
+data:
+  fluent-bit.conf: |
+    [SERVICE]
+        Flush         5
+        Log_Level     info
+
+    [INPUT]
+        Name              tail
+        Path              /var/log/containers/argocd-*.log
+        Parser            cri
+        Tag               argocd.*
+        Refresh_Interval  5
+
+    [FILTER]
+        Name                kubernetes
+        Match               argocd.*
+        Kube_URL            https://kubernetes.default.svc:443
+        Merge_Log           On
+
+    [OUTPUT]
+        Name            http
+        Match           *
+        Host            parseable
+        Port            8000
+        URI             /api/v1/ingest
+        Format          json
+        Header          Authorization Basic YWRtaW46YWRtaW4=
+        Header          X-P-Stream argocd-logs
+```
+
+## Querying ArgoCD Events
+
+```sql
+-- Recent sync events
+SELECT timestamp, app_name, sync_status, health_status, revision
+FROM "argocd-events"
+WHERE event = 'sync'
+ORDER BY timestamp DESC
+LIMIT 100
+
+-- Failed syncs
+SELECT timestamp, app_name, project, message
+FROM "argocd-events"
+WHERE sync_status = 'Failed' OR sync_status = 'Error'
+ORDER BY timestamp DESC
+
+-- Application health history
+SELECT 
+  app_name,
+  health_status,
+  COUNT(*) as count
+FROM "argocd-events"
+WHERE timestamp > NOW() - INTERVAL '24 hours'
+GROUP BY app_name, health_status
+ORDER BY app_name, count DESC
+
+-- Deployment frequency
+SELECT 
+  DATE_TRUNC('day', timestamp) as day,
+  app_name,
+  COUNT(*) as deployments
+FROM "argocd-events"
+WHERE event = 'sync' AND sync_status = 'Succeeded'
+GROUP BY day, app_name
+ORDER BY day DESC
+```
+
+## Best Practices
+
+1. **Track All Events** - Sync, health, and errors
+2. **Include Revision** - Track which commits deployed
+3. **Monitor Health** - Alert on degraded applications
+4. **Audit Changes** - Log who triggered syncs
+
+## Troubleshooting
+
+### Notifications Not Sending
+
+1. Check notification controller logs
+2. Verify webhook URL is accessible
+3. Check ConfigMap syntax
+4. Verify application annotations
+
+### Missing Events
+
+1. Check trigger conditions
+2. Verify template syntax
+3. Check ArgoCD logs
+
+## Next Steps
+
+- Set up [alerts](/docs/user-guide/alerting) for failed deployments
+- Create [dashboards](/docs/user-guide/dashboards) for GitOps metrics
+- Configure [GitHub Actions](/docs/ingest-data/cicd/github-actions) for CI
