@@ -87,7 +87,7 @@ export default function CustomSearchDialog({ open, onOpenChange }: CustomSearchD
     setAiResponse(null);
 
     try {
-      const res = await fetch('/api/ai-search', {
+      const res = await fetch('/docs/api/ai-search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
