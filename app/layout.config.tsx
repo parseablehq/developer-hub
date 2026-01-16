@@ -13,7 +13,7 @@ export const baseOptions: BaseLayoutProps = {
     title: (
       <div className="flex items-center gap-2">
         <Image
-          src="/images/parseable-icon.svg"
+          src="/docs/images/parseable-icon.svg"
           alt="Parseable"
           width={180}
           height={24}
