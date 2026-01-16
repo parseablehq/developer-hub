@@ -33,7 +33,7 @@ A background job then reads the staged Arrow files, converts them into highly co
 ## Query
 
 <Callout type="info">
-  <EnterpriseBadge /> Distributed Query nodes are Enterprise-only features and cannot be deployed with OSS versions.
+  Distributed Query nodes are Enterprise only features available in pro and enterprise versions and cannot be deployed with OSS versions.
 </Callout>
 
 Query node is primarily responsible responding to query API. The query workflow starts when someone calls the query API with (a PostgreSQL compatible) SQL query, and a start and end timestamp. The query node looks up the metadata locally first, falling back to object store only if not found. 
