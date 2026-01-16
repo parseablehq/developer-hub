@@ -6,6 +6,7 @@ import { createAPIPage } from 'fumadocs-openapi/ui';
 import { openapi } from './lib/source'; 
 import type { MDXComponents } from 'mdx/types';
 import { EnterpriseBadge } from './components/EnterpriseBadge';
+import { OSSBadge, ProBadge, OfferingPills } from './components/OfferingBadges';
 import { YouTubeEmbed } from './components/YouTubeEmbed';
 import CurlTerminal from './components/CurlTerminal';
 import EditableCode from './components/EditableCode';
@@ -24,6 +25,9 @@ export function getMDXComponents(components: MDXComponents = {}): MDXComponents 
     Card,
     Cards,
     EnterpriseBadge,
+    OSSBadge,
+    ProBadge,
+    OfferingPills,
     YouTubeEmbed,
     CurlTerminal,
     EditableCode,
