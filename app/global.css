@@ -40,7 +40,6 @@
 :root {
   --color-fd-primary: hsl(217, 100%, 58%);
   --color-fd-primary-foreground: white;
-  --fd-layout-width: 100vw;
 }
 
 .dark {
@@ -77,4 +76,14 @@ iframe[src*="youtube-nocookie.com"] {
   height: auto;
   border-radius: 0.5rem;
   margin-bottom: 1.5rem;
+}
+
+/* Fix banner overlap on mobile sidebar */
+@media (max-width: 768px) {
+  .fd-banner,
+  [id^="radix-"] .sticky,
+  article .sticky:first-child {
+    position: relative !important;
+    z-index: 1 !important;
+  }
 }
