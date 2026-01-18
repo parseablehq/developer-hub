@@ -67,6 +67,17 @@ figure{ padding: 15px;}
   filter: invert(1) hue-rotate(180deg);
 }
 
+/* Responsive YouTube video embeds */
+iframe[src*="youtube.com"],
+iframe[src*="youtube-nocookie.com"] {
+  max-width: 100%;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
 /* Fix banner overlap on mobile sidebar */
 @media (max-width: 768px) {
   .fd-banner,
