@@ -9,12 +9,10 @@ redirect_from:
 
 Download the relevant binary and start Parseable in local-store mode with the following commands:
 
-<EditableCode 
-  language="sh"
-  title="Install and Start Parseable"
-  code={`curl -fsSL https://logg.ing/install | bash
-parseable local-store`}
-/>
+```sh
+curl -fsSL https://logg.ing/install | bash
+parseable local-store
+```
 
 This will start Parseable on port 8000. You can access the Parseable Console at [http://localhost:8000](http://localhost:8000).
 
@@ -22,13 +20,12 @@ This will start Parseable on port 8000. You can access the Parseable Console at 
 
 Send your first log event to the demo dataset using below command.
 
-<CurlTerminal 
-  title="Send log event to demo dataset"
-  command={`curl --location --request POST \\
-'http://localhost:8000/api/v1/ingest' \\
---header 'X-P-Stream: demo' \\
---header 'Authorization: Basic YWRtaW46YWRtaW4=' \\
---header 'Content-Type: application/json' \\
+```bash
+curl --location --request POST \
+'http://localhost:8000/api/v1/ingest' \
+--header 'X-P-Stream: demo' \
+--header 'Authorization: Basic YWRtaW46YWRtaW4=' \
+--header 'Content-Type: application/json' \
 --data-raw '[
     {
         "id": "434a5f5e-2f5f-11ed-a261-0242ac120002",
@@ -39,8 +36,8 @@ Send your first log event to the demo dataset using below command.
         "status": 500,
         "referrer": "http://www.google.com/"
     }
-]'`}
-/>
+]'
+```
 
 Parseable uses datasets to organize log data. Here we posted a sample log data to the demo dataset, by adding the header `X-P-Stream: demo` in the request.
 
