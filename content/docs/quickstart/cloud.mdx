@@ -22,13 +22,12 @@ Once ready, you'll receive your unique **ingestion endpoint**.
 
 Use the endpoint provided to start sending logs. Here's an example using curl:
 
-<CurlTerminal 
-  title="Send logs to Parseable Cloud"
-  command={`curl --location --request POST \\
-'https://<your-workspace>.parseable.com/api/v1/ingest' \\
---header 'X-P-Stream: demo' \\
---header 'Authorization: Basic <your-credentials>' \\
---header 'Content-Type: application/json' \\
+```bash
+curl --location --request POST \
+'https://<your-workspace>.parseable.com/api/v1/ingest' \
+--header 'X-P-Stream: demo' \
+--header 'Authorization: Basic <your-credentials>' \
+--header 'Content-Type: application/json' \
 --data-raw '[
     {
         "id": "434a5f5e-2f5f-11ed-a261-0242ac120002",
@@ -36,8 +35,8 @@ Use the endpoint provided to start sending logs. Here's an example using curl:
         "host": "153.10.110.81",
         "message": "Hello from Parseable Cloud!"
     }
-]'`}
-/>
+]'
+```
 
 Replace `<your-workspace>` and `<your-credentials>` with the values from your workspace dashboard.
 
