@@ -39,12 +39,6 @@ const config = {
   },
   async redirects() {
     return [
-      // Static redirects
-      {
-        source: '/server/opentelemetry',
-        destination: '/docs/OpenTelemetry',
-        permanent: true, // 301 redirect
-      },
       // Generated redirects from frontmatter redirect_from
       ...generatedRedirects,
     ]
