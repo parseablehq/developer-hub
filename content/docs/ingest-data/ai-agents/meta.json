@@ -1,8 +1,11 @@
 {
-  "title": "LLMs & AI Agents",
+  "title": "LLM Observability",
   "pages": [
     "openai",
     "anthropic",
+    "litellm",
+    "openrouter",
+    "vllm",
     "langchain",
     "llamaindex",
     "autogen",

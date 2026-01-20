@@ -1,0 +1,276 @@
+---
+title: LiteLLM
+description: Send LiteLLM traces to Parseable for LLM observability
+---
+
+Send LiteLLM traces to Parseable through OpenTelemetry for complete LLM observability with SQL-queryable analytics.
+
+## Overview
+
+[LiteLLM](https://litellm.ai) is an open-source LLM gateway that provides a unified API for 100+ LLM providers. It acts as a proxy between your application and LLM APIs like OpenAI, Anthropic, Azure, Bedrock, and self-hosted models.
+
+Integrate LiteLLM with Parseable to:
+
+- **Track All LLM Calls** - Monitor requests across multiple providers
+- **Analyze Latency** - Identify slow models and optimize routing
+- **Monitor Token Usage** - Track consumption and estimate costs
+- **Debug Errors** - Investigate failed requests with full context
+
+## Architecture
+
+```
+LiteLLM → OpenTelemetry Collector → Parseable
+                /v1/traces
+```
+
+## Prerequisites
+
+- Python 3.8+
+- LiteLLM installed
+- OpenTelemetry Collector
+- Parseable instance
+
+## Step 1: Install Dependencies
+
+```bash
+pip install litellm opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp
+```
+
+## Step 2: Configure OpenTelemetry Collector
+
+Create `otel-collector-config.yaml`:
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 100
+
+exporters:
+  otlphttp:
+    endpoint: http://localhost:8000
+    headers:
+      Authorization: Basic YWRtaW46YWRtaW4=
+      X-P-Stream: litellm-traces
+      X-P-Log-Source: otel-traces
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp]
+```
+
+| Setting | Description |
+|---------|-------------|
+| `receivers.otlp` | Accepts OTLP data on gRPC (4317) and HTTP (4318) |
+| `processors.batch` | Batches spans before export for efficiency |
+| `exporters.otlphttp.endpoint` | Parseable server URL |
+| `X-P-Stream` | Target dataset in Parseable |
+| `X-P-Log-Source` | Must be `otel-traces` for trace data |
+
+Start the collector:
+
+```bash
+./otelcol --config ./otel-collector-config.yaml
+```
+
+## Step 3: Configure LiteLLM
+
+Set environment variables:
+
+```bash
+export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4318"
+export OTEL_EXPORTER_OTLP_PROTOCOL="http/json"
+```
+
+Enable the OTEL callback in your Python code:
+
+```python
+import litellm
+from litellm import completion
+
+# Enable OpenTelemetry tracing
+litellm.callbacks = ["otel"]
+
+# Make an LLM call
+response = completion(
+    model="gpt-4",
+    messages=[{"role": "user", "content": "What is observability?"}]
+)
+
+print(response.choices[0].message.content)
+```
+
+Every LLM call now emits a trace to Parseable.
+
+## Step 4: LiteLLM Proxy (Optional)
+
+If running LiteLLM as a proxy server, configure `litellm_config.yaml`:
+
+```yaml
+model_list:
+  - model_name: gpt-4
+    litellm_params:
+      model: openai/gpt-4
+      api_key: sk-...
+
+litellm_settings:
+  callbacks: ["otel"]
+
+environment_variables:
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://localhost:4318"
+  OTEL_EXPORTER_OTLP_PROTOCOL: "http/json"
+```
+
+Start the proxy:
+
+```bash
+litellm --config litellm_config.yaml
+```
+
+## Trace Schema
+
+LiteLLM traces include rich metadata:
+
+| Field | Description |
+|-------|-------------|
+| `trace_id` | Unique trace identifier |
+| `span_id` | Unique span identifier |
+| `span_name` | Operation name (e.g., `litellm.completion`) |
+| `span_duration_ms` | Span duration in milliseconds |
+| `span_model` | Model used (e.g., `gpt-4`, `claude-3-opus`) |
+| `span_input_tokens` | Input token count |
+| `span_output_tokens` | Output token count |
+| `span_total_tokens` | Total tokens used |
+| `span_status_code` | HTTP status or error code |
+
+## Example Queries
+
+### Average Latency by Model
+
+```sql
+SELECT 
+  "span_model" AS model,
+  AVG("span_duration_ms") AS avg_latency_ms,
+  COUNT(*) AS call_count
+FROM "litellm-traces"
+WHERE "span_name" LIKE '%completion%'
+GROUP BY model
+ORDER BY avg_latency_ms DESC;
+```
+
+### Token Usage Over Time
+
+```sql
+SELECT 
+  DATE_TRUNC('hour', p_timestamp) AS hour,
+  SUM("span_input_tokens") AS input_tokens,
+  SUM("span_output_tokens") AS output_tokens,
+  SUM("span_total_tokens") AS total_tokens
+FROM "litellm-traces"
+GROUP BY hour
+ORDER BY hour;
+```
+
+### Slowest Requests
+
+```sql
+SELECT 
+  trace_id,
+  "span_model",
+  "span_duration_ms",
+  "span_total_tokens",
+  p_timestamp
+FROM "litellm-traces"
+ORDER BY "span_duration_ms" DESC
+LIMIT 20;
+```
+
+### Error Rate by Model
+
+```sql
+SELECT 
+  "span_model" AS model,
+  COUNT(*) AS total_calls,
+  SUM(CASE WHEN "span_status_code" >= 400 THEN 1 ELSE 0 END) AS errors,
+  ROUND(100.0 * SUM(CASE WHEN "span_status_code" >= 400 THEN 1 ELSE 0 END) / COUNT(*), 2) AS error_rate
+FROM "litellm-traces"
+GROUP BY model
+ORDER BY error_rate DESC;
+```
+
+## Cost Tracking
+
+Calculate costs with token counts:
+
+```sql
+SELECT 
+  "span_model" AS model,
+  SUM("span_input_tokens") AS input_tokens,
+  SUM("span_output_tokens") AS output_tokens,
+  -- GPT-4 pricing: $0.03/1K input, $0.06/1K output
+  ROUND(SUM("span_input_tokens") * 0.00003 + SUM("span_output_tokens") * 0.00006, 2) AS estimated_cost_usd
+FROM "litellm-traces"
+WHERE "span_model" = 'gpt-4'
+  AND p_timestamp >= NOW() - INTERVAL '24 hours'
+GROUP BY model;
+```
+
+## Alerting
+
+### High Latency Alert
+
+Create an alert in Parseable:
+- **Stream**: `litellm-traces`
+- **Column**: `span_duration_ms`
+- **Aggregation**: `AVG`
+- **Threshold**: `> 5000`
+
+### Token Spike Detection
+
+Use anomaly detection on:
+- **Stream**: `litellm-traces`
+- **Column**: `span_total_tokens`
+- **Aggregation**: `SUM`
+
+## Privacy: Redacting Prompts
+
+LiteLLM can redact sensitive content from traces:
+
+**Redact all messages globally:**
+
+```python
+litellm.turn_off_message_logging = True
+```
+
+**Redact per-request:**
+
+```python
+response = completion(
+    model="gpt-4",
+    messages=[{"role": "user", "content": "Sensitive prompt"}],
+    metadata={
+        "mask_input": True,
+        "mask_output": True
+    }
+)
+```
+
+This keeps request metadata (model, tokens, latency) while hiding the actual content.
+
+## Resources
+
+- [LiteLLM Documentation](https://docs.litellm.ai/)
+- [Blog Post](/blog/litellm-trace-analysis-parseable)
