@@ -39,6 +39,12 @@ const config = {
   },
   async redirects() {
     return [
+      // Manual redirects for paths without /docs prefix
+      {
+        source: '/user-guide/alerting',
+        destination: '/docs/user-guide/alerting',
+        permanent: true,
+      },
       // Generated redirects from frontmatter redirect_from
       ...generatedRedirects,
     ]
