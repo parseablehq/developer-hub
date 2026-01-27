@@ -1,0 +1,136 @@
+---
+title: LLM Observability
+description: Monitor and debug LLM applications with Parseable
+---
+
+import { IconBrandOpenai, IconRobot, IconLink, IconBook, IconUsers, IconBrain, IconCode, IconSettingsAutomation, IconServer, IconApi, IconRoute } from '@tabler/icons-react';
+
+Monitor, debug, and optimize your LLM applications with Parseable. Track API calls, token usage, latency, and errors across all major LLM providers and frameworks.
+
+## Why LLM Observability?
+
+LLM applications present unique observability challenges:
+
+- **Non-deterministic outputs** - Same input can produce different results
+- **High costs** - Token usage directly impacts costs
+- **Latency sensitivity** - Response times affect user experience
+- **Complex chains** - Multi-step workflows are hard to debug
+- **Prompt engineering** - Need visibility into prompt effectiveness
+
+## Supported Integrations
+
+<Cards>
+  <Card 
+    title="OpenAI" 
+    href="/docs/ingest-data/ai-agents/openai"
+    icon={<IconBrandOpenai />}
+  >
+    GPT-4, GPT-3.5, and other OpenAI models
+  </Card>
+  <Card 
+    title="Anthropic" 
+    href="/docs/ingest-data/ai-agents/anthropic"
+    icon={<IconRobot />}
+  >
+    Claude and Claude Instant models
+  </Card>
+  <Card 
+    title="LiteLLM" 
+    href="/docs/ingest-data/ai-agents/litellm"
+    icon={<IconApi />}
+  >
+    Unified API gateway for 100+ LLM providers
+  </Card>
+  <Card 
+    title="OpenRouter" 
+    href="/docs/ingest-data/ai-agents/openrouter"
+    icon={<IconRoute />}
+  >
+    Zero-code LLM observability via Broadcast
+  </Card>
+  <Card 
+    title="vLLM" 
+    href="/docs/ingest-data/ai-agents/vllm"
+    icon={<IconServer />}
+  >
+    High-performance LLM inference serving
+  </Card>
+  <Card 
+    title="LangChain" 
+    href="/docs/ingest-data/ai-agents/langchain"
+    icon={<IconLink />}
+  >
+    LangChain framework integration
+  </Card>
+  <Card 
+    title="LlamaIndex" 
+    href="/docs/ingest-data/ai-agents/llamaindex"
+    icon={<IconBook />}
+  >
+    LlamaIndex RAG applications
+  </Card>
+  <Card 
+    title="AutoGen" 
+    href="/docs/ingest-data/ai-agents/autogen"
+    icon={<IconUsers />}
+  >
+    Microsoft AutoGen multi-agent systems
+  </Card>
+  <Card 
+    title="CrewAI" 
+    href="/docs/ingest-data/ai-agents/crewai"
+    icon={<IconBrain />}
+  >
+    CrewAI agent orchestration
+  </Card>
+  <Card 
+    title="DSPy" 
+    href="/docs/ingest-data/ai-agents/dspy"
+    icon={<IconCode />}
+  >
+    DSPy programmatic prompting
+  </Card>
+  <Card 
+    title="n8n" 
+    href="/docs/ingest-data/ai-agents/n8n"
+    icon={<IconSettingsAutomation />}
+  >
+    n8n workflow automation
+  </Card>
+</Cards>
+
+## What to Monitor
+
+### API Calls & Responses
+
+Track every interaction with LLM providers:
+
+- Request parameters (model, temperature, max_tokens)
+- Full prompts and completions
+- Response metadata and finish reasons
+
+### Token Usage & Costs
+
+Monitor consumption to control costs:
+
+- Input and output tokens per request
+- Cost calculations by model
+- Usage trends over time
+
+### Latency & Performance
+
+Measure response times:
+
+- Time to first token (TTFT)
+- Total response time
+- Streaming vs non-streaming performance
+
+### Errors & Failures
+
+Debug issues quickly:
+
+- Rate limit errors
+- API failures and retries
+- Timeout tracking
+
+
