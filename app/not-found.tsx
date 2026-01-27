@@ -195,93 +195,60 @@ function applyMappings(path: string): string {
 function getSuggestedUrl(pathname: string): string | null {
   // Check if we're in development (no /docs prefix in routes)
   const isDev = typeof window !== 'undefined' && window.location.port !== '';
-  
+
   // Normalize: remove /docs prefix if present for matching
   let normalizedPath = pathname;
   const hasDocsPrefix = pathname.startsWith('/docs/') || pathname === '/docs';
-  
+
   if (hasDocsPrefix) {
     normalizedPath = pathname.replace(/^\/docs/, '') || '/';
   }
-  
-  // Apply all mappings recursively
+
+  // Apply all mappings
   const suggested = applyMappings(normalizedPath);
-  
-  // In dev, don't add /docs prefix back since routes don't have it
-  // In production, add /docs prefix if original had it
+
+  // Only return a suggestion if mappings actually changed the path
   if (suggested !== normalizedPath) {
     if (isDev) {
       return suggested;
     }
     return hasDocsPrefix ? '/docs' + suggested : suggested;
   }
-  
-  // If path had /docs prefix but no mapping found, in dev just return without /docs
-  if (hasDocsPrefix && isDev) {
-    return normalizedPath === '/' ? '/get-started' : normalizedPath;
-  }
-  
-  // Default: suggest the docs home
-  return hasDocsPrefix ? '/docs/get-started' : '/get-started';
+
+  // No mapping found - return null
+  return null;
 }
 
 export default function NotFound() {
   const pathname = usePathname();
   const suggestedUrl = getSuggestedUrl(pathname);
-  
+
   // Check if we're in development
   const isDev = typeof window !== 'undefined' && window.location.port !== '';
   const homeUrl = isDev ? '/get-started' : '/docs/get-started';
-  
-  // Format the old URL (what the user tried to access)
-  const oldUrl = pathname;
-  
+
+  // Only show suggested URL button if it's different from current path
+  const showSuggested = suggestedUrl && suggestedUrl !== pathname && suggestedUrl !== homeUrl;
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
-      <h1 className="text-4xl font-bold mb-4">Page Moved</h1>
-      <p className="text-lg text-fd-muted-foreground mb-6">
-        Our documentation has been reorganized. The page you&apos;re looking for has moved to a new location.
+      <h1 className="text-4xl font-bold mb-4">Page Not Found</h1>
+      <p className="text-lg text-fd-muted-foreground mb-8">
+        The page you&apos;re looking for doesn&apos;t exist or has been moved.
       </p>
-      
-      {suggestedUrl && suggestedUrl !== oldUrl && (
-        <div className="bg-fd-secondary/50 border border-fd-border rounded-lg p-6 mb-6 max-w-2xl w-full">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-fd-muted-foreground mb-1 font-medium">
-                Old URL
-              </p>
-              <code className="text-sm text-fd-muted-foreground bg-fd-secondary px-2 py-1 rounded block break-all">
-                {oldUrl}
-              </code>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide text-fd-muted-foreground mb-1 font-medium">
-                New URL
-              </p>
-              <Link 
-                href={suggestedUrl}
-                className="text-sm text-fd-primary hover:underline font-medium bg-fd-secondary px-2 py-1 rounded block break-all"
-              >
-                {suggestedUrl}
-              </Link>
-            </div>
-          </div>
-          
-          <div className="mt-4 pt-4 border-t border-fd-border">
-            <Link 
-              href={suggestedUrl}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-fd-primary text-fd-primary-foreground rounded-md hover:opacity-90 transition-opacity text-sm font-medium"
-            >
-              Go to New Page →
-            </Link>
-          </div>
-        </div>
-      )}
-      
-      <div className="flex gap-4">
+
+      <div className="flex flex-col sm:flex-row gap-4">
+        {showSuggested && (
+          <Link
+            href={suggestedUrl}
+            className="px-6 py-3 bg-fd-primary text-fd-primary-foreground rounded-md hover:opacity-90 transition-opacity font-medium"
+          >
+            Go to Suggested Page
+          </Link>
+        )}
         <Link
           href={homeUrl}
-          className="px-4 py-2 border border-fd-border rounded-md hover:bg-fd-secondary transition-colors"
+          className="px-6 py-3 border border-fd-border rounded-md hover:bg-fd-secondary transition-colors font-medium"
         >
           Go to Documentation Home
         </Link>
