@@ -69,20 +69,22 @@ function generateRedirects() {
         for (const source of frontmatter.redirect_from) {
           // Normalize source path
           const normalizedSource = source.startsWith('/') ? source : '/' + source;
-          
+
           // Skip if source equals destination
           if (normalizedSource === destination) {
             console.warn(`Skipping self-redirect: ${normalizedSource}`);
             continue;
           }
-          
+
+          // Source WITHOUT /docs (matches what developer-hub receives after website rewrite)
+          // Destination WITH /docs (so browser navigates to /docs/... on the main site)
           redirects.push({
             source: normalizedSource,
-            destination,
+            destination: '/docs' + destination,
             permanent: true,
           });
-          
-          console.log(`Redirect: ${normalizedSource} -> ${destination}`);
+
+          console.log(`Redirect: ${normalizedSource} -> /docs${destination}`);
         }
       }
     } catch (error) {
