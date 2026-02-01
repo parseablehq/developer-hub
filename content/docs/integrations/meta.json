@@ -3,7 +3,6 @@
   "pages": [
     "alerting",
     "auth",
-    "oauth",
     "visualization"
   ]
 }
