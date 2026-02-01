@@ -1,9 +1,0 @@
-{
-  "title": "AI Native",
-  "pages": [
-    "summarization",
-    "text-to-sql",
-    "keystone",
-    "forecasting"
-  ]
-}
