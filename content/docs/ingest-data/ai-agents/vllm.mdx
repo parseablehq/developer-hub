@@ -1,0 +1,235 @@
+---
+title: vLLM
+description: Monitor vLLM inference with OpenTelemetry and Parseable
+---
+
+Monitor vLLM inference workloads with OpenTelemetry and Parseable. Collect metrics, build dashboards, and analyze GPU costs for production LLM serving.
+
+## Overview
+
+[vLLM](https://github.com/vllm-project/vllm) is a fast and easy-to-use library for LLM inference and serving. Originally developed at UC Berkeley, vLLM has evolved into a community-driven project for high-performance model serving.
+
+Integrate vLLM with Parseable to:
+
+- **Monitor Inference Performance** - Track latency, throughput, and GPU utilization
+- **Analyze Token Usage** - Measure input/output tokens and costs
+- **Debug Issues** - Identify slow requests and errors
+- **Optimize Resources** - Right-size GPU infrastructure based on metrics
+
+## Architecture
+
+```
+┌─────────────┐    ┌──────────────┐    ┌────────────┐    ┌────────────┐
+│    vLLM     │───▶│   Metrics    │───▶│    OTel    │───▶│  Parseable │
+│   Service   │    │    Proxy     │    │  Collector │    │            │
+└─────────────┘    └──────────────┘    └────────────┘    └────────────┘
+       ↓                  ↓                  ↓                  ↓
+    Metrics         Sanitization       Collection        Observability
+```
+
+## Prerequisites
+
+- vLLM deployment with metrics endpoint accessible
+- Docker or Podman with Compose
+- Parseable instance (local or cloud)
+
+## Quick Start
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/opensourceops/vllm-inference-metrics.git
+cd vllm-inference-metrics
+```
+
+### 2. Configure vLLM Endpoint
+
+Edit `compose.yml` to point to your vLLM deployment:
+
+```yaml
+services:
+  proxy:
+    environment:
+      - VLLM_METRICS_URL=https://your-vllm-endpoint/metrics
+```
+
+For local vLLM deployments:
+
+```yaml
+environment:
+  - VLLM_METRICS_URL=http://localhost:8000/metrics
+```
+
+### 3. Start the Stack
+
+Using Docker:
+
+```bash
+docker compose -f compose-otel.yml up -d
+```
+
+Using Podman:
+
+```bash
+podman compose -f compose-otel.yml up -d
+```
+
+### 4. Access Services
+
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| Parseable UI | `localhost:8080` | admin/admin |
+| Metrics endpoint | `localhost:9090/metrics` | - |
+| Health check | `localhost:9090/health` | - |
+
+### 5. Verify Metrics Collection
+
+```bash
+# View proxy metrics
+curl http://localhost:9090/metrics
+
+# Check OTel Collector logs
+docker compose logs -f otel-collector
+
+# Query metrics in Parseable
+curl -X POST http://localhost:8080/api/v1/query \
+  -H "Authorization: Basic YWRtaW46YWRtaW4=" \
+  -d '{"query": "SELECT * FROM vLLMmetrics LIMIT 10"}'
+```
+
+## Docker Compose Configuration
+
+Complete `compose-otel.yml` example:
+
+```yaml
+services:
+  parseable:
+    image: parseable/parseable:edge
+    command: ["parseable", "local-store"]
+    env_file: ./parseable.env
+    volumes:
+      - parseable-staging:/staging
+    ports: ["8080:8000"]
+    restart: unless-stopped
+
+  proxy:
+    image: python:3.11-alpine
+    volumes: ["./proxy.py:/app/proxy.py:ro"]
+    environment:
+      - VLLM_METRICS_URL=<your-vllm-metrics-url>
+    command: >
+      sh -c "pip install --no-cache-dir flask requests && python /app/proxy.py"
+    ports: ["9090:9090"]
+    restart: unless-stopped
+    depends_on: [parseable]
+
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    command: ["--config=/etc/otel-config.yaml"]
+    volumes:
+      - ./otel-config.yaml:/etc/otel-config.yaml:ro
+    ports:
+      - "4317:4317"  # OTLP/gRPC
+      - "4318:4318"  # OTLP/HTTP
+    restart: unless-stopped
+    depends_on:
+      proxy:
+        condition: service_healthy
+      parseable:
+        condition: service_started
+
+volumes:
+  parseable-staging:
+```
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `VLLM_METRICS_URL` | vLLM metrics endpoint URL | Required |
+| `P_USERNAME` | Parseable username | admin |
+| `P_PASSWORD` | Parseable password | admin |
+| `SCRAPE_INTERVAL` | Metrics collection interval | 2s |
+
+## Key Metrics
+
+| Metric Name | Type | Description |
+|-------------|------|-------------|
+| `vllm_num_requests_running` | Gauge | Active inference requests |
+| `vllm_num_requests_waiting` | Gauge | Queued requests |
+| `vllm_gpu_cache_usage_perc` | Gauge | GPU KV-cache utilization |
+| `vllm_num_preemptions_total` | Counter | Request preemptions |
+| `vllm_prompt_tokens_total` | Counter | Total prompt tokens processed |
+| `vllm_generation_tokens_total` | Counter | Total tokens generated |
+| `vllm_request_latency_seconds` | Histogram | End-to-end request latency |
+| `vllm_time_to_first_token_seconds` | Histogram | TTFT latency |
+| `vllm_time_per_output_token_seconds` | Histogram | Inter-token latency |
+
+## Example Queries
+
+### Request Latency Analysis
+
+```sql
+SELECT 
+  DATE_TRUNC('minute', p_timestamp) AS minute,
+  AVG(vllm_request_latency_seconds) AS avg_latency,
+  MAX(vllm_request_latency_seconds) AS max_latency
+FROM vLLMmetrics
+WHERE p_timestamp > NOW() - INTERVAL '1 hour'
+GROUP BY minute
+ORDER BY minute;
+```
+
+### GPU Cache Utilization
+
+```sql
+SELECT 
+  p_timestamp,
+  vllm_gpu_cache_usage_perc
+FROM vLLMmetrics
+WHERE p_timestamp > NOW() - INTERVAL '30 minutes'
+ORDER BY p_timestamp;
+```
+
+### Token Throughput
+
+```sql
+SELECT 
+  DATE_TRUNC('hour', p_timestamp) AS hour,
+  SUM(vllm_prompt_tokens_total) AS input_tokens,
+  SUM(vllm_generation_tokens_total) AS output_tokens
+FROM vLLMmetrics
+GROUP BY hour
+ORDER BY hour DESC
+LIMIT 24;
+```
+
+## Cost Analysis
+
+Track GPU costs with token metrics:
+
+```sql
+SELECT 
+  DATE_TRUNC('day', p_timestamp) AS day,
+  COUNT(*) AS total_requests,
+  SUM(vllm_prompt_tokens_total + vllm_generation_tokens_total) AS total_tokens,
+  -- A100 PCIe at $1.64/hour example
+  ROUND(COUNT(*) * 0.001, 2) AS estimated_cost_usd
+FROM vLLMmetrics
+GROUP BY day
+ORDER BY day DESC;
+```
+
+## Alerting
+
+Set up alerts in Parseable for:
+
+- **High Latency**: Alert when `vllm_request_latency_seconds` exceeds threshold
+- **Queue Buildup**: Alert when `vllm_num_requests_waiting` grows
+- **GPU Memory**: Alert when `vllm_gpu_cache_usage_perc` approaches 100%
+
+## Resources
+
+- [GitHub Repository](https://github.com/opensourceops/vllm-inference-metrics)
+- [vLLM Documentation](https://docs.vllm.ai/)
+- [Blog Post](/blog/vllm-inference-metrics-otel)

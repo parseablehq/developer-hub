@@ -1,0 +1,297 @@
+---
+title: OpenRouter
+description: Send LLM traces to Parseable using OpenRouter Broadcast
+---
+
+Send LLM traces to Parseable using OpenRouter's Broadcast feature — no code changes required.
+
+## Overview
+
+[OpenRouter](https://openrouter.ai) is a unified API for accessing 100+ LLM models. Its Broadcast feature automatically sends OpenTelemetry traces for every LLM request to your configured destinations.
+
+Integrate OpenRouter with Parseable to:
+
+- **Zero-Code Observability** - No application instrumentation needed
+- **Track All Requests** - Monitor every LLM call automatically
+- **Analyze Costs** - Built-in cost tracking per request
+- **Debug Issues** - Full trace context for troubleshooting
+
+## How It Works
+
+OpenRouter Broadcast automatically sends OpenTelemetry-formatted traces to your configured endpoints. Combined with Parseable's native OTLP ingestion, you get full LLM observability in minutes.
+
+```
+Your App → OpenRouter → LLM Provider
+              ↓
+         Broadcast
+              ↓
+          Parseable
+```
+
+## Setup
+
+### Step 1: Get Your Parseable Endpoint
+
+Your Parseable OTLP endpoint:
+
+```
+https://your-parseable-host:8000/v1/traces
+```
+
+### Step 2: Prepare Authentication Headers
+
+Encode your Parseable credentials:
+
+```bash
+echo -n "username:password" | base64
+```
+
+Required headers:
+
+```json
+{
+  "Authorization": "Basic <base64-encoded-credentials>",
+  "X-P-Stream": "openrouter-traces",
+  "X-P-Log-Source": "otel-traces"
+}
+```
+
+| Header | Purpose |
+|--------|---------|
+| `Authorization` | Basic auth with Parseable credentials |
+| `X-P-Stream` | Target dataset name in Parseable |
+| `X-P-Log-Source` | Must be `otel-traces` for trace data |
+
+### Step 3: Configure OpenRouter Broadcast
+
+In OpenRouter dashboard, add a new Broadcast destination:
+
+- **Name**: Parseable Production
+- **Endpoint**: `https://<your-instance>.parseable.com/v1/traces`
+- **Headers**:
+```json
+{
+  "Authorization": "Basic <your-base64-credentials>",
+  "X-P-Stream": "openrouter-traces",
+  "X-P-Log-Source": "otel-traces"
+}
+```
+
+### Step 4: Configure Sampling (Optional)
+
+For high-volume applications, sample traces to control costs:
+
+| Sampling Rate | Use Case |
+|---------------|----------|
+| 1.0 (100%) | Development, debugging, low-volume |
+| 0.1 (10%) | Medium-volume production |
+| 0.01 (1%) | High-volume production |
+
+## Enriching Traces
+
+Add context to your API requests for better observability.
+
+### User Identification
+
+```python
+import openai
+
+client = openai.OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key="your-openrouter-key"
+)
+
+response = client.chat.completions.create(
+    model="anthropic/claude-3.5-sonnet",
+    messages=[{"role": "user", "content": "Hello!"}],
+    extra_body={
+        "user": "user_12345"  # Links traces to specific users
+    }
+)
+```
+
+### Session Tracking
+
+```python
+response = client.chat.completions.create(
+    model="anthropic/claude-3.5-sonnet",
+    messages=[{"role": "user", "content": "Hello!"}],
+    extra_body={
+        "user": "user_12345",
+        "session_id": "session_abc123"  # Groups related requests
+    }
+)
+```
+
+Or via header:
+
+```python
+response = client.chat.completions.create(
+    model="anthropic/claude-3.5-sonnet",
+    messages=[{"role": "user", "content": "Hello!"}],
+    extra_headers={
+        "x-session-id": "session_abc123"
+    }
+)
+```
+
+## Trace Schema
+
+OpenRouter traces include these fields:
+
+| Field | Description |
+|-------|-------------|
+| `trace_id` | Unique trace identifier |
+| `span_id` | Unique span identifier |
+| `span_name` | Operation name |
+| `span_duration_ns` | Duration in nanoseconds |
+| `gen_ai.request.model` | Requested model |
+| `gen_ai.response.model` | Actual model used |
+| `gen_ai.usage.input_tokens` | Input token count |
+| `gen_ai.usage.output_tokens` | Output token count |
+| `gen_ai.usage.cost` | Estimated cost |
+| `user.id` | User identifier (if provided) |
+| `session.id` | Session identifier (if provided) |
+
+## Example Queries
+
+### Token Usage by Model
+
+```sql
+SELECT 
+  "gen_ai.request.model" AS model,
+  COUNT(*) AS requests,
+  SUM(CAST("gen_ai.usage.input_tokens" AS BIGINT)) AS input_tokens,
+  SUM(CAST("gen_ai.usage.output_tokens" AS BIGINT)) AS output_tokens,
+  SUM(CAST("gen_ai.usage.input_tokens" AS BIGINT) + 
+      CAST("gen_ai.usage.output_tokens" AS BIGINT)) AS total_tokens
+FROM "openrouter-traces"
+WHERE p_timestamp > NOW() - INTERVAL '24 hours'
+GROUP BY model
+ORDER BY total_tokens DESC;
+```
+
+### Average Latency by Model
+
+```sql
+SELECT 
+  "gen_ai.request.model" AS model,
+  COUNT(*) AS requests,
+  AVG(span_duration_ns / 1e6) AS avg_latency_ms,
+  PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY span_duration_ns / 1e6) AS p95_latency_ms
+FROM "openrouter-traces"
+WHERE p_timestamp > NOW() - INTERVAL '24 hours'
+GROUP BY model
+ORDER BY avg_latency_ms DESC;
+```
+
+### Cost Breakdown by User
+
+```sql
+SELECT 
+  "user.id" AS user_id,
+  COUNT(*) AS requests,
+  SUM(CAST("gen_ai.usage.cost" AS DOUBLE)) AS total_cost_usd
+FROM "openrouter-traces"
+WHERE p_timestamp > NOW() - INTERVAL '7 days'
+  AND "user.id" IS NOT NULL
+GROUP BY user_id
+ORDER BY total_cost_usd DESC
+LIMIT 20;
+```
+
+### Requests per Session
+
+```sql
+SELECT 
+  "session.id" AS session_id,
+  COUNT(*) AS request_count,
+  SUM(CAST("gen_ai.usage.input_tokens" AS BIGINT)) AS total_input_tokens,
+  MIN(p_timestamp) AS session_start,
+  MAX(p_timestamp) AS session_end
+FROM "openrouter-traces"
+WHERE "session.id" IS NOT NULL
+  AND p_timestamp > NOW() - INTERVAL '24 hours'
+GROUP BY session_id
+ORDER BY request_count DESC
+LIMIT 20;
+```
+
+### Error Rate by Model
+
+```sql
+SELECT 
+  "gen_ai.request.model" AS model,
+  COUNT(*) AS total_requests,
+  SUM(CASE WHEN span_status_code = 2 THEN 1 ELSE 0 END) AS errors,
+  ROUND(100.0 * SUM(CASE WHEN span_status_code = 2 THEN 1 ELSE 0 END) / COUNT(*), 2) AS error_rate
+FROM "openrouter-traces"
+WHERE p_timestamp > NOW() - INTERVAL '24 hours'
+GROUP BY model
+ORDER BY error_rate DESC;
+```
+
+## Alerting
+
+### High Cost Alert
+
+Monitor when daily LLM spend exceeds budget:
+- **Stream**: `openrouter-traces`
+- **Column**: `gen_ai.usage.cost`
+- **Aggregation**: `SUM`
+- **Threshold**: `> 100`
+
+### Latency Spike Alert
+
+Detect when response times degrade:
+- **Stream**: `openrouter-traces`
+- **Column**: `span_duration_ns`
+- **Aggregation**: `AVG`
+- **Type**: Anomaly detection
+
+### Error Rate Alert
+
+Get notified when error rates increase:
+- **Stream**: `openrouter-traces`
+- **Condition**: `span_status_code = 2`
+
+## Dashboard Queries
+
+### Hourly Request Volume
+
+```sql
+SELECT 
+  DATE_TRUNC('hour', p_timestamp) AS hour,
+  COUNT(*) AS requests
+FROM "openrouter-traces"
+WHERE p_timestamp > NOW() - INTERVAL '7 days'
+GROUP BY hour
+ORDER BY hour;
+```
+
+### Daily Cost Trend
+
+```sql
+SELECT 
+  DATE_TRUNC('day', p_timestamp) AS day,
+  SUM(CAST("gen_ai.usage.cost" AS DOUBLE)) AS daily_cost
+FROM "openrouter-traces"
+WHERE p_timestamp > NOW() - INTERVAL '30 days'
+GROUP BY day
+ORDER BY day;
+```
+
+## Multiple Destinations
+
+OpenRouter supports up to 5 destinations. Use this for:
+
+| Destination | Stream | Sampling | API Keys |
+|-------------|--------|----------|----------|
+| Production | `openrouter-prod` | 10% | `prod-*` keys |
+| Development | `openrouter-dev` | 100% | `dev-*` keys |
+| Debugging | `openrouter-debug` | 100% | Specific key |
+
+## Resources
+
+- [OpenRouter Documentation](https://openrouter.ai/docs)
+- [Blog Post](/blog/openrouter-broadcast-parseable-llm-observability)
