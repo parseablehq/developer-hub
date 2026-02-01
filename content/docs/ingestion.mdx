@@ -9,9 +9,7 @@ Ingestion is the process of sending Telemetry signals (Metrics, Events, Logs, Tr
 
 You can ingest data to Parseable in JSON format over HTTP(s). This means that any log agent, metric collector, or tracing library that can send data over HTTP in JSON format can be used to ingest data into Parseable.
 
-For log data you can use the HTTP output plugins of all the logging agents/shippers like [Fluent Bit](/docs/datasource/log-agents/fluent-bit), [Vector](/docs/datasource/log-agents/vector), [syslog-ng](/docs/datasource/log-agents/syslog), [LogStash](/docs/datasource/log-agents/logstash), among others to send log events to Parseable.
-
-You can also directly integrate Parseable with your application via [REST API](/docs/api/v1/ingest).
+For log data you can use the HTTP output plugins of all the logging agents/shippers. You can also directly integrate Parseable with your application via [REST API](/docs/api/v1/ingest).
 
 Parseable also supports the OTel native data ingestion via the Protobuf over HTTP. This allows you to use any OpenTelemetry compatible log agent or library to send logs to Parseable.
 
