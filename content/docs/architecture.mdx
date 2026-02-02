@@ -67,7 +67,7 @@ By default data is stored in columnar Parquet files, allowing fast aggregations,
 High availability (HA) is ensured through a distributed mode in which multiple ingestion and query servers operate independently. 
 
 ### Object storage first
-There is no separate consensus layer, eliminating complex coordination and reducing operational overhead. Object storage manages all concurrency control.
+There is no separate consensus layer, eliminating complex coordination and reducing operational overhead. Object storage manages all concurrency control. See [AWS S3 configuration](/docs/storage/awss3) for detailed setup instructions.
 
 ### SQL for querying 
 We chose SQL as the query language for Parseable because it is widely used and understood, making it easier for users to interact with the system. SQL allows users to filter, aggregate, and join data from multiple sources. SQL is also very well supported by modern LLMs to generate queries from plain text.
