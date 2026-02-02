@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 import { source } from '@/lib/source';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://parseable.com';
+  const baseUrl = 'https://www.parseable.com';
   
   // Get all documentation pages
   const pages = source.getPages();
