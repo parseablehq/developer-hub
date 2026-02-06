@@ -13,11 +13,19 @@ For log data you can use the HTTP output plugins of all the logging agents/shipp
 
 Parseable also supports the OTel native data ingestion via the Protobuf over HTTP. This allows you to use any OpenTelemetry compatible log agent or library to send logs to Parseable.
 
+<Callout type="info">
+Field name starting with `@` is replaced with `_`. In case of key collision, the event is rejected.
+</Callout>
+
 ## Ingestion reference
 
 Explore the different methods to ingest data into Parseable. Choose the method that best fits your infrastructure and use case.
 
 ### OpenTelemetry
+
+<Callout type="info">
+In case of otel-metrics, there may be key collision in the attributes key, as the attributes are present in different hierarchical levels in the otel metrics event. In such scenarios, the key values are overridden by the last available attribute.
+</Callout>
 
 <Cards>
 
