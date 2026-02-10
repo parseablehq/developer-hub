@@ -6,7 +6,6 @@ description: Search, filter, analyze, and visualize log data with the Logs Explo
 Logs Explore is the primary interface for searching, filtering, analyzing, and visualizing log data in Parseable. It supports field-level filtering, SQL querying, time-series visualization with forecasting, and data export.
 
 {/* TODO: Add screenshot of full Logs Explore page */}
-![](../static/logs-explore.png)
 
 ## Page Layout
 
@@ -22,7 +21,6 @@ The Logs Explore page is organized into four main areas:
 The dataset selector dropdown is at the top-left of the content area. Click it to search for and switch between available log datasets. The dropdown includes a search box that filters the list as you type. Selecting a different dataset reloads the page with that dataset's data and fields.
 
 {/* TODO: Add screenshot of dataset selector dropdown */}
-![](../static/logs-explore-dataset-selector.png)
 
 ## Time Range Picker
 
@@ -35,7 +33,6 @@ Click the time range button (e.g., "Last 1 hour") to open the time range configu
 Click **Apply** to execute the query or **Cancel** to discard changes.
 
 {/* TODO: Add screenshot of time range picker panel */}
-![](../static/logs-explore-time-range.png)
 
 <Callout type="info">
 Parseable requires a time range for every query. By scoping queries to a specific time window, the engine only reads the relevant Parquet files from storage, keeping response times fast even over large datasets.
@@ -69,7 +66,6 @@ Click the **Summarize my data** button (purple with a sparkle icon) to trigger a
 The fields panel on the left side organizes the dataset's schema into three sections.
 
 {/* TODO: Add screenshot of fields panel showing all three sections */}
-![](../static/logs-explore-fields-panel.png)
 
 ### System Fields
 
@@ -98,7 +94,6 @@ A search box at the top of the fields panel ("Search field names") filters the f
 Click **Add filter** to open a comprehensive filter panel. This panel organizes filterable fields into semantic categories: Service, Kubernetes, Container, Cloud, HTTP, Telemetry, and All fields.
 
 {/* TODO: Add screenshot of the Add Filter panel */}
-![](../static/logs-explore-add-filter.png)
 
 For each field, you see available values along with occurrence counts. Click a value to add it as a filter condition. A search box at the top ("Search and add filters") locates specific fields or values quickly. Some fields show a "Show more values" link when there are more values than initially displayed.
 
@@ -111,28 +106,24 @@ Click **Edit with SQL** to open the [SQL Editor](/docs/user-guide/sql-editor) in
 Click **Group by** and select a field from the dropdown (body, cloud.provider, cloud.region, http.method, http.status_code, etc.). This groups the log data by that field's values, restructuring the histogram and table to show aggregated results.
 
 {/* TODO: Add screenshot of Group By in action */}
-![](../static/logs-explore-group-by.png)
 
 ## Histogram Chart
 
 The histogram chart visualizes the volume of log records over time. The Y-axis shows the record count and the X-axis shows time intervals. The chart automatically adjusts its time granularity based on the selected range.
 
 {/* TODO: Add screenshot of histogram chart */}
-![](../static/logs-explore-histogram.png)
 
 ### Forecast
 
 A **Forecast** toggle in the upper-right of the chart enables predictive analytics. When enabled, the chart extends beyond the current time to show projected log volume. The legend differentiates between "Historical" data (solid line) and "Forecast" data (dashed line), with the forecast region shown as a shaded area.
 
 {/* TODO: Add screenshot of histogram with forecast enabled */}
-![](../static/logs-explore-forecast.png)
 
 ## Log Table
 
 The log table displays individual log records.
 
 {/* TODO: Add screenshot of log table with sample data */}
-![](../static/logs-explore-table.png)
 
 ### Sorting
 
@@ -147,7 +138,6 @@ Each row shows values for the configured table columns. By default, "Ingestion T
 Click a log row to reveal an expand icon and a copy icon. Click the expand icon to display all fields of the log record in a formatted key-value layout, including body, cloud metadata, HTTP details, Kubernetes labels, telemetry information, trace and span IDs, and all other attributes.
 
 {/* TODO: Add screenshot of an expanded log row */}
-![](../static/logs-explore-row-expanded.png)
 
 ### Pagination
 

@@ -6,7 +6,6 @@ description: Browse, analyze, and act on metrics data with the Metrics Explore i
 Metrics Explore is the central interface for browsing, analyzing, and acting on metrics data in Parseable. It provides a visual overview of all metrics in a dataset, tools for filtering and drilling down into individual metrics, and pathways to create alerts, dashboards, and SQL queries directly from your metric data.
 
 {/* TODO: Add screenshot of full Metrics Explore page */}
-![](../static/metrics-explore.png)
 
 ## Page Layout
 
@@ -21,7 +20,6 @@ The Metrics Explore page is organized into three main areas:
 A dataset selector dropdown at the top-left lets you choose which metrics dataset to explore. Click the dropdown to search for and switch between available datasets.
 
 {/* TODO: Add screenshot of dataset selector */}
-![](../static/metrics-explore-dataset-selector.png)
 
 ## Main Tabs
 
@@ -32,7 +30,6 @@ Three tabs at the top of the content area provide different ways to interact wit
 This is the default view. It displays a summary timeseries chart at the top showing total metric data point volume, followed by a metrics table listing all metrics in the dataset. Each row shows the metric name, a data point count badge (e.g., 338.3K), a description, and a type badge (such as `sum` or `gauge`). Metrics are sorted by data point count in descending order.
 
 {/* TODO: Add screenshot of All Metrics tab with chart and table */}
-![](../static/metrics-explore-all-metrics.png)
 
 Click any metric row to open the metric detail panel on the right.
 
@@ -41,7 +38,6 @@ Click any metric row to open the metric detail panel on the right.
 The Insights tab provides a tile-based analysis view for deeper exploration.
 
 {/* TODO: Add screenshot of Insights tab with tiles */}
-![](../static/metrics-explore-insights.png)
 
 The configuration panel at the top includes:
 
@@ -67,7 +63,6 @@ Click **+ Add new tile** to compare different metrics side by side.
 The Table tab shows raw metric data in a tabular format.
 
 {/* TODO: Add screenshot of Table tab */}
-![](../static/metrics-explore-table.png)
 
 The left sidebar adapts to show:
 
@@ -82,7 +77,6 @@ The data table shows an Ingestion Time column and a Data column containing the f
 The left sidebar provides a categorized view of all fields in the metrics dataset. Fields are organized under semantic categories such as System, Service, Kubernetes, Container, Error, Metric, Cloud, Database, Network, Telemetry, and All fields.
 
 {/* TODO: Add screenshot of field browser with expanded field */}
-![](../static/metrics-explore-field-browser.png)
 
 A **Search field names** text box at the top lets you quickly find specific fields. Expanding an individual field shows its distinct values along with occurrence counts. Next to each field value, two filter icons appear:
 
@@ -96,7 +90,6 @@ The sidebar can be collapsed using the toggle button to give the main content ar
 Click **Add filter** to open the filter panel. Fields are organized by category (Service, Kubernetes, Container, Error, Metric, Cloud, Database, Telemetry, All fields). Each field displays its distinct values as clickable chips with occurrence counts.
 
 {/* TODO: Add screenshot of filter panel */}
-![](../static/metrics-explore-filter.png)
 
 Use the **Search and add filters** text box to locate specific fields or values. Click any value chip to add it as an active filter. Filters can also be added directly from the field browser sidebar by clicking the include/exclude icons next to field values.
 
@@ -120,14 +113,12 @@ Click **Apply** to confirm or **Cancel** to discard.
 A **Forecast** toggle in the upper-right area of the summary chart enables predictive visualization. When enabled, the chart extends beyond the current time to show forecasted values. The legend distinguishes between "Historical" data (solid line) and "Forecast" data (dashed line).
 
 {/* TODO: Add screenshot of forecast enabled on chart */}
-![](../static/metrics-explore-forecast.png)
 
 ## Metric Detail Panel
 
 Click any metric in the metrics table to open the detail panel on the right. The panel header shows the metric name (with a copy icon), type badge, description, latest timestamp, and current value.
 
 {/* TODO: Add screenshot of metric detail panel */}
-![](../static/metrics-explore-detail-panel.png)
 
 ### Overview Sub-tab
 
@@ -157,7 +148,6 @@ Click **Set alert** from either the metric detail panel or the Insights tile men
 4. **Title and severity** - Enter the alert title, select severity, and optionally add tags
 
 {/* TODO: Add screenshot of alert creation form from metrics */}
-![](../static/metrics-explore-create-alert.png)
 
 A live chart/table preview at the top shows the metric data alongside the configured threshold. For more details, see [Alerting](/docs/user-guide/alerting).
 
