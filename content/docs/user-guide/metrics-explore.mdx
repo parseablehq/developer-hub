@@ -1,41 +1,27 @@
 ---
 title: Metrics Explore
-description: Browse, analyze, and act on metrics data at scale with the Metrics Explore interface
+description: Browse, analyze, and act on metrics data with the Metrics Explore interface
 ---
 
-As infrastructure grows, so does the volume of metrics: CPU utilization, request latencies, error rates, queue depths, and custom business KPIs. A single Kubernetes cluster can emit tens of thousands of distinct time series, and a fleet of microservices can generate millions of data points per minute. At this scale, simply collecting metrics is not enough. You need an interface that helps you browse, drill down, and take action on metric data without being overwhelmed.
+Metrics Explore is the central interface for browsing, analyzing, and acting on metrics data in Parseable. It provides a visual overview of all metrics in a dataset, tools for filtering and drilling down into individual metrics, and pathways to create alerts, dashboards, and SQL queries directly from your metric data.
 
-Parseable's Metrics Explore page is designed for exactly this. It combines Parseable's columnar storage engine with an interactive exploration UI, so you can navigate large metrics datasets, identify anomalies, set alerts, and build dashboards, all from one place.
-
-## Why Metrics at Scale Are Hard
-
-### Cardinality Explosion
-
-Every unique combination of metric name and label values creates a distinct time series. In large deployments with dynamic labels like pod names, container IDs, or request paths, the number of unique series can grow into the millions. Parseable stores metrics as compressed Parquet files on object storage, making high-cardinality data economical to retain and fast to query using columnar reads.
-
-### Cross-Signal Correlation
-
-Metrics in isolation tell only part of the story. A latency spike is more useful when correlated with error logs and traces from the same service. Parseable stores logs, metrics, and traces in a unified platform, and Metrics Explore lets you jump directly to the [SQL Editor](/docs/user-guide/sql-editor) or [Dashboards](/docs/user-guide/dashboards) to correlate across signals.
-
-### Operational Overhead
-
-Traditional metrics systems require separate infrastructure for collection, storage, querying, and alerting. Parseable ships as a single binary with an object-storage-first architecture, eliminating the need for dedicated time-series databases, reducing operational complexity as you scale.
-
-## Accessing Metrics Explore
-
-Navigate to **Metrics > Explore** from the left navigation sidebar and select a metrics dataset. The breadcrumb at the top of the page shows your current location (e.g., **Home > Metrics > Explore > otel-demo-metrics**).
+{/* TODO: Add screenshot of full Metrics Explore page */}
+![](../static/metrics-explore.png)
 
 ## Page Layout
 
 The Metrics Explore page is organized into three main areas:
 
-- **Left Sidebar (Field Browser)** - A categorized and searchable list of all fields (labels) present in the selected metrics dataset.
-- **Central Content Area** - Displays a summary chart of total metric volume over time, and a table listing all discovered metrics with their descriptions, data point counts, and types.
-- **Right Detail Panel** - Appears when you click on a specific metric, showing an expanded overview, timeseries chart, alert configuration, and field details.
+- **Left Sidebar (Field Browser)** - A categorized and searchable list of all fields (labels) present in the selected metrics dataset
+- **Central Content Area** - A summary chart of total metric volume over time, and a table listing all discovered metrics with their descriptions, data point counts, and types
+- **Right Detail Panel** - Appears when you click on a specific metric, showing an expanded overview, timeseries chart, alert configuration, and field details
 
 ## Selecting a Dataset
 
-A dataset selector dropdown at the top-left lets you choose which metrics dataset to explore. Click the dropdown to search for and switch between available datasets. Each dataset corresponds to a collection of related metrics, for example, all metrics from an OpenTelemetry-instrumented application.
+A dataset selector dropdown at the top-left lets you choose which metrics dataset to explore. Click the dropdown to search for and switch between available datasets.
+
+{/* TODO: Add screenshot of dataset selector */}
+![](../static/metrics-explore-dataset-selector.png)
 
 ## Main Tabs
 
@@ -43,169 +29,160 @@ Three tabs at the top of the content area provide different ways to interact wit
 
 ### All Metrics Tab
 
-This is the default view. It displays:
+This is the default view. It displays a summary timeseries chart at the top showing total metric data point volume, followed by a metrics table listing all metrics in the dataset. Each row shows the metric name, a data point count badge (e.g., 338.3K), a description, and a type badge (such as `sum` or `gauge`). Metrics are sorted by data point count in descending order.
 
-- **Summary chart** - A timeseries chart at the top showing total metric data point volume over the selected time range.
-- **Metrics table** - A table listing all metrics in the dataset. Each row shows the metric name, a data point count badge (e.g., 338.3K), a description, and a type badge indicating the metric type (such as `sum` or `gauge`). Metrics are sorted by data point count in descending order.
+{/* TODO: Add screenshot of All Metrics tab with chart and table */}
+![](../static/metrics-explore-all-metrics.png)
 
-Clicking any metric row opens the metric detail panel on the right.
+Click any metric row to open the metric detail panel on the right.
 
 ### Insights Tab
 
-The Insights tab provides a tile-based analysis view for deeper exploration. Each tile displays a bar chart for a selected metric with aggregation toggles (count, sum, avg, min, max) and a **Time grain** dropdown (defaulting to Minute) for temporal resolution.
+The Insights tab provides a tile-based analysis view for deeper exploration.
+
+{/* TODO: Add screenshot of Insights tab with tiles */}
+![](../static/metrics-explore-insights.png)
 
 The configuration panel at the top includes:
 
-- **Metric selector** - The metric to analyze.
-- **Type badge** - The metric type (e.g., `sum`) with a dropdown.
-- **Units** - Optional unit label.
-- **Precision** - Decimal precision selector.
-- **Add filter** - Filter the metric by label values.
-- **Group & sort** - Expand to reveal Group by and Sort by fields for slicing data by any label dimension.
+- **Metric selector** - The metric to analyze
+- **Type badge** - The metric type (e.g., `sum`) with a dropdown
+- **Units** - Optional unit label
+- **Precision** - Decimal precision selector
+- **Add filter** - Filter the metric by label values
+- **Group & sort** - Expand to reveal Group by and Sort by fields for slicing data by any label dimension
+
+Each tile displays a bar chart with aggregation toggles: count, sum, avg, min, and max. A **Time grain** dropdown (defaulting to Minute) controls the temporal resolution.
 
 A three-dot menu on each tile offers:
 
-- **Add to dashboard** - Adds the chart to a dashboard.
-- **Set alert** - Opens the alert creation form pre-filled with the metric.
-- **Download as PNG** - Exports the chart image.
+- **Add to dashboard** - Adds the chart to a dashboard
+- **Set alert** - Opens the alert creation form pre-filled with the metric
+- **Download as PNG** - Exports the chart image
 
-Click **+ Add new tile** to compare different metrics side by side. Tiles can be collapsed or removed using the controls in each tile's header.
+Click **+ Add new tile** to compare different metrics side by side.
 
 ### Table Tab
 
-The Table tab shows raw metric data in a tabular format. The left sidebar adapts to show:
+The Table tab shows raw metric data in a tabular format.
 
-- **System fields** - Built-in fields like Log formats, User agents, and Source IPs.
-- **Table fields** - Currently displayed columns (by default, Ingestion Time and Data).
-- **Available fields** - All 48+ fields available in the dataset that can be added as table columns.
+{/* TODO: Add screenshot of Table tab */}
+![](../static/metrics-explore-table.png)
+
+The left sidebar adapts to show:
+
+- **System fields** - Built-in fields like Log formats, User agents, and Source IPs
+- **Table fields** - Currently displayed columns (by default, Ingestion Time and Data)
+- **Available fields** - All 48+ fields available in the dataset that can be added as table columns
 
 The data table shows an Ingestion Time column and a Data column containing the full key-value pairs for each data point. Above the table, pagination controls, a record count indicator (e.g., "Found 2.2M records in 292.88 ms"), and a **Find in data** search box are available. A **Group by** button lets you group raw records by specific field values.
 
-<Callout type="info">
-The Table tab is useful for inspecting individual metric data points at full fidelity, for example, verifying that a specific label value is being reported correctly or debugging ingestion issues.
-</Callout>
-
 ## Field Browser
 
-The left sidebar provides a categorized view of all fields present in the metrics dataset. Fields are organized under semantic categories such as System, Service, Kubernetes, Container, Error, Metric, Cloud, Database, Network, Telemetry, and All fields.
+The left sidebar provides a categorized view of all fields in the metrics dataset. Fields are organized under semantic categories such as System, Service, Kubernetes, Container, Error, Metric, Cloud, Database, Network, Telemetry, and All fields.
 
-A **Search field names** text box at the top lets you quickly find specific fields. Expanding an individual field shows its distinct values along with occurrence counts. For example, expanding `auth.method` might show values like `NULL (2.4M)`, `jwt (83.3K)`, `oauth2 (78.9K)`, and `api_key (76.8K)`.
+{/* TODO: Add screenshot of field browser with expanded field */}
+![](../static/metrics-explore-field-browser.png)
 
-Next to each field value, two filter icons appear:
+A **Search field names** text box at the top lets you quickly find specific fields. Expanding an individual field shows its distinct values along with occurrence counts. Next to each field value, two filter icons appear:
 
-- **Include filter** (funnel with +) - Adds a positive filter for that value.
-- **Exclude filter** (funnel with −) - Filters out records with that value.
+- **Include filter** (funnel with +) - Adds a positive filter for that value
+- **Exclude filter** (funnel with −) - Filters out records with that value
 
-The sidebar can be collapsed using the toggle button to give the main content area more horizontal space.
+The sidebar can be collapsed using the toggle button to give the main content area more space.
 
 ## Filtering
 
 Click **Add filter** to open the filter panel. Fields are organized by category (Service, Kubernetes, Container, Error, Metric, Cloud, Database, Telemetry, All fields). Each field displays its distinct values as clickable chips with occurrence counts.
 
-Use the **Search and add filters** text box to locate specific fields or values. Click any value chip to add it as an active filter. Some fields show a **Show more values** link when additional values are available.
+{/* TODO: Add screenshot of filter panel */}
+![](../static/metrics-explore-filter.png)
 
-Filters can also be added directly from the field browser sidebar by clicking the include/exclude icons next to field values.
+Use the **Search and add filters** text box to locate specific fields or values. Click any value chip to add it as an active filter. Filters can also be added directly from the field browser sidebar by clicking the include/exclude icons next to field values.
 
 ## Time Range
 
 Click the time range button (e.g., "Last 1 hour") to configure the query window:
 
-- **Quick presets** - 10 min, 1 hr, 5 hrs, 1 day, 3 days.
-- **Custom range** - Calendar-based date/time selection with From and To fields.
-- **Timezone** - Timezone selector (defaults to UTC).
+- **Quick presets** - 10 min, 1 hr, 5 hrs, 1 day, 3 days
+- **Custom range** - Calendar-based date/time selection with From and To fields
+- **Timezone** - Timezone selector (defaults to UTC)
 
 Click **Apply** to confirm or **Cancel** to discard.
 
-<Callout type="info">
-Like log queries, metric queries in Parseable are always scoped to a time range. This ensures the engine reads only the relevant Parquet files, keeping response times fast even when datasets contain millions of data points.
-</Callout>
-
 ## Auto-Refresh
 
-Next to the time range picker:
-
-- **Manual refresh** - The circular arrow icon triggers an immediate data refresh.
-- **Auto-refresh** - Dropdown with interval options: 10s, 30s, 1m, 5m, 10m, or 20m. Useful for live monitoring scenarios.
+- **Manual refresh** - The circular arrow icon triggers an immediate data refresh
+- **Auto-refresh** - Dropdown with interval options: 10s, 30s, 1m, 5m, 10m, or 20m
 
 ## Forecast
 
 A **Forecast** toggle in the upper-right area of the summary chart enables predictive visualization. When enabled, the chart extends beyond the current time to show forecasted values. The legend distinguishes between "Historical" data (solid line) and "Forecast" data (dashed line).
 
-Forecasting helps teams anticipate capacity needs, detect emerging trends before they become incidents, and plan infrastructure scaling based on projected metric trajectories.
+{/* TODO: Add screenshot of forecast enabled on chart */}
+![](../static/metrics-explore-forecast.png)
 
 ## Metric Detail Panel
 
-Clicking any metric in the metrics table opens a detail panel on the right. The panel header shows the metric name (with a copy icon), type badge, description, latest timestamp, and current value.
+Click any metric in the metrics table to open the detail panel on the right. The panel header shows the metric name (with a copy icon), type badge, description, latest timestamp, and current value.
+
+{/* TODO: Add screenshot of metric detail panel */}
+![](../static/metrics-explore-detail-panel.png)
 
 ### Overview Sub-tab
 
 Displays a timeseries bar chart showing the metric's behavior over the selected time range. Controls include:
 
-- A dedicated time range selector and refresh controls.
-- **Set alert** button to create an alert directly from the metric.
-- **Add to dashboard** button to add the chart to a dashboard.
-- **Time grain** dropdown (defaults to Minute) for temporal resolution.
-- **Aggregation buttons** - count, sum, avg, min, max.
+- A dedicated time range selector and refresh controls
+- **Set alert** button to create an alert directly from the metric
+- **Add to dashboard** button to add the chart to a dashboard
+- **Time grain** dropdown (defaults to Minute) for temporal resolution
+- **Aggregation buttons** - count, sum, avg, min, max
 
 ### Alerts Sub-tab
 
-Shows all alerts configured for the selected metric. If no alerts exist, a **Set alert** button is available to create one. See [Alerting](/docs/user-guide/alerting) for details on alert types and configuration.
+Shows all alerts configured for the selected metric. If no alerts exist, a **Set alert** button is available to create one. See [Alerting](/docs/user-guide/alerting) for details.
 
 ### Fields Sub-tab
 
-Displays all fields associated with the selected metric in a structured table organized by category (Service, Kubernetes, Container, Metric, Cloud, Telemetry, All fields). Each row shows a field name and its value for the most recent data point. A **Search field name** text box filters the field list. The badge on the tab (e.g., "32") indicates the total number of fields.
+Displays all fields associated with the selected metric organized by category (Service, Kubernetes, Container, Metric, Cloud, Telemetry, All fields). Each row shows a field name and its value for the most recent data point. A **Search field name** text box filters the field list.
 
 ## Creating Alerts from Metrics
 
 Click **Set alert** from either the metric detail panel or the Insights tile menu. This navigates to the **Alerts > Create** page with the metric context pre-filled. The alert creation form has four steps:
 
-1. **Set rule** - Configure the dataset, metric, aggregation function (e.g., AVG), optional units, filters (pre-filled with the metric name), and optional Group by fields.
-2. **Set Evaluation** - Choose the alert type: Threshold (triggers when a metric crosses a set limit), Anomaly Detection, or Forecast. Configure the evaluation window, repetition interval, and trigger condition (e.g., "Trigger when result is > 0").
-3. **Targets** - Specify notification delivery targets and repeat interval (e.g., 1 minute).
-4. **Title and severity** - Enter the alert title, select severity (e.g., High), and optionally add tags.
+1. **Set rule** - Configure the dataset, metric, aggregation function (e.g., AVG), optional units, filters, and optional Group by fields
+2. **Set Evaluation** - Choose the alert type: Threshold, Anomaly Detection, or Forecast. Configure the evaluation window, repetition interval, and trigger condition
+3. **Targets** - Specify notification delivery targets and repeat interval
+4. **Title and severity** - Enter the alert title, select severity, and optionally add tags
 
-A live chart/table preview at the top shows the metric data alongside the configured threshold.
+{/* TODO: Add screenshot of alert creation form from metrics */}
+![](../static/metrics-explore-create-alert.png)
 
-For more details, see [Alerting](/docs/user-guide/alerting).
+A live chart/table preview at the top shows the metric data alongside the configured threshold. For more details, see [Alerting](/docs/user-guide/alerting).
 
 ## Adding Metrics to Dashboards
 
-Click **Add to dashboard** to open a dialog where you can search existing dashboards, select one, or click **+ Create new** to create a new dashboard. The metric chart is added as a tile on the chosen dashboard.
-
-For more on building dashboards, see [Dashboards](/docs/user-guide/dashboards).
+Click **Add to dashboard** to open a dialog where you can search existing dashboards, select one, or click **+ Create new** to create a new dashboard. The metric chart is added as a tile on the chosen dashboard. For more on dashboards, see [Dashboards](/docs/user-guide/dashboards).
 
 ## Edit with SQL
 
-Click **Edit with SQL** to open the [SQL Editor](/docs/user-guide/sql-editor) in a new tab with a pre-populated query (e.g., `select * from "otel-demo-metrics"`). The SQL editor provides full query editing with syntax highlighting, a Run button, dataset/column explorer, and Results/Chart tabs.
+Click **Edit with SQL** to open the [SQL Editor](/docs/user-guide/sql-editor) in a new tab with a pre-populated query (e.g., `select * from "otel-demo-metrics"`).
 
-SQL access is especially valuable at scale for queries the visual interface cannot express, such as computing percentiles across millions of data points, joining metric data with log datasets, or building custom aggregation windows.
-
-## Save View and View Library
-
-### Save View
+## Save View
 
 Click **Save view** to persist the current filters, time range, and configuration as a reusable view. Provide a Title (required), optional Description, and toggle **Include time range** to save the time window as part of the view.
 
-### View Library
+## View Library
 
 Click **Library** to open the view library with three tabs:
 
-- **Recent** - Recently accessed views.
-- **My views** - Views you created.
-- **All views** - All views across the team.
+- **Recent** - Recently accessed views
+- **My views** - Views you created
+- **All views** - All views across the team
 
 A search field lets you find views by name.
 
 ## Summarize My Data
 
-Click the **Summarize my data** button (sparkle icon) for an AI-powered summary of your metrics dataset. This provides automated insights and observations about the data, helping you quickly identify which metrics deserve attention in a large dataset. See [AI Native](/docs/user-guide/ai-native) for more on Parseable's AI capabilities.
-
-## Tips for Working with Metrics at Scale
-
-- **Start with the All Metrics tab.** The data point count badges immediately show which metrics have the most volume, helping you focus your investigation.
-- **Use the Insights tab for comparison.** Add multiple tiles to compare related metrics side by side, for example, request rate alongside error rate for the same service.
-- **Set alerts proactively.** Do not wait for incidents. Use the Forecast and Anomaly Detection alert types to catch emerging issues before they impact users.
-- **Leverage field filters for high-cardinality data.** When a metric has thousands of unique label combinations, use the field browser to filter down to specific services, pods, or regions before analyzing.
-- **Save views for on-call runbooks.** Pre-built views with the right metrics and filters save valuable time during incident response.
-- **Use SQL for advanced analysis.** Percentile calculations, cross-dataset joins, and custom time windows are all possible through the SQL Editor.
-- **Configure retention policies.** Use [Retention](/docs/user-guide/retention) to manage the lifecycle of metrics data, balancing query availability with storage costs.
+Click the **Summarize my data** button (sparkle icon) for an AI-powered summary of your metrics dataset. This provides automated insights and observations about the data. See [AI Native](/docs/user-guide/ai-native) for more details.

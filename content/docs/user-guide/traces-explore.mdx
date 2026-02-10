@@ -1,185 +1,162 @@
 ---
 title: Traces Explore
-description: Search, filter, and analyze distributed traces at scale with the Traces Explore interface
+description: Search, filter, and analyze distributed traces with the Traces Explore interface
 ---
 
-Distributed tracing becomes essential, and difficult, as systems grow. A single user request in a microservices architecture can fan out across dozens of services, spawn hundreds of spans, and traverse multiple clusters, regions, and cloud providers. At scale, teams generate millions of traces per hour, each carrying the context needed to understand latency, errors, and dependencies across the entire request path.
+Traces Explore is the primary interface for searching, filtering, and analyzing distributed traces in Parseable. It provides a scatter-plot of trace durations over time, a paginated trace list, powerful filtering capabilities, and detailed span-level inspection with a waterfall view.
 
-Parseable's Traces Explore page is built to handle this volume. It combines a scatter-plot visualization of trace durations, a filterable trace list, and a detailed waterfall view for span-level inspection, all backed by Parseable's columnar storage engine on object storage. Whether you are investigating a single slow request or analyzing latency patterns across millions of traces, the interface scales with your data.
-
-## Challenges of Tracing at Scale
-
-### Volume and Fanout
-
-A single request can produce tens or hundreds of spans. Multiply that by thousands of requests per second, and the trace data volume quickly reaches terabytes. Parseable stores trace data as compressed Parquet files on object storage, using the same [shared-nothing ingestion architecture](/docs/architecture) as logs and metrics. This keeps storage costs low while maintaining fast query access through columnar reads.
-
-### High Cardinality
-
-Trace data is inherently high-cardinality. Every trace has a unique ID, every span has its own ID, and labels like pod names, request paths, and user IDs create millions of unique combinations. Parseable's columnar format handles high-cardinality dimensions efficiently, and the field browser in Traces Explore surfaces top values with occurrence counts so you can quickly identify dominant patterns without scanning raw data.
-
-### Cross-Service Correlation
-
-The value of a trace lies in connecting spans across services. When a checkout service calls inventory, which calls a database, the trace ties them together. Parseable stores traces alongside [logs](/docs/user-guide/logs-explore) and [metrics](/docs/user-guide/metrics-explore) in a unified platform, making it straightforward to correlate a slow span with error logs from the same service or CPU spikes on the same pod.
-
-### Finding the Critical Path
-
-In a trace with hundreds of spans, identifying the bottleneck requires more than raw data. The waterfall visualization in Traces Explore renders parent-child span relationships as a Gantt chart, making it immediately visible which span dominates the total duration and where time is spent waiting versus processing.
-
-## Accessing Traces Explore
-
-Navigate to **Traces** in the left sidebar. Select a trace dataset from the dataset selector dropdown at the top-left of the page. The breadcrumb updates to show your current location (e.g., **Home > Traces > Explore > k8s-traces**).
+{/* TODO: Add screenshot of full Traces Explore page */}
+![](../static/traces-explore.png)
 
 ## Page Layout
 
 The Traces Explore page is composed of four main areas:
 
-- **Top Toolbar** - Dataset selector, Traces/Table tabs, time range picker, refresh controls, saved views, and AI summarization.
-- **Left Sidebar (Field Browser)** - A categorized and searchable list of all trace attributes and span fields.
-- **Central Content Area** - A scatter-plot of trace durations over time and a paginated trace list (in Traces view), or a line chart and raw span table (in Table view).
-- **Detail Panels** - Contextual panels that appear when you click on a trace or span.
+- **Top Toolbar** - Dataset selector, Traces/Table tabs, time range picker, refresh controls, saved views, and AI summarization
+- **Left Sidebar (Field Browser)** - A categorized and searchable list of all trace attributes and span fields
+- **Central Content Area** - A scatter-plot of trace durations and a paginated trace list (Traces view), or a line chart and raw span table (Table view)
+- **Detail Panels** - Contextual panels that appear when you click on a trace or span
 
-## Top Toolbar
-
-### Dataset Selector
+## Dataset Selector
 
 A dropdown at the top-left shows the currently selected trace dataset (e.g., "k8s-traces"). Click it to open a searchable dropdown listing all available trace datasets. Selecting a different dataset reloads the page with that dataset's traces and field schema.
 
-### Traces / Table Tabs
+{/* TODO: Add screenshot of dataset selector */}
+![](../static/traces-explore-dataset-selector.png)
+
+## Traces / Table Tabs
 
 Two tabs toggle between the **Traces** view and the **Table** view:
 
-- **Traces** - The default view, optimized for trace-level exploration with a scatter chart and trace list.
-- **Table** - Displays individual span records in a flat tabular format, useful for raw data inspection and bulk analysis.
+- **Traces** - The default view, optimized for trace-level exploration with a scatter chart and trace list
+- **Table** - Displays individual span records in a flat tabular format, useful for raw data inspection and bulk analysis
 
-### Time Range Picker
+## Time Range Picker
 
 Click the time range button (e.g., "Last 1 hour") to configure the query window:
 
-- **Quick presets** - 10 min, 1 hr, 5 hrs, 1 day, 3 days.
-- **Custom range** - Calendar-based date/time selection with From and To fields.
-- **Timezone** - Timezone selector for the displayed times.
+- **Quick presets** - 10 min, 1 hr, 5 hrs, 1 day, 3 days
+- **Custom range** - Calendar-based date/time selection with From and To fields
+- **Timezone** - Timezone selector for the displayed times
 
 Click **Apply** to update the query or **Cancel** to dismiss.
 
-<Callout type="info">
-All queries in Parseable are scoped to a time range. For trace investigations, start with a narrow window around the time of the incident and widen only if needed. This keeps queries fast by limiting the number of Parquet files scanned.
-</Callout>
+## Refresh and Auto-Refresh
 
-### Refresh and Auto-Refresh
+- **Refresh** - The circular arrow icon immediately re-queries the data
+- **Auto-refresh** - Labeled "Off" by default. Click to select an interval: 10s, 30s, 1m, 5m, 10m, or 20m
 
-- **Refresh** - The circular arrow icon immediately re-queries the data.
-- **Auto-refresh** - Labeled "Off" by default. Click to select an interval: 10s, 30s, 1m, 5m, 10m, or 20m. The page re-queries automatically at the selected cadence, useful for live monitoring during deployments or incident response.
+## Save View
 
-### Save View
+Click **Save view** to persist the current query configuration (filters, time range, sort order) as a named view. The dialog includes a required Title, optional Description, and an **Include time range** toggle.
 
-Opens a dialog to persist the current query configuration, including filters, time range, and sort order, as a named view. Fields include a required Title, optional Description, and an **Include time range** toggle. Saved views appear in the View Library.
+## View Library
 
-### View Library
+Click **Library** to open a side panel with three tabs:
 
-Opens a side panel with three tabs:
+- **Recent** - Views you recently accessed
+- **My views** - Views you created
+- **All views** - All views across the team
 
-- **Recent** - Views you recently accessed.
-- **My views** - Views you created.
-- **All views** - All views across the team.
+A search bar lets you find saved views by name. Click a view to restore its configuration.
 
-A search bar lets you find saved views by name. Clicking a view restores its configuration.
-
-Pre-built saved views are valuable for on-call teams. Create views for common investigation patterns like "payment service errors," "high-latency database spans," or "cross-region traces" so anyone on the team can start investigating without reconstructing filters.
-
-### Summarize My Data
+## Summarize My Data
 
 Click **Summarize my data** to trigger an AI-powered summary of the trace data within the current time window. You can select the AI model (e.g., gpt-4.1-mini) from a dropdown. The summary runs in the background through several stages: running the query, filtering irrelevant entries, and clustering similar patterns.
 
 The resulting Summary Report includes:
 
-- A narrative summary of the trace data.
-- Error/warning metric cards.
-- Detailed observations about patterns and anomalies.
-- Actionable recommendations.
-- A **Drilldown** section with pre-built SQL queries you can run directly in a new tab.
+- A narrative summary of the trace data
+- Error/warning metric cards
+- Detailed observations about patterns and anomalies
+- Actionable recommendations
+- A **Drilldown** section with pre-built SQL queries you can run directly in a new tab
 
-See [AI Native](/docs/user-guide/ai-native) for more on Parseable's AI capabilities.
+See [AI Native](/docs/user-guide/ai-native) for more details.
 
 ## Field Browser
 
 The left sidebar provides a hierarchical field browser for navigating and filtering on trace attributes. A **Search field names** text box at the top lets you quickly locate fields.
 
-Fields are organized into collapsible semantic categories. Common categories include:
+{/* TODO: Add screenshot of field browser */}
+![](../static/traces-explore-field-browser.png)
 
-- **System** - Log formats, user agents, and source IPs.
-- **Error** - Fields related to error states.
-- **Service** - `service.name`, `service.namespace`, `service.version`, `service.instance.id`.
-- **Span** - Core span attributes: `span_name`, `span_kind`, `span_kind_description`, `span_status_code`, `span_status_description`, `span_duration_ns`, `span_trace_id`, `span_span_id`, `span_parent_span_id`, and timing fields.
-- **Kubernetes** - `k8s.namespace.name`, `k8s.node.name`, `k8s.pod.name`, `k8s.deployment.name`, `k8s.replicaset.name`.
-- **Container** - Container-level fields like `k8s.container.name`.
-- **HTTP** - `http.request.method`, `http.response.status_code`.
-- **Server** - Server address and port fields.
-- **Network** - `network.peer.address`, `network.peer.port`, `network.protocol.version`.
-- **Process** - `process.runtime.name`, `process.runtime.version`.
-- **Telemetry** - `telemetry.distro.name`, `telemetry.distro.version`, `telemetry.sdk.language`.
-- **URL** - `url.full`, `url.path`.
-- **All fields** - A flat listing of every field with data type indicators.
+Fields are organized into collapsible semantic categories:
 
-Expanding a field reveals its top values with occurrence counts. Next to each value, include (funnel with +) and exclude (funnel with −) filter icons let you apply filters with one click. The sidebar can be collapsed using the toggle button to give the content area more horizontal space.
+- **System** - Log formats, user agents, and source IPs
+- **Error** - Fields related to error states
+- **Service** - `service.name`, `service.namespace`, `service.version`, `service.instance.id`
+- **Span** - Core span attributes: `span_name`, `span_kind`, `span_kind_description`, `span_status_code`, `span_status_description`, `span_duration_ns`, `span_trace_id`, `span_span_id`, `span_parent_span_id`, and timing fields
+- **Kubernetes** - `k8s.namespace.name`, `k8s.node.name`, `k8s.pod.name`, `k8s.deployment.name`, `k8s.replicaset.name`
+- **Container** - Container-level fields like `k8s.container.name`
+- **HTTP** - `http.request.method`, `http.response.status_code`
+- **Server** - Server address and port fields
+- **Network** - `network.peer.address`, `network.peer.port`, `network.protocol.version`
+- **Process** - `process.runtime.name`, `process.runtime.version`
+- **Telemetry** - `telemetry.distro.name`, `telemetry.distro.version`, `telemetry.sdk.language`
+- **URL** - `url.full`, `url.path`
+- **All fields** - A flat listing of every field with data type indicators
+
+Expanding a field reveals its top values with occurrence counts. Next to each value, include (funnel with +) and exclude (funnel with −) filter icons let you apply filters with one click. The sidebar can be collapsed using the toggle button.
 
 ## Traces View
 
-The Traces view is the default and primary exploration mode, consisting of a scatter chart and a trace list.
+The Traces view is the default exploration mode, consisting of a scatter chart and a trace list.
 
 ### Span Filter
 
 A dropdown (default: "All spans") controls which spans are included:
 
-- **All spans** - Shows all spans regardless of type.
-- **All root spans** - Shows only root spans (the top-level entry point of each trace).
-- **Only error spans** - Filters to show only spans with an error status.
-
-Filtering to root spans is useful at scale for getting a high-level view of request types and durations without the noise of internal spans. Switching to error spans immediately surfaces failures.
+- **All spans** - Shows all spans regardless of type
+- **All root spans** - Shows only root spans (the top-level entry point of each trace)
+- **Only error spans** - Filters to show only spans with an error status
 
 ### Sort Order
 
 A dropdown (default: "Most recent") controls trace ordering:
 
-- **Most recent** - Newest traces first.
-- **Longest first** - Highest duration traces at the top.
-- **Shortest first** - Lowest duration traces at the top.
-- **Most spans** - Traces with the highest span count first.
-- **Least spans** - Traces with the fewest spans first.
+- **Most recent** - Newest traces first
+- **Longest first** - Highest duration traces at the top
+- **Shortest first** - Lowest duration traces at the top
+- **Most spans** - Traces with the highest span count first
+- **Least spans** - Traces with the fewest spans first
 
 ### Lookup by Trace ID
 
-A text input where you can paste a specific Trace ID to jump directly to that trace. This is useful when you have a trace ID from logs, error reports, or another monitoring system and want to find the full trace context immediately.
+A text input where you can paste a specific Trace ID to jump directly to that trace. This is useful when you have a trace ID from logs or another system and want to find it quickly.
 
 ### Add Filter
 
-Click **Add filter** to open a searchable filter panel listing all available fields organized by category (Service, Span, Kubernetes, Container, HTTP, Network, Process, Telemetry, URL, All fields). Each field displays its top values with occurrence counts. Click a value to add it as a filter. Multiple filters can be combined to narrow results. A **Show more values** link appears when a field has additional values beyond those initially displayed.
+Click **Add filter** to open a searchable filter panel listing all available fields organized by category (Service, Span, Kubernetes, Container, HTTP, Network, Process, Telemetry, URL, All fields). Each field displays its top values with occurrence counts. Click a value to add it as a filter. A **Show more values** link appears when a field has additional values beyond those initially displayed.
+
+{/* TODO: Add screenshot of Add Filter panel for traces */}
+![](../static/traces-explore-add-filter.png)
 
 ### Edit with SQL
 
-Opens the [SQL Editor](/docs/user-guide/sql-editor) in a new tab with a pre-populated query (e.g., `select * from "k8s-traces"`) based on the current dataset. From there you can write custom SQL queries for advanced aggregations, joins with log datasets, or custom filtering logic that goes beyond the point-and-click interface.
+Click **Edit with SQL** to open the [SQL Editor](/docs/user-guide/sql-editor) in a new tab with a pre-populated query (e.g., `select * from "k8s-traces"`) based on the current dataset.
 
 ### Scatter Chart
 
-The scatter chart visualizes traces as bubbles plotted on two axes:
+The scatter chart visualizes traces as bubbles plotted with Time on the X-axis and Duration on the Y-axis. The size of each bubble corresponds to the number of spans in the trace. Bubble color indicates different services or error states (blue for normal, red/pink for errors).
 
-- **X-axis** - Time.
-- **Y-axis** - Duration.
-
-The size of each bubble corresponds to the number of spans in the trace. Larger bubbles represent traces with more spans. Bubble color indicates different services or error states (blue for normal, red/pink for errors).
+{/* TODO: Add screenshot of scatter chart with trace bubbles */}
+![](../static/traces-explore-scatter-chart.png)
 
 Hovering over a bubble displays a tooltip showing the service name and operation, trace duration, and total span count.
-
-The scatter chart provides immediate visual insight at scale. Outlier bubbles near the top of the Y-axis indicate slow traces. Clusters of red bubbles at a specific time point suggest an error spike tied to a deployment or infrastructure event.
 
 ### Trace List
 
 Below the chart is a paginated list of traces. Each trace entry displays:
 
-- **Service : Operation** - The service name and span operation (e.g., "inventory-manager : DB").
-- **Trace ID** - The unique identifier, with a copy-to-clipboard button.
-- **Timestamp** - When the trace was recorded.
-- **Duration** - Total trace duration (e.g., "1.55 ms").
-- **Span count** - Number of spans in the trace (e.g., "7 spans").
+- **Service : Operation** - The service name and span operation (e.g., "inventory-manager : DB")
+- **Trace ID** - The unique identifier, with a copy-to-clipboard button
+- **Timestamp** - When the trace was recorded
+- **Duration** - Total trace duration (e.g., "1.55 ms")
+- **Span count** - Number of spans in the trace (e.g., "7 spans")
+
+{/* TODO: Add screenshot of trace list */}
+![](../static/traces-explore-trace-list.png)
 
 Click any trace to navigate to its detailed view.
 
@@ -191,16 +168,20 @@ Below the trace list: previous/next page arrows, an entries-per-page selector (d
 
 Switching to the **Table** tab shows a flat, record-level view of individual spans.
 
-- **Line Chart** - A time-series line chart showing span event counts over time. A **Forecast** toggle can be enabled to project future trends.
-- **Group By** - A dropdown that aggregates the chart data by any available field (e.g., `service.name`, `k8s.pod.name`, `http.response.status_code`), segmenting the line chart into multiple series.
-- **Data Table** - Columns include Ingestion Time (with timezone) and Data (a key-value display of all span fields). The sidebar shows Table fields (currently displayed columns) and Available fields (columns that can be added).
-- **Toolbar** - Includes a **Find in data** search box and icons for Share, Maximize, Wrap Rows (toggles text wrapping), and a layout toggle.
+{/* TODO: Add screenshot of Table view */}
+![](../static/traces-explore-table-view.png)
 
-The Table view is useful for bulk analysis, for example, counting how many spans of each status code were recorded in the last hour, or exporting raw span data for offline processing.
+- **Line Chart** - A time-series line chart showing span event counts over time. A **Forecast** toggle can be enabled to project future trends
+- **Group By** - A dropdown that aggregates the chart data by any available field (e.g., `service.name`, `k8s.pod.name`, `http.response.status_code`), segmenting the line chart into multiple series
+- **Data Table** - Columns include Ingestion Time (with timezone) and Data (a key-value display of all span fields). The sidebar shows Table fields (currently displayed columns) and Available fields (columns that can be added)
+- **Toolbar** - Includes a **Find in data** search box and icons for Share, Maximize, Wrap Rows (toggles text wrapping), and a layout toggle
 
 ## Trace Detail View
 
 Clicking a trace from the trace list navigates to the Trace Detail page. The breadcrumb updates to show: **Home > dataset name > trace ID > View**.
+
+{/* TODO: Add screenshot of trace detail view with waterfall */}
+![](../static/traces-explore-detail.png)
 
 ### Header
 
@@ -208,66 +189,46 @@ Displays the **Start time**, **Duration**, and **Spans count** for the entire tr
 
 ### Timeline Overview
 
-A horizontal bar at the top provides a minimap of the full trace timeline, showing the overall duration span. This gives quick orientation for long-running traces with many spans.
+A horizontal bar at the top provides a minimap of the full trace timeline, showing the overall duration span.
 
 ### Waterfall View
 
 The main area is a waterfall (Gantt-chart) visualization showing all spans as horizontal bars:
 
-- **Left column** - Span name with service name, organized in a hierarchical tree reflecting parent-child relationships.
-- **Horizontal bars** - Each bar's position and length represent the span's start time and duration relative to the trace start. The X-axis shows time markers.
-- **Colors** - Different colors distinguish different services or span types.
-- **Duration labels** - Appear on each bar.
+- **Left column** - Span name with service name, organized in a hierarchical tree reflecting parent-child relationships
+- **Horizontal bars** - Each bar's position and length represent the span's start time and duration relative to the trace start. The X-axis shows time markers
+- **Colors** - Different colors distinguish different services or span types
+- **Duration labels** - Appear on each bar
 
 Spans can be expanded or collapsed using arrow icons, and a global **Expand all / Collapse all** toggle is available at the top of the span list.
 
-The waterfall view is where trace investigation becomes concrete. By visually inspecting the bar lengths and nesting, you can immediately identify which service or operation is the bottleneck in a slow trace, and whether the delay is from sequential calls, slow database queries, or network latency between services.
-
 ### Span Detail Panel
 
-Clicking any span in the waterfall opens a detail side panel showing:
+Click any span in the waterfall to open a detail side panel showing:
 
-- **Span name and ID** (with copy button).
-- **Start time**, **Duration**, and **Span ID**.
-- A **Fields** tab with a searchable list of all span attributes organized by category (Service, Span, Kubernetes, Process, Telemetry, All fields).
+- **Span name and ID** (with copy button)
+- **Start time**, **Duration**, and **Span ID**
+- A **Fields** tab with a searchable list of all span attributes organized by category (Service, Span, Kubernetes, Process, Telemetry, All fields)
+
+{/* TODO: Add screenshot of span detail panel */}
+![](../static/traces-explore-span-detail.png)
 
 Each field row has a three-dot action menu with three options:
 
-- **Include in filter** - Adds this field value as an inclusion filter back on the Explore page.
-- **Exclude from filter** - Adds this field value as an exclusion filter.
-- **Copy key value pair** - Copies the field name and value to the clipboard.
-
-This workflow, from scatter chart to trace list to waterfall to span detail, lets you move from a broad view of all traces down to the exact attribute of a single span, all within the same interface.
+- **Include in filter** - Adds this field value as an inclusion filter back on the Explore page
+- **Exclude from filter** - Adds this field value as an exclusion filter
+- **Copy key value pair** - Copies the field name and value to the clipboard
 
 ## Common Workflows
 
-### Finding Slow Traces
+**Finding slow traces:** Set the sort order to "Longest first" to surface traces with the highest latency. Use the scatter chart to visually identify outlier bubbles at the top of the Y-axis.
 
-Set the sort order to **Longest first** to surface traces with the highest latency. Use the scatter chart to visually identify outlier bubbles at the top of the Y-axis. Click on an outlier to open the trace detail and inspect the waterfall for the bottleneck span.
+**Investigating errors:** Use the span filter dropdown to select "Only error spans," then inspect the trace detail for spans with non-zero status codes.
 
-### Investigating Errors
+**Filtering by service:** Click "Add filter," find the `service.name` field under the Service category, and click the desired service name to filter the trace list.
 
-Use the span filter dropdown to select **Only error spans**, then click a trace to inspect its waterfall. Look for spans with non-zero status codes and expand the span detail to read error messages and stack traces in the field attributes.
+**Lookup by Trace ID:** Paste a known trace ID into the "Lookup by Trace ID" field to jump directly to a specific trace.
 
-### Filtering by Service
+**Querying with SQL:** Click "Edit with SQL" to open the SQL editor with a pre-built query based on the current dataset. Modify the query to perform advanced aggregations or custom filtering.
 
-Click **Add filter**, find the `service.name` field under the Service category, and click the desired service name. The trace list and scatter chart update to show only traces involving that service.
-
-### Correlating with Logs
-
-When you find a problematic span, copy its trace ID or span ID from the span detail panel. Navigate to [Logs Explore](/docs/user-guide/logs-explore), add a filter on the trace ID field, and inspect the log entries emitted during that span's execution.
-
-### Generating an AI Summary
-
-Click **Summarize my data** to generate an AI-powered analysis. The report highlights error patterns, latency anomalies, and provides drilldown SQL queries you can execute directly. This is useful for getting a quick orientation before diving into manual investigation.
-
-## Tips for Working with Traces at Scale
-
-- **Start with root spans.** Use the "All root spans" filter to get a high-level view of request types and durations before drilling into child spans.
-- **Use the scatter chart for anomaly detection.** Outliers in duration or sudden clusters of error-colored bubbles are immediate visual signals worth investigating.
-- **Combine filters for precision.** Filter by `service.name` and `http.response.status_code` together to isolate, for example, all 500 errors from a specific service.
-- **Save investigation views.** Create saved views for common on-call scenarios so your team can start investigating immediately without rebuilding filter sets.
-- **Use Trace ID lookup for cross-system correlation.** When an error report, log entry, or alert includes a trace ID, paste it directly into the Lookup field to jump straight to the full trace context.
-- **Switch to Table view for bulk analysis.** When you need aggregate counts or want to export span data, the Table view with Group By gives you a statistical overview that the trace-by-trace view cannot.
-- **Set retention policies.** Use [Retention](/docs/user-guide/retention) to manage the lifecycle of trace data, keeping recent traces readily available while aging out older data to control storage costs.
-- **Leverage SQL for advanced queries.** Use the SQL Editor for queries the visual interface cannot express, such as percentile latency calculations, cross-dataset joins between traces and logs, or span count distributions.
+**Generating an AI summary:** Click "Summarize my data" to generate an AI-powered analysis of the current trace data. The report provides an overview, highlights errors and anomalies, and includes drilldown queries you can execute directly.
