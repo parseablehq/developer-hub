@@ -5,7 +5,7 @@ description: Search, filter, and analyze distributed traces with the Traces Expl
 
 Traces Explore is the primary interface for searching, filtering, and analyzing distributed traces in Parseable. It provides a scatter-plot of trace durations over time, a paginated trace list, powerful filtering capabilities, and detailed span-level inspection with a waterfall view.
 
-{/* TODO: Add screenshot of full Traces Explore page */}
+![Traces Explore page overview](../static/traces-explore.png)
 
 ## Page Layout
 
@@ -20,7 +20,6 @@ The Traces Explore page is composed of four main areas:
 
 A dropdown at the top-left shows the currently selected trace dataset (e.g., "k8s-traces"). Click it to open a searchable dropdown listing all available trace datasets. Selecting a different dataset reloads the page with that dataset's traces and field schema.
 
-{/* TODO: Add screenshot of dataset selector */}
 
 ## Traces / Table Tabs
 
@@ -76,7 +75,6 @@ See [AI Native](/docs/user-guide/ai-native) for more details.
 
 The left sidebar provides a hierarchical field browser for navigating and filtering on trace attributes. A **Search field names** text box at the top lets you quickly locate fields.
 
-{/* TODO: Add screenshot of field browser */}
 
 Fields are organized into collapsible semantic categories:
 
@@ -126,7 +124,6 @@ A text input where you can paste a specific Trace ID to jump directly to that tr
 
 Click **Add filter** to open a searchable filter panel listing all available fields organized by category (Service, Span, Kubernetes, Container, HTTP, Network, Process, Telemetry, URL, All fields). Each field displays its top values with occurrence counts. Click a value to add it as a filter. A **Show more values** link appears when a field has additional values beyond those initially displayed.
 
-{/* TODO: Add screenshot of Add Filter panel for traces */}
 
 ### Edit with SQL
 
@@ -136,7 +133,6 @@ Click **Edit with SQL** to open the [SQL Editor](/docs/user-guide/sql-editor) in
 
 The scatter chart visualizes traces as bubbles plotted with Time on the X-axis and Duration on the Y-axis. The size of each bubble corresponds to the number of spans in the trace. Bubble color indicates different services or error states (blue for normal, red/pink for errors).
 
-{/* TODO: Add screenshot of scatter chart with trace bubbles */}
 
 Hovering over a bubble displays a tooltip showing the service name and operation, trace duration, and total span count.
 
@@ -150,7 +146,6 @@ Below the chart is a paginated list of traces. Each trace entry displays:
 - **Duration** - Total trace duration (e.g., "1.55 ms")
 - **Span count** - Number of spans in the trace (e.g., "7 spans")
 
-{/* TODO: Add screenshot of trace list */}
 
 Click any trace to navigate to its detailed view.
 
@@ -162,7 +157,6 @@ Below the trace list: previous/next page arrows, an entries-per-page selector (d
 
 Switching to the **Table** tab shows a flat, record-level view of individual spans.
 
-{/* TODO: Add screenshot of Table view */}
 
 - **Line Chart** - A time-series line chart showing span event counts over time. A **Forecast** toggle can be enabled to project future trends
 - **Group By** - A dropdown that aggregates the chart data by any available field (e.g., `service.name`, `k8s.pod.name`, `http.response.status_code`), segmenting the line chart into multiple series
@@ -173,7 +167,7 @@ Switching to the **Table** tab shows a flat, record-level view of individual spa
 
 Clicking a trace from the trace list navigates to the Trace Detail page. The breadcrumb updates to show: **Home > dataset name > trace ID > View**.
 
-{/* TODO: Add screenshot of trace detail view with waterfall */}
+![Trace detail view with waterfall and span detail](../static/traces-explore-detail.png)
 
 ### Header
 
@@ -202,7 +196,6 @@ Click any span in the waterfall to open a detail side panel showing:
 - **Start time**, **Duration**, and **Span ID**
 - A **Fields** tab with a searchable list of all span attributes organized by category (Service, Span, Kubernetes, Process, Telemetry, All fields)
 
-{/* TODO: Add screenshot of span detail panel */}
 
 Each field row has a three-dot action menu with three options:
 
