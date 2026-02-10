@@ -1,0 +1,158 @@
+---
+title: Logs Explore
+description: Search, filter, analyze, and visualize log data with the Logs Explore interface
+---
+
+Logs Explore is the primary interface for searching, filtering, analyzing, and visualizing log data in Parseable. It supports field-level filtering, SQL querying, time-series visualization with forecasting, and data export.
+
+![Logs Explore page overview](../static/logs-explore.png)
+
+## Page Layout
+
+The Logs Explore page is organized into four main areas:
+
+- **Top Toolbar** - Dataset selector, time range picker, refresh controls, saved views, and the AI summarization button
+- **Left Sidebar (Fields Panel)** - System-detected field categories, table fields currently displayed, and all available fields in the selected dataset
+- **Histogram Chart** - A time-series bar chart that visualizes log volume over the selected time range, with an optional forecast overlay
+- **Log Table** - Individual log records in a paginated, sortable table with configurable columns and inline expansion
+
+## Dataset Selector
+
+The dataset selector dropdown is at the top-left of the content area. Click it to search for and switch between available log datasets. The dropdown includes a search box that filters the list as you type. Selecting a different dataset reloads the page with that dataset's data and fields.
+
+
+## Time Range Picker
+
+Click the time range button (e.g., "Last 1 hour") to open the time range configuration panel:
+
+- **Quick presets** - Select common durations: 10 min, 1 hr, 5 hrs, 1 day, and 3 days
+- **Custom range** - Use the calendar and time inputs to set precise "From" and "To" dates and times
+- **Timezone** - Choose the timezone for the displayed times (e.g., "UTC (UTC) +0:00")
+
+Click **Apply** to execute the query or **Cancel** to discard changes.
+
+
+<Callout type="info">
+Parseable requires a time range for every query. By scoping queries to a specific time window, the engine only reads the relevant Parquet files from storage, keeping response times fast even over large datasets.
+</Callout>
+
+## Refresh and Auto-Refresh
+
+- **Manual refresh** - The circular arrow icon triggers an immediate re-query of the data within the current time range
+- **Auto-refresh** - The button labeled "Off" (by default) opens a dropdown with interval options: 10s, 30s, 1m, 5m, 10m, and 20m. Selecting an interval causes the query to re-execute automatically at that cadence
+
+## Save View
+
+Click **Save view** to persist the current query configuration (filters, selected fields, and optionally the time range) for future reuse. The dialog includes a required Title field, an optional Description field, and an **Include time range** toggle.
+
+## View Library
+
+Click **Library** to open a slide-out panel with three tabs:
+
+- **Recent** - Views you have recently accessed
+- **My views** - Views you have created
+- **All views** - All saved views across the team
+
+A search bar at the top lets you filter saved views by name. Click a saved view to load its stored configuration.
+
+## Summarize My Data
+
+Click the **Summarize my data** button (purple with a sparkle icon) to trigger an AI-powered summary of the current log data. This analyzes the queried logs and generates insights about patterns, anomalies, and key observations. See [AI Native](/docs/user-guide/ai-native) for more details.
+
+## Fields Panel
+
+The fields panel on the left side organizes the dataset's schema into three sections.
+
+
+### System Fields
+
+The **System** section surfaces automatically detected field categories:
+
+- **Log formats** - Detected log format patterns with occurrence counts. Each entry has include (funnel with plus) and exclude (funnel with minus) filter icons for one-click filtering
+- **User agents** - Detected user agent strings with include/exclude filter options
+- **Source IPs** - Detected source IP addresses with include/exclude filter options
+
+### Table Fields
+
+Shows columns currently displayed in the log table. By default, these are "Ingestion Time" and "Data." Click a table field to expand it and see its **Top 5 Values** with occurrence counts. Each value has include/exclude filter icons.
+
+Each table field shows action icons on hover: a pin icon, a filter icon, a minus icon (to remove the column), and a collapse arrow. Fields can be reordered by drag-and-drop.
+
+### Available Fields
+
+Lists all fields in the dataset not currently shown as table columns. The count in the header (e.g., "Available fields (39)") indicates how many fields exist. Click the plus icon on any field to add it as a table column.
+
+### Search Field Names
+
+A search box at the top of the fields panel ("Search field names") filters the field list by partial name match.
+
+## Add Filter
+
+Click **Add filter** to open a comprehensive filter panel. This panel organizes filterable fields into semantic categories: Service, Kubernetes, Container, Cloud, HTTP, Telemetry, and All fields.
+
+For each field, you see available values along with occurrence counts. Click a value to add it as a filter condition. A search box at the top ("Search and add filters") locates specific fields or values quickly. Some fields show a "Show more values" link when there are more values than initially displayed.
+
+## Edit with SQL
+
+Click **Edit with SQL** to open the [SQL Editor](/docs/user-guide/sql-editor) in a new tab with a pre-populated query (`select * from "dataset-name"`) targeting the current dataset.
+
+## Group By
+
+Click **Group by** and select a field from the dropdown (body, cloud.provider, cloud.region, http.method, http.status_code, etc.). This groups the log data by that field's values, restructuring the histogram and table to show aggregated results.
+
+
+## Histogram Chart
+
+The histogram chart visualizes the volume of log records over time. The Y-axis shows the record count and the X-axis shows time intervals. The chart automatically adjusts its time granularity based on the selected range.
+
+
+### Forecast
+
+A **Forecast** toggle in the upper-right of the chart enables predictive analytics. When enabled, the chart extends beyond the current time to show projected log volume. The legend differentiates between "Historical" data (solid line) and "Forecast" data (dashed line), with the forecast region shown as a shaded area.
+
+
+## Log Table
+
+The log table displays individual log records.
+
+
+### Sorting
+
+Click any column header to toggle between ascending and descending sort order.
+
+### Row Display
+
+Each row shows values for the configured table columns. By default, "Ingestion Time" shows the timestamp and "Data" shows a formatted view of the log record's key-value pairs. Field names appear in a muted color while values appear in an accent color for easy scanning.
+
+### Row Expansion
+
+Click a log row to reveal an expand icon and a copy icon. Click the expand icon to display all fields of the log record in a formatted key-value layout, including body, cloud metadata, HTTP details, Kubernetes labels, telemetry information, trace and span IDs, and all other attributes.
+
+
+### Pagination
+
+Pagination controls include previous/next page arrows, a page size selector (10, 50, 100), and a status indicator showing total records found and query execution time (e.g., "Found 3K records in 163.73 ms").
+
+### Find in Data
+
+A search box labeled "Find in data" provides client-side text search within the currently displayed log records.
+
+## Table Toolbar
+
+The table toolbar includes four icon buttons to the right of the "Find in data" box:
+
+- **Share** - Generates a shareable link to the current view
+- **Maximize** - Expands the table to a larger view
+- **Wrap Text** - Toggles text wrapping in the Data column
+- **Export** - Opens a dropdown with two options: **Export CSV** and **Export JSON**
+
+## Toggle Fields Panel
+
+A small icon button to the left of the "Add filter" button toggles the visibility of the left fields panel. Collapsing it gives the histogram and log table the full width of the page.
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+| --- | --- |
+| `⌘ K` | Open the global search dialog from anywhere in the application |
+| `⌘ ↵` (Cmd+Enter) | Execute a query in the SQL Editor |
