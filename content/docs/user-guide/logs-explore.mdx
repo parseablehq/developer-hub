@@ -1,0 +1,216 @@
+---
+title: Logs Explore
+description: Search, filter, analyze, and visualize log data at scale with the Logs Explore interface
+---
+
+Modern infrastructure generates enormous volumes of log data, from hundreds of gigabytes to terabytes per day across microservices, containers, cloud platforms, and edge systems. At this scale, traditional log viewers fall short. Slow queries, rigid schemas, and costly storage make it hard to find what matters when it matters most.
+
+Parseable's Logs Explore page is built for this reality. It combines a columnar storage engine backed by object storage with an interactive exploration interface, so you can search across billions of log records without compromising on speed or cost.
+
+## Challenges of Logging at Scale
+
+Before diving into the interface, it helps to understand the problems Logs Explore is designed to solve.
+
+### Volume and Velocity
+
+Production systems can emit millions of log events per minute. Parseable handles this through a [shared-nothing ingestion architecture](/docs/architecture) where each node independently processes and stages data in Apache Arrow format, then asynchronously converts it to compressed Parquet files on object storage. This means the Logs Explore page queries data that is already optimized for fast columnar reads, even at terabyte scale.
+
+### Schema Diversity
+
+Logs from different services arrive in different formats like JSON, syslog, access logs, and application-specific text. Parseable performs auto schema detection at ingestion, and [Log IQ](/docs/user-guide/log-iq) can parse 40+ log formats into structured fields. In Logs Explore, these structured fields appear automatically in the Fields Panel, ready for filtering and grouping without any manual schema configuration.
+
+### Cost at Scale
+
+Storing months of log data in traditional databases is expensive. Parseable uses object storage (S3, GCS, Azure Blob) as the primary data tier, with [Smart Cache](/docs/user-guide/smart-cache) keeping frequently accessed data on local SSDs. Logs Explore queries transparently read from whichever tier has the data. Hot cache serves recent queries and object storage handles historical investigations, so you get fast results without paying for always-hot storage.
+
+### Finding the Needle
+
+When a production incident occurs, you need to go from billions of events to the relevant handful in seconds. Logs Explore provides field-level filtering, SQL querying, time-series visualization, and AI-powered summarization to help you narrow down quickly.
+
+## Accessing Logs Explore
+
+Navigate to **Logs** in the left sidebar, or follow the breadcrumb path: **Home > Logs > Explore > \{dataset-name\}**.
+
+## Page Layout
+
+The Logs Explore page is organized into four main areas:
+
+- **Top Toolbar** - Dataset selector, time range picker, refresh controls, saved views, and the AI summarization button.
+- **Left Sidebar (Fields Panel)** - System-detected field categories, table fields currently displayed, and all available fields in the selected log dataset.
+- **Histogram Chart** - A time-series bar chart above the log table that visualizes log volume over the selected time range, with an optional forecast overlay.
+- **Log Table** - Individual log records in a paginated, sortable table with configurable columns and inline expansion.
+
+## Dataset Selector
+
+The dataset selector dropdown is at the top-left of the main content area. Click it to search for and switch between available log datasets. The dropdown includes a search box that filters the list as you type.
+
+Each dataset in Parseable corresponds to a logical grouping of related log data. When you select a dataset, the page reloads with that dataset's data, schema, and field list.
+
+<Callout type="info">
+In large deployments with hundreds of datasets, use the search box to quickly locate the dataset you need rather than scrolling through the full list.
+</Callout>
+
+## Time Range Picker
+
+Click the time range button (e.g., "Last 1 hour") to open the time range configuration panel. This panel offers two ways to define the query window:
+
+- **Quick presets** - Tabs across the top let you select common durations: 10 min, 1 hr, 5 hrs, 1 day, and 3 days.
+- **Custom range** - Use the calendar and time inputs to set precise "From" and "To" dates and times. The calendar supports month navigation with forward/back arrows.
+- **Timezone** - A timezone selector at the bottom lets you choose the timezone for the displayed times (e.g., "UTC (UTC) +0:00").
+
+After configuring the range, click **Apply** to execute the query or **Cancel** to discard changes.
+
+<Callout type="info">
+Parseable requires a time range for every query. This is a deliberate design choice. By scoping queries to a specific time window, the engine only reads the relevant Parquet files from storage, keeping response times fast even over large datasets.
+</Callout>
+
+## Refresh and Auto-Refresh
+
+Next to the time range picker are two controls:
+
+- **Manual refresh** - The circular arrow icon triggers an immediate re-query of the data within the current time range.
+- **Auto-refresh** - The button labeled "Off" (by default) opens a dropdown with interval options: 10s, 30s, 1m, 5m, 10m, and 20m. Selecting an interval causes the query to re-execute automatically at that cadence.
+
+Auto-refresh is useful for live monitoring dashboards or during active incident response where new logs are arriving continuously.
+
+## Save View and View Library
+
+### Save View
+
+Click **Save view** to persist the current query configuration, including filters, selected fields, and optionally the time range, for future reuse. The dialog includes a required Title field, an optional Description field, and an **Include time range** toggle. Saved views are stored and accessible from the View Library.
+
+### View Library
+
+Click **Library** to open a slide-out panel with three tabs:
+
+- **Recent** - Views you have recently accessed.
+- **My views** - Views you have created.
+- **All views** - All saved views across the team.
+
+A search bar at the top lets you filter saved views by name. Clicking a saved view loads its stored configuration into the Explore page.
+
+Saved views are particularly valuable at scale. When your team investigates recurring issues across specific services, having pre-built views eliminates the overhead of reconstructing complex filter combinations each time.
+
+## Summarize My Data
+
+Click the **Summarize my data** button (highlighted in purple with a sparkle icon) to trigger an AI-powered summary of the current log data. This feature analyzes the queried logs and generates insights about patterns, anomalies, and key observations.
+
+This is especially useful when you are looking at a large volume of logs and need a quick orientation. The summary can surface error spikes, unusual patterns, or dominant log categories before you begin manual investigation. See [AI Native](/docs/user-guide/ai-native) for more details on Parseable's AI capabilities.
+
+## Fields Panel
+
+The fields panel on the left side organizes the log dataset's schema into three sections.
+
+### System Fields
+
+The **System** section surfaces automatically detected field categories:
+
+- **Log formats** - Detected log format patterns with occurrence counts. Each format entry has include (funnel with plus) and exclude (funnel with minus) filter icons for one-click filtering.
+- **User agents** - Detected user agent strings with include/exclude filter options.
+- **Source IPs** - Detected source IP addresses with include/exclude filter options.
+
+These system-detected categories are powered by Parseable's auto schema detection. As your log data is ingested, the engine identifies common patterns and surfaces them here for rapid exploration.
+
+### Table Fields
+
+The **Table fields** section shows columns currently displayed in the log table. By default, these are "Ingestion Time" and "Data." Clicking a table field expands it to reveal its **Top 5 Values** with occurrence counts. Each value has include/exclude filter icons.
+
+Each table field shows action icons on hover: a pin icon, a filter icon, a minus icon (to remove the column from the table), and a collapse arrow. Fields can be reordered by drag-and-drop.
+
+### Available Fields
+
+The **Available fields** section lists all fields in the log dataset that are not currently shown as table columns. The count in the header (e.g., "Available fields (39)") indicates how many fields exist. Clicking a field expands it to show its **Top 5 Values** with counts and include/exclude filter icons. Click the plus icon to add a field as a table column.
+
+### Search Field Names
+
+A search box at the top of the fields panel ("Search field names") filters the field list by partial name match. This is helpful when datasets have dozens of fields from structured log parsing.
+
+## Filtering
+
+### Quick Filters
+
+The fastest way to filter is through the fields panel. Expand any field to see its top values, then click the include (funnel with plus) or exclude (funnel with minus) icon next to a value. This immediately applies the filter and re-queries the data.
+
+### Add Filter Panel
+
+Click **Add filter** for a comprehensive filter panel. This panel organizes filterable fields into semantic categories: Service, Kubernetes, Container, Cloud, HTTP, Telemetry, and All fields. Each category shows relevant fields with their value distributions.
+
+For each field, you see available values along with occurrence counts. Clicking a value adds it as a filter condition. A search box at the top ("Search and add filters") locates specific fields or values quickly. Some fields show a "Show more values" link when there are more values than initially displayed.
+
+### Edit with SQL
+
+Click **Edit with SQL** to open the [SQL Editor](/docs/user-guide/sql-editor) in a new tab with a pre-populated query (`select * from "dataset-name"`) targeting the current log dataset. This is useful when you need capabilities beyond point-and-click filtering, such as joins across datasets, complex aggregations, or regex-based searches.
+
+### Group By
+
+Click **Group by** to enable field-based grouping. A dropdown lists all available fields (body, cloud.provider, cloud.region, http.method, http.status_code, etc.). Selecting a field groups the log data by that field's values, restructuring the histogram and table to show aggregated results.
+
+Grouping is particularly effective at scale for identifying dominant patterns. For example, grouping by `http.status_code` quickly shows the distribution of 4xx vs 5xx errors across millions of requests.
+
+## Histogram Chart
+
+The histogram chart visualizes the volume of log records over time within the selected time range. The Y-axis shows the record count and the X-axis shows time intervals. The chart automatically adjusts its time granularity based on the selected range.
+
+The histogram provides immediate visual context. Spikes in the chart often indicate incidents, deployments, or batch processing events. Clicking on a specific bar narrows your investigation to that time window.
+
+### Forecast Toggle
+
+A **Forecast** toggle in the upper-right of the chart area enables predictive analytics. When enabled, the chart extends beyond the current time to show projected log volume. The legend differentiates between "Historical" data (solid line) and "Forecast" data (dashed line), with the forecast region shown as a shaded area.
+
+Forecasting helps capacity planning teams anticipate log volume growth and set appropriate [retention policies](/docs/user-guide/retention) and storage budgets.
+
+## Log Table
+
+The log table is the primary data display area showing individual log records.
+
+### Table Header and Sorting
+
+Column headers are clickable to sort the data. Clicking a column header toggles between ascending and descending sort order, indicated by an arrow icon in the header.
+
+### Log Row Display
+
+Each row shows the values for the configured table columns. By default, "Ingestion Time" shows the timestamp and "Data" shows a formatted view of the log record's key-value pairs. Fields are color-coded. Field names appear in a muted color while values appear in an accent color for easy visual scanning.
+
+### Row Expansion
+
+Clicking a log row reveals two inline action icons: an expand icon and a copy icon. Clicking the expand icon displays all fields of the log record in a formatted key-value layout, including body, cloud metadata, HTTP details, Kubernetes labels, telemetry information, trace and span IDs, and all other attributes.
+
+This expanded view is essential for deep investigation. When you have narrowed down to a suspicious log entry, expanding it reveals the full context including trace IDs that you can use to correlate across services.
+
+### Pagination
+
+Pagination controls below the chart and above the table let you navigate through pages of results. The controls include previous/next page arrows, a page size selector (10, 50, 100), and a status indicator showing total records found and query execution time (e.g., "Found 3K records in 163.73 ms").
+
+### Find in Data
+
+A search box labeled "Find in data" provides client-side text search within the currently displayed log records for quick in-page lookups.
+
+## Table Toolbar
+
+The table toolbar includes four icon buttons to the right of the "Find in data" box:
+
+- **Share** - Generates a shareable link to the current view, including the active query, filters, and time range.
+- **Maximize** - Expands the table to a larger view for easier reading.
+- **Wrap Text** - Toggles text wrapping in the Data column. When enabled, long field values wrap within the cell rather than being truncated.
+- **Export** - Opens a dropdown with two options: **Export CSV** and **Export JSON**, for downloading query results.
+
+## Toggle Fields Panel
+
+A small icon button to the left of the "Add filter" button toggles the visibility of the left fields panel. Collapsing it gives the histogram and log table the full width of the page. This is useful when reading wide log entries or when working on smaller screens.
+
+## Tips for Working at Scale
+
+- **Start with narrow time ranges.** Begin with the last 10 minutes or 1 hour. Widen the window only if you do not find what you need. Narrow time ranges mean fewer Parquet files to scan and faster results.
+- **Use field filters before SQL.** The point-and-click filters in the Fields Panel translate to optimized columnar predicates. Start there and switch to SQL only when you need complex logic.
+- **Save views for recurring investigations.** If your team regularly investigates the same service or error pattern, save the view so everyone can start from the same baseline.
+- **Use Group By to orient.** Before diving into individual records, group by a high-cardinality field like `http.status_code` or `kubernetes.pod_name` to understand the shape of the data.
+- **Leverage AI summarization.** On large result sets, the Summarize feature can surface patterns faster than manual scrolling.
+- **Set retention policies.** Use [Retention](/docs/user-guide/retention) to automatically age out old data, keeping storage costs predictable as your log volume grows.
+- **Configure Smart Cache.** For datasets you query frequently, allocate [Smart Cache](/docs/user-guide/smart-cache) capacity to keep recent data on local SSDs and avoid cold-query latency.
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+| --- | --- |
+| `⌘ K` | Open the global search dialog from anywhere in the application |
+| `⌘ ↵` (Cmd+Enter) | Execute a query in the SQL Editor |
