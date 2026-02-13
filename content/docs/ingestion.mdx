@@ -17,6 +17,10 @@ Parseable also supports the OTel native data ingestion via the Protobuf over HTT
 Field name starting with `@` is replaced with `_`. In case of key collision, the event is rejected.
 </Callout>
 
+<Callout type="info">
+When an incoming event has a field with a data type different from the existing schema, the field is automatically renamed with a type suffix (e.g., `body_timestamp_utf8`, `span_kind_int64`). This prevents ingestion failures where field types may vary between events.
+</Callout>
+
 ## Ingestion reference
 
 Explore the different methods to ingest data into Parseable. Choose the method that best fits your infrastructure and use case.
