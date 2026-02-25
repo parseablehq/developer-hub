@@ -32,6 +32,7 @@
     "user-guide/logs",
     "user-guide/metrics",
     "user-guide/traces",
+    "user-guide/llm-observability",
     "user-guide/ai-native",
     "user-guide/alerting",
     "user-guide/dashboards",

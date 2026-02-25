@@ -1,6 +1,7 @@
 {
   "title": "User Guide",
   "pages": [
+    "llm-observability",
     "ai-native",
     "alerting",
     "dashboards",
