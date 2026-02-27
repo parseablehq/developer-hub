@@ -1,5 +1,5 @@
 ---
-title: OpenTelemetry Logs
+title: Logs
 redirect_from:
   - /OpenTelemetry/logs
   - /server/opentelemetry/opentelemetry-logs
@@ -54,7 +54,8 @@ service:
       exporters: [otlphttp/parseablelogs]
 ```
 
-## Data Flattening
+## Data flattening
+
 The OpenTelemetry logs that are in the form of a nested JSON. When the log event is received at `/v1/logs` endpoint, Parseable will flatten the nested JSON to a flat JSON object. This is done to make the data more queryable and filterable. Here's a quick comparison of the nested JSON and the flattened JSON:
 
 ### OTEL JSON format sample:
@@ -206,7 +207,7 @@ The OpenTelemetry logs that are in the form of a nested JSON. When the log event
 }
 ```
 
-### Flattened JSON:
+### Flattened JSON
 
 ```json
 {
@@ -238,6 +239,7 @@ The OpenTelemetry logs that are in the form of a nested JSON. When the log event
   "service.instance.id": "eff8a3d7-15f2-4718-94e5-6b984a9c18d7",
   "service.name": "kafka",
   "severity_number": 9,
+  "p_log_category": "INFO",
   "severity_text": "SEVERITY_NUMBER_INFO",
   "span_id": "",
   "telemetry.distro.name": "opentelemetry-java-instrumentation",
@@ -254,3 +256,44 @@ All the resource attributes are stored as key-value pair where each attribute ke
 
 Each log record in the incoming log event is stored as individual record in Parseable and all resource attributes, scope name, version etc which are at the scope level (parent of logRecords) are copied in each ingested record.
 
+### Flattening of body field
+
+In addition to top level flattening, if the `body` field is a valid JSON string, Parseable automatically flattens its key-value pairs into separate fields in the ingested record. Each key is prefixed with `body_`. The original `body` field is also preserved as-is.
+
+For example, if a log body is:
+
+```json
+"body": "{\"request_id\": \"abc-123\", \"status\": \"ok\"}",
+```
+
+The ingested record will contain:
+
+```json
+{
+  "body": "{\"request_id\": \"abc-123\", \"status\": \"ok\"}",
+  "body_request_id": "abc-123",
+  "body_status": "ok"
+}
+```
+
+This makes individual fields within the log body directly queryable and filterable without needing to parse JSON at query time.
+
+## Log categorization
+
+Parseable automatically adds a `p_log_category` field to every ingested OTel log record. This field contains one of the following values: `FATAL`, `ERROR`, `WARN`, `INFO`, `DEBUG`, `TRACE`, or `UNSPECIFIED`.
+
+The category is derived using the following logic:
+
+1. **Severity number mapping** — If the log record has a `severity_number` set (non-zero), it is mapped directly to a category:
+   - 1–4 → `TRACE`
+   - 5–8 → `DEBUG`
+   - 9–12 → `INFO`
+   - 13–16 → `WARN`
+   - 17–20 → `ERROR`
+   - 21–24 → `FATAL`
+
+2. **Body text fallback** — If `severity_number` is unset (0 / UNSPECIFIED), Parseable scans the log body for a case-insensitive substring match against the category names (`FATAL`, `ERROR`, `WARN`, `INFO`, `DEBUG`, `TRACE`).
+
+3. **Default** — If neither method yields a result, the category is set to `UNSPECIFIED`.
+
+This categorization allows users to easily filter and analyze logs based on severity, even if the original log records do not have structured severity information.
