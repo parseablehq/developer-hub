@@ -5,6 +5,8 @@ import { usePathname } from 'next/navigation';
 
 // Mappings without /docs prefix - we normalize paths before matching
 const URL_MAPPINGS: Array<{ pattern: RegExp; replacement: string }> = [
+  // Broken link from Parseable UI (issue #1561)
+  { pattern: /^\/server\/unti/, replacement: '/quickstart/docker' },
   // Remove /server/ prefix (most common pattern from old docs)
   { pattern: /^\/server\/(.+)/, replacement: '/$1' },
   
