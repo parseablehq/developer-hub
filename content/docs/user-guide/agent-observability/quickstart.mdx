@@ -195,8 +195,4 @@ FROM "genai-traces"
 WHERE p_timestamp > NOW() - INTERVAL '1 hour';
 ```
 
-If `span_count` is greater than zero, your LLM call instrumentation is working.
-
-![Agent logs in Parseable showing GenAI log records with problem statement, event names, and operation attributes](./static/agent-logs-explorer.png)
-
-Next, follow the [Instrumentation Guide](/docs/user-guide/agent-observability/instrumentation-guide) to add agent-level spans (`invoke_agent`, `execute_tool`) for full end-to-end agent observability. You can also explore the [Schema Reference](/docs/user-guide/agent-observability/schema-reference) and [SQL Query Templates](/docs/user-guide/agent-observability/sql-queries) to start querying your data.
+If `span_count` is greater than zero, your LLM call instrumentation is working. Next, follow the [Instrumentation Guide](/docs/user-guide/agent-observability/instrumentation-guide) to add agent-level spans (`invoke_agent`, `execute_tool`) for full end-to-end agent observability. You can also explore the [Schema Reference](/docs/user-guide/agent-observability/schema-reference) and [SQL Query Templates](/docs/user-guide/agent-observability/sql-queries) to start querying your data.
