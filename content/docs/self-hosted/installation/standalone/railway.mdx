@@ -1,0 +1,111 @@
+---
+title: Railway
+redirect_from:
+  - /installation/standalone/railway
+---
+
+This guide explains how to deploy Parseable in standalone mode on [Railway](https://railway.com) using Railway Buckets for S3-compatible object storage. Railway provides one-click deployment with automatic storage provisioning, health checks, and public HTTPS URLs.
+
+## Prerequisites
+
+- A [Railway](https://railway.com) account (free tier available)
+- No external dependencies required — Railway Buckets provide S3-compatible storage automatically
+
+## Deploy Parseable
+
+Click the button below to deploy Parseable on Railway:
+
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy?template=TEMPLATE_ID)
+
+During deployment, you will be prompted to set:
+
+- **P_USERNAME** — your Parseable admin username (required)
+
+<Callout type="info">
+`P_PASSWORD` is auto-generated as a 32-character secret during deployment. You can find it in your Railway service variables after the deploy completes.
+</Callout>
+
+All other environment variables (storage credentials, endpoints, etc.) are automatically configured by the template using Railway's variable references.
+
+## What Gets Deployed
+
+The template provisions two services:
+
+| Service | Description |
+|---------|-------------|
+| **Parseable** | Observability backend (`parseable/parseable:edge`) running in `s3-store` mode on port 8000 |
+| **Storage** | Railway Bucket providing S3-compatible object storage for log data |
+
+A persistent volume is attached at `/parseable/staging` for local data buffering before logs are flushed to object storage. The Parseable service includes a health check on `/api/v1/readiness` with a 300-second timeout.
+
+## Access Parseable
+
+Once the deployment health check passes, open the public Railway URL for the Parseable service. Log in with:
+
+- **Username**: the `P_USERNAME` you set during deployment
+- **Password**: the `P_PASSWORD` value from your Railway service variables
+
+You can find the public URL and service variables in the Railway dashboard under your project's Parseable service.
+
+## Ingest Data
+
+Create a log stream and send a test event. Replace the URL and credentials with your actual values.
+
+```bash
+# Set your Railway URL and credentials
+PARSEABLE_URL="https://your-parseable-app.up.railway.app"
+P_USERNAME="your-username"
+P_PASSWORD="your-password"
+
+# Create a log stream
+curl -X PUT "${PARSEABLE_URL}/api/v1/logstream/teststream" \
+  -u "${P_USERNAME}:${P_PASSWORD}"
+
+# Send a log event
+curl -X POST "${PARSEABLE_URL}/api/v1/logstream/teststream" \
+  -u "${P_USERNAME}:${P_PASSWORD}" \
+  -H "Content-Type: application/json" \
+  -H "X-P-Stream: teststream" \
+  -d '[{"message": "Hello from Railway!", "level": "info"}]'
+```
+
+## Query Data
+
+```bash
+curl -X POST "${PARSEABLE_URL}/api/v1/query" \
+  -u "${P_USERNAME}:${P_PASSWORD}" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "SELECT * FROM teststream", "startTime": "2024-01-01T00:00:00Z", "endTime": "2030-01-01T00:00:00Z"}'
+```
+
+You can also explore and query data visually from the Parseable console at your Railway URL.
+
+## Environment Variables
+
+The template configures the following environment variables automatically. Only `P_USERNAME` requires user input.
+
+| Variable | Value | Description |
+|----------|-------|-------------|
+| `PORT` | `8000` | Service port |
+| `P_ADDR` | `0.0.0.0:${{PORT}}` | Listen address |
+| `P_STAGING_DIR` | `/parseable/staging` | Local staging directory (volume-backed) |
+| `P_USERNAME` | *(user input)* | Admin username |
+| `P_PASSWORD` | *(auto-generated)* | 32-character admin password |
+| `P_S3_URL` | `${{Storage.ENDPOINT}}` | Railway Bucket endpoint |
+| `P_S3_BUCKET` | `${{Storage.BUCKET}}` | Railway Bucket name |
+| `P_S3_ACCESS_KEY` | `${{Storage.ACCESS_KEY_ID}}` | Railway Bucket access key |
+| `P_S3_SECRET_KEY` | `${{Storage.SECRET_ACCESS_KEY}}` | Railway Bucket secret key |
+| `P_S3_REGION` | `${{Storage.REGION}}` | Railway Bucket region |
+| `P_S3_PATH_STYLE` | `false` | Virtual-hosted-style URLs |
+| `P_CHECK_UPDATE` | `false` | Disable update checks |
+| `P_SEND_ANONYMOUS_USAGE_DATA` | `false` | Disable telemetry |
+
+For the full list of Parseable environment variables, see [Configuration](/docs/self-hosted/configuration).
+
+## Next Steps
+
+- [Parseable Cloud](https://app.parseable.com) — fully managed Parseable with no infrastructure to maintain
+- [Configuration](/docs/self-hosted/configuration) — full environment variable reference
+- [Integrations](/docs/integrations) — connect OpenTelemetry, Fluent Bit, Fluentd, Vector, and more
+- [Railway Documentation](https://docs.railway.com) — Railway platform reference
+- [Railway Buckets](https://docs.railway.com/reference/buckets) — S3-compatible storage on Railway
