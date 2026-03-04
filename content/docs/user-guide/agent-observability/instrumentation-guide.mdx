@@ -2,7 +2,7 @@
 title: Instrumentation Guide
 ---
 
-How to instrument any GenAI agent application to emit OpenTelemetry traces and correlated logs for full observability — model metadata, token usage, latency, complete conversation content, tool calls, and reasoning blocks.
+How to instrument any GenAI agent application to emit OpenTelemetry traces and correlated logs for full agent observability — agent runs with problem statements and completion summaries, LLM calls with conversation content, tool executions with input/output, token usage, latency, and reasoning blocks.
 
 ## What This Solves
 
@@ -196,14 +196,16 @@ This is a complete, agent-agnostic reference for instrumenting any Python applic
 
 ### Module-Level Setup
 
-You need two tracers — one in the agent orchestration module (for `invoke_agent` and `execute_tool` spans), one in the LLM call module (for `chat` spans and log records):
+You need a tracer and logger in the agent orchestration module (for `invoke_agent` and `execute_tool` spans + logs), and a tracer and logger in the LLM call module (for `chat` spans and log records):
 
 **Agent orchestration module** (e.g., `agents.py`):
 
 ```python
 from opentelemetry import trace
+from opentelemetry._logs import get_logger_provider, SeverityNumber
 
 _tracer = trace.get_tracer("my-agent", "1.1.0")
+_otel_logger = get_logger_provider().get_logger("my-agent", "1.1.0")
 ```
 
 **LLM call module** (e.g., `models.py`):
@@ -236,6 +238,21 @@ def run_agent(model_name: str, provider: str, problem: str):
         span.set_attribute("gen_ai.provider.name", provider)
         span.set_attribute("gen_ai.request.model", model_name)
 
+        # ── Emit the problem statement that triggered this agent run ──
+        _otel_logger.emit(
+            body=problem,
+            severity_number=SeverityNumber.INFO,
+            event_name="gen_ai.user.message",
+            attributes={
+                "gen_ai.operation.name": "invoke_agent",
+                "gen_ai.provider.name": provider,
+                "gen_ai.request.model": model_name,
+                "gen_ai.agent.name": "my-agent",
+                "gen_ai.event.name": "gen_ai.user.message",
+                "role": "user",
+            },
+        )
+
         # ── Your agent loop ──
         done = False
         while not done:
@@ -247,6 +264,24 @@ def run_agent(model_name: str, provider: str, problem: str):
         span.set_attribute("gen_ai.usage.input_tokens", total_input_tokens)
         span.set_attribute("gen_ai.usage.output_tokens", total_output_tokens)
         span.set_attribute("gen_ai.response.finish_reasons", json.dumps(["exit_command"]))
+
+        # ── Emit agent completion summary ──
+        _otel_logger.emit(
+            body=json.dumps({"exit_status": "exit_command",
+                             "total_input_tokens": total_input_tokens,
+                             "total_output_tokens": total_output_tokens}),
+            severity_number=SeverityNumber.INFO,
+            event_name="gen_ai.agent.finish",
+            attributes={
+                "gen_ai.operation.name": "invoke_agent",
+                "gen_ai.agent.name": "my-agent",
+                "gen_ai.provider.name": provider,
+                "gen_ai.request.model": model_name,
+                "gen_ai.event.name": "gen_ai.agent.finish",
+                "gen_ai.usage.input_tokens": total_input_tokens,
+                "gen_ai.usage.output_tokens": total_output_tokens,
+            },
+        )
 ```
 
 **Key points:**
@@ -254,6 +289,8 @@ def run_agent(model_name: str, provider: str, problem: str):
 - Token counts on `invoke_agent` are **totals** across all LLM calls in the run
 - `gen_ai.agent.name` lives here, NOT on individual `chat` spans
 - `gen_ai.provider.name` replaces the older `gen_ai.system` attribute per current spec
+- The `gen_ai.user.message` log emits the problem statement so it appears in the trace waterfall
+- The `gen_ai.agent.finish` log emits a completion summary with exit status and total token counts
 
 ### Instrumenting Tool Execution (execute_tool)
 
@@ -272,12 +309,40 @@ def execute_tool(action: str, tool_call_id: str | None = None):
         if tool_call_id:
             span.set_attribute("gen_ai.tool.call.id", tool_call_id)
 
+        # Emit tool input log (the command being run)
+        _otel_logger.emit(
+            body=action,
+            severity_number=SeverityNumber.INFO,
+            event_name="gen_ai.tool.input",
+            attributes={
+                "gen_ai.operation.name": "execute_tool",
+                "gen_ai.tool.name": tool_name,
+                "gen_ai.tool.type": "function",
+                "gen_ai.tool.call.id": tool_call_id or "",
+                "gen_ai.event.name": "gen_ai.tool.input",
+            },
+        )
+
         try:
             result = env.communicate(action)
         except TimeoutError as e:
             span.set_attribute("error.type", type(e).__name__)
             span.set_status(trace.StatusCode.ERROR, "Command timed out")
             raise
+
+        # Emit tool output log (the observation)
+        _otel_logger.emit(
+            body=result or "",
+            severity_number=SeverityNumber.INFO,
+            event_name="gen_ai.tool.output",
+            attributes={
+                "gen_ai.operation.name": "execute_tool",
+                "gen_ai.tool.name": tool_name,
+                "gen_ai.tool.type": "function",
+                "gen_ai.tool.call.id": tool_call_id or "",
+                "gen_ai.event.name": "gen_ai.tool.output",
+            },
+        )
 
         return result
 ```
@@ -286,6 +351,8 @@ def execute_tool(action: str, tool_call_id: str | None = None):
 - `kind=trace.SpanKind.INTERNAL` — tool execution is an internal operation
 - `gen_ai.tool.call.id` links this execution back to the LLM's tool call request (from function calling mode)
 - Error status is set on timeout or failure, making failed tool executions queryable
+- `gen_ai.tool.input` log captures the command sent to the tool
+- `gen_ai.tool.output` log captures the tool's observation/result
 
 ### Instrumenting an LLM Call (chat)
 
@@ -473,7 +540,16 @@ def call_llm(model: str, messages: list[dict], temperature: float = 0.0, **kwarg
 The `gen_ai.tool.call.id` attribute on `chat` spans enables cross-span correlation — you can JOIN a `chat` span to its corresponding `execute_tool` spans via the shared tool call ID.
 </Callout>
 
-**Multiple log records** (in the logs pipeline), all carrying matching `trace_id` + `span_id` from `chat` spans:
+**Multiple log records** (in the logs pipeline), carrying matching `trace_id` + `span_id` from their respective spans. Log records are emitted in all three span types:
+
+**`invoke_agent` log records:**
+
+| `event_name` | `body` content | When |
+|-------------|---------------|------|
+| `gen_ai.user.message` | Problem statement text | At start of agent run |
+| `gen_ai.agent.finish` | JSON: exit status + total tokens | At end of agent run |
+
+**`chat` log records:**
 
 | `event_name` | `body` content | When |
 |-------------|---------------|------|
@@ -484,6 +560,13 @@ The `gen_ai.tool.call.id` attribute on `chat` spans enables cross-span correlati
 | `gen_ai.choice` | Full LLM response text | For each response choice |
 | `gen_ai.tool.call` | Tool call JSON (name + arguments) | For each tool call in the response |
 | `gen_ai.thinking` | Full reasoning/thinking text | For each thinking block (Claude, DeepSeek, etc.) |
+
+**`execute_tool` log records:**
+
+| `event_name` | `body` content | When |
+|-------------|---------------|------|
+| `gen_ai.tool.input` | Tool command/action string | Before tool execution |
+| `gen_ai.tool.output` | Tool observation/result | After tool execution |
 
 ## OTel Collector Configuration
 
@@ -612,6 +695,8 @@ The older `gen_ai.system` attribute has been replaced by `gen_ai.provider.name` 
 
 ### Log Record Event Names
 
+**`chat` span events:**
+
 | `event_name` | Semantic Convention | Description |
 |-------------|-------------------|-------------|
 | `gen_ai.system.message` | GenAI message event | System prompt |
@@ -622,17 +707,59 @@ The older `gen_ai.system` attribute has been replaced by `gen_ai.provider.name` 
 | `gen_ai.tool.call` | GenAI tool call event | Tool/function invocation |
 | `gen_ai.thinking` | Custom extension | Reasoning/thinking block (not yet in OTel semconv) |
 
+**`invoke_agent` span events:**
+
+| `event_name` | Semantic Convention | Description |
+|-------------|-------------------|-------------|
+| `gen_ai.user.message` | GenAI message event | Problem statement that triggered the agent run |
+| `gen_ai.agent.finish` | Custom extension | Agent completion summary (exit status + total tokens) |
+
+**`execute_tool` span events:**
+
+| `event_name` | Semantic Convention | Description |
+|-------------|-------------------|-------------|
+| `gen_ai.tool.input` | Custom extension | Tool command/action sent for execution |
+| `gen_ai.tool.output` | Custom extension | Tool observation/result returned from execution |
+
 ### Log Record Attributes
 
 Every log record carries:
 
 | Attribute | Type | Description |
 |-----------|------|-------------|
-| `gen_ai.provider.name` | string | LLM provider |
-| `gen_ai.request.model` | string | Model name |
+| `gen_ai.operation.name` | string | `"chat"`, `"invoke_agent"`, or `"execute_tool"` — identifies which span type emitted this log |
 | `gen_ai.event.name` | string | Duplicates `event_name` for queryability as a flat column |
 
-Event-specific attributes:
+**Additional attributes on `chat` log records:**
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `gen_ai.provider.name` | string | LLM provider (`openai`, `anthropic`, `google`, `mistral`, etc.) |
+| `gen_ai.request.model` | string | Model name as requested |
+| `gen_ai.request.temperature` | float | Temperature (if set) |
+| `gen_ai.request.top_p` | float | Top-p (if set) |
+| `gen_ai.request.max_tokens` | int | Max output tokens (if set) |
+
+**Additional attributes on `invoke_agent` log records:**
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `gen_ai.provider.name` | string | LLM provider |
+| `gen_ai.request.model` | string | Model name |
+| `gen_ai.agent.name` | string | Agent identifier (e.g., `"swe-agent"`) |
+| `role` | string | `"user"` (on `gen_ai.user.message` only) |
+| `gen_ai.usage.input_tokens` | int | Total input tokens (on `gen_ai.agent.finish` only) |
+| `gen_ai.usage.output_tokens` | int | Total output tokens (on `gen_ai.agent.finish` only) |
+
+**Additional attributes on `execute_tool` log records:**
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `gen_ai.tool.name` | string | Tool/command name |
+| `gen_ai.tool.type` | string | Always `"function"` |
+| `gen_ai.tool.call.id` | string | Tool call ID (empty string if not using function calling) |
+
+**Event-specific attributes (chat logs only):**
 
 | Attribute | Present on | Type | Description |
 |-----------|-----------|------|-------------|
@@ -646,6 +773,8 @@ Event-specific attributes:
 
 The `body` of each log record is the **full, untruncated content**:
 
+**`chat` span logs:**
+
 | Event | `body` contains |
 |-------|----------------|
 | `gen_ai.system.message` | Complete system prompt (can be thousands of tokens) |
@@ -656,7 +785,21 @@ The `body` of each log record is the **full, untruncated content**:
 | `gen_ai.tool.call` | JSON: `{"name": "...", "arguments": "..."}` |
 | `gen_ai.thinking` | Complete reasoning/thinking text |
 
-No truncation. No size limits from the instrumentation side. The body carries whatever the LLM returned or whatever was sent to it.
+**`invoke_agent` span logs:**
+
+| Event | `body` contains |
+|-------|----------------|
+| `gen_ai.user.message` | Complete problem statement that triggered the agent run |
+| `gen_ai.agent.finish` | JSON: `{"exit_status": "...", "total_input_tokens": N, "total_output_tokens": N}` |
+
+**`execute_tool` span logs:**
+
+| Event | `body` contains |
+|-------|----------------|
+| `gen_ai.tool.input` | Complete tool command/action string |
+| `gen_ai.tool.output` | Complete tool observation/result |
+
+No truncation. No size limits from the instrumentation side. The body carries whatever the LLM returned, whatever was sent to it, or whatever the tool produced.
 
 ## Scenarios
 
@@ -953,6 +1096,9 @@ After setting up instrumentation, verify end-to-end:
 | **Error spans captured** | Trigger a timeout. Check for `execute_tool` span with `span_status_code = 2`. | Span exists with `error.type` |
 | **Log records exist** | Query logs for same `trace_id` as an `invoke_agent` span | Multiple log records |
 | **Trace-log correlation** | Pick a `chat` span. Query logs where `trace_id` and `span_id` match. | Logs link to the correct `chat` span |
-| **All event types present** | Check `event_name` values across log records | `gen_ai.system.message`, `gen_ai.user.message`, `gen_ai.choice`, and optionally `gen_ai.tool.call`, `gen_ai.thinking` |
+| **All chat event types present** | Check `event_name` values on `chat` logs | `gen_ai.system.message`, `gen_ai.user.message`, `gen_ai.choice`, and optionally `gen_ai.tool.call`, `gen_ai.thinking` |
+| **invoke_agent logs present** | Check logs with `gen_ai.operation.name = "invoke_agent"` | `gen_ai.user.message` (problem statement) and `gen_ai.agent.finish` (completion summary) |
+| **execute_tool logs present** | Check logs with `gen_ai.operation.name = "execute_tool"` | `gen_ai.tool.input` and `gen_ai.tool.output` paired for each tool execution |
+| **All three operation types in logs** | Group logs by `gen_ai.operation.name` | `invoke_agent`, `chat`, and `execute_tool` all present |
 | **Body is untruncated** | Check `body` field on a `gen_ai.choice` log record | Full LLM response text, not truncated |
 | **No duplicates** | Check that each LLM call produces exactly 1 `chat` span and 1 `gen_ai.choice` log per response choice | No doubles |

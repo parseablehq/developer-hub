@@ -2,7 +2,9 @@
 title: Quickstart
 ---
 
-This guide covers three instrumentation paths to get GenAI traces into Parseable. Choose the one that fits your stack, then configure either an OTel Collector or direct export.
+This guide gets GenAI telemetry flowing into Parseable in minutes. It covers three instrumentation paths for capturing LLM call data. Once data is flowing, the [Instrumentation Guide](/docs/user-guide/agent-observability/instrumentation-guide) shows how to add full agent-level instrumentation: `invoke_agent` spans for agent runs, `execute_tool` spans for tool executions, problem statements, and completion summaries.
+
+Choose the path that fits your stack, then configure either an OTel Collector or direct export.
 
 ## Instrumentation Paths
 
@@ -183,7 +185,7 @@ Then run your instrumented application (Path A, B, or C) as normal. Traces will 
 
 ## Verify Data Ingestion
 
-Once your application is running and making LLM calls, verify that data is arriving in Parseable:
+Once your application is running, verify that trace data is arriving in Parseable:
 
 ```sql
 SELECT COUNT(*) AS span_count,
@@ -193,4 +195,8 @@ FROM "genai-traces"
 WHERE p_timestamp > NOW() - INTERVAL '1 hour';
 ```
 
-If `span_count` is greater than zero, your instrumentation is working. Proceed to the [Schema Reference](/docs/agent-observability/schema-reference) to understand the columns available, or jump to [SQL Query Templates](/docs/agent-observability/sql-queries) for ready-to-use analytics queries.
+If `span_count` is greater than zero, your LLM call instrumentation is working.
+
+![Agent logs in Parseable showing GenAI log records with problem statement, event names, and operation attributes](./static/agent-logs-explorer.png)
+
+Next, follow the [Instrumentation Guide](/docs/user-guide/agent-observability/instrumentation-guide) to add agent-level spans (`invoke_agent`, `execute_tool`) for full end-to-end agent observability. You can also explore the [Schema Reference](/docs/user-guide/agent-observability/schema-reference) and [SQL Query Templates](/docs/user-guide/agent-observability/sql-queries) to start querying your data.
