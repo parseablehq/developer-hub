@@ -1,9 +1,9 @@
 {
   "title": "Agent Observability",
   "pages": [
-    "index",
-    "quickstart",
-    "instrumentation-guide",
+    "...",
+    "auto-instrumentation",
+    "manual-instrumentation",
     "schema-reference",
     "sql-queries"
   ]

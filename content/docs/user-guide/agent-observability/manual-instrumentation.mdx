@@ -1,12 +1,12 @@
 ---
-title: Instrumentation Guide
+title: Manual instrumentation guide
 ---
 
-How to instrument any GenAI agent application to emit OpenTelemetry traces and correlated logs for full agent observability — agent runs with problem statements and completion summaries, LLM calls with conversation content, tool executions with input/output, token usage, latency, and reasoning blocks.
+This page is reference manual on how to manually instrument your agent with OTel spans and logs. If you are looking for a quick way to get LLM call traces flowing into Parseable, refer to the [Quickstart guide](/docs/user-guide/agent-observability/quickstart) which uses auto-instrumentation or two-line SDK initialization.
 
-## What This Solves
+## Instrumentation overview
 
-A GenAI agent makes LLM API calls and executes tools. For each agent run, you want to capture:
+For each agent run, you want to capture:
 
 | What | Where it goes | Why |
 |------|--------------|-----|
@@ -24,23 +24,23 @@ The OpenTelemetry GenAI semantic conventions define how to structure this data. 
 ┌─────────────────────────────────────────────────────────┐
 │  Your Agent Application (Python)                        │
 │                                                         │
-│  ┌─────────────────────────────────────────────────┐    │
-│  │ opentelemetry-instrument CLI wrapper             │    │
-│  │ (auto-configures TracerProvider, LoggerProvider,  │    │
-│  │  sets up OTLP exporters)                         │    │
-│  └─────────────────────────────────────────────────┘    │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │ opentelemetry-instrument CLI wrapper             │   │
+│  │ (auto-configures TracerProvider, LoggerProvider, │   │
+│  │  sets up OTLP exporters)                         │   │
+│  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌─────────────────────────────────────────────────┐    │
-│  │ Your code (manual instrumentation):              │    │
-│  │  - _tracer.start_as_current_span(...)  → spans   │    │
-│  │  - _otel_logger.emit(...)              → logs    │    │
+│  │ Your code (manual instrumentation):             │    │
+│  │  - _tracer.start_as_current_span(...)  → spans  │    │
+│  │  - _otel_logger.emit(...)              → logs   │    │
 │  └─────────────────────────────────────────────────┘    │
 │                    │                                    │
 │                    │ OTLP (protobuf)                    │
 │                    ▼                                    │
 │  ┌─────────────────────────────────────────────────┐    │
-│  │ BatchSpanProcessor + BatchLogRecordProcessor     │    │
-│  │ (buffers, batches, exports periodically)         │    │
+│  │ BatchSpanProcessor + BatchLogRecordProcessor    │    │
+│  │ (buffers, batches, exports periodically)        │    │
 │  └─────────────────────────────────────────────────┘    │
 └────────────────────│────────────────────────────────────┘
                      │ OTLP HTTP (:4318) or gRPC (:4317)
@@ -61,26 +61,15 @@ The OpenTelemetry GenAI semantic conventions define how to structure this data. 
 └─────────────────────────────────────────────────────────┘
 ```
 
-### What Each Layer Does
+### What each layer does
 
 | Layer | Responsibility |
-|-------|---------------|
+|-------|----------------|
 | `opentelemetry-instrument` CLI | Bootstraps the SDK — creates `TracerProvider`, `LoggerProvider`, configures OTLP exporters. You do not call `set_tracer_provider()` or `set_logger_provider()` manually. |
 | Your code (manual instrumentation) | Creates spans (`_tracer.start_as_current_span(...)`) and emits log records (`_otel_logger.emit(...)`). This is where all GenAI-specific attributes and content are set. |
 | `BatchSpanProcessor` / `BatchLogRecordProcessor` | Accumulates spans and logs in memory, exports them in batches via OTLP. Configured automatically by the CLI. |
 | OTel Collector | Receives OTLP data, applies processors (batching, filtering), and exports to one or more backends. Converts protobuf to JSON for Parseable. |
 | Parseable | Stores traces and logs as flattened, SQL-queryable records. Enriches with computed columns (`p_genai_cost_usd`, `p_genai_tokens_total`, etc.). |
-
-### Why Manual Instrumentation
-
-OpenTelemetry provides auto-instrumentation for OpenAI SDK calls (`opentelemetry-instrumentation-openai-v2`). However, manual instrumentation is necessary for:
-
-1. **Agent-level spans** — `invoke_agent` spans that wrap the entire agent loop are not created by auto-instrumentors
-2. **Tool execution spans** — `execute_tool` spans for tool/command execution are application-specific
-3. **Thinking/reasoning blocks** — Claude's `thinking_blocks` and DeepSeek's `reasoning_content` are provider-specific extensions not captured by auto-instrumentors
-4. **Full control** — manual instrumentation gives you exact control over what attributes are set, what content is captured, and how spans are structured
-
-The two approaches can coexist, but typically manual instrumentation replaces auto-instrumentation entirely (disable auto with `OTEL_PYTHON_DISABLED_INSTRUMENTATIONS=openai_v2`).
 
 ## The opentelemetry-instrument CLI
 

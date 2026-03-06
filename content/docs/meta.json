@@ -43,7 +43,7 @@
     "user-guide/retention",
     "user-guide/smart-cache",
     "api",
-    "---Self-Hosted---",
+    "---Self Hosted---",
     "self-hosted/installation",
     "self-hosted/configuration",
     "self-hosted/storage-targets",
