@@ -49,13 +49,13 @@ No vendor lock-in. Deploy on your own infrastructure, retain full ownership of y
 
 In this approach, you get zero code change, auto instrumentation of all LLM calls, including conversation content, token counts, and latency. This is the fastest way to get LLM call traces flowing into Parseable, and is ideal if you are using the OpenAI Python SDK.
 
-Refer the [OpenAI SDK quickstart guide](/docs/user-guide/agent-observability/quickstart#auto-instrumentation-with-openai-sdk) for detailed instructions on setting up auto instrumentation with the OpenAI Python SDK.
+Refer the [OpenAI SDK quickstart guide](/docs/user-guide/agent-observability/auto-instrumentation#auto-instrumentation-with-openai-sdk) for detailed instructions on setting up auto instrumentation with the OpenAI Python SDK.
 
 ### Path B: Auto instrumentation with other SDKs
 
 For broader provider support (Anthropic, Cohere, Mistral, Bedrock, VertexAI, and more), use OpenLLMetry (Traceloop SDK) or OpenLIT. These require only two lines of code added to your application entry point.
 
-Refer to the [Other SDKs quickstart guide](/docs/user-guide/agent-observability/quickstart#auto-instrumentation-with-other-sdks) for detailed instructions on setting up auto instrumentation with OpenLLMetry or OpenLIT.
+Refer to the [Other SDKs quickstart guide](/docs/user-guide/agent-observability/auto-instrumentation#auto-instrumentation-with-other-sdks) for detailed instructions on setting up auto instrumentation with OpenLLMetry or OpenLIT.
 
 ### Path C: Manual instrumentation using OTel SDK
 
@@ -70,6 +70,8 @@ Manual instrumentation is also necessary for:
 4. **Full control** — manual instrumentation gives you exact control over what attributes are set, what content is captured, and how spans are structured
 
 Typically manual instrumentation replaces auto-instrumentation entirely (disable auto with `OTEL_PYTHON_DISABLED_INSTRUMENTATIONS=openai_v2`).
+
+Refer the [manual instrumentation guide](/docs/user-guide/agent-observability/manual-instrumentation) for detailed instructions on how to structure spans and what attributes to capture for complete agent observability.
 
 ## Language support matrix
 
