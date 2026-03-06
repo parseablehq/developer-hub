@@ -1,0 +1,172 @@
+---
+title: Schema Reference
+---
+
+When Parseable receives GenAI traces at the `/v1/traces` endpoint, it flattens the nested OTel JSON into a single row per span event. This page documents every column you can query.
+
+## Span Hierarchy
+
+A single agent invocation produces a tree of spans sharing the same `span_trace_id`:
+
+```
+span_trace_id: abc123
+|
++-- [root] agent_run (gen_ai.operation.name = "agent")
+      |
+      +-- chat gpt-4o (gen_ai.operation.name = "chat")
+      |     +-- event: gen_ai.prompt   (event_name row)
+      |     +-- event: gen_ai.completion (event_name row)
+      |
+      +-- execute_tool search_api (gen_ai.operation.name = "execute_tool")
+      |
+      +-- chat gpt-4o (gen_ai.operation.name = "chat")
+            +-- event: gen_ai.prompt   (event_name row)
+            +-- event: gen_ai.completion (event_name row)
+```
+
+Key points:
+- **Span rows** have `event_name IS NULL`. These contain the `gen_ai.*` attributes, token counts, and Parseable-enriched columns.
+- **Event rows** have `event_name` set (e.g., `gen_ai.prompt` or `gen_ai.completion`). These contain the message content in `event_gen_ai.prompt` or `event_gen_ai.completion`. Event rows are only present when content capture is enabled (`OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true`).
+- Use `span_parent_span_id` to reconstruct the call tree within a trace.
+
+---
+
+## Core Trace Columns
+
+These are standard OpenTelemetry span fields, present on every row.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `span_trace_id` | String | Unique identifier for the entire trace (shared across all spans in one agent run). |
+| `span_span_id` | String | Unique identifier for this individual span. |
+| `span_parent_span_id` | String | Span ID of the parent span. Empty string for root spans. |
+| `span_name` | String | Human-readable span name (e.g., `chat gpt-4o`, `execute_tool search`). |
+| `span_kind` | Int | OTel span kind numeric value (0=Unspecified, 1=Internal, 2=Server, 3=Client). |
+| `span_kind_description` | String | Human-readable span kind (e.g., `SPAN_KIND_CLIENT`). |
+| `span_start_time_unix_nano` | BigInt | Span start time in nanoseconds since epoch. |
+| `span_end_time_unix_nano` | BigInt | Span end time in nanoseconds since epoch. |
+| `span_status_code` | Int | Status code: 0=Unset, 1=OK, 2=Error. |
+| `span_status_description` | String | Human-readable status (e.g., `STATUS_CODE_OK`). |
+| `span_status_message` | String | Error message when `span_status_code = 2`. |
+| `span_trace_state` | String | W3C trace state string. |
+| `span_flags` | Int | Span flags bitmask. |
+| `span_flags_description` | String | Human-readable span flags. |
+| `span_dropped_attributes_count` | Int | Number of attributes dropped due to limits. |
+| `span_dropped_events_count` | Int | Number of events dropped due to limits. |
+| `span_dropped_links_count` | Int | Number of links dropped due to limits. |
+| `p_timestamp` | Timestamp | Parseable ingest timestamp. |
+| `p_metadata` | String | Parseable metadata field. |
+| `p_tags` | String | Parseable tags field. |
+| `service.name` | String | OTel resource attribute identifying the service. |
+| `scope_name` | String | Instrumentation scope name. |
+| `scope_version` | String | Instrumentation scope version. |
+| `schema_url` | String | OTel schema URL. |
+
+---
+
+## GenAI Identity and Operation
+
+Columns that identify the GenAI operation being performed.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `gen_ai.operation.name` | String | Type of operation: `chat`, `text_completion`, `embeddings`, `execute_tool`, `agent`. |
+| `gen_ai.system` | String | GenAI provider system identifier (e.g., `openai`, `anthropic`, `cohere`). |
+| `gen_ai.provider.name` | String | Provider name when different from system. |
+| `gen_ai.conversation.id` | String | Unique identifier for a multi-turn conversation thread. |
+
+---
+
+## Model Request
+
+Columns capturing the parameters sent to the model.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `gen_ai.request.model` | String | Model requested (e.g., `gpt-4o`, `claude-3-opus-20240229`). |
+| `gen_ai.request.temperature` | Float | Sampling temperature. |
+| `gen_ai.request.top_p` | Float | Nucleus sampling parameter. |
+| `gen_ai.request.top_k` | Int | Top-k sampling parameter. |
+| `gen_ai.request.max_tokens` | Int | Maximum tokens requested for the response. |
+| `gen_ai.request.seed` | Int | Random seed for reproducibility. |
+| `gen_ai.request.frequency_penalty` | Float | Frequency penalty parameter. |
+| `gen_ai.request.presence_penalty` | Float | Presence penalty parameter. |
+| `gen_ai.request.stop_sequences` | String | Stop sequences (JSON array as string). |
+
+---
+
+## Model Response
+
+Columns capturing what the model returned.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `gen_ai.response.id` | String | Provider-assigned response ID (e.g., `chatcmpl-abc123`). |
+| `gen_ai.response.model` | String | Actual model used (may differ from requested, e.g., `gpt-4o-2024-08-06`). |
+| `gen_ai.response.finish_reasons` | String | Reason the model stopped generating (JSON array, e.g., `["stop"]`, `["tool_calls"]`). |
+
+---
+
+## Token Usage
+
+Columns tracking token consumption per span.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `gen_ai.usage.input_tokens` | Int | Number of input (prompt) tokens consumed. |
+| `gen_ai.usage.output_tokens` | Int | Number of output (completion) tokens generated. |
+| `gen_ai.usage.input_token_details.cached_tokens` | Int | Number of input tokens served from cache. |
+| `gen_ai.usage.output_token_details.reasoning_tokens` | Int | Number of output tokens used for chain-of-thought reasoning. |
+
+---
+
+## Agent
+
+Columns specific to agent-level spans (where `gen_ai.operation.name = 'agent'`).
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `gen_ai.agent.name` | String | Name of the agent. |
+| `gen_ai.agent.id` | String | Unique identifier for the agent instance. |
+| `gen_ai.agent.description` | String | Human-readable description of the agent's purpose. |
+
+---
+
+## Tool Execution
+
+Columns specific to tool call spans (where `gen_ai.operation.name = 'execute_tool'`).
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `gen_ai.tool.name` | String | Name of the tool invoked (e.g., `search_api`, `calculator`). |
+| `gen_ai.tool.type` | String | Type of tool (e.g., `function`, `retrieval`, `code_interpreter`). |
+| `gen_ai.tool.call.id` | String | Provider-assigned tool call ID. |
+| `gen_ai.tool.call.arguments` | String | JSON string of arguments passed to the tool. |
+| `gen_ai.tool.call.result` | String | JSON string or text of the tool execution result. |
+
+---
+
+## Content Columns (Opt-In)
+
+These columns are only populated when content capture is enabled via `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true`. They appear on **event rows** (where `event_name` is not null).
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `event_name` | String | Event type: `gen_ai.prompt`, `gen_ai.completion`, `gen_ai.tool.message`, etc. |
+| `event_gen_ai.prompt` | String | The full prompt or user message content. Present on `gen_ai.prompt` events. |
+| `event_gen_ai.completion` | String | The full completion or assistant message content. Present on `gen_ai.completion` events. |
+| `event_time_unix_nano` | BigInt | Event timestamp in nanoseconds since epoch. |
+| `event_dropped_attributes_count` | Int | Number of event attributes dropped due to limits. |
+
+---
+
+## Parseable-Enriched Columns
+
+These columns are computed server-side by Parseable at ingest time. They do not exist in the raw OTel data.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `p_genai_cost_usd` | Float | Estimated cost in USD for this span, computed from the model name and token counts using Parseable's built-in pricing table. |
+| `p_genai_tokens_total` | Int | Sum of `gen_ai.usage.input_tokens` + `gen_ai.usage.output_tokens`. |
+| `p_genai_tokens_per_sec` | Float | Throughput: `output_tokens / (span_duration_seconds)`. Useful for comparing model and provider performance. |
+| `p_genai_duration_ms` | Float | Span duration in milliseconds, computed from `span_end_time_unix_nano - span_start_time_unix_nano`. |

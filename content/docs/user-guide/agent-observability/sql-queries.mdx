@@ -1,0 +1,187 @@
+---
+title: SQL Query Templates
+---
+
+Ready-to-use SQL queries for common agent observability tasks. All queries assume a dataset named `genai-traces`. Replace with your actual dataset name if different.
+
+:::tip
+Span rows have `event_name IS NULL`. Most analytics queries should include this filter to avoid double-counting with event rows (which carry prompt/completion content).
+:::
+
+---
+
+## 1. LLM Call Summary (Last 24 Hours)
+
+Get a per-model overview of call volume, token usage, latency, cost, and error rate.
+
+```sql
+SELECT
+    "gen_ai.request.model" AS model,
+    COUNT(*) AS call_count,
+    SUM("gen_ai.usage.input_tokens") AS total_input_tokens,
+    SUM("gen_ai.usage.output_tokens") AS total_output_tokens,
+    ROUND(AVG(p_genai_duration_ms), 2) AS avg_latency_ms,
+    ROUND(SUM(p_genai_cost_usd), 6) AS total_cost_usd,
+    ROUND(100.0 * SUM(CASE WHEN span_status_code = 2 THEN 1 ELSE 0 END) / COUNT(*), 2) AS error_rate_pct
+FROM "genai-traces"
+WHERE p_timestamp > NOW() - INTERVAL '24 hours'
+    AND event_name IS NULL
+    AND "gen_ai.operation.name" = 'chat'
+GROUP BY "gen_ai.request.model"
+ORDER BY total_cost_usd DESC;
+```
+
+---
+
+## 2. Agent Run Reconstruction
+
+Reconstruct every span in a single agent run, ordered chronologically. Replace `<TRACE_ID>` with an actual trace ID.
+
+```sql
+SELECT
+    span_name,
+    "gen_ai.operation.name" AS operation,
+    ROUND(p_genai_duration_ms, 2) AS duration_ms,
+    "gen_ai.usage.input_tokens" AS input_tokens,
+    "gen_ai.usage.output_tokens" AS output_tokens,
+    ROUND(p_genai_cost_usd, 6) AS cost_usd,
+    span_status_description AS status,
+    span_parent_span_id
+FROM "genai-traces"
+WHERE span_trace_id = '<TRACE_ID>'
+    AND event_name IS NULL
+ORDER BY span_start_time_unix_nano;
+```
+
+---
+
+## 3. Token Usage and Cost Over Time
+
+Hourly breakdown of token consumption and cost by model over the last 7 days.
+
+```sql
+SELECT
+    DATE_TRUNC('hour', p_timestamp) AS hour,
+    "gen_ai.request.model" AS model,
+    SUM("gen_ai.usage.input_tokens") AS input_tokens,
+    SUM("gen_ai.usage.output_tokens") AS output_tokens,
+    SUM(p_genai_tokens_total) AS total_tokens,
+    ROUND(SUM(p_genai_cost_usd), 4) AS cost_usd
+FROM "genai-traces"
+WHERE p_timestamp > NOW() - INTERVAL '7 days'
+    AND event_name IS NULL
+    AND "gen_ai.usage.input_tokens" IS NOT NULL
+GROUP BY hour, "gen_ai.request.model"
+ORDER BY hour DESC, cost_usd DESC;
+```
+
+---
+
+## 4. Tool Usage Analysis
+
+Understand which tools are called most often, their average duration, and failure rate.
+
+```sql
+SELECT
+    "gen_ai.tool.name" AS tool,
+    COUNT(*) AS invocations,
+    ROUND(AVG(p_genai_duration_ms), 2) AS avg_duration_ms,
+    ROUND(100.0 * SUM(CASE WHEN span_status_code = 2 THEN 1 ELSE 0 END) / COUNT(*), 2) AS failure_rate_pct
+FROM "genai-traces"
+WHERE "gen_ai.operation.name" = 'execute_tool'
+    AND p_timestamp > NOW() - INTERVAL '24 hours'
+GROUP BY "gen_ai.tool.name"
+ORDER BY invocations DESC;
+```
+
+---
+
+## 5. Error Analysis
+
+Surface the most recent errors across all models and operations.
+
+```sql
+SELECT
+    p_timestamp,
+    "gen_ai.request.model" AS model,
+    "gen_ai.operation.name" AS operation,
+    span_status_message AS error_message,
+    span_trace_id,
+    span_span_id,
+    "gen_ai.agent.name" AS agent
+FROM "genai-traces"
+WHERE span_status_code = 2
+    AND p_timestamp > NOW() - INTERVAL '24 hours'
+ORDER BY p_timestamp DESC
+LIMIT 50;
+```
+
+---
+
+## 6. Conversation Threads
+
+Aggregate multi-turn conversations to see total LLM calls, tool calls, token usage, and cost per conversation.
+
+```sql
+SELECT
+    "gen_ai.conversation.id" AS conversation,
+    COUNT(CASE WHEN "gen_ai.operation.name" = 'chat' THEN 1 END) AS llm_calls,
+    COUNT(CASE WHEN "gen_ai.operation.name" = 'execute_tool' THEN 1 END) AS tool_calls,
+    SUM(p_genai_tokens_total) AS total_tokens,
+    ROUND(SUM(p_genai_cost_usd), 4) AS total_cost_usd,
+    MIN(p_timestamp) AS started_at,
+    MAX(p_timestamp) AS ended_at
+FROM "genai-traces"
+WHERE "gen_ai.conversation.id" IS NOT NULL
+    AND event_name IS NULL
+    AND p_timestamp > NOW() - INTERVAL '24 hours'
+GROUP BY "gen_ai.conversation.id"
+ORDER BY total_cost_usd DESC;
+```
+
+---
+
+## 7. Model Comparison
+
+Compare models side-by-side on latency, throughput, and cost over the last 7 days.
+
+```sql
+SELECT
+    "gen_ai.request.model" AS model,
+    COUNT(*) AS calls,
+    ROUND(AVG(p_genai_duration_ms), 2) AS avg_latency_ms,
+    ROUND(PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY p_genai_duration_ms), 2) AS p95_latency_ms,
+    ROUND(AVG(p_genai_tokens_per_sec), 2) AS avg_tokens_per_sec,
+    ROUND(SUM(p_genai_cost_usd), 4) AS total_cost_usd,
+    ROUND(AVG(p_genai_cost_usd), 6) AS avg_cost_per_call
+FROM "genai-traces"
+WHERE event_name IS NULL
+    AND "gen_ai.operation.name" = 'chat'
+    AND p_timestamp > NOW() - INTERVAL '7 days'
+GROUP BY "gen_ai.request.model"
+ORDER BY total_cost_usd DESC;
+```
+
+---
+
+## 8. Slowest Calls (P95 Outliers)
+
+Find the slowest LLM calls to identify latency bottlenecks.
+
+```sql
+SELECT
+    p_timestamp,
+    "gen_ai.request.model" AS model,
+    span_name,
+    ROUND(p_genai_duration_ms, 2) AS duration_ms,
+    "gen_ai.usage.input_tokens" AS input_tokens,
+    "gen_ai.usage.output_tokens" AS output_tokens,
+    ROUND(p_genai_tokens_per_sec, 2) AS tokens_per_sec,
+    span_trace_id
+FROM "genai-traces"
+WHERE event_name IS NULL
+    AND "gen_ai.operation.name" = 'chat'
+    AND p_timestamp > NOW() - INTERVAL '24 hours'
+ORDER BY p_genai_duration_ms DESC
+LIMIT 20;
+```

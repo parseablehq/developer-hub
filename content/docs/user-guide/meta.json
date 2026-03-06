@@ -1,6 +1,7 @@
 {
   "title": "User Guide",
   "pages": [
+    "agent-observability",
     "ai-native",
     "alerting",
     "dashboards",

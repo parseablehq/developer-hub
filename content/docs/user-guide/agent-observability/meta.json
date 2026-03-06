@@ -1,0 +1,10 @@
+{
+  "title": "Agent Observability",
+  "pages": [
+    "...",
+    "auto-instrumentation",
+    "manual-instrumentation",
+    "schema-reference",
+    "sql-queries"
+  ]
+}

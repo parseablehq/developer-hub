@@ -1,0 +1,82 @@
+---
+title: Auto instrumentation guide
+---
+
+In this page we cover how to set up auto instrumentation of LLM calls using OpenTelemetry. This is the recommended approach for most users as it requires minimal code changes and provides rich trace data out of the box. If you need more control, you can also use manual instrumentation with the OpenTelemetry SDK.
+
+## Auto instrumentation with OpenAI SDK
+
+If you are using the OpenAI Python SDK, the official OpenTelemetry distro can instrument all LLM calls with zero code changes.
+
+**1. Install dependencies**
+
+```bash
+pip install opentelemetry-distro opentelemetry-exporter-otlp
+opentelemetry-bootstrap -a install
+```
+
+**2. Set environment variables**
+
+```bash
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+export OTEL_SERVICE_NAME=my-agent
+export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
+export OTEL_TRACES_EXPORTER=otlp
+export OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+```
+
+**3. Run your application with the auto-instrumentation wrapper**
+
+```bash
+opentelemetry-instrument python my_agent.py
+```
+
+That is it. Every `openai.chat.completions.create()` call will emit `gen_ai.*` spans automatically.
+
+## Auto instrumentation with other SDKs
+
+For broader provider support (Anthropic, Cohere, Mistral, Bedrock, VertexAI, and more), use OpenLLMetry (Traceloop SDK) or OpenLIT. These require only two lines of code added to your application entry point.
+
+**Option 1: OpenLLMetry (Traceloop SDK)**
+
+```bash
+pip install traceloop-sdk
+```
+
+```python
+from traceloop.sdk import Traceloop
+
+Traceloop.init()  # Call once at application startup
+```
+
+**Option 2: OpenLIT**
+
+```bash
+pip install openlit
+```
+
+```python
+import openlit
+
+openlit.init()  # Call once at application startup
+```
+
+Both libraries auto-patch supported LLM client libraries and emit standard `gen_ai.*` OTel spans. Configure the OTLP exporter endpoint using the same environment variables shown in Path A.
+
+## Verify data ingestion
+
+Once your application is running, verify that trace data is arriving in Parseable:
+
+```sql
+SELECT COUNT(*) AS span_count,
+       MIN(p_timestamp) AS first_seen,
+       MAX(p_timestamp) AS last_seen
+FROM "genai-traces"
+WHERE p_timestamp > NOW() - INTERVAL '1 hour';
+```
+
+If `span_count` is greater than zero, your LLM call instrumentation is working. 
+
+## Next steps
+
+Explore the [Schema Reference](/docs/user-guide/agent-observability/schema-reference) and [SQL Query Templates](/docs/user-guide/agent-observability/sql-queries) to start querying your data.

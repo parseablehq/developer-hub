@@ -1,0 +1,1093 @@
+---
+title: Manual instrumentation guide
+---
+
+This page is reference manual on how to manually instrument your agent with OTel spans and logs. If you are looking for a quick way to get LLM call traces flowing into Parseable, refer to the [Quickstart guide](/docs/user-guide/agent-observability/quickstart) which uses auto-instrumentation or two-line SDK initialization.
+
+## Instrumentation overview
+
+For each agent run, you want to capture:
+
+| What | Where it goes | Why |
+|------|--------------|-----|
+| **Agent run** — which agent ran, total tokens, total cost, exit status | OTel **`invoke_agent` span** | End-to-end agent observability, run-level dashboards |
+| **LLM call metadata** — model name, token counts, latency, temperature, finish reason, errors | OTel **`chat` span** | Per-call dashboards, aggregation, alerting, cost tracking |
+| **Full conversation content** — system prompts, user messages, assistant responses, tool results | OTel **log records** (correlated to `chat` spans) | Conversation reconstruction, debugging, quality analysis |
+| **Tool calls** — which tools the LLM called, with full arguments | OTel **log records** (correlated to `chat` spans) + **`execute_tool` spans** | Tool usage analytics, debugging |
+| **Thinking/reasoning** — Claude's chain-of-thought reasoning blocks | OTel **log records** (correlated to `chat` spans) | Reasoning analysis, debugging |
+
+The OpenTelemetry GenAI semantic conventions define how to structure this data. This guide shows exactly how to implement it.
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Your Agent Application (Python)                        │
+│                                                         │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │ opentelemetry-instrument CLI wrapper             │   │
+│  │ (auto-configures TracerProvider, LoggerProvider, │   │
+│  │  sets up OTLP exporters)                         │   │
+│  └──────────────────────────────────────────────────┘   │
+│                                                         │
+│  ┌─────────────────────────────────────────────────┐    │
+│  │ Your code (manual instrumentation):             │    │
+│  │  - _tracer.start_as_current_span(...)  → spans  │    │
+│  │  - _otel_logger.emit(...)              → logs   │    │
+│  └─────────────────────────────────────────────────┘    │
+│                    │                                    │
+│                    │ OTLP (protobuf)                    │
+│                    ▼                                    │
+│  ┌─────────────────────────────────────────────────┐    │
+│  │ BatchSpanProcessor + BatchLogRecordProcessor    │    │
+│  │ (buffers, batches, exports periodically)        │    │
+│  └─────────────────────────────────────────────────┘    │
+└────────────────────│────────────────────────────────────┘
+                     │ OTLP HTTP (:4318) or gRPC (:4317)
+                     ▼
+┌─────────────────────────────────────────────────────────┐
+│  OTel Collector                                         │
+│  - Receives traces + logs via OTLP                      │
+│  - Batches and exports to backend(s)                    │
+│  - Routes traces and logs to separate streams           │
+└────────────────────│────────────────────────────────────┘
+                     │ OTLP/HTTP (JSON)
+                     ▼
+┌─────────────────────────────────────────────────────────┐
+│  Parseable                                              │
+│  - genai-traces stream (flattened spans)                │
+│  - genai-logs stream (flattened log records)            │
+│  - SQL-queryable, with server-side cost enrichment      │
+└─────────────────────────────────────────────────────────┘
+```
+
+### What each layer does
+
+| Layer | Responsibility |
+|-------|----------------|
+| `opentelemetry-instrument` CLI | Bootstraps the SDK — creates `TracerProvider`, `LoggerProvider`, configures OTLP exporters. You do not call `set_tracer_provider()` or `set_logger_provider()` manually. |
+| Your code (manual instrumentation) | Creates spans (`_tracer.start_as_current_span(...)`) and emits log records (`_otel_logger.emit(...)`). This is where all GenAI-specific attributes and content are set. |
+| `BatchSpanProcessor` / `BatchLogRecordProcessor` | Accumulates spans and logs in memory, exports them in batches via OTLP. Configured automatically by the CLI. |
+| OTel Collector | Receives OTLP data, applies processors (batching, filtering), and exports to one or more backends. Converts protobuf to JSON for Parseable. |
+| Parseable | Stores traces and logs as flattened, SQL-queryable records. Enriches with computed columns (`p_genai_cost_usd`, `p_genai_tokens_total`, etc.). |
+
+## The opentelemetry-instrument CLI
+
+The `opentelemetry-instrument` CLI is the simplest way to bootstrap the OTel SDK. It is installed as part of the `opentelemetry-distro` package and is the recommended approach for Python applications.
+
+### What It Does
+
+When you run `opentelemetry-instrument python my_agent.py`, the CLI:
+
+1. Creates a `TracerProvider` with a `BatchSpanProcessor` and OTLP exporter
+2. Creates a `LoggerProvider` with a `BatchLogRecordProcessor` and OTLP exporter
+3. Sets both as the global providers (so `trace.get_tracer()` and `get_logger_provider()` return them)
+4. Optionally loads auto-instrumentors for installed libraries (OpenAI, httpx, etc.)
+5. Runs your application
+
+### What You Do NOT Do
+
+Because the CLI handles provider setup:
+
+- Do NOT call `set_tracer_provider()` — it's already set
+- Do NOT call `set_logger_provider()` — it's already set
+- Do NOT create `BatchSpanProcessor` or `OTLPSpanExporter` — already configured
+- Do NOT create `BatchLogRecordProcessor` or `OTLPLogExporter` — already configured
+- Just call `trace.get_tracer(...)` and `get_logger_provider().get_logger(...)` — they return the pre-configured providers
+
+### Manual Provider Setup (Without CLI)
+
+If you cannot use the CLI (e.g., embedded in a larger application), you can set up providers manually:
+
+```python
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk._logs import LoggerProvider
+from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
+from opentelemetry._logs import set_logger_provider
+
+# Traces
+tracer_provider = TracerProvider()
+tracer_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+trace.set_tracer_provider(tracer_provider)
+
+# Logs
+logger_provider = LoggerProvider()
+logger_provider.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter()))
+set_logger_provider(logger_provider)
+```
+
+This is the manual equivalent of what the CLI does. Use the CLI when possible.
+
+## Setup: Packages, Environment, Launch
+
+### Packages
+
+```bash
+pip install opentelemetry-distro opentelemetry-exporter-otlp
+opentelemetry-bootstrap -a install
+```
+
+| Package | Purpose |
+|---------|---------|
+| `opentelemetry-distro` | Provides `opentelemetry-instrument` CLI and auto-discovery |
+| `opentelemetry-exporter-otlp` | OTLP exporter (HTTP/protobuf and gRPC) |
+| `opentelemetry-bootstrap -a install` | Installs auto-instrumentors for detected libraries (e.g., `opentelemetry-instrumentation-openai-v2` if OpenAI SDK is installed) |
+
+### Environment Variables
+
+```bash
+# Required: where the OTel Collector listens
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+
+# Required: OTLP protocol
+export OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+
+# Required: identifies your application in traces
+export OTEL_SERVICE_NAME=my-genai-agent
+
+# Required: disable auto-instrumentor to prevent duplicates
+export OTEL_PYTHON_DISABLED_INSTRUMENTATIONS=openai_v2
+```
+
+| Variable | Purpose | Required |
+|----------|---------|----------|
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Collector address. `4318` for HTTP, `4317` for gRPC. | Yes |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` (HTTP) or `grpc` | Yes |
+| `OTEL_SERVICE_NAME` | Service name that appears on every span and log record as a resource attribute | Yes |
+| `OTEL_PYTHON_DISABLED_INSTRUMENTATIONS` | Comma-separated list of auto-instrumentors to skip. Set to `openai_v2` to prevent the OpenAI auto-instrumentor from loading. | Yes (if `opentelemetry-instrumentation-openai-v2` is installed) |
+| `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT` | Controls whether *auto*-instrumentors capture message content. Irrelevant when auto is disabled, but harmless to set. | No |
+
+### Launch Command
+
+```bash
+opentelemetry-instrument \
+    --traces_exporter otlp \
+    --logs_exporter otlp \
+    --metrics_exporter none \
+    python my_agent.py
+```
+
+| Flag | Value | Purpose |
+|------|-------|---------|
+| `--traces_exporter` | `otlp` | Export spans via OTLP |
+| `--logs_exporter` | `otlp` | Export log records via OTLP |
+| `--metrics_exporter` | `none` | Disable metrics (optional — set to `otlp` if you want metrics) |
+
+The CLI reads `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_PROTOCOL` to configure the exporters.
+
+## Instrumentation Code
+
+This is a complete, agent-agnostic reference for instrumenting any Python application that calls LLM APIs. The instrumentation uses three span types per the [OTel GenAI Agent Spans](https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-agent-spans/) spec.
+
+### Module-Level Setup
+
+You need a tracer and logger in the agent orchestration module (for `invoke_agent` and `execute_tool` spans + logs), and a tracer and logger in the LLM call module (for `chat` spans and log records):
+
+**Agent orchestration module** (e.g., `agents.py`):
+
+```python
+from opentelemetry import trace
+from opentelemetry._logs import get_logger_provider, SeverityNumber
+
+_tracer = trace.get_tracer("my-agent", "1.1.0")
+_otel_logger = get_logger_provider().get_logger("my-agent", "1.1.0")
+```
+
+**LLM call module** (e.g., `models.py`):
+
+```python
+import json
+from opentelemetry import trace
+from opentelemetry._logs import get_logger_provider, SeverityNumber
+
+_tracer = trace.get_tracer("my-agent.llm", "1.1.0")
+_otel_logger = get_logger_provider().get_logger("my-agent.llm", "1.1.0")
+```
+
+- The first argument is the **instrumentation scope name**. Use a dotted name that identifies which part of your application is emitting telemetry. Both spans and logs will carry this as `scope_name`.
+- The second argument is the **instrumentation scope version**. Bump this when you change what attributes/events you emit.
+- `get_logger_provider()` returns the provider already configured by the CLI. Do NOT create your own.
+
+### Instrumenting the Agent Run (invoke_agent)
+
+Wrap the entire agent loop in an `invoke_agent` span. All `chat` and `execute_tool` spans created inside this context automatically become children via OTel context propagation.
+
+```python
+def run_agent(model_name: str, provider: str, problem: str):
+    """Example: wrap an agent run with an invoke_agent span."""
+
+    span_name = "invoke_agent my-agent"
+    with _tracer.start_as_current_span(span_name, kind=trace.SpanKind.CLIENT) as span:
+        span.set_attribute("gen_ai.operation.name", "invoke_agent")
+        span.set_attribute("gen_ai.agent.name", "my-agent")
+        span.set_attribute("gen_ai.provider.name", provider)
+        span.set_attribute("gen_ai.request.model", model_name)
+
+        # ── Emit the problem statement that triggered this agent run ──
+        _otel_logger.emit(
+            body=problem,
+            severity_number=SeverityNumber.INFO,
+            event_name="gen_ai.user.message",
+            attributes={
+                "gen_ai.operation.name": "invoke_agent",
+                "gen_ai.provider.name": provider,
+                "gen_ai.request.model": model_name,
+                "gen_ai.agent.name": "my-agent",
+                "gen_ai.event.name": "gen_ai.user.message",
+                "role": "user",
+            },
+        )
+
+        # ── Your agent loop ──
+        done = False
+        while not done:
+            llm_response = call_llm(model_name, messages)    # creates a child "chat" span
+            tool_result = execute_tool(llm_response.action)   # creates a child "execute_tool" span
+            done = llm_response.is_done
+
+        # ── After loop: set aggregate response attributes ──
+        span.set_attribute("gen_ai.usage.input_tokens", total_input_tokens)
+        span.set_attribute("gen_ai.usage.output_tokens", total_output_tokens)
+        span.set_attribute("gen_ai.response.finish_reasons", json.dumps(["exit_command"]))
+
+        # ── Emit agent completion summary ──
+        _otel_logger.emit(
+            body=json.dumps({"exit_status": "exit_command",
+                             "total_input_tokens": total_input_tokens,
+                             "total_output_tokens": total_output_tokens}),
+            severity_number=SeverityNumber.INFO,
+            event_name="gen_ai.agent.finish",
+            attributes={
+                "gen_ai.operation.name": "invoke_agent",
+                "gen_ai.agent.name": "my-agent",
+                "gen_ai.provider.name": provider,
+                "gen_ai.request.model": model_name,
+                "gen_ai.event.name": "gen_ai.agent.finish",
+                "gen_ai.usage.input_tokens": total_input_tokens,
+                "gen_ai.usage.output_tokens": total_output_tokens,
+            },
+        )
+```
+
+**Key points:**
+- `kind=trace.SpanKind.CLIENT` — the agent is a client of the LLM service
+- Token counts on `invoke_agent` are **totals** across all LLM calls in the run
+- `gen_ai.agent.name` lives here, NOT on individual `chat` spans
+- `gen_ai.provider.name` replaces the older `gen_ai.system` attribute per current spec
+- The `gen_ai.user.message` log emits the problem statement so it appears in the trace waterfall
+- The `gen_ai.agent.finish` log emits a completion summary with exit status and total token counts
+
+### Instrumenting Tool Execution (execute_tool)
+
+Wrap each tool/command execution in an `execute_tool` span:
+
+```python
+def execute_tool(action: str, tool_call_id: str | None = None):
+    """Example: wrap a tool execution with an execute_tool span."""
+
+    tool_name = action.strip().split()[0] if action.strip() else "unknown"
+    span_name = f"execute_tool {tool_name}"
+    with _tracer.start_as_current_span(span_name, kind=trace.SpanKind.INTERNAL) as span:
+        span.set_attribute("gen_ai.operation.name", "execute_tool")
+        span.set_attribute("gen_ai.tool.name", tool_name)
+        span.set_attribute("gen_ai.tool.type", "function")
+        if tool_call_id:
+            span.set_attribute("gen_ai.tool.call.id", tool_call_id)
+
+        # Emit tool input log (the command being run)
+        _otel_logger.emit(
+            body=action,
+            severity_number=SeverityNumber.INFO,
+            event_name="gen_ai.tool.input",
+            attributes={
+                "gen_ai.operation.name": "execute_tool",
+                "gen_ai.tool.name": tool_name,
+                "gen_ai.tool.type": "function",
+                "gen_ai.tool.call.id": tool_call_id or "",
+                "gen_ai.event.name": "gen_ai.tool.input",
+            },
+        )
+
+        try:
+            result = env.communicate(action)
+        except TimeoutError as e:
+            span.set_attribute("error.type", type(e).__name__)
+            span.set_status(trace.StatusCode.ERROR, "Command timed out")
+            raise
+
+        # Emit tool output log (the observation)
+        _otel_logger.emit(
+            body=result or "",
+            severity_number=SeverityNumber.INFO,
+            event_name="gen_ai.tool.output",
+            attributes={
+                "gen_ai.operation.name": "execute_tool",
+                "gen_ai.tool.name": tool_name,
+                "gen_ai.tool.type": "function",
+                "gen_ai.tool.call.id": tool_call_id or "",
+                "gen_ai.event.name": "gen_ai.tool.output",
+            },
+        )
+
+        return result
+```
+
+**Key points:**
+- `kind=trace.SpanKind.INTERNAL` — tool execution is an internal operation
+- `gen_ai.tool.call.id` links this execution back to the LLM's tool call request (from function calling mode)
+- Error status is set on timeout or failure, making failed tool executions queryable
+- `gen_ai.tool.input` log captures the command sent to the tool
+- `gen_ai.tool.output` log captures the tool's observation/result
+
+### Instrumenting an LLM Call (chat)
+
+Wrap your LLM call in a span. Emit log records inside the span context.
+
+```python
+def call_llm(model: str, messages: list[dict], temperature: float = 0.0, **kwargs):
+    """Example: instrument any LLM call with OTel traces + logs."""
+
+    with _tracer.start_as_current_span(f"chat {model}", kind=trace.SpanKind.CLIENT) as span:
+
+        # ── Step 1: Set request attributes on span ──
+        span.set_attribute("gen_ai.operation.name", "chat")
+        span.set_attribute("gen_ai.request.model", model)
+        span.set_attribute("gen_ai.provider.name", "openai")  # or "anthropic", etc.
+        if temperature is not None:
+            span.set_attribute("gen_ai.request.temperature", temperature)
+
+        # ── Step 2: Emit input message log records ──
+        for msg in messages:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            body = content if isinstance(content, str) else json.dumps(content)
+            _otel_logger.emit(
+                body=body,
+                severity_number=SeverityNumber.INFO,
+                event_name=f"gen_ai.{role}.message",
+                attributes={
+                    "gen_ai.provider.name": "openai",
+                    "gen_ai.request.model": model,
+                    "gen_ai.event.name": f"gen_ai.{role}.message",
+                    "role": role,
+                },
+            )
+
+        # ── Step 3: Call the LLM ──
+        try:
+            response = your_llm_client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                **kwargs,
+            )
+        except Exception as e:
+            span.set_status(trace.StatusCode.ERROR, str(e))
+            span.set_attribute("error.type", type(e).__name__)
+            raise
+
+        # ── Step 4: Set response attributes on span ──
+        if response.model:
+            span.set_attribute("gen_ai.response.model", response.model)
+        if response.id:
+            span.set_attribute("gen_ai.response.id", response.id)
+        if response.usage:
+            span.set_attribute("gen_ai.usage.input_tokens", response.usage.prompt_tokens)
+            span.set_attribute("gen_ai.usage.output_tokens", response.usage.completion_tokens)
+
+        # ── Step 5: Emit response log records ──
+        finish_reasons = []
+        for i, choice in enumerate(response.choices):
+            # Choice content
+            _otel_logger.emit(
+                body=choice.message.content or "",
+                severity_number=SeverityNumber.INFO,
+                event_name="gen_ai.choice",
+                attributes={
+                    "gen_ai.provider.name": "openai",
+                    "gen_ai.request.model": model,
+                    "gen_ai.event.name": "gen_ai.choice",
+                    "index": i,
+                    "finish_reason": choice.finish_reason or "",
+                },
+            )
+            if choice.finish_reason:
+                finish_reasons.append(choice.finish_reason)
+
+            # Tool calls (if present)
+            if choice.message.tool_calls:
+                tool_call_ids = []
+                for tc in choice.message.tool_calls:
+                    tc_dict = tc.model_dump() if hasattr(tc, "model_dump") else tc
+                    if tc_dict.get("id"):
+                        tool_call_ids.append(tc_dict["id"])
+                    _otel_logger.emit(
+                        body=json.dumps(tc_dict.get("function", tc_dict)),
+                        severity_number=SeverityNumber.INFO,
+                        event_name="gen_ai.tool.call",
+                        attributes={
+                            "gen_ai.provider.name": "openai",
+                            "gen_ai.request.model": model,
+                            "gen_ai.event.name": "gen_ai.tool.call",
+                            "gen_ai.tool.name": tc_dict.get("function", {}).get("name", ""),
+                            "gen_ai.tool.call.id": tc_dict.get("id", ""),
+                        },
+                    )
+
+                # Set tool call IDs on the chat span for cross-span correlation
+                # with execute_tool spans. Single ID stored as string, multiple
+                # IDs JSON-encoded as array.
+                if tool_call_ids:
+                    span.set_attribute(
+                        "gen_ai.tool.call.id",
+                        tool_call_ids[0] if len(tool_call_ids) == 1 else json.dumps(tool_call_ids),
+                    )
+
+            # Thinking/reasoning blocks (Claude, DeepSeek, etc.)
+            thinking_blocks = getattr(choice.message, "thinking_blocks", None)
+            if thinking_blocks:
+                for tb in thinking_blocks:
+                    thinking_text = tb.get("thinking", "") if isinstance(tb, dict) else str(tb)
+                    _otel_logger.emit(
+                        body=thinking_text,
+                        severity_number=SeverityNumber.INFO,
+                        event_name="gen_ai.thinking",
+                        attributes={
+                            "gen_ai.provider.name": "openai",
+                            "gen_ai.request.model": model,
+                            "gen_ai.event.name": "gen_ai.thinking",
+                        },
+                    )
+
+        # ── Step 6: Finalize span ──
+        if finish_reasons:
+            span.set_attribute("gen_ai.response.finish_reasons", json.dumps(finish_reasons))
+        span.set_status(trace.StatusCode.OK)
+
+        return response
+```
+
+### What Gets Produced Per Agent Run
+
+**Three span types** (in the traces pipeline):
+
+**`invoke_agent` span** — one per agent run:
+
+| Attribute | Example |
+|-----------|---------|
+| `span_name` | `"invoke_agent my-agent"` |
+| `gen_ai.operation.name` | `"invoke_agent"` |
+| `gen_ai.agent.name` | `"my-agent"` |
+| `gen_ai.provider.name` | `"openai"` |
+| `gen_ai.request.model` | `"gpt-4o"` |
+| `gen_ai.usage.input_tokens` | `45200` (total across all steps) |
+| `gen_ai.usage.output_tokens` | `3800` (total across all steps) |
+| `gen_ai.response.finish_reasons` | `["exit_command"]` |
+| `span_kind` | `CLIENT` |
+| `scope_name` | `"my-agent"` |
+| `service.name` | `"my-genai-agent"` |
+
+**`chat` span** — one per LLM call (child of `invoke_agent`):
+
+| Attribute | Example |
+|-----------|---------|
+| `span_name` | `"chat gpt-4o"` |
+| `gen_ai.operation.name` | `"chat"` |
+| `gen_ai.request.model` | `"gpt-4o"` |
+| `gen_ai.provider.name` | `"openai"` |
+| `gen_ai.response.model` | `"gpt-4o-2024-11-20"` |
+| `gen_ai.response.id` | `"chatcmpl-AZk8j..."` |
+| `gen_ai.usage.input_tokens` | `1250` |
+| `gen_ai.usage.output_tokens` | `380` |
+| `gen_ai.request.temperature` | `0.0` |
+| `gen_ai.response.finish_reasons` | `["stop"]` |
+| `gen_ai.tool.call.id` | `"call_abc123"` (single) or `["call_abc123","call_def456"]` (multiple, JSON array) |
+| `span_kind` | `CLIENT` |
+| `span_status` | `OK` or `ERROR` |
+| `error.type` | `"RateLimitError"` (only on error) |
+| `scope_name` | `"my-agent.llm"` |
+
+**`execute_tool` span** — one per tool execution (child of `invoke_agent`):
+
+| Attribute | Example |
+|-----------|---------|
+| `span_name` | `"execute_tool find_file"` |
+| `gen_ai.operation.name` | `"execute_tool"` |
+| `gen_ai.tool.name` | `"find_file"` |
+| `gen_ai.tool.type` | `"function"` |
+| `gen_ai.tool.call.id` | `"call_abc123"` (when using function calling) |
+| `span_kind` | `INTERNAL` |
+| `span_status` | `OK` or `ERROR` |
+| `error.type` | `"CommandTimeoutError"` (only on error) |
+| `scope_name` | `"my-agent"` |
+
+<Callout type="info">
+The `gen_ai.tool.call.id` attribute on `chat` spans enables cross-span correlation — you can JOIN a `chat` span to its corresponding `execute_tool` spans via the shared tool call ID.
+</Callout>
+
+**Multiple log records** (in the logs pipeline), carrying matching `trace_id` + `span_id` from their respective spans. Log records are emitted in all three span types:
+
+**`invoke_agent` log records:**
+
+| `event_name` | `body` content | When |
+|-------------|---------------|------|
+| `gen_ai.user.message` | Problem statement text | At start of agent run |
+| `gen_ai.agent.finish` | JSON: exit status + total tokens | At end of agent run |
+
+**`chat` log records:**
+
+| `event_name` | `body` content | When |
+|-------------|---------------|------|
+| `gen_ai.system.message` | Full system prompt | For each system message in input |
+| `gen_ai.user.message` | Full user message | For each user message in input |
+| `gen_ai.assistant.message` | Prior assistant response | For each assistant message in input (multi-turn) |
+| `gen_ai.tool.message` | Tool result text | For each tool result message in input |
+| `gen_ai.choice` | Full LLM response text | For each response choice |
+| `gen_ai.tool.call` | Tool call JSON (name + arguments) | For each tool call in the response |
+| `gen_ai.thinking` | Full reasoning/thinking text | For each thinking block (Claude, DeepSeek, etc.) |
+
+**`execute_tool` log records:**
+
+| `event_name` | `body` content | When |
+|-------------|---------------|------|
+| `gen_ai.tool.input` | Tool command/action string | Before tool execution |
+| `gen_ai.tool.output` | Tool observation/result | After tool execution |
+
+## OTel Collector Configuration
+
+The OTel Collector sits between your application and the backend. It receives OTLP data and routes traces and logs to separate backend streams.
+
+### Minimal Configuration
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 100
+
+exporters:
+  # Traces -> Parseable
+  otlphttp/traces:
+    endpoint: https://your-parseable-instance:8000
+    encoding: json
+    headers:
+      Authorization: "Basic <credentials>"
+      X-P-Stream: "genai-traces"
+      X-P-Log-Source: "otel-traces"
+
+  # Logs -> Parseable
+  otlphttp/logs:
+    endpoint: https://your-parseable-instance:8000
+    encoding: json
+    headers:
+      Authorization: "Basic <credentials>"
+      X-P-Stream: "genai-logs"
+      X-P-Log-Source: "otel-logs"
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp/traces]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp/logs]
+```
+
+### Key Points
+
+- **Two pipelines** — traces and logs are separate OTel signals. The collector routes them independently.
+- **One receiver** — both signals arrive at the same OTLP endpoint from the SDK.
+- **JSON encoding** — the collector converts OTel protobuf to JSON before sending to the backend. This is what the backend flattens into queryable records.
+- **Batch processor** — accumulates records and sends them in batches. Tune `timeout` and `send_batch_size` for your throughput. For development, lower values (1s, 10 records) give faster feedback. For production, higher values reduce network overhead.
+
+### Running the Collector
+
+Docker:
+
+```bash
+docker run -d --name otel-collector \
+  -p 4317:4317 -p 4318:4318 \
+  -v $(pwd)/otel-collector-config.yaml:/etc/otelcol/config.yaml \
+  otel/opentelemetry-collector-contrib:latest
+```
+
+Binary:
+
+```bash
+otelcol-contrib --config otel-collector-config.yaml
+```
+
+## Semantic Conventions
+
+All attribute names follow the [OpenTelemetry GenAI Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/). This matters because backends, dashboards, and tools that understand these conventions will automatically recognize and display GenAI data correctly.
+
+### Span Attributes by Span Type
+
+**`invoke_agent` spans:**
+
+| Attribute | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `gen_ai.operation.name` | string | Yes | Always `"invoke_agent"` |
+| `gen_ai.agent.name` | string | Yes | Agent identifier |
+| `gen_ai.provider.name` | string | Yes | LLM provider: `"openai"`, `"anthropic"`, `"google"`, etc. |
+| `gen_ai.request.model` | string | Yes | Model name used by the agent |
+| `gen_ai.usage.input_tokens` | int | On completion | Total prompt tokens across all LLM calls |
+| `gen_ai.usage.output_tokens` | int | On completion | Total completion tokens across all LLM calls |
+| `gen_ai.response.finish_reasons` | string | On completion | JSON array: `["exit_command"]`, `["stop"]`, etc. |
+
+**`chat` spans:**
+
+| Attribute | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `gen_ai.operation.name` | string | Yes | Always `"chat"` for chat completions |
+| `gen_ai.provider.name` | string | Yes | LLM provider: `"openai"`, `"anthropic"`, `"google"`, etc. |
+| `gen_ai.request.model` | string | Yes | Model name as passed to the API |
+| `gen_ai.response.model` | string | On success | Model name as returned by the API (may differ from request) |
+| `gen_ai.response.id` | string | On success | Provider-assigned response ID |
+| `gen_ai.usage.input_tokens` | int | On success | Prompt token count for this call |
+| `gen_ai.usage.output_tokens` | int | On success | Completion token count for this call |
+| `gen_ai.request.temperature` | float | If set | Sampling temperature |
+| `gen_ai.request.top_p` | float | If set | Nucleus sampling parameter |
+| `gen_ai.request.max_tokens` | int | If set | Maximum output tokens |
+| `gen_ai.response.finish_reasons` | string | On success | JSON array of finish reasons: `["stop"]`, `["tool_calls"]` |
+| `gen_ai.tool.call.id` | string | If tool calls present | Tool call ID(s) for cross-span correlation with `execute_tool` spans. Single ID as string; multiple IDs as JSON array. |
+| `error.type` | string | On error | Exception class name |
+
+**`execute_tool` spans:**
+
+| Attribute | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `gen_ai.operation.name` | string | Yes | Always `"execute_tool"` |
+| `gen_ai.tool.name` | string | Yes | Tool/command name (e.g., `"find_file"`, `"open_file"`) |
+| `gen_ai.tool.type` | string | Yes | Always `"function"` |
+| `gen_ai.tool.call.id` | string | If available | Tool call ID from function calling mode (links to LLM's tool call request) |
+| `error.type` | string | On error | Exception class name (e.g., `"CommandTimeoutError"`) |
+
+<Callout type="info">
+The older `gen_ai.system` attribute has been replaced by `gen_ai.provider.name` per the current OTel GenAI semantic conventions.
+</Callout>
+
+### Log Record Event Names
+
+**`chat` span events:**
+
+| `event_name` | Semantic Convention | Description |
+|-------------|-------------------|-------------|
+| `gen_ai.system.message` | GenAI message event | System prompt |
+| `gen_ai.user.message` | GenAI message event | User input |
+| `gen_ai.assistant.message` | GenAI message event | Prior assistant response (multi-turn) |
+| `gen_ai.tool.message` | GenAI message event | Tool/function result |
+| `gen_ai.choice` | GenAI choice event | LLM response content |
+| `gen_ai.tool.call` | GenAI tool call event | Tool/function invocation |
+| `gen_ai.thinking` | Custom extension | Reasoning/thinking block (not yet in OTel semconv) |
+
+**`invoke_agent` span events:**
+
+| `event_name` | Semantic Convention | Description |
+|-------------|-------------------|-------------|
+| `gen_ai.user.message` | GenAI message event | Problem statement that triggered the agent run |
+| `gen_ai.agent.finish` | Custom extension | Agent completion summary (exit status + total tokens) |
+
+**`execute_tool` span events:**
+
+| `event_name` | Semantic Convention | Description |
+|-------------|-------------------|-------------|
+| `gen_ai.tool.input` | Custom extension | Tool command/action sent for execution |
+| `gen_ai.tool.output` | Custom extension | Tool observation/result returned from execution |
+
+### Log Record Attributes
+
+Every log record carries:
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `gen_ai.operation.name` | string | `"chat"`, `"invoke_agent"`, or `"execute_tool"` — identifies which span type emitted this log |
+| `gen_ai.event.name` | string | Duplicates `event_name` for queryability as a flat column |
+
+**Additional attributes on `chat` log records:**
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `gen_ai.provider.name` | string | LLM provider (`openai`, `anthropic`, `google`, `mistral`, etc.) |
+| `gen_ai.request.model` | string | Model name as requested |
+| `gen_ai.request.temperature` | float | Temperature (if set) |
+| `gen_ai.request.top_p` | float | Top-p (if set) |
+| `gen_ai.request.max_tokens` | int | Max output tokens (if set) |
+
+**Additional attributes on `invoke_agent` log records:**
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `gen_ai.provider.name` | string | LLM provider |
+| `gen_ai.request.model` | string | Model name |
+| `gen_ai.agent.name` | string | Agent identifier (e.g., `"swe-agent"`) |
+| `role` | string | `"user"` (on `gen_ai.user.message` only) |
+| `gen_ai.usage.input_tokens` | int | Total input tokens (on `gen_ai.agent.finish` only) |
+| `gen_ai.usage.output_tokens` | int | Total output tokens (on `gen_ai.agent.finish` only) |
+
+**Additional attributes on `execute_tool` log records:**
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `gen_ai.tool.name` | string | Tool/command name |
+| `gen_ai.tool.type` | string | Always `"function"` |
+| `gen_ai.tool.call.id` | string | Tool call ID (empty string if not using function calling) |
+
+**Event-specific attributes (chat logs only):**
+
+| Attribute | Present on | Type | Description |
+|-----------|-----------|------|-------------|
+| `role` | `gen_ai.{role}.message` | string | `system`, `user`, `assistant`, `tool` |
+| `index` | `gen_ai.choice` | int | Choice index (0-based) |
+| `finish_reason` | `gen_ai.choice` | string | `stop`, `tool_calls`, `length`, etc. |
+| `gen_ai.tool.name` | `gen_ai.tool.call` | string | Function/tool name |
+| `gen_ai.tool.call.id` | `gen_ai.tool.call` | string | Tool call ID |
+
+### The body Field
+
+The `body` of each log record is the **full, untruncated content**:
+
+**`chat` span logs:**
+
+| Event | `body` contains |
+|-------|----------------|
+| `gen_ai.system.message` | Complete system prompt (can be thousands of tokens) |
+| `gen_ai.user.message` | Complete user message |
+| `gen_ai.assistant.message` | Complete prior assistant response |
+| `gen_ai.tool.message` | Complete tool result |
+| `gen_ai.choice` | Complete LLM response text |
+| `gen_ai.tool.call` | JSON: `{"name": "...", "arguments": "..."}` |
+| `gen_ai.thinking` | Complete reasoning/thinking text |
+
+**`invoke_agent` span logs:**
+
+| Event | `body` contains |
+|-------|----------------|
+| `gen_ai.user.message` | Complete problem statement that triggered the agent run |
+| `gen_ai.agent.finish` | JSON: `{"exit_status": "...", "total_input_tokens": N, "total_output_tokens": N}` |
+
+**`execute_tool` span logs:**
+
+| Event | `body` contains |
+|-------|----------------|
+| `gen_ai.tool.input` | Complete tool command/action string |
+| `gen_ai.tool.output` | Complete tool observation/result |
+
+No truncation. No size limits from the instrumentation side. The body carries whatever the LLM returned, whatever was sent to it, or whatever the tool produced.
+
+## Scenarios
+
+### Simple Chat Completion (OpenAI)
+
+```python
+response = openai.chat.completions.create(
+    model="gpt-4o",
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "What is 2+2?"},
+    ],
+)
+```
+
+**Produces:**
+- 1 span: `chat gpt-4o` with token counts, latency, status OK
+- 3 log records: `gen_ai.system.message`, `gen_ai.user.message`, `gen_ai.choice`
+- All share the same `trace_id` + `span_id`
+
+### Multi-Turn Conversation
+
+```python
+messages = [
+    {"role": "system", "content": "You are a math tutor."},
+    {"role": "user", "content": "What is 10*5?"},
+    {"role": "assistant", "content": "50"},
+    {"role": "user", "content": "Divide by 2"},
+]
+response = call_llm("gpt-4o", messages)
+```
+
+**Produces:**
+- 1 span: `chat gpt-4o`
+- 5 log records: `gen_ai.system.message`, `gen_ai.user.message`, `gen_ai.assistant.message`, `gen_ai.user.message`, `gen_ai.choice`
+- The full conversation history is captured. You can reconstruct it by querying log records for this span, ordered by timestamp.
+
+### Tool/Function Calling
+
+The LLM responds with tool calls instead of (or in addition to) text content.
+
+**Produces:**
+- 1 span: `chat gpt-4o`, `finish_reasons: ["tool_calls"]`
+- N input message logs
+- 1 choice log (may have empty body if the LLM only returned tool calls)
+- 1+ `gen_ai.tool.call` logs — each with the tool name and JSON arguments in `body`
+
+### Claude Thinking/Reasoning Blocks
+
+Claude (and some other models) return a `thinking_blocks` array alongside the response content. Each thinking block contains the model's chain-of-thought reasoning.
+
+**Produces:**
+- 1 span: `chat claude-sonnet-4-20250514`
+- N input message logs
+- 1 choice log (the actual response text)
+- 1+ `gen_ai.thinking` logs — each with the full reasoning text in `body`
+
+This is the primary reason for manual instrumentation. Auto-instrumentors do not capture thinking blocks because they are a provider-specific extension not (yet) in the OpenAI SDK's standard response format.
+
+### Error: Rate Limit
+
+```python
+try:
+    response = call_llm(...)
+except RateLimitError as e:
+    # The span still exists with ERROR status
+    pass
+```
+
+**Produces:**
+- 1 span: `chat gpt-4o`, `span_status=ERROR`, `error.type=RateLimitError`
+- N input message logs (emitted before the call, so they still exist)
+- 0 choice/tool/thinking logs (call failed before response)
+- All logs still have `trace_id` + `span_id` — you can see what was sent to the LLM even though it failed
+
+### Error: Context Window Exceeded
+
+The LLM returns a 400 because the input is too long.
+
+**Produces:**
+- Same as above — span with ERROR status, input message logs but no response logs.
+- `error.type=ContextWindowExceededError`
+- This is queryable: find all spans where `error.type = 'ContextWindowExceededError'`, then JOIN with logs to see what input caused it.
+
+### Streaming Responses
+
+**Current limitation:** The instrumentation code shown above works with non-streaming responses. For streaming (`stream=True`), you need to:
+
+1. Open the span before the stream starts
+2. Accumulate the streamed chunks into a full response
+3. Emit log records and set span attributes after the stream completes
+4. Close the span
+
+The span remains open during streaming, so all log records emitted during or after streaming will be correlated.
+
+```python
+with _tracer.start_as_current_span(f"chat {model}", kind=trace.SpanKind.CLIENT) as span:
+    span.set_attribute("gen_ai.request.model", model)
+    # ... emit input message logs ...
+
+    stream = client.chat.completions.create(model=model, messages=messages, stream=True)
+    chunks = []
+    for chunk in stream:
+        chunks.append(chunk)
+
+    # Reconstruct full response from chunks, then emit logs
+    full_response_text = "".join(c.choices[0].delta.content or "" for c in chunks if c.choices)
+    _otel_logger.emit(body=full_response_text, event_name="gen_ai.choice", ...)
+
+    # Token usage may not be available in streaming mode (provider-dependent)
+    span.set_status(trace.StatusCode.OK)
+```
+
+### Retries
+
+If your agent retries failed LLM calls (e.g., on rate limit errors), each attempt produces its own span. The retry loop should be **outside** the span context:
+
+```python
+for attempt in range(max_retries):
+    try:
+        response = call_llm(model, messages)  # Each call creates its own span
+        break
+    except RateLimitError:
+        time.sleep(backoff)
+```
+
+This produces N spans (one per attempt), each with its own status. Failed attempts have `ERROR` status, the successful attempt has `OK`.
+
+### Multiple LLM Providers
+
+The `gen_ai.provider.name` attribute distinguishes providers. If your agent calls OpenAI for some tasks and Anthropic for others:
+
+- OpenAI calls: `gen_ai.provider.name = "openai"`
+- Anthropic calls: `gen_ai.provider.name = "anthropic"`
+
+You can filter and aggregate by provider in queries.
+
+### Wrapper Libraries (LiteLLM, LangChain)
+
+If your agent uses a wrapper library like LiteLLM that abstracts over multiple providers:
+
+- Instrument at the **wrapper call site**, not inside the wrapper library
+- The model name you pass to the wrapper becomes `gen_ai.request.model`
+- The `gen_ai.provider.name` should reflect the actual underlying provider (if known)
+- The response object structure may differ from the raw OpenAI SDK — adapt the attribute extraction accordingly
+
+## Limitations and Edge Cases
+
+### Thinking Blocks Are Provider-Specific
+
+The `gen_ai.thinking` event is not part of the official OTel GenAI semantic conventions. It is a custom extension. Different providers expose reasoning differently:
+
+| Provider | How thinking is exposed | How to extract |
+|----------|----------------------|----------------|
+| Anthropic (Claude) | `response.choices[i].message.thinking_blocks` (via LiteLLM) | Iterate `thinking_blocks`, extract `"thinking"` key |
+| DeepSeek | `response.choices[i].message.reasoning_content` | Extract `reasoning_content` field |
+| OpenAI o1/o3 | Internal reasoning not exposed in API response | Cannot be captured |
+
+If the provider does not expose reasoning, there will be no `gen_ai.thinking` log records. This is expected behavior, not a bug.
+
+### Token Counts May Be Absent
+
+Some scenarios where `gen_ai.usage.input_tokens` and `gen_ai.usage.output_tokens` are not available:
+
+| Scenario | Why | Impact |
+|----------|-----|--------|
+| Error spans | API call failed before returning usage | Span has no token attributes |
+| Streaming without usage chunks | Some providers don't send usage in streaming mode | Span has no token attributes |
+| Local/self-hosted models | Some local model servers don't return usage | Span has no token attributes |
+| Wrapper library filtering | Some wrappers strip usage from the response object | Span has no token attributes |
+
+**Backend impact:** Token-based aggregations (cost, total tokens) should handle NULL gracefully.
+
+### The body Field Can Be Very Large
+
+System prompts in agent applications can be 10,000+ tokens. LLM responses can be similarly large. Tool call arguments can contain large JSON payloads. Thinking blocks can be tens of thousands of tokens.
+
+There is **no truncation** in the instrumentation. The full content is emitted as the log record body. This is intentional — truncation would make conversation reconstruction incomplete.
+
+**Backend impact:** The logs stream will be significantly larger (in bytes) than the traces stream. Plan storage and indexing accordingly.
+
+### Log Records Without Span Context
+
+If `_otel_logger.emit()` is called **outside** a `start_as_current_span()` context, the log record will have empty `trace_id` and `span_id`. This means:
+
+- The log record exists in the logs stream but cannot be correlated with any span
+- This is a bug in the instrumentation code — all GenAI log emissions should be inside a span context
+
+The manual instrumentation approach prevents this by design: all `emit()` calls are inside the `with _tracer.start_as_current_span(...):` block.
+
+### Concurrent/Async LLM Calls
+
+OTel context propagation is thread-local (and async-task-local in asyncio). If your agent makes concurrent LLM calls:
+
+- **Threading:** Each thread has its own context. Spans in different threads don't interfere. Each call gets its own `trace_id`/`span_id`.
+- **asyncio:** OTel SDK supports async context propagation via `contextvars`. Each coroutine gets its own context.
+- **Multiprocessing:** Each process has its own TracerProvider/LoggerProvider. Spans from different processes have different `trace_id`s.
+
+Concurrency does not break correlation — each LLM call's logs are always linked to that call's span.
+
+### Provider-Specific Response Formats
+
+Different LLM providers return responses in slightly different formats. The instrumentation code must handle these differences:
+
+| Provider | `response.model` | `response.usage` | Tool calls | Thinking |
+|----------|-----------------|------------------|------------|----------|
+| OpenAI | Always present | Always present (non-streaming) | `.message.tool_calls` | N/A |
+| Anthropic (via LiteLLM) | Always present | Always present | `.message.tool_calls` | `.message.thinking_blocks` |
+| Google (via LiteLLM) | Always present | Always present | `.message.tool_calls` | N/A |
+| Local models (Ollama, vLLM) | May differ | May be absent | Varies | N/A |
+
+Guard all attribute extraction with `hasattr()` / `getattr()` / `is not None` checks.
+
+### The opentelemetry-instrument CLI Must Wrap the Process
+
+The CLI sets up providers at process startup. If your application forks or spawns subprocesses, those subprocesses will NOT have the providers configured. Each process that emits telemetry must be launched with `opentelemetry-instrument`, or must set up providers manually.
+
+### Collector Must Be Running
+
+If the OTel Collector is not running when the application starts:
+
+- The SDK will buffer spans and log records in memory
+- It will periodically retry exporting
+- If the buffer fills up, the oldest records are dropped (configurable via `OTEL_BSP_MAX_QUEUE_SIZE`, default 2048 for spans)
+- No application errors are raised — telemetry loss is silent
+
+For production, ensure the collector is running before the application starts. For development, data loss during collector restarts is acceptable.
+
+### Scope Name Consistency
+
+Both `_tracer` and `_otel_logger` should use the **same scope name**. This makes it easy to filter both spans and logs by scope:
+
+```python
+_tracer = trace.get_tracer("my-agent.llm", "1.0.0")
+_otel_logger = get_logger_provider().get_logger("my-agent.llm", "1.0.0")
+```
+
+If they use different scope names, correlation still works (via `trace_id`/`span_id`), but filtering by `scope_name` in queries will not match both signals.
+
+## Troubleshooting
+
+### No spans or logs appearing
+
+1. **Is the collector running?** Check `curl http://localhost:4318/v1/traces` — should return a response (even an error response means it's listening).
+2. **Is the CLI wrapping the process?** Run `opentelemetry-instrument --help` to verify it's installed. Check that your launch command uses `opentelemetry-instrument python ...`, not just `python ...`.
+3. **Are exporters configured?** Check that `--traces_exporter otlp --logs_exporter otlp` are passed to the CLI.
+4. **Is the endpoint correct?** `OTEL_EXPORTER_OTLP_ENDPOINT` must match where the collector is listening.
+
+### Duplicate spans per LLM call
+
+The auto-instrumentor is still active. Verify:
+```bash
+echo $OTEL_PYTHON_DISABLED_INSTRUMENTATIONS
+# Should output: openai_v2
+```
+
+If `opentelemetry-instrumentation-openai-v2` is installed and not disabled, it will create its own spans alongside your manual spans.
+
+### Log records have empty trace_id/span_id
+
+Log records are being emitted outside a span context. Ensure every `_otel_logger.emit()` call is inside a `with _tracer.start_as_current_span(...):` block.
+
+### "Overriding of current LoggerProvider is not allowed"
+
+You are calling `set_logger_provider()` in your application code, but the CLI already set up a LoggerProvider. Remove the manual `set_logger_provider()` call. Use `get_logger_provider()` instead.
+
+### Spans appear but logs do not
+
+1. Check that `--logs_exporter otlp` is passed to the CLI (not `none`).
+2. Check that the collector config has a `logs` pipeline (not just `traces`).
+3. Verify that `_otel_logger.emit()` is being called — add a `print()` before the emit to confirm the code path is reached.
+
+### Logs appear but with wrong event_name
+
+The `event_name` parameter in `_otel_logger.emit()` must be a keyword argument. If passed positionally, it may be interpreted as a different parameter. Always use `event_name=...`.
+
+## Verification Checklist
+
+After setting up instrumentation, verify end-to-end:
+
+| Check | How | Expected |
+|-------|-----|----------|
+| **Three span types present** | Query traces and check `gen_ai.operation.name` values | `invoke_agent`, `chat`, `execute_tool` all present |
+| **Span hierarchy correct** | Pick a trace. Check that `chat` and `execute_tool` spans have `parent_span_id` matching the `invoke_agent` span's `span_id` | All child spans point to the `invoke_agent` parent |
+| **One `invoke_agent` per run** | Count `invoke_agent` spans | 1 per agent run |
+| **One `chat` span per LLM call** | Count `chat` spans vs. LLM calls made | 1:1 ratio |
+| **One `execute_tool` per tool exec** | Count `execute_tool` spans vs. tool executions | 1:1 ratio |
+| **`gen_ai.agent.name` on invoke_agent** | Check span attributes | Present on `invoke_agent` span, NOT on `chat` spans |
+| **`gen_ai.provider.name` on chat spans** | Check span for `gen_ai.provider.name` (not `gen_ai.system`) | Present on every `chat` span |
+| **`gen_ai.tool.name` on execute_tool** | Check span attributes | Tool name present |
+| **Request attributes present** | Check `chat` span for `gen_ai.request.model`, `gen_ai.provider.name` | Present on every `chat` span |
+| **Response attributes present** | Check `chat` span for `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens` | Present on successful `chat` spans |
+| **Aggregate tokens on invoke_agent** | Check `invoke_agent` span for `gen_ai.usage.input_tokens` | Total across all LLM calls |
+| **Error spans captured** | Trigger a timeout. Check for `execute_tool` span with `span_status_code = 2`. | Span exists with `error.type` |
+| **Log records exist** | Query logs for same `trace_id` as an `invoke_agent` span | Multiple log records |
+| **Trace-log correlation** | Pick a `chat` span. Query logs where `trace_id` and `span_id` match. | Logs link to the correct `chat` span |
+| **All chat event types present** | Check `event_name` values on `chat` logs | `gen_ai.system.message`, `gen_ai.user.message`, `gen_ai.choice`, and optionally `gen_ai.tool.call`, `gen_ai.thinking` |
+| **invoke_agent logs present** | Check logs with `gen_ai.operation.name = "invoke_agent"` | `gen_ai.user.message` (problem statement) and `gen_ai.agent.finish` (completion summary) |
+| **execute_tool logs present** | Check logs with `gen_ai.operation.name = "execute_tool"` | `gen_ai.tool.input` and `gen_ai.tool.output` paired for each tool execution |
+| **All three operation types in logs** | Group logs by `gen_ai.operation.name` | `invoke_agent`, `chat`, and `execute_tool` all present |
+| **Body is untruncated** | Check `body` field on a `gen_ai.choice` log record | Full LLM response text, not truncated |
+| **No duplicates** | Check that each LLM call produces exactly 1 `chat` span and 1 `gen_ai.choice` log per response choice | No doubles |
