@@ -16,6 +16,7 @@
     "key-concepts",
     "integrations",
     "---Ingesting Data---",
+    "ingest-data/auto-instrumentation",
     "ingest-data/otel",
     "ingest-data/zero-instrumentation",
     "ingest-data/ai-agents",

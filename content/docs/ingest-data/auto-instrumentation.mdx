@@ -1,0 +1,326 @@
+---
+title: Auto Instrumentation
+redirect_from:
+  - /auto-instrumentation
+---
+
+Parseable Auto Instrumentation (PAI) is a Kubernetes operator that automatically collects logs, metrics, traces, and events from your cluster and forwards them to Parseable — with zero manual OpenTelemetry configuration required.
+
+PAI requires the OpenTelemetry Operator to be already installed.
+
+The OpenTelemetry Operator is a powerful building block — it manages the lifecycle of `OpenTelemetryCollector` and `Instrumentation` CRDs in your cluster. But it is deliberately generic: it knows nothing about what to collect, from where, or where to send it. Every team has to write and maintain their own collector configurations, covering receivers, processors, exporters, and pipelines — for every signal type.
+
+PAI fills that gap for Parseable users specifically:
+
+| Concern | OTel Operator alone | With PAI |
+| --- | --- | --- |
+| Collector configuration | You write it manually (receivers, processors, pipelines) | Auto-generated from a single high-level CR |
+| Language detection for traces | You must know runtimes upfront | PAI agent detects them, including distroless containers |
+| Namespace filtering | You manage glob patterns per collector | Declarative `namespaceSelector` per signal |
+| Lifecycle management | You create/update/delete each OTel CR manually | PAI reconciles everything when the CR changes |
+| Cleanup | Manual teardown of each resource | Delete the `ParseableConfig` CR — PAI cleans up everything |
+| Parseable-specific headers | You wire `X-P-Stream`, `Authorization`, etc. by hand | Built in automatically |
+
+In short: the OTel Operator runs the machinery. PAI drives it on your behalf, tuned for Parseable.
+
+## Architecture
+
+```text
+┌──────────────────────────────────────────────────────────────────────┐
+│  Kubernetes Cluster                                                  │
+│                                                                      │
+│   You                                                                │
+│    │  kubectl apply parseableconfig.yaml                             │
+│    ▼                                                                 │
+│  ┌──────────────────┐                                                │
+│  │   PAI Operator   │  watches ParseableConfig CR                    │
+│  └────────┬─────────┘                                                │
+│           │ creates & manages                                        │
+│    ┌──────┴───────────────────────────────────────────┐              │
+│    │                   │                   │          │              │
+│    ▼                   ▼                   ▼          ▼              │
+│  ┌────────────┐  ┌────────────┐  ┌───────────────┐  ┌──────────┐     │
+│  │ OTel Coll. │  │ OTel Coll. │  │Instrumentation│  │PAI Agent │     │
+│  │ (DaemonSet)│  │(Deployment)│  │     CR        │  │(DaemonSet│     │
+│  │            │  │            │  │               │  │language  │     │
+│  │ • Logs     │  │• Pod       │  │ Auto-injects  │  │detection)│     │
+│  │ • Node     │  │  metrics   │  │ OTel SDK into │  │          │     │
+│  │   metrics  │  │• Events    │  │ app pods      │  └──────────┘     │
+│  └─────┬──────┘  └─────┬──────┘  └───────┬───────┘                   │
+│        │               │                 │                           │
+│        │         ┌─────┴──────────┐      │                           │
+│        │         │  App pods with │◄─────┘                           │
+│        │         │  OTel SDK      │                                  │
+│        │         │  (traces)      │                                  │
+│        │         └───────┬────────┘                                  │
+│        │                 │                                           │
+└────────┼─────────────────┼───────────────────────────────────────────┘
+         │                 │
+         │   OTLP / HTTP   │
+         └────────┬────────┘
+                  ▼
+         ┌─────────────────┐
+         │    Parseable    │
+         │                 │
+         │  datasets:      │
+         │  • pai-logs     │
+         │  • pai-traces   │
+         │  • pai-*metrics │
+         │  • pai-events   │
+         └─────────────────┘
+```
+
+**Data flow summary:**
+
+1. You apply a single `ParseableConfig` CR describing what to collect and where to send it.
+2. PAI generates and manages all OTel Collector configurations and the Instrumentation CR.
+3. The log/metrics/events collectors push data to Parseable over OTLP/HTTP.
+4. Instrumented application pods send traces directly to Parseable using the injected OTel SDK.
+
+## How it works
+
+PAI watches for a `ParseableConfig` custom resource. When you create one, the operator automatically provisions OpenTelemetry collectors and instrumentation resources in your cluster, wired directly to your Parseable endpoint. When you delete the CR, all those resources are cleaned up.
+
+## Prerequisites
+
+Before installing PAI, ensure you have:
+
+- A running Kubernetes cluster (v1.26+)
+- Helm v3 installed locally
+- The [OpenTelemetry Operator](https://github.com/open-telemetry/opentelemetry-operator) **v0.99.0+** installed in the cluster (see below)
+- A running Parseable instance (self-hosted or cloud)
+
+> PAI requires OTel Operator ≥ v0.99.0 because it uses the `v1beta1` OpenTelemetryCollector API introduced in that release.
+
+## Get started
+
+### Install the OpenTelemetry Operator
+
+If the OTel Operator is not already installed in your cluster:
+
+```bash
+helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
+helm install opentelemetry-operator open-telemetry/opentelemetry-operator \
+  --namespace otel-operator --create-namespace \
+  --set "manager.collectorImage.repository=otel/opentelemetry-collector-k8s" \
+  --set admissionWebhooks.certManager.enabled=false \
+  --set admissionWebhooks.autoGenerateCert.enabled=true
+```
+
+### Install the PAI operator
+
+```bash
+helm repo add parseable https://charts.parseable.com/helm-releases
+helm repo update
+helm install pai parseable/pai -n pai-system --create-namespace
+```
+
+Verify the operator pod is running:
+
+```bash
+kubectl get pods -n pai-system
+```
+
+### Create a credentials secret
+
+PAI needs your Parseable credentials to authenticate when forwarding telemetry data:
+
+```bash
+kubectl create secret generic parseable-creds \
+  --from-literal=username=<YOUR_PARSEABLE_USERNAME> \
+  --from-literal=password=<YOUR_PARSEABLE_PASSWORD> \
+  -n pai-system
+```
+
+### Apply a ParseableConfig resource
+
+Create a `ParseableConfig` CR to start collecting data. Below is a complete example — remove sections for signal types you don't need.
+
+```yaml
+# parseableconfig.yaml
+apiVersion: observability.parseable.com/v1alpha1
+kind: ParseableConfig
+metadata:
+  name: production
+  namespace: pai-system
+spec:
+  target:
+    endpoint: https://<YOUR_PARSEABLE_ENDPOINT>
+    credentialsSecret:
+      name: parseable-creds
+      namespace: pai-system
+
+  logs:
+    targetDataset: pai-logs
+    namespaceSelector:
+      mode: include
+      namespaces:
+        - my-app-namespace
+
+  metrics:
+    podMetrics:
+      targetDataset: pai-pod-metrics
+      namespaceSelector:
+        mode: include
+        namespaces:
+          - my-app-namespace
+    nodeMetrics:
+      targetDataset: pai-node-metrics
+
+  events:
+    enabled: true
+    targetDataset: pai-events
+    namespaceSelector:
+      mode: include
+      namespaces:
+        - my-app-namespace
+
+  traces:
+    targetDataset: pai-traces
+    namespaceSelector:
+      mode: include
+      namespaces:
+        - my-app-namespace
+    instrumentation:
+      languages:
+        - java
+        - python
+        - nodejs
+        - dotnet
+      detectionTimeout: "1m"
+```
+
+```bash
+kubectl apply -f parseableconfig.yaml
+```
+
+## Post installation
+
+Once the CR is applied, PAI automatically provisions the following resources in the same namespace:
+
+| Resource | Type | What it does |
+|---|---|---|
+| `pai-log-collector` | OTel Collector (DaemonSet) | Reads container logs from every node via the `filelog` receiver |
+| `pai-metrics-events-collector` | OTel Collector (Deployment) | Collects pod metrics via `k8s_cluster` receiver and cluster events via `k8sobjects` |
+| `pai-instrumentation` | Instrumentation CR | Auto-injects OTel SDKs into application pods for distributed tracing |
+| `pai-agent` | DaemonSet | Detects application runtime languages, including distroless containers |
+
+You do not need to configure any of these manually — PAI manages their full lifecycle.
+
+## What data flows to Parseable
+
+### Logs
+
+Container stdout/stderr logs collected from every node. Each log record is enriched with Kubernetes metadata: pod name, namespace, container name, and node name.
+
+### Metrics
+
+- **Pod metrics** — container CPU, memory, and network utilization
+- **Node metrics** — node-level CPU, memory, disk, and network utilization
+
+### Traces
+
+Distributed traces from auto-instrumented applications. PAI injects the OpenTelemetry SDK as an init container — no code changes required. Supported runtimes: Java, Python, Node.js, .NET.
+
+### Events
+
+Kubernetes cluster events (pod scheduling, restarts, failures, etc.) streamed in watch mode.
+
+## Filtering by namespace
+
+Each signal type supports a `namespaceSelector` to control which namespaces to collect from:
+
+```yaml
+namespaceSelector:
+  mode: include        # or "exclude"
+  namespaces:
+    - my-app-namespace
+    - another-namespace
+```
+
+- `include` — collect only from the listed namespaces
+- `exclude` — collect from all namespaces except the listed ones
+- Omit `namespaceSelector` entirely — collect from all namespaces
+
+
+### Verify the setup
+
+Check that collectors are running:
+
+```bash
+kubectl get pods -n pai-system
+```
+
+Check the status of your `ParseableConfig`, including which workloads were instrumented:
+
+```bash
+kubectl get parseableconfig production -n pai-system -o yaml
+```
+
+The `status.workloads` field lists instrumented workloads and their detected language.
+
+Once data is flowing, open your Parseable console and look for the datasets you specified (`pai-logs`, `pai-pod-metrics`, `pai-traces`, etc.).
+
+## Optional configuration
+
+### HTTP headers reference
+
+Custom headers can be set at two scopes in the `ParseableConfig` CR:
+
+| Scope | CR field | Applies to |
+| --- | --- | --- |
+| Global | `spec.target.headers` | All signals (logs, metrics, traces, events) |
+| Traces only | `spec.traces.headers` | Traces exporter |
+| Logs only | `spec.logs.headers` | Logs exporter |
+| Pod metrics only | `spec.metrics.podMetrics.headers` | Pod metrics exporter |
+| Node metrics only | `spec.metrics.nodeMetrics.headers` | Node metrics exporter |
+| Events only | `spec.events.headers` | Events exporter |
+
+```yaml
+spec:
+  target:
+    globalTenantId: "acme-corp"       # sets X-P-Tenant on all exporters
+    headers:
+      X-P-Environment: "production"   # applied to all signals
+      X-P-Team: "platform"
+
+  logs:
+    targetDataset: pai-logs
+    headers:
+      X-P-Environment: "production-logs"  # overrides the global value for logs only
+
+  traces:
+    targetDataset: pai-traces
+    headers:
+      X-P-Environment: "production-traces"  # overrides for traces only
+```
+
+## Pause collection
+
+To temporarily stop all data collection without deleting your configuration:
+
+```yaml
+spec:
+  paused: true
+```
+
+PAI removes all collectors and instrumentation while retaining the CR. Set `paused: false` to resume.
+
+---
+
+## Uninstalling
+
+```bash
+# Remove collectors and instrumentation, restore pod annotations
+kubectl delete parseableconfig production -n pai-system
+
+# Uninstall the operator
+helm uninstall pai -n pai-system
+kubectl delete namespace pai-system
+```
+
+For a full cluster cleanup including the OTel Operator:
+
+```bash
+curl -sL https://raw.githubusercontent.com/parseablehq/pai/refs/heads/main/scripts/cleanup.sh | bash
+```
