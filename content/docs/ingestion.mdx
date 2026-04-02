@@ -21,11 +21,28 @@ Field name starting with `@` is replaced with `_`. In case of key collision, the
 When an incoming event has a field with a data type different from the existing schema, the field is automatically renamed with a type suffix (e.g., `body_timestamp_utf8`, `span_kind_int64`). This prevents ingestion failures where field types may vary between events.
 </Callout>
 
-## Ingestion reference
+## Ingestion HTTP headers
 
-Explore the different methods to ingest data into Parseable. Choose the method that best fits your infrastructure and use case.
+You can use HTTP headers to control how data is ingested and processed.
 
-### OpenTelemetry
+### Required headers
+
+| Header | Description | Example | Possible Values |
+|--------|-------------|---------|-----------------|
+| `X-P-Stream` | Target dataset name. Creates the dataset if it doesn't exist. | `nginx-logs` | Valid dataset name |
+| `Authorization` | Basic auth credentials (base64 encoded `username:password`) | `Basic YWRtaW46YWRtaW4=` | Valid credentials |
+| `X-P-Tenant-ID` | Target tenant ID. | `tenant-123` | Valid tenant ID - only applicable for multi-tenant setups (for example Parseable Pro) |
+| `Content-Type` | Content type of the request body | `application/json` | `application/json`,`application/protobuf` |
+
+### Optional headers
+
+| Header | Description | Example |
+|--------|-------------|---------|
+| `X-P-Tag-{field}` | Add custom tags/metadata to events. Replace `{field}` with tag name. | `X-P-Tag-environment: production` |
+
+## Reference
+
+Exhaustive list of the different methods to ingest data into Parseable. Choose the method that best fits your use case.
 
 <Callout type="info">
 In case of otel-metrics, there may be key collision in the attributes key, as the attributes are present in different hierarchical levels in the otel metrics event. In such scenarios, the key values are overridden by the last available attribute.
@@ -45,21 +62,9 @@ Ingest structured logs using OpenTelemetry Protocol (OTLP).
 Ingest metrics using OpenTelemetry Protocol (OTLP).
 </Card>
 
-</Cards>
-
-### Zero instrumentation
-
-<Cards>
-
 <Card href="/docs/ingest-data/zero-instrumentation" icon={<IconWand className="text-purple-600" />} title='eBPF Agents'>
 Collect logs without modifying your application code.
 </Card>
-
-</Cards>
-
-### LLM & AI Agents
-
-<Cards>
 
 <Card href="/docs/ingest-data/ai-agents/openai" icon={<IconCode className="text-purple-600" />} title='OpenAI'>
 Track and log OpenAI API calls and responses.
@@ -92,12 +97,6 @@ Monitor DSPy framework executions and outputs.
 <Card href="/docs/ingest-data/ai-agents/n8n" icon={<IconCode className="text-purple-600" />} title='n8n'>
 Collect workflow execution logs from n8n automation platform.
 </Card>
-
-</Cards>
-
-### Log agents and shippers
-
-<Cards>
 
 <Card href="/docs/ingest-data/logging-agents/fluent-bit" icon={<IconPlug className="text-blue-600" />} title='Fluent Bit'>
 Lightweight and scalable logging processor. Perfect for Kubernetes and Docker environments.
@@ -139,12 +138,6 @@ Agent that ships the contents of local logs to a centralized store.
 Monitoring system and time series database for metrics collection.
 </Card>
 
-</Cards>
-
-### Databases
-
-<Cards>
-
 <Card href="/docs/ingest-data/databases/postgresql" icon={<IconDatabase className="text-gray-600" />} title='PostgreSQL'>
 Ingest logs and metrics from PostgreSQL databases.
 </Card>
@@ -164,12 +157,6 @@ Collect logs and metrics from Redis databases.
 <Card href="/docs/ingest-data/databases/elasticsearch" icon={<IconDatabase className="text-gray-600" />} title='Elasticsearch'>
 Migrate or sync data from Elasticsearch to Parseable.
 </Card>
-
-</Cards>
-
-### Containers
-
-<Cards>
 
 <Card href="/docs/ingest-data/containers/docker" icon={<IconDatabase className="text-orange-600" />} title='Docker'>
 Collect logs from Docker containers using logging drivers.
@@ -195,12 +182,6 @@ Ingest logs from Google Kubernetes Engine clusters.
 Collect logs from Azure Kubernetes Service clusters.
 </Card>
 
-</Cards>
-
-### Streaming Platforms
-
-<Cards>
-
 <Card href="/docs/ingest-data/streaming/kafka" icon={<IconTimeline className="text-purple-600" />} title='Kafka'>
 Ingest real-time streaming data from Apache Kafka topics.
 </Card>
@@ -216,12 +197,6 @@ Collect messages from RabbitMQ message broker.
 <Card href="/docs/ingest-data/streaming/nats" icon={<IconTimeline className="text-purple-600" />} title='NATS'>
 Ingest messages from NATS messaging system.
 </Card>
-
-</Cards>
-
-### CI/CD Tools
-
-<Cards>
 
 <Card href="/docs/ingest-data/cicd/github-actions" icon={<IconSettings className="text-green-600" />} title='GitHub Actions'>
 Collect logs and metrics from GitHub Actions workflows.
@@ -247,12 +222,6 @@ Collect logs from ArgoCD GitOps deployments.
 Ingest infrastructure deployment logs from Terraform.
 </Card>
 
-</Cards>
-
-### Cloud services
-
-<Cards>
-
 <Card href="/docs/ingest-data/cloud/aws-cloudwatch" icon={<IconBrandAws className="text-blue-600" />} title='AWS CloudWatch'>
 Ingest logs and metrics from AWS CloudWatch service.
 </Card>
@@ -269,12 +238,6 @@ Ingest streaming data from Azure Event Hubs.
 Stream data from Google Cloud Pub/Sub messaging service.
 </Card>
 
-</Cards>
-
-### Security Tools
-
-<Cards>
-
 <Card href="/docs/ingest-data/security/falco" icon={<IconSettings className="text-red-600" />} title='Falco'>
 Ingest runtime security events from Falco.
 </Card>
@@ -286,12 +249,6 @@ Collect vulnerability scan results from Trivy.
 <Card href="/docs/ingest-data/security/siem-export" icon={<IconSettings className="text-red-600" />} title='SIEM Export'>
 Export security events to SIEM platforms.
 </Card>
-
-</Cards>
-
-### Programming languages
-
-<Cards>
 
 <Card href="/docs/ingest-data/programming-languages/python" icon={<IconCode className="text-green-600" />} title='Python'>
 Integrate Parseable with Python applications using standard logging libraries.
@@ -330,24 +287,6 @@ Integrate Parseable with Ruby applications using standard logging frameworks.
 </Card>
 
 </Cards>
-
-## Ingestion HTTP headers
-
-You can use HTTP headers to control how data is ingested and processed.
-
-### Required headers
-
-| Header | Description | Example | Possible Values |
-|--------|-------------|---------|-----------------|
-| `X-P-Stream` | Target dataset name. Creates the dataset if it doesn't exist. | `nginx-logs` | Valid dataset name |
-| `Authorization` | Basic auth credentials (base64 encoded `username:password`) | `Basic YWRtaW46YWRtaW4=` | Valid credentials |
-| `Content-Type` | Content type of the request body | `application/json` | `application/json`,`application/protobuf` |
-
-### Optional headers
-
-| Header | Description | Example |
-|--------|-------------|---------|
-| `X-P-Tag-{field}` | Add custom tags/metadata to events. Replace `{field}` with tag name. | `X-P-Tag-environment: production` |
 
 ## Log processing
 
