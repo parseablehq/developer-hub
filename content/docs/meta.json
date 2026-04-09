@@ -36,6 +36,7 @@
     "user-guide/agent-observability",
     "user-guide/ai-native",
     "user-guide/alerting",
+    "user-guide/errors",
     "user-guide/dashboards",
     "user-guide/sql-editor",
     "user-guide/rbac",

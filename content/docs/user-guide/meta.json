@@ -4,7 +4,6 @@
     "agent-observability",
     "ai-native",
     "alerting",
-    "errors",
     "dashboards",
     "sql-editor",
     "rbac",
