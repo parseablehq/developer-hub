@@ -3,15 +3,23 @@ title: Errors
 description: Triage, understand, and debug errors in OpenTelemetry traces
 ---
 
-When production is misbehaving, the Errors page is usually the first place to look. Instead of scrolling through the Traces explorer with a filter on error status, it collapses thousands of exception spans into a short list of distinct failures, one row per `(service, exception type, exception message)`, so you can see the *shape* of what is breaking before you start reading stack traces.
+<OfferingPills pro enterprise className="mb-4" />
+
+Parseable Errors page is purpose built to help you debug errors in OpenTelemetry traces. It surfaces the most important errors in your stack, gives you a high-level understanding of what is breaking, and helps you jump into the right trace to see the full context of a failure.
+
+The error page collapses thousands of exception spans into a short list of distinct failures. This saves time and effort in scrolling through the Traces explorer with a filter on error status.
 
 ![Errors page overview with grouped errors and faceted filters](../static/errors-list.png)
 
-The page works with **OTel Trace** datasets. Error groups are built from the `event_exception.type`, `event_exception.message`, and `event_exception.stacktrace` fields that OpenTelemetry records on span events. If you are chasing log-level errors instead, start from the [Logs explorer](/docs/user-guide/logs) with a filter on your log level field. Log-based error grouping is not available here yet.
+## Data pre-requisites
+
+- Error view works with **OTel Trace** datasets only. Error groups are built from the `event_exception.type`, `event_exception.message`, and `event_exception.stacktrace` fields that OpenTelemetry records on span events. 
+
+- Error view requires events with `event_exception.type`, `event_exception.message`, and `service.name` fields.
+
+If you are chasing log-level errors instead, start from the [Logs explorer](/docs/user-guide/logs) with a filter on your log level field. Log based error grouping is not available here yet.
 
 ## When to use this page
-
-Reach for the Errors page when:
 
 - You were paged or noticed a dashboard spike and need to find what is actually failing
 - You want to know which service is the source of a wave of errors rippling across your stack
@@ -24,11 +32,11 @@ If you already have a trace ID, skip this page and jump straight to the [Traces 
 
 The page is designed around a single flow: **scope, triage, open, correlate, escalate**. Each section below is one step of that flow. Read them in order the first time and skip around later.
 
-### 1. Scope the investigation
+### Scope the investigation
 
 Pick the trace dataset of the service you suspect, then narrow the time range to the incident window. Keep the window tight: a one-hour range over a fresh deploy almost always carries more signal than "last 24 hours" because the spark charts and the AI summary both work better when the list is not dominated by background noise. Widen it only after you have ruled out a recent regression.
 
-### 2. Find the error that matters
+### Find the error that matters
 
 Read the error list the way you would read a ranked incident list rather than a UI inventory:
 
@@ -37,7 +45,7 @@ Read the error list the way you would read a ranked incident list rather than a 
 - **Narrow with the sidebar facets when you have a hunch.** Click a service under **Services** to see only that service's errors. Click an exception class under **Error types** (for example `14 UNAVAILABLE` or `Grpc.Core.RpcException`) when you want to look at one failure mode across services.
 - **Use Search errors for a known message.** If a teammate told you "the cart service is throwing `Wasn't able to connect to redis`", paste that phrase and jump directly to the group.
 
-### 3. Understand what broke
+### Understand what broke
 
 Click the error row to open its detail view.
 
@@ -56,7 +64,7 @@ The summary takes the exception type, message, and stack trace as context and re
 
 If the summary nails it, follow the suggested fixes and stop here. If it feels generic or wrong, move on.
 
-### 4. Open a real failing request
+### Open a real failing request
 
 Below the header, the **impacted spans** table lists every span that carried this exception. Pick a representative one, usually the most recent, but prefer a long-duration row when you are chasing a latency-plus-error problem.
 
@@ -71,7 +79,7 @@ This view exists to answer the "what was the request doing when it failed" quest
 
 Click **View trace** in the header to jump to the full waterfall in the [Traces explorer](/docs/user-guide/traces) with the failing span highlighted. Do that when you need the end-to-end request tree, for example to verify that a timeout in an upstream service is the real cause rather than the local service itself.
 
-### 5. Correlate with logs
+### Correlate with logs
 
 Errors on this page are linked to logs via OpenTelemetry trace and span IDs. Two pivots matter:
 
@@ -80,7 +88,7 @@ Errors on this page are linked to logs via OpenTelemetry trace and span IDs. Two
 
 Reach for the trace-level pivot when you want the full story of a request and the span-level pivot when you already know which operation broke and want the logs that service emitted right around it. Both only work when your logs and traces are ingested with matching IDs. See [Manual Instrumentation](/docs/user-guide/agent-observability/manual-instrumentation) for the required attributes if you are instrumenting by hand.
 
-### 6. Escalate to Keystone when the surface info is not enough
+### Escalate to Keystone when the surface info is not enough
 
 Click **Analyze** on the error detail or trace view to hand the full error context to [Keystone](/docs/user-guide/ai-native/keystone), Parseable's agentic debugging assistant. Keystone receives the exception type, message, stack trace, the full span tree for the trace, and service and operation metadata, and gives you a natural-language debugging session on top of that data.
 
@@ -93,13 +101,13 @@ Use Keystone when:
 
 If all you need is a quick explanation of the exception in front of you, the AI Summary is faster. Reach for Keystone when you need the broader picture.
 
-### 7. Prevent it from happening again
+### Monitor if it happens again
 
 Before closing the detail view, use **Create alert** in the header to create an [alert](/docs/user-guide/alerting) scoped to this error group. This is especially valuable for silent failures (ones you only found out about because a customer complained), so the next occurrence pages an on-call engineer instead of quietly piling up.
 
 ## Debugging tips
 
-- **Always compare first seen and last seen before writing an RCA.** The same `14 UNAVAILABLE` that has been quietly failing all week is a very different story from one that started ten minutes ago.
+- **Compare first seen and last seen before writing an RCA.** The same `14 UNAVAILABLE` that has been quietly failing all week is a very different story from one that started ten minutes ago.
 - **Trust the spark chart to judge urgency.** A tall, sharp block means "something happened now." A steady bar pattern means "this has been broken and nobody noticed."
 - **Do not stop at the AI Summary for novel errors.** It is strong on known-class failures and weaker on one-off bugs. When it feels generic, drop into a real trace.
 - **Filter before you paginate.** On a noisy dataset, narrowing by service or exception type is much faster than scrolling through the full list.
