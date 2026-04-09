@@ -3,11 +3,11 @@ title: Errors
 description: Triage, understand, and debug errors in OpenTelemetry traces
 ---
 
-When production is misbehaving, the Errors page is usually the first place to look. Instead of scrolling through the Traces explorer with a filter on error status, it collapses thousands of exception spans into a short list of distinct failures — one row per `(service, exception type, exception message)` — so you can see the *shape* of what is breaking before you start reading stack traces.
+When production is misbehaving, the Errors page is usually the first place to look. Instead of scrolling through the Traces explorer with a filter on error status, it collapses thousands of exception spans into a short list of distinct failures, one row per `(service, exception type, exception message)`, so you can see the *shape* of what is breaking before you start reading stack traces.
 
 ![Errors page overview with grouped errors and faceted filters](../static/errors-list.png)
 
-The page works with **OTel Trace** datasets. Error groups are built from the `event_exception.type`, `event_exception.message`, and `event_exception.stacktrace` fields that OpenTelemetry records on span events. If you are chasing log-level errors instead, start from the [Logs explorer](/docs/user-guide/logs) with a filter on your log level field — log-based error grouping is not available here yet.
+The page works with **OTel Trace** datasets. Error groups are built from the `event_exception.type`, `event_exception.message`, and `event_exception.stacktrace` fields that OpenTelemetry records on span events. If you are chasing log-level errors instead, start from the [Logs explorer](/docs/user-guide/logs) with a filter on your log level field. Log-based error grouping is not available here yet.
 
 ## When to use this page
 
@@ -15,14 +15,14 @@ Reach for the Errors page when:
 
 - You were paged or noticed a dashboard spike and need to find what is actually failing
 - You want to know which service is the source of a wave of errors rippling across your stack
-- You need to tell a new error apart from a long-running one — "has this been failing for hours, or did it start five minutes ago?"
+- You need to tell a new error apart from a long-running one: "has this been failing for hours, or did it start five minutes ago?"
 - You want an LLM-generated first guess at the root cause and a remediation checklist before diving into stack traces
 
 If you already have a trace ID, skip this page and jump straight to the [Traces explorer](/docs/user-guide/traces). If you know the log line you are after, use the [Logs explorer](/docs/user-guide/logs).
 
 ## The debugging workflow
 
-The page is designed around a single flow: **scope, triage, open, correlate, escalate**. Each section below is one step of that flow — read them in order the first time and skip around later.
+The page is designed around a single flow: **scope, triage, open, correlate, escalate**. Each section below is one step of that flow. Read them in order the first time and skip around later.
 
 ### 1. Scope the investigation
 
@@ -46,19 +46,19 @@ Click the error row to open its detail view.
 Start with the header. The **first seen / last seen** pair and the **error frequency** chart answer two triage questions you need before doing anything else:
 
 - **Is this new?** A first-seen timestamp within the last few minutes almost always means a recent deploy, config change, or traffic shift. Check the deploy log before anything else.
-- **Is this getting worse?** A frequency chart that is climbing rather than flat means the situation is escalating — do not wait on a long investigation before paging upstream teams.
+- **Is this getting worse?** A frequency chart that is climbing rather than flat means the situation is escalating. Do not wait on a long investigation before paging upstream teams.
 
 Then expand the **AI Summary**.
 
 ![AI summary with root cause, explanation, and suggested fixes](../static/errors-ai-summary.png)
 
-The summary takes the exception type, message, and stack trace as context and returns three things: a plain-language **root cause**, an **explanation** of how the error manifests and which components are involved, and a numbered **suggested fixes** checklist. Treat it as a knowledgeable first responder — it is often enough to unblock a known-class error (dependency down, misconfiguration, misrouted traffic) without reading a single stack frame.
+The summary takes the exception type, message, and stack trace as context and returns three things: a plain-language **root cause**, an **explanation** of how the error manifests and which components are involved, and a numbered **suggested fixes** checklist. Treat it as a knowledgeable first responder. It is often enough to unblock a known-class error (dependency down, misconfiguration, misrouted traffic) without reading a single stack frame.
 
 If the summary nails it, follow the suggested fixes and stop here. If it feels generic or wrong, move on.
 
 ### 4. Open a real failing request
 
-Below the header, the **impacted spans** table lists every span that carried this exception. Pick a representative one — usually the most recent, but prefer a long-duration row when you are chasing a latency-plus-error problem.
+Below the header, the **impacted spans** table lists every span that carried this exception. Pick a representative one, usually the most recent, but prefer a long-duration row when you are chasing a latency-plus-error problem.
 
 Clicking a span opens the error trace view.
 
@@ -67,18 +67,18 @@ Clicking a span opens the error trace view.
 This view exists to answer the "what was the request doing when it failed" question using two pieces of evidence:
 
 - **The stack trace** shows exactly where in your code the exception was raised. Copy it into your issue tracker or a chat thread with one click.
-- **The events timeline** lists every span event in the trace in chronological order, with errors highlighted in red. Read it to see what else was happening in the same request — retries, upstream calls, and the normal span events that surrounded the failure.
+- **The events timeline** lists every span event in the trace in chronological order, with errors highlighted in red. Read it to see what else was happening in the same request: retries, upstream calls, and the normal span events that surrounded the failure.
 
-Click **View trace** in the header to jump to the full waterfall in the [Traces explorer](/docs/user-guide/traces) with the failing span highlighted. Do that when you need the end-to-end request tree — for example, to verify that a timeout in an upstream service is the real cause rather than the local service itself.
+Click **View trace** in the header to jump to the full waterfall in the [Traces explorer](/docs/user-guide/traces) with the failing span highlighted. Do that when you need the end-to-end request tree, for example to verify that a timeout in an upstream service is the real cause rather than the local service itself.
 
 ### 5. Correlate with logs
 
 Errors on this page are linked to logs via OpenTelemetry trace and span IDs. Two pivots matter:
 
-- **Trace → logs** — from an error trace, jump to every log line that shares the same `trace.id` to see what the services in the request were logging around the failure
-- **Span → logs** — from a specific error span, jump to log lines that share the same `span.id` for the narrow slice of logs tied to that one operation
+- **Trace to logs**: from an error trace, jump to every log line that shares the same `trace.id` to see what the services in the request were logging around the failure
+- **Span to logs**: from a specific error span, jump to log lines that share the same `span.id` for the narrow slice of logs tied to that one operation
 
-Reach for the trace-level pivot when you want the full story of a request and the span-level pivot when you already know which operation broke and want the logs that service emitted right around it. Both only work when your logs and traces are ingested with matching IDs — see [Manual Instrumentation](/docs/user-guide/agent-observability/manual-instrumentation) for the required attributes if you are instrumenting by hand.
+Reach for the trace-level pivot when you want the full story of a request and the span-level pivot when you already know which operation broke and want the logs that service emitted right around it. Both only work when your logs and traces are ingested with matching IDs. See [Manual Instrumentation](/docs/user-guide/agent-observability/manual-instrumentation) for the required attributes if you are instrumenting by hand.
 
 ### 6. Escalate to Keystone when the surface info is not enough
 
@@ -87,7 +87,7 @@ Click **Analyze** on the error detail or trace view to hand the full error conte
 Use Keystone when:
 
 - The failure touches multiple services and you want to know which one is the actual source
-- The AI Summary is correct but not specific enough — you want to ask follow-ups like "are other services seeing the same upstream error right now?"
+- The AI Summary is correct but not specific enough, and you want to ask follow-ups like "are other services seeing the same upstream error right now?"
 - You want a probable root cause backed by SQL queries you can run directly against your data
 - You need mitigation steps that take the rest of your telemetry into account, not just the stack trace of one span
 
@@ -95,7 +95,7 @@ If all you need is a quick explanation of the exception in front of you, the AI 
 
 ### 7. Prevent it from happening again
 
-Before closing the detail view, use **Create alert** in the header to create an [alert](/docs/user-guide/alerting) scoped to this error group. This is especially valuable for silent failures — ones you only found out about because a customer complained — so the next occurrence pages an on-call engineer instead of quietly piling up.
+Before closing the detail view, use **Create alert** in the header to create an [alert](/docs/user-guide/alerting) scoped to this error group. This is especially valuable for silent failures (ones you only found out about because a customer complained), so the next occurrence pages an on-call engineer instead of quietly piling up.
 
 ## Debugging tips
 
@@ -103,4 +103,4 @@ Before closing the detail view, use **Create alert** in the header to create an 
 - **Trust the spark chart to judge urgency.** A tall, sharp block means "something happened now." A steady bar pattern means "this has been broken and nobody noticed."
 - **Do not stop at the AI Summary for novel errors.** It is strong on known-class failures and weaker on one-off bugs. When it feels generic, drop into a real trace.
 - **Filter before you paginate.** On a noisy dataset, narrowing by service or exception type is much faster than scrolling through the full list.
-- **Close the loop with an alert.** Every error you triage from a customer report is an alert you should have had — the **Create alert** button in the header is one click away.
+- **Close the loop with an alert.** Every error you triage from a customer report is an alert you should have had. The **Create alert** button in the header is one click away.
