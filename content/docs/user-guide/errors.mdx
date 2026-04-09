@@ -1,172 +1,106 @@
 ---
 title: Errors
-description: Find, group, and debug errors in OpenTelemetry traces
+description: Triage, understand, and debug errors in OpenTelemetry traces
 ---
 
-The Errors page is the dedicated workspace for finding, grouping, and debugging errors in your OpenTelemetry trace data. It distills noisy span telemetry into a ranked list of error groups so that an on-call engineer can jump from "something is wrong" to the root cause with the fewest possible clicks.
+When production is misbehaving, the Errors page is usually the first place to look. Instead of scrolling through the Traces explorer with a filter on error status, it collapses thousands of exception spans into a short list of distinct failures — one row per `(service, exception type, exception message)` — so you can see the *shape* of what is breaking before you start reading stack traces.
 
 ![Errors page overview with grouped errors and faceted filters](../static/errors-list.png)
 
-## Supported Datasets
+The page works with **OTel Trace** datasets. Error groups are built from the `event_exception.type`, `event_exception.message`, and `event_exception.stacktrace` fields that OpenTelemetry records on span events. If you are chasing log-level errors instead, start from the [Logs explorer](/docs/user-guide/logs) with a filter on your log level field — log-based error grouping is not available here yet.
 
-Parseable currently surfaces errors for **OTel Trace** datasets only. The dataset selector on this page lists every OTel trace dataset in your instance.
+## When to use this page
 
-Errors are derived from span exception events using these fields:
+Reach for the Errors page when:
 
-- `event_exception.type` - The exception class or gRPC status code
-- `event_exception.message` - The human-readable error message
-- `event_exception.stacktrace` - The captured stack trace
+- You were paged or noticed a dashboard spike and need to find what is actually failing
+- You want to know which service is the source of a wave of errors rippling across your stack
+- You need to tell a new error apart from a long-running one — "has this been failing for hours, or did it start five minutes ago?"
+- You want an LLM-generated first guess at the root cause and a remediation checklist before diving into stack traces
 
-<Callout type="info">
-Log-based error grouping is not available yet. To investigate errors in logs, use the [Logs explorer](/docs/user-guide/logs) with a filter on your log level field.
-</Callout>
+If you already have a trace ID, skip this page and jump straight to the [Traces explorer](/docs/user-guide/traces). If you know the log line you are after, use the [Logs explorer](/docs/user-guide/logs).
 
-## Page Layout
+## The debugging workflow
 
-The Errors page is organized into three main areas:
+The page is designed around a single flow: **scope, triage, open, correlate, escalate**. Each section below is one step of that flow — read them in order the first time and skip around later.
 
-- **Top Toolbar** - Dataset selector, time range picker, entries-per-page, total error count, search box, and sort order
-- **Left Sidebar (Filters)** - Faceted filters for Services and Error types, each with a search box
-- **Error List** - One row per error group, with status badge, message, service, last-seen timestamp, occurrence count, and a distribution spark chart
+### 1. Scope the investigation
 
-## Dataset Selector
+Pick the trace dataset of the service you suspect, then narrow the time range to the incident window. Keep the window tight: a one-hour range over a fresh deploy almost always carries more signal than "last 24 hours" because the spark charts and the AI summary both work better when the list is not dominated by background noise. Widen it only after you have ruled out a recent regression.
 
-The dropdown at the top-left lists every OTel trace dataset in your Parseable instance. Selecting a different dataset reloads the view with that dataset's error groups, filters, and totals.
+### 2. Find the error that matters
 
-## Time Range Picker
+Read the error list the way you would read a ranked incident list rather than a UI inventory:
 
-Click the time range button (e.g., "Last 1 hour") at the top-right to scope the error list:
+- **Scan the Occurrences column for the loudest error.** High-count rows are the ones most likely to match whatever your alert fired on.
+- **Use the spark chart to read the shape of the failure.** A steady bar pattern is a chronic issue that has been running for a while. A single tall block is a burst tied to a specific moment. A "started, stopped, started again" pattern usually points at a flapping dependency.
+- **Narrow with the sidebar facets when you have a hunch.** Click a service under **Services** to see only that service's errors. Click an exception class under **Error types** (for example `14 UNAVAILABLE` or `Grpc.Core.RpcException`) when you want to look at one failure mode across services.
+- **Use Search errors for a known message.** If a teammate told you "the cart service is throwing `Wasn't able to connect to redis`", paste that phrase and jump directly to the group.
 
-- **Quick presets** - 10 min, 1 hr, 5 hrs, 1 day, 3 days
-- **Custom range** - Calendar-based From/To selection
-- **Timezone** - Timezone selector for the displayed times
+### 3. Understand what broke
 
-Click **Apply** to re-run the query with the new window.
+Click the error row to open its detail view.
 
-## Error List
+![Error detail view with header chart and impacted spans table](../static/errors-detail.png)
 
-Each row in the list represents one error group. For every group, Parseable shows:
+Start with the header. The **first seen / last seen** pair and the **error frequency** chart answer two triage questions you need before doing anything else:
 
-- **Status badge and message** - The gRPC status code (e.g., `13 INTERNAL`, `14 UNAVAILABLE`) followed by the exception message
-- **Service name** - The `service.name` that emitted the error
-- **Last seen** - Relative timestamp of the most recent occurrence
-- **Occurrences** - Total number of matching errors in the selected time range
-- **Distribution spark chart** - A miniature bar chart showing how occurrences are spread over the time range, so bursts and steady failures are easy to tell apart at a glance
+- **Is this new?** A first-seen timestamp within the last few minutes almost always means a recent deploy, config change, or traffic shift. Check the deploy log before anything else.
+- **Is this getting worse?** A frequency chart that is climbing rather than flat means the situation is escalating — do not wait on a long investigation before paging upstream teams.
 
-### Grouping Rules
-
-Errors are grouped by `service.name`, `event_exception.type`, and `event_exception.message`. Two spans with the same service, exception class, and exception message collapse into a single row.
-
-### Sidebar Filters
-
-The left sidebar provides faceted filters to narrow the list:
-
-- **Services** - All services that emitted errors in the dataset, with a count of distinct error groups per service
-- **Error types** - Exception classes or gRPC status codes observed in the dataset (for example, `13`, `14`, `Grpc.Core.RpcException`)
-
-Click a facet value to toggle the filter. A **Search filters** box at the top of the sidebar lets you quickly locate a specific service or error type.
-
-### Search, Sort, and Pagination
-
-Above the list you have an **Entries per page** selector, the total error count (e.g., "Found 9 errors"), a **Search errors** text input for client-side filtering on message text, and a sort-order dropdown (defaulting to **Most recent**).
-
-## Error Detail View
-
-Click any error group to open its detail view.
-
-![Error detail view with impacted spans table](../static/errors-detail.png)
-
-### Header
-
-The header summarizes the selected error and stays visible across the tabs below it:
-
-- **Status badge** - The gRPC status code, with the full exception message alongside
-- **Service** - The service that emitted the error
-- **Occurrences** - Total count in the time range
-- **Last seen** and **First seen** - Absolute timestamps in the selected timezone
-- **Error frequency** - A full-width bar chart showing how occurrences are distributed across the time range, useful for correlating the error to deploys, incidents, or traffic spikes
-- **Create alert** - Quick link to create an [alert](/docs/user-guide/alerting) that fires when this error recurs
-
-### AI Summary
-
-An **AI Summary** panel appears beneath the header. Expand it to see an LLM-generated explanation scoped to the selected error. The summary is organized into three sections:
-
-- **Root cause** - A plain-language description of what is likely failing
-- **Explanation** - Additional context on how the error manifests, which components are involved, and why it is happening
-- **Suggested fixes** - A numbered checklist of concrete remediation steps
+Then expand the **AI Summary**.
 
 ![AI summary with root cause, explanation, and suggested fixes](../static/errors-ai-summary.png)
 
-AI Summary takes the exception type, message, and stack trace as context and returns an explanation of that specific failure. It is deliberately narrow in scope — for deeper, cross-signal investigation use **Analyse with Keystone**, described below.
+The summary takes the exception type, message, and stack trace as context and returns three things: a plain-language **root cause**, an **explanation** of how the error manifests and which components are involved, and a numbered **suggested fixes** checklist. Treat it as a knowledgeable first responder — it is often enough to unblock a known-class error (dependency down, misconfiguration, misrouted traffic) without reading a single stack frame.
 
-### Impacted Spans
+If the summary nails it, follow the suggested fixes and stop here. If it feels generic or wrong, move on.
 
-The detail view lists every span that carried this exception. Columns include:
+### 4. Open a real failing request
 
-- **Span start time**
-- **Span name** - Typically `SERVICE_NAME/OPERATION` (e.g., `POST /oteldemo.CartService/EmptyCart`)
-- **Span ID**
-- **Trace ID**
-- **Duration**
-- **Error Count** - Number of exception events recorded on that span
+Below the header, the **impacted spans** table lists every span that carried this exception. Pick a representative one — usually the most recent, but prefer a long-duration row when you are chasing a latency-plus-error problem.
 
-## Error Trace View
-
-Clicking a row in the impacted spans table opens a trace-scoped view of the error.
+Clicking a span opens the error trace view.
 
 ![Error trace view with stack trace and events timeline](../static/errors-trace.png)
 
-### Stack Trace
+This view exists to answer the "what was the request doing when it failed" question using two pieces of evidence:
 
-The stack trace pane shows the full `event_exception.stacktrace` captured on the span, including the exception class, message, and each frame. A copy icon copies the stack trace to the clipboard.
+- **The stack trace** shows exactly where in your code the exception was raised. Copy it into your issue tracker or a chat thread with one click.
+- **The events timeline** lists every span event in the trace in chronological order, with errors highlighted in red. Read it to see what else was happening in the same request — retries, upstream calls, and the normal span events that surrounded the failure.
 
-### Events Timeline
+Click **View trace** in the header to jump to the full waterfall in the [Traces explorer](/docs/user-guide/traces) with the failing span highlighted. Do that when you need the end-to-end request tree — for example, to verify that a timeout in an upstream service is the real cause rather than the local service itself.
 
-The **Events timeline** lists all span events in the trace in chronological order. Error events are highlighted with a red **Error** badge, while normal span events use a neutral **Span Event** badge. Each row shows:
+### 5. Correlate with logs
 
-- **Time**
-- **Type** - `Span Event` or `Error`
-- **Service**
-- **Message** - The span or event name (e.g., `load_checkout_multi`, `ingress`, `router frontend egress`)
+Errors on this page are linked to logs via OpenTelemetry trace and span IDs. Two pivots matter:
 
-### View Trace
+- **Trace → logs** — from an error trace, jump to every log line that shares the same `trace.id` to see what the services in the request were logging around the failure
+- **Span → logs** — from a specific error span, jump to log lines that share the same `span.id` for the narrow slice of logs tied to that one operation
 
-Click **View trace** in the header to jump to the full waterfall for this trace in the [Traces explorer](/docs/user-guide/traces). The error span is highlighted in the waterfall so you can see where it falls relative to parent and sibling spans.
+Reach for the trace-level pivot when you want the full story of a request and the span-level pivot when you already know which operation broke and want the logs that service emitted right around it. Both only work when your logs and traces are ingested with matching IDs — see [Manual Instrumentation](/docs/user-guide/agent-observability/manual-instrumentation) for the required attributes if you are instrumenting by hand.
 
-## Analyse with Keystone
+### 6. Escalate to Keystone when the surface info is not enough
 
-Click **Analyze** on the error detail or trace view to hand the full error context to [Keystone](/docs/user-guide/ai-native/keystone), Parseable's agentic debugging assistant. Keystone receives:
+Click **Analyze** on the error detail or trace view to hand the full error context to [Keystone](/docs/user-guide/ai-native/keystone), Parseable's agentic debugging assistant. Keystone receives the exception type, message, stack trace, the full span tree for the trace, and service and operation metadata, and gives you a natural-language debugging session on top of that data.
 
-- The exception type, message, and stack trace
-- The full span tree for the trace
-- Service and operation metadata
+Use Keystone when:
 
-Inside Keystone you can iteratively drill down in natural language to:
+- The failure touches multiple services and you want to know which one is the actual source
+- The AI Summary is correct but not specific enough — you want to ask follow-ups like "are other services seeing the same upstream error right now?"
+- You want a probable root cause backed by SQL queries you can run directly against your data
+- You need mitigation steps that take the rest of your telemetry into account, not just the stack trace of one span
 
-- Summarize the error and its blast radius
-- Find other correlated errors across services
-- Ask for a probable root cause with supporting evidence
-- Get suggested mitigation steps
+If all you need is a quick explanation of the exception in front of you, the AI Summary is faster. Reach for Keystone when you need the broader picture.
 
-See [Keystone](/docs/user-guide/ai-native/keystone) for details on the underlying agent workflow.
+### 7. Prevent it from happening again
 
-## Correlating Errors with Logs
+Before closing the detail view, use **Create alert** in the header to create an [alert](/docs/user-guide/alerting) scoped to this error group. This is especially valuable for silent failures — ones you only found out about because a customer complained — so the next occurrence pages an on-call engineer instead of quietly piling up.
 
-Errors on this page are linked to the rest of your telemetry via trace and span IDs:
+## Debugging tips
 
-- **Error trace to log lines** - From an error trace you can jump to every log line that shares the same `trace.id`
-- **Error span to log lines** - From a specific error span you can pivot to log lines that share the same `span.id`
-
-These correlations only work when your traces and logs are ingested with matching trace and span IDs. If you are instrumenting manually, see [Manual Instrumentation](/docs/user-guide/agent-observability/manual-instrumentation) for the required attributes.
-
-## Common Workflows
-
-**Triaging the most impactful error** - Scan the Occurrences column and the spark chart together — the chart makes it easy to pick out errors that spiked recently versus errors that have been quietly failing all day.
-
-**Understanding a new error** - Open the error, expand the AI Summary, and read the root cause and suggested fixes before diving into stack traces.
-
-**Jumping from an error to a request** - Click a row in the impacted spans table, inspect the stack trace and events timeline, then click **View trace** for the full waterfall.
-
-**Going deeper with Keystone** - Click **Analyze** on an error or trace to ask follow-up questions in natural language and get correlated findings across logs, traces, and metrics.
-
-**Correlating across signals** - Use the trace-to-log pivots on `trace.id` or `span.id` to see the log lines emitted by a failing request.
+- **Always compare first seen and last seen before writing an RCA.** The same `14 UNAVAILABLE` that has been quietly failing all week is a very different story from one that started ten minutes ago.
+- **Trust the spark chart to judge urgency.** A tall, sharp block means "something happened now." A steady bar pattern means "this has been broken and nobody noticed."
+- **Do not stop at the AI Summary for novel errors.** It is strong on known-class failures and weaker on one-off bugs. When it feels generic, drop into a real trace.
+- **Filter before you paginate.** On a noisy dataset, narrowing by service or exception type is much faster than scrolling through the full list.
+- **Close the loop with an alert.** Every error you triage from a customer report is an alert you should have had — the **Create alert** button in the header is one click away.
