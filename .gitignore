@@ -5,6 +5,7 @@
 .contentlayer
 .content-collections
 redirects.json
+/public/integrations/logos/
 
 
 # test & build

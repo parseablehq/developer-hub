@@ -1,0 +1,3 @@
+[submodule "vendor/datasources"]
+	path = vendor/datasources
+	url = https://github.com/parseablehq/datasources.git
