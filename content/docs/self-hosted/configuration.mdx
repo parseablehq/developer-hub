@@ -26,6 +26,30 @@ This document lists all the environment variables and HTTP headers supported by 
 | `P_CORS` | `No` | Specify whether the server should enable/disable CORS. Supported values are `true` to disable, `false` to enable CORS | `true` | `false` |
 | `P_MEMORY_THRESHOLD` | `No` | Specify the memory threshold to use for Parseable server. | `100` | `80` |
 | `P_CPU_THRESHOLD` | `No` | Specify the CPU threshold to use for Parseable server. | `100` | `80` |
+| `P_ENABLE_MULTIPART` | `No` | Enable multipart uploads to object store (S3, GCS, Azure Blob Store). When disabled, files are uploaded as a single object regardless of size. | `true` | `false` |
+| `P_MULTIPART_MIN_SIZE` | `No` | Minimum file size (in bytes) for multipart uploads to object store. Files smaller than this are uploaded as a single object. Minimum allowed value is `26214400` (25 MB). | `26214400` | `52428800` |
+| `P_LOCAL_SYNC_THRESHOLD` | `No` | Local sync threshold in seconds. Time within which local sync (staging to disk) should complete. | `30` | `60` |
+| `P_OBJECT_STORE_SYNC_THRESHOLD` | `No` | Object store sync threshold in seconds. Time within which object store sync should complete. | `15` | `30` |
+| `P_EVENT_MAX_CHUNK_AGE` | `No` | Maximum allowed age gap (in hours) between events within the same node, relative to the reference event. Accepts `0` to disallow older-than-reference events; capped at `168` (one week). | `1` | `24` |
+| `P_MAX_EVENT_PAYLOAD_SIZE` | `No` | Maximum allowed event payload size in bytes for ingest endpoints. | `10485760` | `20971520` |
+| `P_MAX_FLATTEN_LEVEL` | `No` | Maximum level of flattening allowed for events. Prevents nested list type fields from getting created. | `10` | `5` |
+| `P_MAX_FIELD_STATISTICS` | `No` | Maximum number of field statistics to store. | `50` | `100` |
+| `P_DATASET_FIELD_COUNT_LIMIT` | `No` | Recommended maximum number of fields in a dataset. | `1000` | `2000` |
+| `P_PARQUET_ROW_GROUP_SIZE` | `No` | Number of rows in a Parquet row group. Smaller row groups help in faster query performance in multi-threaded queries. | `262144` | `524288` |
+| `P_EXECUTION_BATCH_SIZE` | `No` | Batch size for query execution. | `20000` | `40000` |
+| `P_QUERY_MEMORY_LIMIT` | `No` | Set a fixed memory limit for query in GiB. | `-` | `4` |
+
+### Server tuning (Actix)
+
+These environment variables tune the underlying Actix HTTP server.
+
+| Variable Name | Required | Description | Default | Example |
+| --- | --- | --- | --- | --- |
+| `P_ACTIX_REQUEST_TIMEOUT` | `No` | Client request timeout in seconds. | `5` | `10` |
+| `P_ACTIX_KEEP_ALIVE` | `No` | Server keep-alive in seconds. | `5` | `10` |
+| `P_ACTIX_NUM_WORKERS` | `No` | Number of workers for actix-web. Defaults to the number of CPU cores. | `<num_cpus>` | `8` |
+| `P_ACTIX_BACKLOG` | `No` | Maximum number of pending connections. | `2048` | `4096` |
+| `P_ACTIX_MAX_CONNECTIONS` | `No` | Per-worker maximum number of concurrent connections. | `25000` | `50000` |
 
 ### Applicable to distributed mode
 | Variable Name | Required | Description | Default | Example |
@@ -50,9 +74,19 @@ This section lists all the environment variables applicable to the S3 storage mo
 | `P_S3_CHECKSUM` | `No` | Set SHA256 checksum in requests to allow S3 buckets with [WORM enabled](https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html). | `false` | `true` |
 | `P_S3_SSEC_ENCRYPTION_KEY` | `No` | Set server side encryption key with [customer provided key for S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/ServerSideEncryptionCustomerKeys.html). | `-` | `SSE-C:AES256:lgYvIsNHaYFh45knxlpxCdLFJaLnmXiibQcDrUYZt9Q=` |
 
+### Applicable to the GCS storage mode
+
+This section lists all the environment variables applicable to the Google Cloud Storage (GCS) mode. These environment variables are mandatory if you're starting Parseable server in GCS mode i.e. `parseable gcs-store`. Authentication uses [Google Application Default Credentials](https://cloud.google.com/docs/authentication/application-default-credentials).
+
+| Variable Name | Required | Description | Default | Example |
+| --- | --- | --- | --- | --- |
+| `P_GCS_BUCKET` | `Yes` | GCS bucket to use for Parseable data storage. | `-` | `parseable` |
+| `P_GCS_URL` | `No` | URL for GCS or compatible object storage server. | `https://storage.googleapis.com` | `https://storage.googleapis.com` |
+| `P_GCS_TLS_SKIP_VERIFY` | `No` | Skip checking for the GCS store's TLS certificate validity. | `false` | `true` |
+
 ### Applicable to the Azure storage account
 
-This section lists all the environment variables applicable to the Azure blobstore storage mode. These environment are mandatory, if you're staring Parseable server in Azure storage mode i.e. `parseable server blob-store`.
+This section lists all the environment variables applicable to the Azure blobstore storage mode. These environment are mandatory, if you're starting Parseable server in Azure storage mode i.e. `parseable blob-store`.
 
 | Variable Name | Required | Description | Default | Example |
 | --- | --- | --- | --- | --- |
@@ -92,5 +126,40 @@ This section lists all the environment variables applicable to the OIDC mode. Th
 | `P_OIDC_CLIENT_SECRET` | `Yes` | Your OIDC client secret, provided by your identity provider. | `-` | `client-secret` |
 | `P_OIDC_ISSUER` | `Yes` | The OIDC issuer URL, typically provided by your identity provider. It points to the OIDC authorization server. Should support discovery protocol. | `-` | `https://accounts.google.com` |
 | `P_ORIGIN_URI` | `Yes` | The URI where Parseable is hosted or accessible. This should be the base URL of your Parseable instance. | `-` | `https://demo.parseable.com/` |
+| `P_OIDC_SCOPE` | `No` | OIDC scope to request from the identity provider. | `openid profile email offline_access` | `openid profile email` |
 
 Refer to [OIDC](/docs/user-guide/openid) section for more details.
+
+### Applicable to Parseable Enterprise
+
+<OfferingPills enterprise className="mb-4" />
+
+This section lists environment variables that apply only to Parseable Enterprise deployments.
+
+#### License and cluster
+
+| Variable Name | Required | Description | Default | Example |
+| --- | --- | --- | --- | --- |
+| `P_CLUSTER_SECRET` | `Yes` | Shared secret used to authenticate inter-node communication within a Parseable Enterprise cluster. The server fails to start if this is not set. | `-` | `<random-256-bit-secret>` |
+| `P_LICENSE_DATA_FILE_PATH` | `Yes` | Local path to the Parseable Enterprise license data file (JSON). | `-` | `/etc/parseable/license.json` |
+| `P_LICENSE_SIGNATURE_FILE_PATH` | `Yes`* | Local path to the raw (binary) license signature file. *Either this or `P_LICENSE_SIGNATURE_BASE64` must be set.* | `-` | `/etc/parseable/license.sig` |
+| `P_LICENSE_SIGNATURE_BASE64` | `Yes`* | Base64-encoded license signature provided inline as an environment variable. Takes priority over `P_LICENSE_SIGNATURE_FILE_PATH` when both are set. | `-` | `MEUCIQDx...==` |
+| `P_DB_CONNECTION_STRING` | `No` | PostgreSQL connection string used for storing Parseable Enterprise metadata. Set `DB_SSL_ROOT_CERT` to a CA cert path to enable TLS. | `-` | `postgresql://user:pass@host:5432/parseable` |
+| `P_INGESTOR_URL_INFO` | `No` | Public ingestor URL exposed by the `/about` endpoint and used by the OTel generator. Set this to the externally reachable URL of your ingestor(s). | `-` | `https://ingest.example.com` |
+
+#### Authentication
+
+| Variable Name | Required | Description | Default | Example |
+| --- | --- | --- | --- | --- |
+| `P_CLERK_SECRET` | `No` | Clerk OAuth secret. When set, Parseable uses Clerk as the OAuth provider in place of any configured OIDC provider. | `-` | `sk_live_xxxxxxxxxxxx` |
+| `P_ALLOW_ORIGINS` | `No` | Comma-separated list of allowed CORS origins. Only applied when `P_CORS=true` and the server is built in release mode. | `-` | `https://app.example.com,https://admin.example.com` |
+
+#### Logging
+
+| Variable Name | Required | Description | Default | Example |
+| --- | --- | --- | --- | --- |
+| `P_SERVER_LOGS_FILE_PATH` | `No` | File path where Parseable server logs are written. If unset, server logs are not persisted to file. | `-` | `/var/log/parseable/server.log` |
+| `P_AUDIT_LOGS_FILE_PATH` | `No` | File path where Parseable audit logs (JSON) are written. If unset, audit logs are not persisted to file. | `-` | `/var/log/parseable/audit.log` |
+| `P_LOGS_MAX_FILE_SIZE` | `No` | Maximum size (in bytes) of a single rotated log file. | `10485760` (10 MB) | `52428800` |
+| `P_LOGS_MAX_TOTAL_SIZE` | `No` | Maximum total size (in bytes) of all retained log files. Must be greater than or equal to `P_LOGS_MAX_FILE_SIZE`. | `1073741824` (1 GB) | `5368709120` |
+
