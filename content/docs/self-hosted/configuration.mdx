@@ -28,8 +28,6 @@ This document lists all the environment variables and HTTP headers supported by 
 | `P_CPU_THRESHOLD` | `No` | Specify the CPU threshold to use for Parseable server. | `100` | `80` |
 | `P_ENABLE_MULTIPART` | `No` | Enable multipart uploads to object store (S3, GCS, Azure Blob Store). When disabled, files are uploaded as a single object regardless of size. | `true` | `false` |
 | `P_MULTIPART_MIN_SIZE` | `No` | Minimum file size (in bytes) for multipart uploads to object store. Files smaller than this are uploaded as a single object. Minimum allowed value is `26214400` (25 MB). | `26214400` | `52428800` |
-| `P_LOCAL_SYNC_THRESHOLD` | `No` | Local sync threshold in seconds. Time within which local sync (staging to disk) should complete. | `30` | `60` |
-| `P_OBJECT_STORE_SYNC_THRESHOLD` | `No` | Object store sync threshold in seconds. Time within which object store sync should complete. | `15` | `30` |
 | `P_EVENT_MAX_CHUNK_AGE` | `No` | Maximum allowed age gap (in hours) between events within the same node, relative to the reference event. Accepts `0` to disallow older-than-reference events; capped at `168` (one week). | `1` | `24` |
 | `P_MAX_EVENT_PAYLOAD_SIZE` | `No` | Maximum allowed event payload size in bytes for ingest endpoints. | `10485760` | `20971520` |
 | `P_MAX_FLATTEN_LEVEL` | `No` | Maximum level of flattening allowed for events. Prevents nested list type fields from getting created. | `10` | `5` |
