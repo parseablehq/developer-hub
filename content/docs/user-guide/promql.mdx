@@ -1,0 +1,613 @@
+---
+title: PromQL
+description: Query metrics in Parseable using the Prometheus Query Language
+---
+
+<OfferingPills enterprise className="mb-4" />
+
+Parseable Enterprise includes a built-in PromQL engine that lets you query metrics stored in Parseable using the standard Prometheus Query Language. There is no need to run a separate Prometheus instance — you can ingest, store, and query metrics all within Parseable.
+
+All endpoints live under the `/prometheus/api/v1` base path and follow the Prometheus HTTP API conventions, so existing Grafana dashboards and Prometheus-compatible tooling work without changes — point the datasource at your Parseable instance.
+
+## Capabilities
+
+- **Instant and range queries** with full PromQL expression support
+- **50+ PromQL functions** — `rate`, `histogram_quantile`, `holt_winters`, label operations, and more
+- **12 aggregation operators** — `sum`, `avg`, `topk`, `quantile`, `count_values`, etc.
+- **All standard binary operators** — arithmetic, comparison, and set operations
+- **Prometheus Remote Write** ingestion — send metrics from any Prometheus-compatible agent
+- **Cardinality analysis** endpoints for understanding your metrics landscape
+- **Distributed execution** — queries automatically fan out across queriers in cluster mode
+
+## API Endpoints
+
+All endpoints require the `Authorization` header with a valid Parseable credential (basic auth). All query and metadata endpoints require the `Query` action permission. The remote write endpoint requires the `Ingest` action permission.
+
+### Instant Query
+
+Evaluate a PromQL expression at a single point in time.
+
+**Endpoint:** `GET /prometheus/api/v1/query` or `POST /prometheus/api/v1/query`
+
+| Parameter          | Required | Type   | Description                                                                                   |
+|--------------------|----------|--------|-----------------------------------------------------------------------------------------------|
+| `query`            | Yes      | string | PromQL expression to evaluate                                                                 |
+| `stream`           | Yes      | string | Name of the metrics stream to query (e.g. `otel_metrics`)                                     |
+| `time`             | No       | string | Evaluation timestamp. RFC3339 (`2024-01-15T10:30:00Z`) or unix seconds. Defaults to current time |
+| `timeout`          | No       | float  | Query timeout in seconds. Default: `120`                                                      |
+| `limit`            | No       | int    | Maximum number of data points to return                                                       |
+| `offset`           | No       | int    | Number of data points to skip                                                                 |
+| `trace`            | No       | string | Set to `1` or `true` to include execution trace in response                                   |
+| `timestamp_format` | No       | string | `rfc3339` for ISO 8601 timestamps in results, otherwise unix epoch seconds                    |
+
+```bash
+# Simple metric lookup
+curl -u admin:admin "http://localhost:8000/prometheus/api/v1/query?\
+query=http_requests_total&\
+stream=otel_metrics"
+
+# Rate calculation at a specific time
+curl -u admin:admin "http://localhost:8000/prometheus/api/v1/query?\
+query=rate(http_requests_total[5m])&\
+stream=otel_metrics&\
+time=2024-01-15T10:30:00Z"
+```
+
+**Success response:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "resultType": "vector",
+    "result": [
+      {
+        "metric": {
+          "__name__": "http_requests_total",
+          "job": "api-server",
+          "instance": "10.0.0.1:8080"
+        },
+        "value": [1705312200, "1542.5"]
+      }
+    ]
+  }
+}
+```
+
+### Range Query
+
+Evaluate a PromQL expression over a time range, returning a time series matrix.
+
+**Endpoint:** `GET /prometheus/api/v1/query_range` or `POST /prometheus/api/v1/query_range`
+
+| Parameter          | Required | Type   | Description                                                                                              |
+|--------------------|----------|--------|----------------------------------------------------------------------------------------------------------|
+| `query`            | Yes      | string | PromQL expression to evaluate                                                                            |
+| `start`            | Yes      | string | Start timestamp. RFC3339 or unix seconds                                                                 |
+| `end`              | Yes      | string | End timestamp. RFC3339 or unix seconds                                                                   |
+| `stream`           | Yes      | string | Name of the metrics stream to query                                                                      |
+| `step`             | No       | string | Query resolution step. Duration string (`15s`, `1m`, `5m`, `1h`) or float seconds. Auto-calculated if omitted |
+| `timeout`          | No       | float  | Query timeout in seconds. Default: `120`                                                                 |
+| `limit`            | No       | int    | Maximum number of data points to return                                                                  |
+| `offset`           | No       | int    | Number of data points to skip                                                                            |
+| `trace`            | No       | string | `1` or `true` to include execution trace                                                                 |
+| `timestamp_format` | No       | string | `rfc3339` for ISO 8601 timestamps in results                                                             |
+
+```bash
+# Range query over the last hour with 1-minute resolution
+curl -u admin:admin "http://localhost:8000/prometheus/api/v1/query_range?\
+query=rate(http_requests_total[5m])&\
+stream=otel_metrics&\
+start=2024-01-15T09:00:00Z&\
+end=2024-01-15T10:00:00Z&\
+step=60s"
+
+# 99th percentile latency, aggregated by job
+curl -u admin:admin "http://localhost:8000/prometheus/api/v1/query_range?\
+query=histogram_quantile(0.99,%20sum(rate(http_request_duration_seconds_bucket[5m]))%20by%20(le,%20job))&\
+stream=otel_metrics&\
+start=1705276800&\
+end=1705312200&\
+step=60"
+```
+
+**Success response:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "resultType": "matrix",
+    "result": [
+      {
+        "metric": {"job": "api-server", "instance": "10.0.0.1:8080"},
+        "values": [
+          [1705276800, "12.5"],
+          [1705276860, "14.2"],
+          [1705276920, "13.8"]
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Series Metadata
+
+Find time series that match certain label matchers.
+
+**Endpoint:** `GET /prometheus/api/v1/series` or `POST /prometheus/api/v1/series`
+
+| Parameter | Required | Type     | Description                                                                   |
+|-----------|----------|----------|-------------------------------------------------------------------------------|
+| `match[]` | Yes      | string[] | Repeated parameter. Series selector (e.g. `{job="api"}`, `http_requests_total`) |
+| `stream`  | No       | string   | Metrics stream. Defaults to `otel_metrics`                                    |
+| `start`   | No       | string   | Start timestamp (RFC3339 or unix seconds)                                     |
+| `end`     | No       | string   | End timestamp (RFC3339 or unix seconds)                                       |
+
+### Labels
+
+Get a list of all label names present in the data.
+
+**Endpoint:** `GET /prometheus/api/v1/labels`
+
+| Parameter | Required | Type   | Description                                |
+|-----------|----------|--------|--------------------------------------------|
+| `stream`  | No       | string | Metrics stream. Defaults to `otel_metrics` |
+| `start`   | No       | string | Start timestamp                            |
+| `end`     | No       | string | End timestamp                              |
+
+### Label Values
+
+Get a list of distinct values for a specific label.
+
+**Endpoint:** `GET /prometheus/api/v1/label/{label_name}/values`
+
+| Parameter | Required | Type   | Description                                |
+|-----------|----------|--------|--------------------------------------------|
+| `stream`  | No       | string | Metrics stream. Defaults to `otel_metrics` |
+| `start`   | No       | string | Start timestamp                            |
+| `end`     | No       | string | End timestamp                              |
+
+```bash
+# All values of the "job" label
+curl -u admin:admin "http://localhost:8000/prometheus/api/v1/label/job/values?\
+stream=otel_metrics"
+
+# All metric names
+curl -u admin:admin "http://localhost:8000/prometheus/api/v1/label/__name__/values?\
+stream=otel_metrics"
+```
+
+### TSDB Status
+
+Get statistics about the time series database. Compatible with the VictoriaMetrics TSDB status API.
+
+**Endpoint:** `GET /prometheus/api/v1/status/tsdb`
+
+| Parameter    | Required | Type     | Description                                                                     |
+|--------------|----------|----------|---------------------------------------------------------------------------------|
+| `stream`     | No       | string   | Metrics stream. Defaults to `otel_metrics`                                      |
+| `topN`       | No       | int      | Max entries per category. Default: `10`                                         |
+| `date`       | No       | string   | Date to analyze in `YYYY-MM-DD` format. Defaults to today                       |
+| `match[]`    | No       | string[] | Series selector to filter by                                                    |
+| `focusLabel` | No       | string   | Label to break down series counts by value                                      |
+
+### Cardinality — Label Names
+
+Find which labels have the highest cardinality (most distinct values).
+
+**Endpoint:** `GET /prometheus/api/v1/cardinality/label_names`
+
+| Parameter  | Required | Type   | Description                                                          |
+|------------|----------|--------|----------------------------------------------------------------------|
+| `stream`   | No       | string | Metrics stream. Defaults to `otel_metrics`                           |
+| `lookback` | No       | int    | Seconds to look back from now. Default: `3600`                       |
+| `limit`    | No       | int    | Maximum number of labels to return. Default: `20`                    |
+| `selector` | No       | string | Label selector to filter series                                      |
+
+### Cardinality — Label Values
+
+For a given label, find how many series exist for each of its values.
+
+**Endpoint:** `GET /prometheus/api/v1/cardinality/label_values`
+
+| Parameter    | Required | Type   | Description                                              |
+|--------------|----------|--------|----------------------------------------------------------|
+| `stream`     | No       | string | Metrics stream. Defaults to `otel_metrics`               |
+| `label_name` | No       | string | The label to analyze                                     |
+| `lookback`   | No       | int    | Seconds to look back from now. Default: `3600`           |
+| `limit`      | No       | int    | Maximum number of values to return. Default: `20`        |
+
+### Cardinality — Active Series
+
+List all currently active series matching a selector.
+
+**Endpoint:** `GET /prometheus/api/v1/cardinality/active_series`
+
+| Parameter  | Required | Type   | Description                                              |
+|------------|----------|--------|----------------------------------------------------------|
+| `stream`   | No       | string | Metrics stream. Defaults to `otel_metrics`               |
+| `lookback` | No       | int    | Seconds to look back from now. Default: `3600`           |
+| `limit`    | No       | int    | Maximum number of series to return. Default: `20`        |
+| `selector` | No       | string | Label selector                                           |
+
+### Active Queries
+
+List all currently executing PromQL queries.
+
+**Endpoint:** `GET /prometheus/api/v1/status/active_queries`
+
+```bash
+curl -u admin:admin "http://localhost:8000/prometheus/api/v1/status/active_queries"
+```
+
+### Prometheus Remote Write
+
+Ingest metrics via the Prometheus Remote Write protocol. Accepts snappy-compressed protobuf payloads (the standard Prometheus remote write format). Metrics are converted to OpenTelemetry format and ingested into the specified stream.
+
+**Endpoint:** `POST /v1/prometheus/write`
+
+| Header             | Required | Description                                                    |
+|--------------------|----------|----------------------------------------------------------------|
+| `Authorization`    | Yes      | Basic auth credentials                                         |
+| `Content-Encoding` | Yes      | Must be `snappy`                                               |
+| `Content-Type`     | Yes      | `application/x-protobuf`                                       |
+| `X-P-Stream`       | Yes       | Target stream name.                 |
+| `X-P-Log-Source`   | Yes       | Must be `otel-metrics`             |
+
+**Prometheus configuration:**
+
+```yaml
+remote_write:
+  - url: "http://parseable:8000/v1/prometheus/write"
+    basic_auth:
+      username: admin
+      password: admin
+    headers:
+      X-P-Stream: otel_metrics
+      X-P-Log-Source: otel-metrics
+```
+
+## Querying from Grafana
+
+You can query Parseable PromQL from Grafana in two ways: the built-in Prometheus data source, or the Parseable Grafana plugin.
+
+### Prometheus data source
+
+Add a Prometheus data source in Grafana with the following settings:
+
+- **Prometheus server URL:** the URL of your Parseable Prism node (e.g. `https://prism.example.com`)
+- **Authentication:** enable basic auth and provide your Parseable username and password
+- **Custom query parameters:** `stream=<metrics dataset name>` (for example, `stream=otel_metrics`)
+- **HTTP method:** `GET`
+
+Because Parseable uses the dataset name as the logical table, the Prometheus data source works with **one dataset at a time** — the `stream` query parameter pins it. If you have multiple metrics datasets, you'll need to add a separate Prometheus data source per dataset.
+
+### Parseable Grafana plugin
+
+If you have multiple metrics datasets (or want to mix telemetry signals), use the Parseable Grafana plugin instead. The plugin lets you switch between datasets and write PromQL queries directly in the editor.
+
+The plugin works in **Dashboards** and **Explore**, but is **not** supported in Grafana **Drilldown**.
+
+A useful side benefit: the same plugin lets you build dashboards from logs, traces, and metrics together — all telemetry signals in one place.
+
+## Supported PromQL Functions
+
+### Rate and Counter Functions
+
+These functions operate on counter and gauge metrics over a time range (matrix selector).
+
+- `rate(v range-vector)` — per-second average rate of increase. Handles counter resets.
+- `irate(v range-vector)` — per-second instant rate using only the last two data points.
+- `increase(v range-vector)` — total increase in the counter over the time range.
+- `delta(v range-vector)` — difference between the first and last value (use with gauges).
+- `idelta(v range-vector)` — like `delta`, but uses only the last two data points.
+
+```
+rate(http_requests_total[5m])
+increase(http_requests_total[1h])
+```
+
+### Aggregation Over Time Functions
+
+Aggregate samples within a time range for each series independently.
+
+- `avg_over_time(v range-vector)`
+- `sum_over_time(v range-vector)`
+- `min_over_time(v range-vector)`
+- `max_over_time(v range-vector)`
+- `count_over_time(v range-vector)`
+- `last_over_time(v range-vector)`
+- `stddev_over_time(v range-vector)`
+- `stdvar_over_time(v range-vector)`
+- `quantile_over_time(scalar, v range-vector)` — φ-quantile (0 ≤ φ ≤ 1) of values over the time range
+- `present_over_time(v range-vector)` — value `1` for any series that has at least one sample
+
+```
+avg_over_time(cpu_usage_percent[10m])
+quantile_over_time(0.95, http_request_duration_seconds[1h])
+```
+
+### Counter Tracking Functions
+
+- `changes(v range-vector)` — number of times a value changed in the range.
+- `resets(v range-vector)` — number of counter resets (value decreases) in the range.
+
+### Trend and Prediction Functions
+
+- `deriv(v range-vector)` — per-second derivative via simple linear regression.
+- `predict_linear(v range-vector, t scalar)` — predicts the value `t` seconds from now.
+
+```
+# Will we run out of disk in 24 hours?
+predict_linear(node_filesystem_free_bytes[6h], 24 * 3600) < 0
+```
+
+### Sorting Functions
+
+- `sort(v instant-vector)` — ascending by sample value.
+- `sort_desc(v instant-vector)` — descending by sample value.
+- `sort_by_label(v instant-vector, label string, ...)` — alphabetical by label values.
+- `sort_by_label_desc(v instant-vector, label string, ...)` — reverse alphabetical.
+
+### Math Functions
+
+All math functions operate element-wise on each sample value.
+
+| Function   | Description                  |
+|------------|------------------------------|
+| `abs(v)`   | Absolute value               |
+| `ceil(v)`  | Round up                     |
+| `floor(v)` | Round down                   |
+| `round(v)` | Round to nearest             |
+| `sqrt(v)`  | Square root                  |
+| `exp(v)`   | Exponential (e^x)            |
+| `ln(v)`    | Natural logarithm            |
+| `log2(v)`  | Base-2 logarithm             |
+| `log10(v)` | Base-10 logarithm            |
+| `sgn(v)`   | Sign function: -1, 0, or 1   |
+
+### Clamping Functions
+
+- `clamp(v instant-vector, min scalar, max scalar)`
+- `clamp_min(v instant-vector, min scalar)`
+- `clamp_max(v instant-vector, max scalar)`
+
+### Type Conversion Functions
+
+- `scalar(v instant-vector)` — converts a single-element vector to a scalar (returns `NaN` otherwise).
+- `vector(s scalar)` — converts a scalar to a single-element vector with no labels.
+
+### Time Functions
+
+- `time()` — current evaluation timestamp (seconds since epoch).
+- `timestamp(v instant-vector)` — timestamp of each sample as its value.
+
+| Function           | Returns                       |
+|--------------------|-------------------------------|
+| `hour(v?)`         | Hour (0–23)                   |
+| `minute(v?)`       | Minute (0–59)                 |
+| `month(v?)`        | Month (1–12)                  |
+| `year(v?)`         | Year                          |
+| `day_of_month(v?)` | Day of month (1–31)           |
+| `day_of_week(v?)`  | Day of week (0=Sun, 6=Sat)    |
+| `day_of_year(v?)`  | Day of year (1–365/366)       |
+| `days_in_month(v?)`| Days in the month (28–31)     |
+
+### Label Manipulation Functions
+
+- `label_replace(v, dst_label, replacement, src_label, regex)` — replace or create a label using regex match and substitution.
+- `label_join(v, dst_label, separator, src_label_1, src_label_2, ...)` — join multiple label values into a new label.
+
+```
+label_replace(up, "port", "$1", "instance", ".*:(.*)")
+label_join(up, "job_instance", "/", "job", "instance")
+```
+
+### Histogram Functions
+
+- `histogram_quantile(φ scalar, v instant-vector)` — φ-quantile from a conventional Prometheus histogram. Input must contain bucket series with the `le` label.
+- `histogram_count(v range-vector)` — count from histogram data.
+- `histogram_sum(v range-vector)` — sum from histogram data.
+- `histogram_fraction(lower scalar, upper scalar, v range-vector)` — estimated fraction of observations between bounds.
+
+```
+histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job))
+```
+
+### Absence Detection Functions
+
+- `absent(v instant-vector)` — vector with value `1` if input is empty.
+- `absent_over_time(v range-vector)` — vector with value `1` if range vector has no samples.
+
+### Smoothing Functions
+
+- `holt_winters(v range-vector, sf scalar, tf scalar)` — double exponential smoothing. `sf` is the smoothing factor and `tf` is the trend factor; both must be in `(0, 1)`.
+
+```
+holt_winters(rate(http_requests_total[5m])[30m:1m], 0.5, 0.7)
+```
+
+## Aggregation Operators
+
+Aggregation operators take a vector and aggregate across series. All support `by` and `without` clause modifiers for grouping.
+
+```
+<aggr_op>([parameter,] <vector>) [by|without (<label_list>)]
+```
+
+| Operator                          | Description                                               |
+|-----------------------------------|-----------------------------------------------------------|
+| `sum`                             | Sum of values across series                               |
+| `avg`                             | Arithmetic mean across series                             |
+| `count`                           | Number of series                                          |
+| `min`                             | Minimum value across series                               |
+| `max`                             | Maximum value across series                               |
+| `stddev`                          | Population standard deviation                             |
+| `stdvar`                          | Population variance                                       |
+| `quantile(φ, v)`                  | φ-quantile across series (0 ≤ φ ≤ 1)                      |
+| `topk(k, v)`                      | Top K series by value                                     |
+| `bottomk(k, v)`                   | Bottom K series by value                                  |
+| `count_values("label", v)`        | Count series with each distinct value                     |
+| `group`                           | Returns 1 for each distinct label set                     |
+
+```
+sum(rate(http_requests_total[5m])) by (job)
+topk(5, rate(http_requests_total[5m]))
+quantile(0.9, http_request_duration_seconds) by (service)
+```
+
+## Binary Operators
+
+Binary operators work between two scalars, two vectors, or a scalar and a vector.
+
+### Arithmetic Operators
+
+| Operator | Description    |
+|----------|----------------|
+| `+`      | Addition       |
+| `-`      | Subtraction    |
+| `*`      | Multiplication |
+| `/`      | Division       |
+| `%`      | Modulo         |
+| `^`      | Power          |
+| `atan2`  | Arc tangent    |
+
+### Comparison Operators
+
+Return the left-hand value if the comparison is true; otherwise the series is dropped. Add `bool` to return 0/1 instead.
+
+| Operator | Description       |
+|----------|-------------------|
+| `==`     | Equal             |
+| `!=`     | Not equal         |
+| `>`      | Greater than      |
+| `<`      | Less than         |
+| `>=`     | Greater or equal  |
+| `<=`     | Less or equal     |
+
+```
+# Filter: only series where error rate exceeds 5%
+rate(errors[5m]) / rate(requests[5m]) > 0.05
+
+# Boolean mode: returns 0 or 1
+rate(errors[5m]) > bool 0.05
+```
+
+### Set/Logical Operators
+
+| Operator  | Description                                                   |
+|-----------|---------------------------------------------------------------|
+| `and`     | Intersection — left series that have a matching right         |
+| `or`      | Union — all series from both sides                            |
+| `unless`  | Complement — left series that have no matching right          |
+
+## Vector Matching
+
+When applying binary operators between two vectors, Parseable supports standard Prometheus vector matching.
+
+```
+# Match on all labels (default)
+rate(errors[5m]) / rate(requests[5m])
+
+# Match on specific labels
+rate(errors[5m]) / on(job, instance) rate(requests[5m])
+
+# Match on all labels except specific ones
+rate(errors[5m]) / ignoring(status) rate(requests[5m])
+
+# group_left: many-to-one (left side has more series)
+rate(http_requests_total[5m]) / on(job) group_left rate(capacity[5m])
+
+# group_right: one-to-many
+rate(capacity[5m]) / on(job) group_right rate(http_requests_total[5m])
+```
+
+## Subqueries
+
+Evaluate an instant query over a range of time with a given resolution.
+
+```
+<instant_query>[<range>:<resolution>]
+```
+
+```
+# Max of 5-minute rate, evaluated every minute over the last hour
+max_over_time(rate(http_requests_total[5m])[1h:1m])
+```
+
+## Response Headers
+
+Query endpoints include performance statistics in response headers on every successful response. Some headers only appear when the corresponding execution path was taken.
+
+| Header                              | When set                                                | Description                                             |
+|-------------------------------------|---------------------------------------------------------|---------------------------------------------------------|
+| `X-Parseable-Execution-Time-Ms`     | Always (range queries)                                  | Query execution time in milliseconds                    |
+| `X-Parseable-Cache-Hit`             | Always                                                  | Whether the result was served from cache                |
+| `X-Parseable-Cache-Status`          | Range queries                                           | `full`, `partial`, or `miss`                            |
+| `X-Parseable-Query-Split`           | Range queries                                           | Whether the query was split into sub-ranges             |
+| `X-Parseable-Series-Fetched`        | Local and split execution paths                         | Number of time series loaded from storage               |
+| `X-Parseable-Samples-Scanned`       | Local and split execution paths                         | Total number of individual samples processed            |
+| `X-Parseable-Partial-Results`       | Only when a querier returned partial results            | Indicates incomplete distributed result                 |
+| `X-Parseable-Query-Pushdown`        | Only when the query was pushed down to queriers         | Indicates distributed query pushdown strategy was used  |
+
+## Error Responses
+
+All errors follow a consistent JSON format.
+
+```json
+{
+  "status": "error",
+  "errorType": "<type>",
+  "error": "<message>"
+}
+```
+
+| Error Type    | HTTP Status | Description                                              |
+|---------------|-------------|----------------------------------------------------------|
+| `bad_data`    | 400 / 422   | Invalid PromQL syntax or malformed parameters            |
+| `execution`   | 500         | Internal error during query evaluation                   |
+| `not_found`   | 404         | Referenced stream or dataset does not exist              |
+| `timeout`     | 503         | Query exceeded the timeout limit                         |
+
+## Environment Variables
+
+These variables tune Parseable's PromQL query engine — query splitting, per-query limits, distributed execution, and result caching.
+
+### Query splitting and execution
+
+| Variable Name | Required | Description | Default | Example |
+| --- | --- | --- | --- | --- |
+| `P_PROMQL_SPLIT_INTERVAL_HOURS` | `No` | Time interval (in hours) used to split long-range PromQL queries. | `24` | `12` |
+| `P_PROMQL_MAX_CONCURRENT_SPLITS` | `No` | Maximum number of split sub-queries executed concurrently for a single PromQL request. | `8` | `16` |
+| `P_PROMQL_ALIGN_QUERIES_WITH_STEP` | `No` | When `true`, range query `start`/`end` are floored to step boundaries to improve cache hit rates on jittered Grafana refreshes. | `true` | `false` |
+| `P_PROMQL_PARTITION_OVERLAP_MINS` | `No` | Overlap window (in minutes) applied when fetching data across partition boundaries. | `5` | `10` |
+
+### Per-query limits
+
+| Variable Name | Required | Description | Default | Example |
+| --- | --- | --- | --- | --- |
+| `P_PROMQL_MAX_MEMORY_PER_QUERY` | `No` | Maximum estimated memory (in bytes) allowed per PromQL query. Queries exceeding this limit are rejected. | `2147483648` (2 GB) | `4294967296` |
+| `P_PROMQL_MAX_SERIES_PER_QUERY` | `No` | Maximum number of time series a single PromQL query may evaluate. | `1000000` | `500000` |
+| `P_PROMQL_MAX_SAMPLES_PER_QUERY` | `No` | Maximum number of samples a single PromQL query may evaluate. | `100000000` | `50000000` |
+
+### Distributed execution
+
+| Variable Name | Required | Description | Default | Example |
+| --- | --- | --- | --- | --- |
+| `P_PROMQL_MAX_CONCURRENT_DISTRIBUTED_QUERIES` | `No` | Maximum number of distributed PromQL queries executed concurrently across the cluster. | `32` | `64` |
+| `P_PROMQL_MAX_CONCURRENT_QUERIER_REQUESTS` | `No` | Maximum number of concurrent in-flight requests to querier nodes per PromQL query. | `16` | `32` |
+| `P_PROMQL_ADMISSION_TIMEOUT_SECS` | `No` | Timeout (in seconds) for admitting a query into the distributed execution pool. | `10` | `30` |
+| `P_PROMQL_DATA_FETCH_TIMEOUT_SECS` | `No` | Timeout (in seconds) for fetching data from a querier node during distributed PromQL execution. | `120` | `300` |
+| `P_PROMQL_HOTTIER_INVENTORY_TIMEOUT_SECS` | `No` | Timeout (in seconds) for fetching hot-tier inventory from querier nodes. | `5` | `10` |
+| `P_PROMQL_HOTTIER_CACHE_TTL_SECS` | `No` | TTL (in seconds) for the hot-tier inventory cache used during query planning. | `30` | `60` |
+
+### Result cache
+
+| Variable Name | Required | Description | Default | Example |
+| --- | --- | --- | --- | --- |
+| `P_PROMQL_CACHE_MAX_ENTRIES` | `No` | Maximum number of entries kept in the PromQL query result cache. | `10000` | `50000` |
+| `P_PROMQL_CACHE_MAX_MEMORY_MB` | `No` | Maximum memory (in MB) used by the PromQL query result cache. | `8192` | `16384` |
+| `P_PROMQL_CACHE_TTL_SECS` | `No` | TTL (in seconds) for entries in the PromQL query result cache. | `3600` | `7200` |
+| `P_PROMQL_RESULTS_CACHE_DIR` | `No` | Local directory where PromQL query results are persisted across restarts. | System temp directory | `/var/cache/parseable/promql` |

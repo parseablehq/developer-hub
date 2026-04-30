@@ -6,6 +6,7 @@
     "alerting",
     "dashboards",
     "sql-editor",
+    "promql",
     "rbac",
     "log-iq",
     "openid"
