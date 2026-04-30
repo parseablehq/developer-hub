@@ -1,0 +1,227 @@
+---
+title: API Keys
+redirect_from:
+  - /api-keys
+  - /features/api-keys
+---
+
+<OfferingPills pro enterprise className="mb-4" />
+
+API keys are a non-interactive way to authenticate against Parseable. They are best suited for log forwarders, CLI tools, automation scripts, AI agents, and any other client where Basic Auth or OIDC is impractical.
+
+A Parseable instance has three types of identities — **Native** (Basic Auth), **OAuth** (OIDC), and **API Key**. API keys behave like users: they are assigned roles, and each role is a set of [RBAC](/docs/user-guide/rbac) privileges. The key inherits exactly the access its roles grant — nothing more, nothing less.
+
+## When to use API keys
+
+- **Ingestion agents** — Fluent Bit, Vector, OpenTelemetry Collector, log forwarders. Issue an API key with the `ingestor` role and ship logs without storing a username and password.
+- **CLI / scripts** — `pb` CLI or any custom automation that needs scoped, revocable credentials.
+- **Agents** — AI agents and other autonomous workloads that need read access to specific datasets.
+
+<Callout type="info">
+Treat an API key like a password. The full key value is shown **only once** at creation time. Store it in a secrets manager and never commit it to source control.
+</Callout>
+
+## How API keys work
+
+An API key has:
+
+- a **key id** (`keyId`) — a stable identifier used for management operations
+- a **key name** (`keyName`) — a human-readable label, must be unique within the tenant/organization
+- a **secret value** (`apiKey`) — a UUID, sent on each request via the `x-api-key` header
+- a set of **roles** — pre-existing roles that grant privileges (same roles used for Native and OAuth users)
+
+When a request arrives with an `x-api-key` header, Parseable looks up the key, resolves its roles into permissions, and authorizes the request the same way it authorizes any other user.
+
+## Create an API key
+
+Roles must already exist in the tenant/organization. See [RBAC](/docs/user-guide/rbac) for how to create roles.
+
+```sh
+curl -X POST https://<parseable-prism-host>/api/prism/v1/apikeys \
+  -u admin:admin \
+  -H "Content-Type: application/json" \
+  -d '{
+    "keyName": "frontend-ingest",
+    "roles": ["ingestor-frontend"]
+  }'
+```
+
+Response — the **full key value is returned only on this call**:
+
+```json
+{
+  "keyId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+  "keyName": "frontend-ingest",
+  "apiKey": "9b2f8c4e-1d6a-4f2b-8e7c-3a5d9c1b7e4f",
+  "roles": ["ingestor-frontend"],
+  "createdBy": "admin",
+  "createdAt": "2026-04-30T10:30:00Z",
+  "modifiedAt": "2026-04-30T10:30:00Z"
+}
+```
+
+Copy the `apiKey` value somewhere safe before you leave the response. Subsequent list calls return a masked version, and there is no way to recover the original after it leaves your screen.
+
+## List API keys
+
+```sh
+curl https://<parseable-prism-host>/api/prism/v1/apikeys -u admin:admin
+```
+
+Each entry returns the metadata, but `apiKey` is masked to its last four characters:
+
+```json
+[
+  {
+    "keyId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+    "keyName": "frontend-ingest",
+    "apiKey": "****7e4f",
+    "roles": ["ingestor-frontend"],
+    "createdBy": "admin",
+    "createdAt": "2026-04-30T10:30:00Z",
+    "modifiedAt": "2026-04-30T10:30:00Z"
+  }
+]
+```
+
+API-key identities are not surfaced in the regular `GET /api/v1/users` listing — they are managed exclusively under `/api/v1/apikeys`.
+
+## Get an API key by id
+
+Fetching a single key by its `keyId` returns the **unmasked** value, so an admin can recover a key without re-creating it. Permission to call this endpoint should be reserved for administrators.
+
+```sh
+curl https://<parseable-prism-host>/api/prism/v1/apikeys/01ARZ3NDEKTSV4RRFFQ69G5FAV \
+  -u admin:admin
+```
+
+```json
+{
+  "keyId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+  "keyName": "frontend-ingest",
+  "apiKey": "9b2f8c4e-1d6a-4f2b-8e7c-3a5d9c1b7e4f",
+  "roles": ["ingestor-frontend"],
+  "createdBy": "admin",
+  "createdAt": "2026-04-30T10:30:00Z",
+  "modifiedAt": "2026-04-30T10:30:00Z"
+}
+```
+
+## Delete an API key
+
+Deletion is the only revocation mechanism. Once deleted, every request using that key value returns `401 Unauthorized`.
+
+```sh
+curl -X DELETE \
+  https://<parseable-prism-host>/api/prism/v1/apikeys/01ARZ3NDEKTSV4RRFFQ69G5FAV \
+  -u admin:admin
+```
+
+## Use an API key
+
+Send the secret value in the `x-api-key` header. This replaces the `Authorization: Basic ...` header — do not send both.
+
+### Ingest logs
+
+```sh
+curl -X POST https://<parseable-prism-host>/api/v1/ingest \
+  -H "x-api-key: 9b2f8c4e-1d6a-4f2b-8e7c-3a5d9c1b7e4f" \
+  -H "X-P-Stream: frontend" \
+  -H "Content-Type: application/json" \
+  -d '[{"level":"info","message":"hello"}]'
+```
+
+### Query
+
+```sh
+curl -X POST https://<parseable-host>/api/v1/query \
+  -H "x-api-key: 9b2f8c4e-1d6a-4f2b-8e7c-3a5d9c1b7e4f" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "SELECT * FROM frontend",
+    "startTime": "1h",
+    "endTime": "now"
+  }'
+```
+
+In multi-tenant deployments, also send the tenant header:
+
+```sh
+-H "x-p-tenant: <tenant-id>"
+```
+
+## Scoping access via roles
+
+Because API keys reuse the role system, you can pick any role supported by Parseable RBAC. The role JSON is identical to what you would assign to a Native user — see [RBAC](/docs/user-guide/rbac) for the full schema.
+
+### Global ingestion key
+
+Use a single key for forwarders that send logs to every dataset.
+
+```json
+[
+  { "privilege": "ingestor" }
+]
+```
+
+### Dataset-scoped ingestion key
+
+Restrict the key to one or more named datasets. Useful when each environment or team has its own forwarder.
+
+```json
+[
+  { "privilege": "ingestor", "resource": { "dataset": "frontend" } },
+  { "privilege": "ingestor", "resource": { "dataset": "checkout" } }
+]
+```
+
+### Global reader for query agents
+
+Read-only access across every dataset — appropriate for analytics scripts or AI agents that need broad query coverage.
+
+```json
+[
+  { "privilege": "reader" }
+]
+```
+
+### Dataset-scoped reader
+
+Limit a query agent to a single dataset (and optionally to events matching a tag).
+
+```json
+[
+  {
+    "privilege": "reader",
+    "resource": { "dataset": "frontend" }
+  }
+]
+```
+
+### Admin key
+
+Full control over the tenant — create datasets, dashboards, filters, alerts, retention policies, manage users and roles. Use sparingly and only for trusted automation.
+
+```json
+[
+  { "privilege": "admin" }
+]
+```
+
+### Editor / Writer key
+
+Authoring access to dashboards, filters, and alerts on selected datasets — useful for CI pipelines that provision dashboards as code.
+
+```json
+[
+  { "privilege": "writer", "resource": { "dataset": "frontend" } }
+]
+```
+
+## Best practices
+
+- **One key per workload.** Issue separate keys for each forwarder, agent, or pipeline so you can rotate or revoke without disrupting others.
+- **Scope tightly.** Prefer dataset-scoped roles over global ones. An ingestion key should not be able to query, and a reader key should not be able to write.
+- **Rotate periodically.** Create a new key, switch the workload over, then delete the old one.
+- **Store keys in a secrets manager.** Inject them into the workload at runtime — do not bake them into images or commit them to repositories.
+- **Audit regularly.** List keys and remove any whose owner or purpose is unclear.

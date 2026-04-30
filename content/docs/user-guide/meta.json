@@ -7,6 +7,7 @@
     "dashboards",
     "sql-editor",
     "rbac",
+    "api-keys",
     "log-iq",
     "openid"
   ]
