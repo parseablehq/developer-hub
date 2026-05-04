@@ -7,13 +7,15 @@ redirect_from:
 
 <OfferingPills pro enterprise className="mb-4" />
 
-API keys are a non-interactive way to authenticate against Parseable. They are best suited for log forwarders, CLI tools, automation scripts, AI agents, and any other client where Basic Auth or OIDC is impractical.
+You can use API Keys to authenticate API calls to Parseable. They are best suited for log forwarders, CLI tools, automation scripts, AI agents, and any other client where Basic Auth or OIDC is impractical.
 
-A Parseable instance has three types of identities — **Native** (Basic Auth), **OAuth** (OIDC), and **API Key**. API keys behave like users: they are assigned roles, and each role is a set of [RBAC](/docs/user-guide/rbac) privileges. The key inherits exactly the access its roles grant — nothing more, nothing less.
+A Parseable instance has three types of identities — **Native** (Basic Auth), **OAuth** (OIDC), and **API Key**. API keys behave like users, i.e. they are assigned roles, and each role is a set of [RBAC](/docs/user-guide/rbac) privileges. The key inherits exactly the access its roles grant.
 
-## When to use API keys
+You can create and manage API keys via the Parseable Prism UI or the REST API. This section covers the API operations. For UI, click on your profile on top right corner and then select **Access management > API Keys**.
 
-- **Ingestion agents** — Fluent Bit, Vector, OpenTelemetry Collector, log forwarders. Issue an API key with the `ingestor` role and ship logs without storing a username and password.
+### When to use API keys
+
+- **Ingestion agents** — Create an API key with the `ingestor` role and use this key to ship telemetry without storing a username and password in the forwarder config.
 - **CLI / scripts** — `pb` CLI or any custom automation that needs scoped, revocable credentials.
 - **Agents** — AI agents and other autonomous workloads that need read access to specific datasets.
 
@@ -21,18 +23,18 @@ A Parseable instance has three types of identities — **Native** (Basic Auth), 
 Treat an API key like a password. The full key value is shown **only once** at creation time. Store it in a secrets manager and never commit it to source control.
 </Callout>
 
-## How API keys work
+### How API keys work
 
 An API key has:
 
 - a **key id** (`keyId`) — a stable identifier used for management operations
 - a **key name** (`keyName`) — a human-readable label, must be unique within the tenant/organization
-- a **secret value** (`apiKey`) — a UUID, sent on each request via the `x-api-key` header
+- a **secret value** (`apiKey`) — a UUID, sent on each request via the `X-API-Key` header
 - a set of **roles** — pre-existing roles that grant privileges (same roles used for Native and OAuth users)
 
-When a request arrives with an `x-api-key` header, Parseable looks up the key, resolves its roles into permissions, and authorizes the request the same way it authorizes any other user.
+When a request arrives with an `X-API-Key` header, Parseable looks up the key, resolves its roles into permissions, and authorizes the request the same way it authorizes any other user.
 
-## Create an API key
+### Create an API key
 
 Roles must already exist in the tenant/organization. See [RBAC](/docs/user-guide/rbac) for how to create roles.
 
@@ -62,7 +64,7 @@ Response — the **full key value is returned only on this call**:
 
 Copy the `apiKey` value somewhere safe before you leave the response. Subsequent list calls return a masked version, and there is no way to recover the original after it leaves your screen.
 
-## List API keys
+### List API keys
 
 ```sh
 curl https://<parseable-prism-host>/api/prism/v1/apikeys -u admin:admin
@@ -86,9 +88,9 @@ Each entry returns the metadata, but `apiKey` is masked to its last four charact
 
 API-key identities are not surfaced in the regular `GET /api/v1/users` listing — they are managed exclusively under `/api/v1/apikeys`.
 
-## Get an API key by id
+### Get an API key by id
 
-Fetching a single key by its `keyId` returns the **unmasked** value, so an admin can recover a key without re-creating it. Permission to call this endpoint should be reserved for administrators.
+Fetching a single key by its `keyId` returns the **unmasked** value, so an admin can recover a key without re-creating it.
 
 ```sh
 curl https://<parseable-prism-host>/api/prism/v1/apikeys/01ARZ3NDEKTSV4RRFFQ69G5FAV \
@@ -107,7 +109,7 @@ curl https://<parseable-prism-host>/api/prism/v1/apikeys/01ARZ3NDEKTSV4RRFFQ69G5
 }
 ```
 
-## Delete an API key
+### Delete an API key
 
 Deletion is the only revocation mechanism. Once deleted, every request using that key value returns `401 Unauthorized`.
 
@@ -117,15 +119,15 @@ curl -X DELETE \
   -u admin:admin
 ```
 
-## Use an API key
+### Use an API key
 
-Send the secret value in the `x-api-key` header. This replaces the `Authorization: Basic ...` header — do not send both.
+Send the secret value in the `X-API-Key` header. This replaces the `Authorization: Basic ...` header — do not send both.
 
 ### Ingest logs
 
 ```sh
 curl -X POST https://<parseable-prism-host>/api/v1/ingest \
-  -H "x-api-key: 9b2f8c4e-1d6a-4f2b-8e7c-3a5d9c1b7e4f" \
+  -H "X-API-Key: 9b2f8c4e-1d6a-4f2b-8e7c-3a5d9c1b7e4f" \
   -H "X-P-Stream: frontend" \
   -H "Content-Type: application/json" \
   -d '[{"level":"info","message":"hello"}]'
@@ -135,7 +137,7 @@ curl -X POST https://<parseable-prism-host>/api/v1/ingest \
 
 ```sh
 curl -X POST https://<parseable-host>/api/v1/query \
-  -H "x-api-key: 9b2f8c4e-1d6a-4f2b-8e7c-3a5d9c1b7e4f" \
+  -H "X-API-Key: 9b2f8c4e-1d6a-4f2b-8e7c-3a5d9c1b7e4f" \
   -H "Content-Type: application/json" \
   -d '{
     "query": "SELECT * FROM frontend",
@@ -147,14 +149,14 @@ curl -X POST https://<parseable-host>/api/v1/query \
 In multi-tenant deployments, also send the tenant header:
 
 ```sh
--H "x-p-tenant: <tenant-id>"
+-H "X-P-Tenant: <tenant-id>"
 ```
 
-## Scoping access via roles
+### Scoping access via roles
 
 Because API keys reuse the role system, you can pick any role supported by Parseable RBAC. The role JSON is identical to what you would assign to a Native user — see [RBAC](/docs/user-guide/rbac) for the full schema.
 
-### Global ingestion key
+#### Global ingestion key
 
 Use a single key for forwarders that send logs to every dataset.
 
@@ -164,7 +166,7 @@ Use a single key for forwarders that send logs to every dataset.
 ]
 ```
 
-### Dataset-scoped ingestion key
+#### Dataset-scoped ingestion key
 
 Restrict the key to one or more named datasets. Useful when each environment or team has its own forwarder.
 
@@ -175,7 +177,7 @@ Restrict the key to one or more named datasets. Useful when each environment or 
 ]
 ```
 
-### Global reader for query agents
+#### Global reader for query agents
 
 Read-only access across every dataset — appropriate for analytics scripts or AI agents that need broad query coverage.
 
@@ -185,7 +187,7 @@ Read-only access across every dataset — appropriate for analytics scripts or A
 ]
 ```
 
-### Dataset-scoped reader
+#### Dataset-scoped reader
 
 Limit a query agent to a single dataset (and optionally to events matching a tag).
 
@@ -198,7 +200,7 @@ Limit a query agent to a single dataset (and optionally to events matching a tag
 ]
 ```
 
-### Admin key
+#### Admin key
 
 Full control over the tenant — create datasets, dashboards, filters, alerts, retention policies, manage users and roles. Use sparingly and only for trusted automation.
 
@@ -208,7 +210,7 @@ Full control over the tenant — create datasets, dashboards, filters, alerts, r
 ]
 ```
 
-### Editor / Writer key
+#### Editor / Writer key
 
 Authoring access to dashboards, filters, and alerts on selected datasets — useful for CI pipelines that provision dashboards as code.
 
@@ -218,7 +220,7 @@ Authoring access to dashboards, filters, and alerts on selected datasets — use
 ]
 ```
 
-## Best practices
+### Best practices
 
 - **One key per workload.** Issue separate keys for each forwarder, agent, or pipeline so you can rotate or revoke without disrupting others.
 - **Scope tightly.** Prefer dataset-scoped roles over global ones. An ingestion key should not be able to query, and a reader key should not be able to write.
