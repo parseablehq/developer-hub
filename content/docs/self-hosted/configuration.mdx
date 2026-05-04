@@ -24,32 +24,21 @@ This document lists all the environment variables and HTTP headers supported by 
 | `P_PARQUET_COMPRESSION_ALGO` | `No` | Specify the compression algorithm to use for Parquet files. Support values are `UNCOMPRESSED`, `SNAPPY`, `GZIP`, `LZO`, `BROTLI`, `LZ4`, `ZSTD`. | `LZ4` | `GZIP` |
 | `P_OPENAI_API_KEY` | `No` | Specify your OpenAI API key to generate SQL automatically from plain text. | - | `sk-open-ai-api-key` |
 | `P_CORS` | `No` | Specify whether the server should enable/disable CORS. Supported values are `true` to disable, `false` to enable CORS | `true` | `false` |
-| `P_MEMORY_THRESHOLD` | `No` | Specify the memory threshold to use for Parseable server. | `100` | `80` |
+| `P_ALLOW_ORIGINS` | `No` | Comma-separated list of allowed CORS origins. Will be effective only if `P_CORS=true`. | `No` | Specify the memory threshold to use for Parseable server. | `100` | `80` |
 | `P_CPU_THRESHOLD` | `No` | Specify the CPU threshold to use for Parseable server. | `100` | `80` |
 | `P_ENABLE_MULTIPART` | `No` | Enable multipart uploads to object store (S3, GCS, Azure Blob Store). When disabled, files are uploaded as a single object regardless of size. | `true` | `false` |
-| `P_MULTIPART_MIN_SIZE` | `No` | Minimum file size (in bytes) for multipart uploads to object store. Files smaller than this are uploaded as a single object. Minimum allowed value is `26214400` (25 MB). | `26214400` | `52428800` |
-| `P_EVENT_MAX_CHUNK_AGE` | `No` | Maximum allowed age gap (in hours) between events within the same node, relative to the reference event. Accepts `0` to disallow older-than-reference events; capped at `168` (one week). | `1` | `24` |
+| `P_MULTIPART_MIN_SIZE` | `No` | Minimum file size (in bytes) for multipart uploads to object store. Files smaller than this are uploaded as a single object. Minimum allowed value is `26214400` (25 MB). Will be effective only if `P_ENABLE_MULTIPART` is `true`. | `26214400` | `52428800` |
 | `P_MAX_EVENT_PAYLOAD_SIZE` | `No` | Maximum allowed event payload size in bytes for ingest endpoints. | `10485760` | `20971520` |
 | `P_MAX_FLATTEN_LEVEL` | `No` | Maximum level of flattening allowed for events. Prevents nested list type fields from getting created. | `10` | `5` |
-| `P_MAX_FIELD_STATISTICS` | `No` | Maximum number of field statistics to store. | `50` | `100` |
-| `P_DATASET_FIELD_COUNT_LIMIT` | `No` | Recommended maximum number of fields in a dataset. | `1000` | `2000` |
-| `P_PARQUET_ROW_GROUP_SIZE` | `No` | Number of rows in a Parquet row group. Smaller row groups help in faster query performance in multi-threaded queries. | `262144` | `524288` |
-| `P_EXECUTION_BATCH_SIZE` | `No` | Batch size for query execution. | `20000` | `40000` |
 | `P_QUERY_MEMORY_LIMIT` | `No` | Set a fixed memory limit for query in GiB. | `-` | `4` |
-
-### Server tuning (Actix)
-
-These environment variables tune the underlying Actix HTTP server.
-
-| Variable Name | Required | Description | Default | Example |
-| --- | --- | --- | --- | --- |
 | `P_ACTIX_REQUEST_TIMEOUT` | `No` | Client request timeout in seconds. | `5` | `10` |
 | `P_ACTIX_KEEP_ALIVE` | `No` | Server keep-alive in seconds. | `5` | `10` |
 | `P_ACTIX_NUM_WORKERS` | `No` | Number of workers for actix-web. Defaults to the number of CPU cores. | `<num_cpus>` | `8` |
 | `P_ACTIX_BACKLOG` | `No` | Maximum number of pending connections. | `2048` | `4096` |
-| `P_ACTIX_MAX_CONNECTIONS` | `No` | Per-worker maximum number of concurrent connections. | `25000` | `50000` |
+| `P_ACTIX_MAX_CONNECTIONS` | `No` | Per worker maximum number of concurrent connections. | `25000` | `50000` |
 
 ### Applicable to distributed mode
+
 | Variable Name | Required | Description | Default | Example |
 | --- | --- | --- | --- | --- |
 | `P_MODE` | `Yes` | Mode for this Parseable instance. Can be INGEST or QUERY or ALL. If set to ALL, instance will behave as a standalone deployment. | `ALL` | `INGEST` |
@@ -58,6 +47,7 @@ These environment variables tune the underlying Actix HTTP server.
 | `P_INGESTOR_ENDPOINT` | `No` | Endpoint (IP, DNS or URL and Port, without the scheme) of the ingestor. If set, the query node will use this address to access this Ingestor. If not set, the query node will use the P_ADDR value if set. If `P_ADDR` is also not set, then defaults to `0.0.0.0:8000`. You can also set this variable to point to another environment variable. For example, if `P_INGESTOR_ENDPOINT` is set to `$HOSTNAME:$PORT`, Parseable process will look for environment variables `HOSTNAME` and `PORT` and replace their values in the `P_INGESTOR_ENDPOINT`. | `0.0.0.0:8000` | `ingestor1.parseable.svc.cluster.local` |
 
 ### Applicable to the S3 storage mode
+
 This section lists all the environment variables applicable to the S3 storage mode. This is applicable to AWS S3 or any other S3 compatible object storage platform.
 
 | Variable Name | Required | Description | Default | Example |
@@ -134,8 +124,6 @@ Refer to [OIDC](/docs/user-guide/openid) section for more details.
 
 This section lists environment variables that apply only to Parseable Enterprise deployments.
 
-#### License and cluster
-
 | Variable Name | Required | Description | Default | Example |
 | --- | --- | --- | --- | --- |
 | `P_CLUSTER_SECRET` | `Yes` | Shared secret used to authenticate inter-node communication within a Parseable Enterprise cluster. The server fails to start if this is not set. | `-` | `<random-256-bit-secret>` |
@@ -144,20 +132,7 @@ This section lists environment variables that apply only to Parseable Enterprise
 | `P_LICENSE_SIGNATURE_BASE64` | `Yes`* | Base64-encoded license signature provided inline as an environment variable. Takes priority over `P_LICENSE_SIGNATURE_FILE_PATH` when both are set. | `-` | `MEUCIQDx...==` |
 | `P_DB_CONNECTION_STRING` | `No` | PostgreSQL connection string used for storing Parseable Enterprise metadata. Set `DB_SSL_ROOT_CERT` to a CA cert path to enable TLS. | `-` | `postgresql://user:pass@host:5432/parseable` |
 | `P_INGESTOR_URL_INFO` | `No` | Public ingestor URL exposed by the `/about` endpoint and used by the OTel generator. Set this to the externally reachable URL of your ingestor(s). | `-` | `https://ingest.example.com` |
-
-#### Authentication
-
-| Variable Name | Required | Description | Default | Example |
-| --- | --- | --- | --- | --- |
-| `P_CLERK_SECRET` | `No` | Clerk OAuth secret. When set, Parseable uses Clerk as the OAuth provider in place of any configured OIDC provider. | `-` | `sk_live_xxxxxxxxxxxx` |
-| `P_ALLOW_ORIGINS` | `No` | Comma-separated list of allowed CORS origins. Only applied when `P_CORS=true` and the server is built in release mode. | `-` | `https://app.example.com,https://admin.example.com` |
-
-#### Logging
-
-| Variable Name | Required | Description | Default | Example |
-| --- | --- | --- | --- | --- |
 | `P_SERVER_LOGS_FILE_PATH` | `No` | File path where Parseable server logs are written. If unset, server logs are not persisted to file. | `-` | `/var/log/parseable/server.log` |
 | `P_AUDIT_LOGS_FILE_PATH` | `No` | File path where Parseable audit logs (JSON) are written. If unset, audit logs are not persisted to file. | `-` | `/var/log/parseable/audit.log` |
 | `P_LOGS_MAX_FILE_SIZE` | `No` | Maximum size (in bytes) of a single rotated log file. | `10485760` (10 MB) | `52428800` |
 | `P_LOGS_MAX_TOTAL_SIZE` | `No` | Maximum total size (in bytes) of all retained log files. Must be greater than or equal to `P_LOGS_MAX_FILE_SIZE`. | `1073741824` (1 GB) | `5368709120` |
-
