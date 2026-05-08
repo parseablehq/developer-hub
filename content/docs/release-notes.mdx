@@ -3,6 +3,68 @@ title: Release notes
 icon: Book
 ---
 
+
+## v2.7 (May 8, 2026)
+
+### APM Support
+
+APM is now a dedicated workflow inside Parseable. With this release, a new **Services** view is available in the sidebar, giving teams a service-level entry point for application performance monitoring across traces, errors, request volume, and latency.
+
+Click into any service to open a scoped APM view with **Insights**, **Traces**, and **Errors** tabs, so teams can move from service health to request-level debugging without switching tools.
+
+What's new:
+
+- Browse all traced services from a dedicated Services page.
+- View requests, error percentage, and latency per service.
+- Drill into service-specific Insights, Traces, and Errors.
+- Open services and APM routes through deep links from alerts, runbooks, or external tools.
+
+![APM Support in Parseable](./release-notes/static/apm-support-parseable.webp)
+
+![APM Dashboard in Parseable](./release-notes/static/apm-dashboard-parseable.webp)
+
+### Ingestion Traces
+
+Ingestion is now a fully traced workflow inside Parseable. The server emits OpenTelemetry spans across the ingestion path, from API intake to schema inference, record-batch conversion, staging, flush, and object-store upload.
+
+This gives operators deeper visibility into ingest performance, background sync cycles, and bottlenecks across high-throughput telemetry pipelines.
+
+What's new:
+
+- Trace ingestion end to end with OpenTelemetry spans across the full ingest path.
+- Export ingestion traces to any OpenTelemetry collector with standard configuration.
+- Tune actix server behavior with new CLI args and matching `P_ACTIX_*` environment variables.
+- Improve high-volume ingest with batched schema inference, parallel record processing, optimized byte-size counting, and safer sync-cycle guards.
+
+### PromQL Support
+
+Parseable now includes built-in PromQL support for metrics streams through Prometheus-compatible HTTP APIs under `/prometheus/api/v1`. Existing Grafana dashboards and Prometheus-compatible tooling can point to Parseable and query metrics without major changes.
+
+This brings PromQL-native metric analysis into Parseable while keeping logs, traces, and metrics available in one observability platform.
+
+What's new:
+
+- Query metrics with PromQL through instant query, range query, series, labels, and label-values endpoints.
+- Use existing Grafana Prometheus data sources with Parseable.
+- Run PromQL functions, aggregations, binary operators, vector matching, and subqueries.
+- Execute heavier queries safely with query splitting, result caching, distributed execution, memory guards, and cardinality analysis endpoints.
+
+### Access Management and API Keys
+
+Access Management is now the central place to manage users, roles, and API keys in Parseable. With this release, teams can create scoped API keys for programmatic access without relying on personal user credentials.
+
+API keys are built for log forwarders, CLI tools, automation scripts, AI agents, dashboards, CI jobs, and other workloads where Basic Auth or OIDC is not the right fit. Each key inherits permissions from assigned roles and can be used through the `X-API-Key` header.
+
+What's new:
+
+- Create and manage API keys from Access Management.
+- Assign one or more roles to every API key.
+- Use dataset-scoped keys for ingestion agents, query agents, dashboards, and automation workflows.
+- Revoke keys independently without affecting users or other workloads.
+- Use API keys for supported ingestion and query workflows through the `X-API-Key` header.
+
+![API Keys Access Management](./release-notes/static/access-management-api-keys.webp)
+
 ## v2.5 (December 8, 2025)
 
 **Parseable v2.5.0** is here! This major update significantly expands our platform capabilities, introducing a dedicated **Trace View**, a **Metrics View**, and powerful AI-native integrations connecting Keystone with the alerting ecosystem.
