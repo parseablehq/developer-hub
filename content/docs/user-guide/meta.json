@@ -8,6 +8,7 @@
     "sql-editor",
     "promql",
     "rbac",
+    "api-keys",
     "log-iq",
     "openid"
   ]

@@ -41,6 +41,7 @@
     "user-guide/sql-editor",
     "user-guide/promql",
     "user-guide/rbac",
+    "user-guide/api-keys",
     "user-guide/log-iq",
     "user-guide/openid",
     "user-guide/retention",
