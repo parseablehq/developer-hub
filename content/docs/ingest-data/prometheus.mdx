@@ -1,0 +1,28 @@
+---
+title: Prometheus Remote Write
+---
+
+Ingest metrics via the Prometheus Remote Write protocol. Accepts snappy-compressed protobuf payloads (the standard Prometheus remote write format). Metrics are converted to OpenTelemetry format and ingested into the specified stream.
+
+**Endpoint:** `POST /v1/prometheus/write`
+
+| Header             | Required | Description                                                    |
+|--------------------|----------|----------------------------------------------------------------|
+| `Authorization`    | Yes      | Basic auth credentials                                         |
+| `Content-Encoding` | Yes      | Must be `snappy`                                               |
+| `Content-Type`     | Yes      | `application/x-protobuf`                                       |
+| `X-P-Stream`       | Yes       | Target stream name.                 |
+| `X-P-Log-Source`   | Yes       | Must be `otel-metrics`             |
+
+**Prometheus configuration:**
+
+```yaml
+remote_write:
+  - url: "http://parseable:8000/v1/prometheus/write"
+    basic_auth:
+      username: admin
+      password: admin
+    headers:
+      X-P-Stream: otel_metrics
+      X-P-Log-Source: otel-metrics
+```

@@ -19,6 +19,29 @@ All endpoints live under the `/prometheus/api/v1` base path and follow the Prome
 - **Cardinality analysis** endpoints for understanding your metrics landscape
 - **Distributed execution** — queries automatically fan out across queriers in cluster mode
 
+## Querying from Grafana
+
+You can query Parseable PromQL from Grafana in two ways: the built-in Prometheus data source, or the Parseable Grafana plugin.
+
+### Prometheus data source
+
+Add a Prometheus data source in Grafana with the following settings:
+
+- **Prometheus server URL:** the URL of your Parseable Prism node (e.g. `https://prism.example.com`)
+- **Authentication:** enable basic auth and provide your Parseable username and password
+- **Custom query parameters:** `stream=<metrics dataset name>` (for example, `stream=otel_metrics`)
+- **HTTP method:** `GET`
+
+Because Parseable uses the dataset name as the logical table, the Prometheus data source works with **one dataset at a time** — the `stream` query parameter pins it. If you have multiple metrics datasets, you'll need to add a separate Prometheus data source per dataset.
+
+### Parseable Grafana plugin
+
+If you have multiple metrics datasets (or want to mix telemetry signals), use the Parseable Grafana plugin instead. The plugin lets you switch between datasets and write PromQL queries directly in the editor.
+
+The plugin works in **Dashboards** and **Explore**, but is **not** supported in Grafana **Drilldown**.
+
+A useful side benefit: the same plugin lets you build dashboards from logs, traces, and metrics together — all telemetry signals in one place.
+
 ## API Endpoints
 
 All endpoints require the `Authorization` header with a valid Parseable credential (basic auth). All query and metadata endpoints require the `Query` action permission. The remote write endpoint requires the `Ingest` action permission.
@@ -193,7 +216,9 @@ Get statistics about the time series database. Compatible with the VictoriaMetri
 | `match[]`    | No       | string[] | Series selector to filter by                                                    |
 | `focusLabel` | No       | string   | Label to break down series counts by value                                      |
 
-### Cardinality — Label Names
+### Cardinality
+
+####  Label Names
 
 Find which labels have the highest cardinality (most distinct values).
 
@@ -206,7 +231,7 @@ Find which labels have the highest cardinality (most distinct values).
 | `limit`    | No       | int    | Maximum number of labels to return. Default: `20`                    |
 | `selector` | No       | string | Label selector to filter series                                      |
 
-### Cardinality — Label Values
+#### Label Values
 
 For a given label, find how many series exist for each of its values.
 
@@ -219,7 +244,7 @@ For a given label, find how many series exist for each of its values.
 | `lookback`   | No       | int    | Seconds to look back from now. Default: `3600`           |
 | `limit`      | No       | int    | Maximum number of values to return. Default: `20`        |
 
-### Cardinality — Active Series
+#### Active Series
 
 List all currently active series matching a selector.
 
@@ -241,56 +266,6 @@ List all currently executing PromQL queries.
 ```bash
 curl -u admin:admin "http://localhost:8000/prometheus/api/v1/status/active_queries"
 ```
-
-### Prometheus Remote Write
-
-Ingest metrics via the Prometheus Remote Write protocol. Accepts snappy-compressed protobuf payloads (the standard Prometheus remote write format). Metrics are converted to OpenTelemetry format and ingested into the specified stream.
-
-**Endpoint:** `POST /v1/prometheus/write`
-
-| Header             | Required | Description                                                    |
-|--------------------|----------|----------------------------------------------------------------|
-| `Authorization`    | Yes      | Basic auth credentials                                         |
-| `Content-Encoding` | Yes      | Must be `snappy`                                               |
-| `Content-Type`     | Yes      | `application/x-protobuf`                                       |
-| `X-P-Stream`       | Yes       | Target stream name.                 |
-| `X-P-Log-Source`   | Yes       | Must be `otel-metrics`             |
-
-**Prometheus configuration:**
-
-```yaml
-remote_write:
-  - url: "http://parseable:8000/v1/prometheus/write"
-    basic_auth:
-      username: admin
-      password: admin
-    headers:
-      X-P-Stream: otel_metrics
-      X-P-Log-Source: otel-metrics
-```
-
-## Querying from Grafana
-
-You can query Parseable PromQL from Grafana in two ways: the built-in Prometheus data source, or the Parseable Grafana plugin.
-
-### Prometheus data source
-
-Add a Prometheus data source in Grafana with the following settings:
-
-- **Prometheus server URL:** the URL of your Parseable Prism node (e.g. `https://prism.example.com`)
-- **Authentication:** enable basic auth and provide your Parseable username and password
-- **Custom query parameters:** `stream=<metrics dataset name>` (for example, `stream=otel_metrics`)
-- **HTTP method:** `GET`
-
-Because Parseable uses the dataset name as the logical table, the Prometheus data source works with **one dataset at a time** — the `stream` query parameter pins it. If you have multiple metrics datasets, you'll need to add a separate Prometheus data source per dataset.
-
-### Parseable Grafana plugin
-
-If you have multiple metrics datasets (or want to mix telemetry signals), use the Parseable Grafana plugin instead. The plugin lets you switch between datasets and write PromQL queries directly in the editor.
-
-The plugin works in **Dashboards** and **Explore**, but is **not** supported in Grafana **Drilldown**.
-
-A useful side benefit: the same plugin lets you build dashboards from logs, traces, and metrics together — all telemetry signals in one place.
 
 ## Supported PromQL Functions
 
