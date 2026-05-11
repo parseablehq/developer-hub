@@ -118,11 +118,6 @@ This section lists all the environment variables applicable to the OIDC mode. Th
 
 Refer to [OIDC](/docs/user-guide/openid) section for more details.
 
-<<<<<<< promql
-### Applicable to PromQL
-
-Variables that tune Parseable's PromQL query engine — query splitting, per-query limits, distributed execution, and result caching — are documented on the [PromQL page](/docs/user-guide/promql#environment-variables).
-=======
 ### Applicable to Parseable Enterprise
 
 <OfferingPills enterprise className="mb-4" />
@@ -141,4 +136,3 @@ This section lists environment variables that apply only to Parseable Enterprise
 | `P_AUDIT_LOGS_FILE_PATH` | `No` | File path where Parseable audit logs (JSON) are written. If unset, audit logs are not persisted to file. | `-` | `/var/log/parseable/audit.log` |
 | `P_LOGS_MAX_FILE_SIZE` | `No` | Maximum size (in bytes) of a single rotated log file. | `10485760` (10 MB) | `52428800` |
 | `P_LOGS_MAX_TOTAL_SIZE` | `No` | Maximum total size (in bytes) of all retained log files. Must be greater than or equal to `P_LOGS_MAX_FILE_SIZE`. | `1073741824` (1 GB) | `5368709120` |
->>>>>>> main
