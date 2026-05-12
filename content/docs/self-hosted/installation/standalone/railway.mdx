@@ -1,0 +1,88 @@
+---
+title: Railway
+redirect_from:
+  - /installation/standalone/railway
+  - /server/installation/standalone/setup-parseable-on-railway
+---
+
+This page explains the steps to deploy Parseable in standalone mode on [Railway](https://railway.com) using the official one-click template. The template provisions Parseable in `s3-store` mode backed by a Railway Bucket (S3-compatible object storage) and a Railway persistent volume for the staging directory, with credentials wired automatically and a public HTTPS endpoint.
+
+<a href="https://railway.com/deploy/parseable-1" target="_blank" rel="noopener noreferrer">
+  <img src="https://railway.com/button.svg" alt="Deploy on Railway" width="160" style={{ display: "inline-block", margin: '0px' }} />
+</a>
+
+## Prerequisites
+
+- A [Railway account](https://railway.com).
+- A username for the Parseable admin user. The password is auto-generated if left blank.
+
+<Callout type="info">
+Railway Buckets are required for object storage. Buckets are available on Railway's paid plans.
+</Callout>
+
+## Deploy the template
+
+1. Open the template page: [https://railway.com/deploy/parseable-1](https://railway.com/deploy/parseable-1).
+2. Sign in to Railway.
+3. Set `P_USERNAME` (defaults to `admin`) and optionally `P_PASSWORD`. Leave the password blank to have Railway generate a secure value.
+4. Click **Deploy**.
+
+Railway provisions the Bucket, attaches a persistent volume at `/data/staging`, injects the Bucket credentials into the Parseable service as variable references, builds the container from `parseable/parseable:edge`, and starts the server with the `parseable s3-store` command.
+
+## Storage layout
+
+Parseable on Railway uses two storage layers, both managed by the platform:
+
+- **Primary storage: Railway Bucket** (S3-compatible). All ingested events are committed here as parquet, manifests, and snapshots. The Bucket is the source of truth and persists across redeploys and image upgrades.
+- **Staging: Railway Volume** mounted at `/data/staging` (controlled by `P_STAGING_DIR`). Parseable buffers in-flight events here before flushing them to the Bucket. The volume is attached to the Parseable service so the buffer survives container restarts.
+
+Default volume size is 1 GB. Increase it from the volume's settings page in the Railway dashboard if ingest volume is high.
+
+## Environment variables
+
+The template sets and injects all variables below automatically. The Bucket-related variables use Railway variable references, so they update if the Bucket is replaced.
+
+```bash
+P_ADDR=0.0.0.0:8080
+P_STAGING_DIR=/data/staging
+P_USERNAME=<username>
+P_PASSWORD=<password>
+P_S3_URL=<bucket-endpoint>
+P_S3_ACCESS_KEY=<bucket-access-key>
+P_S3_SECRET_KEY=<bucket-secret-key>
+P_S3_BUCKET=<bucket-name>
+P_S3_REGION=<bucket-region>
+PORT=8080
+```
+
+You can add additional environment variables from the Railway dashboard as needed. You can find the details of all the environment variables in the [Environment Variables](/docs/self-hosted/configuration) section.
+
+<Callout type="warn">
+`P_ADDR` must be a host:port value (for example `0.0.0.0:8080`), not a full URL. Railway routes external traffic to port `8080`. Changing the port without also updating `PORT` and the healthcheck path will break the deployment.
+</Callout>
+
+## Access Parseable
+
+Once Parseable is up and running, Railway assigns a public HTTPS URL such as `https://parseable-production-xxxx.up.railway.app`. The readiness probe at `/api/v1/readiness` flips green within 30–60 seconds.
+
+Log in with the values set in `P_USERNAME` and `P_PASSWORD`. The password is available in the Parseable service's variables tab in the Railway dashboard.
+
+To add a custom domain, open the Parseable service's **Settings → Networking** page and add the domain. Railway provisions a TLS certificate automatically.
+
+## Troubleshoot
+
+### Healthcheck failing on `/api/v1/readiness`
+
+The readiness probe waits for Parseable to validate Bucket credentials and connect to object storage. If the probe stays red:
+
+- Confirm the Railway Bucket service is running and is referenced by the Parseable service's `P_S3_*` variables.
+- Check the Parseable service logs for S3 authentication or networking errors.
+- Confirm `P_ADDR` ends with `:8080` and that `PORT` is set to `8080`.
+
+### `Bad Gateway` or `Application failed to respond`
+
+Railway's reverse proxy is trying to reach a port Parseable is not listening on. Verify `P_ADDR` and `PORT` are both set to `8080`.
+
+### Container shell access
+
+The `parseable/parseable:edge` image is distroless and ships only the Parseable binary at `/usr/bin/parseable`. There is no shell inside the container, so `railway ssh` will not give an interactive prompt. For debugging, rely on the service logs in the Railway dashboard and the Parseable HTTP API.
