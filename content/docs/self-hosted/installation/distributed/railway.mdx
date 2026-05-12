@@ -1,0 +1,190 @@
+---
+title: Railway
+redirect_from:
+  - /installation/distributed/railway
+  - /server/installation/distributed/setup-parseable-on-railway
+---
+
+This page explains the steps to deploy Parseable in distributed mode on [Railway](https://railway.com) using the official one-click template. The template provisions one query node and one ingest node backed by a shared Railway Bucket (S3-compatible object storage), with persistent staging volumes on each node, credentials wired automatically, and public HTTPS endpoints for both nodes.
+
+<a href="https://railway.com/deploy/parseable-distributed" target="_blank" rel="noopener noreferrer">
+  <img src="https://railway.com/button.svg" alt="Deploy on Railway" width="160" style={{ display: "inline-block", margin: '0px' }} />
+</a>
+
+For the simpler single-node deployment, see the [standalone Railway template](/docs/self-hosted/installation/standalone/railway).
+
+## Prerequisites
+
+- A [Railway account](https://railway.com) on a paid plan. Distributed mode needs a Bucket, two services, and two volumes, which require a paid Railway plan.
+- A username for the Parseable admin user. The password is auto-generated if left blank.
+
+<Callout type="info">
+Both query and ingest nodes must share the same admin credentials. The template wires `P_USERNAME` and `P_PASSWORD` on the ingest node as Railway variable references to the query node, so you only set them once.
+</Callout>
+
+## Deploy the template
+
+1. Open the template page: [https://railway.com/deploy/parseable-distributed](https://railway.com/deploy/parseable-distributed).
+2. Sign in to Railway.
+3. Set `P_USERNAME` (defaults to `admin`) and optionally `P_PASSWORD`. Leave the password blank to have Railway generate a secure value.
+4. Click **Deploy**.
+
+Railway provisions the Bucket, attaches a persistent volume at `/data/staging` on each node, injects the Bucket credentials into both services as variable references, builds the container from `parseable/parseable:edge`, and starts each node with the `parseable s3-store` command. The query node starts in `P_MODE=query` and the ingest node in `P_MODE=ingest`.
+
+## Architecture
+
+```
+Log clients (HTTPS) ─────► parseable-ingest (public domain)
+                           │  P_MODE=ingest
+                           │  Volume: /data/staging
+                           │
+                           │ (registered via .parseable/.parseable.json)
+                           ▼
+                   ┌──────────────────────┐
+                   │   Railway Bucket     │
+                   │  (shared S3 store)   │
+                   └──────────┬───────────┘
+                              ▲
+                              │
+                              │ private network
+                              │
+UI / SQL (HTTPS) ────► parseable-query (public domain)
+                       │  P_MODE=query
+                       │  Volume: /data/staging
+```
+
+The query node discovers active ingestors by reading a manifest in the Bucket where each ingestor registers its `P_INGESTOR_ENDPOINT` on startup. Intra-cluster traffic between query and ingest uses Railway's private network via `RAILWAY_PRIVATE_DOMAIN`.
+
+## Storage layout
+
+Distributed Parseable on Railway uses three storage resources, all managed by the platform:
+
+- **Primary storage: Railway Bucket** (S3-compatible). All committed events are stored here as parquet, manifests, and snapshots. Both query and ingest nodes read and write to the same Bucket. The Bucket is the source of truth and persists across redeploys and image upgrades.
+- **Query staging volume** mounted at `/data/staging` on the query node. Used for hot-tier query caches.
+- **Ingest staging volume** mounted at `/data/staging` on the ingest node. Buffers in-flight events before they are flushed to the Bucket. The volume is attached to the service so the buffer survives container restarts.
+
+Default volume size is 1 GB per node. Increase it from each volume's settings page in the Railway dashboard if ingest volume is high.
+
+## Environment variables
+
+Both services run `parseable s3-store` from the same Dockerfile and differ only in env vars. The template sets all variables automatically.
+
+**Shared variables (set on both services):**
+
+```bash
+P_ADDR=0.0.0.0:8080
+P_STAGING_DIR=/data/staging
+PORT=8080
+P_S3_URL=${{Bucket.ENDPOINT}}
+P_S3_ACCESS_KEY=${{Bucket.ACCESS_KEY_ID}}
+P_S3_SECRET_KEY=${{Bucket.SECRET_ACCESS_KEY}}
+P_S3_BUCKET=${{Bucket.BUCKET}}
+P_S3_REGION=${{Bucket.REGION}}
+```
+
+**Query service (`parseable-query`):**
+
+```bash
+P_MODE=query
+P_USERNAME=<username>
+P_PASSWORD=<password>
+```
+
+**Ingest service (`parseable-ingest`):**
+
+```bash
+P_MODE=ingest
+P_INGESTOR_ENDPOINT=${{RAILWAY_PRIVATE_DOMAIN}}:8080
+P_USERNAME=${{parseable-query.P_USERNAME}}
+P_PASSWORD=${{parseable-query.P_PASSWORD}}
+```
+
+You can add additional environment variables from the Railway dashboard as needed. You can find the details of all the environment variables in the [Environment Variables](/docs/self-hosted/configuration) section.
+
+<Callout type="warn">
+`P_USERNAME` and `P_PASSWORD` must match on both services. The template uses Railway variable references on the ingest service so the credentials stay in sync automatically. Setting either as a literal value on the ingest node will break cluster authentication.
+</Callout>
+
+## Access Parseable
+
+After deployment, the two services have separate Railway-assigned URLs:
+
+- **Query URL** — for the Parseable UI and the SQL query API
+- **Ingest URL** — for log shippers to send events to
+
+Log in to the query URL with the credentials from `P_USERNAME` and `P_PASSWORD`. The password is available in the `parseable-query` service's Variables tab in the Railway dashboard.
+
+To verify the cluster, send a log event to the ingest node and query it from the query node.
+
+**Create a stream on the ingest node:**
+
+```bash
+curl -X PUT "https://your-parseable-ingest.up.railway.app/api/v1/logstream/teststream" \
+  -u "admin:your-password"
+```
+
+**Ingest a log event:**
+
+```bash
+curl -X POST "https://your-parseable-ingest.up.railway.app/api/v1/ingest" \
+  -u "admin:your-password" \
+  -H "Content-Type: application/json" \
+  -H "X-P-Stream: teststream" \
+  -d '[{"message": "Hello from Railway!", "level": "info"}]'
+```
+
+**Query the stream from the query node:**
+
+```bash
+curl -X POST "https://your-parseable-query.up.railway.app/api/v1/query" \
+  -u "admin:your-password" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "SELECT * FROM teststream",
+    "startTime": "2024-01-01T00:00:00Z",
+    "endTime": "2030-01-01T00:00:00Z"
+  }'
+```
+
+A successful response from the query endpoint confirms the full ingest → store → query path works through the shared Bucket.
+
+To add a custom domain on either service, open the service's **Settings → Networking** page and add the domain. Railway provisions a TLS certificate automatically.
+
+## Scaling
+
+The template provisions one query node and one ingest node. To add more ingestors after deployment:
+
+1. In the Railway dashboard, duplicate the `parseable-ingest` service.
+2. Keep all variables the same except update `P_INGESTOR_ENDPOINT` so it points at the new replica's private domain.
+3. Each ingestor registers itself in the Bucket on startup, and the query node picks it up automatically.
+
+For autoscaled ingestion or larger clusters, run Parseable on Kubernetes with the [Helm chart](/docs/self-hosted/installation/distributed/k8s-helm) instead.
+
+## Troubleshoot
+
+### Healthcheck failing on `/api/v1/liveness`
+
+The liveness probe on each node waits for Parseable to validate Bucket credentials and connect to object storage. If the probe stays red:
+
+- Confirm the Railway Bucket service is running and is referenced by each Parseable service's `P_S3_*` variables (resolved values, not literal `${{...}}` text).
+- Confirm `P_S3_BUCKET` resolves to the actual bucket name, not the literal string `Bucket`.
+- Check the service logs for S3 authentication, region, or networking errors.
+- Confirm `P_ADDR` ends with `:8080` and that `PORT` is set to `8080`.
+
+### Ingest node returns `401 Unauthorized`
+
+`P_USERNAME` or `P_PASSWORD` on the ingest node does not match the query node. Reset both to references: `${{parseable-query.P_USERNAME}}` and `${{parseable-query.P_PASSWORD}}`, then redeploy the ingest service.
+
+### Query node cannot see ingested data
+
+The ingest node has not registered itself with the cluster yet. Verify:
+
+- `P_MODE=ingest` is set on the ingest service.
+- `P_INGESTOR_ENDPOINT` resolves to a hostname the query node can reach over Railway's private network (typically `${{RAILWAY_PRIVATE_DOMAIN}}:8080`).
+- Both services point at the same Bucket.
+
+The ingestor registers in `.parseable/.parseable.json` in the Bucket on first successful startup. Check the ingest service logs for a "registered" message.
+
+### Container shell access
+
+The `parseable/parseable:edge` image is distroless and ships only the Parseable binary at `/usr/bin/parseable`. There is no shell inside the container, so `railway ssh` will not give an interactive prompt. For debugging, rely on the service logs in the Railway dashboard and the Parseable HTTP API.
