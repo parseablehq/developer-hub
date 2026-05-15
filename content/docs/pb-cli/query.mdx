@@ -1,0 +1,82 @@
+---
+title: "SQL Queries"
+description: "Run SQL queries against your log datasets using pb query run."
+---
+
+`pb query run` lets you query any dataset with SQL. You can specify a time range, save queries for reuse, and open an interactive TUI for exploratory work.
+
+## Basic usage
+
+```bash
+pb query run "SELECT * FROM backend" --from 10m --to now
+```
+
+`--from` and `--to` define the time window to query. The dataset name is the SQL `FROM` target.
+
+## Time range syntax
+
+| Format | Example | Meaning |
+|---|---|---|
+| Relative | `10m`, `2h`, `7d` | Last N minutes / hours / days |
+| Absolute | `2024-01-15T00:00:00Z` | Exact RFC3339 timestamp |
+| Keyword | `now` | Current time |
+
+```bash
+# Last 30 minutes
+pb query run "SELECT * FROM logs LIMIT 100" --from 30m
+
+# Specific time window
+pb query run "SELECT count(*) FROM logs" --from 2024-01-01T00:00:00Z --to 2024-01-02T00:00:00Z
+
+# Default: last 1 minute
+pb query run "SELECT * FROM logs"
+```
+
+## JSON output
+
+Use `--output json` to get structured output suitable for scripting:
+
+```bash
+pb query run "SELECT * FROM logs LIMIT 50" --from 1h --output json
+```
+
+## Save and reuse queries
+
+Save a query for later with `--save-as`:
+
+```bash
+pb query run "SELECT level, count(*) FROM logs GROUP BY level" --from 1h --save-as error-summary
+```
+
+List and manage saved queries:
+
+```bash
+pb query list
+```
+
+This opens an interactive menu where you can apply or delete saved queries.
+
+## Interactive TUI mode
+
+Add `-i` to open the full-screen interactive query interface:
+
+```bash
+pb query run -i
+```
+
+The TUI has three panels - Query, Time Range, and Results Table. Navigate between them with `Tab` / `Shift+Tab`.
+
+| Key | Action |
+|---|---|
+| `Tab` / `Shift+Tab` | Switch between panels |
+| `Ctrl+R` | Run query |
+| `↑` / `↓` | Scroll rows |
+| `Shift+↑` / `Shift+↓` | Page up / down |
+| `←` / `→` | Scroll columns |
+| `/` | Filter table rows |
+| `Esc` | Clear filter |
+| `Ctrl+B` | Previous page of results |
+
+<Callout type="info">
+Field names containing dots (OTel convention, e.g. `service.name`) or hyphens are automatically quoted in queries. You don't need to add quotes manually.
+</Callout>

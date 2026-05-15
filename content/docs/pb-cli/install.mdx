@@ -1,0 +1,92 @@
+---
+title: "Installation"
+description: "Download and install pb on macOS, Linux, or Windows."
+---
+
+## macOS
+
+First, check which chip your Mac has. Click the Apple menu → **About This Mac**.
+
+- If it says **Apple M1 / M2 / M3** → use the `arm64` binary
+- If it says **Intel** → use the `amd64` binary
+
+```bash
+# Apple Silicon (M1, M2, M3)
+curl -LO https://github.com/parseablehq/pb/releases/latest/download/pb_darwin_arm64
+chmod +x pb_darwin_arm64
+sudo mv pb_darwin_arm64 /usr/local/bin/pb
+```
+
+```bash
+# Intel
+curl -LO https://github.com/parseablehq/pb/releases/latest/download/pb_darwin_amd64
+chmod +x pb_darwin_amd64
+sudo mv pb_darwin_amd64 /usr/local/bin/pb
+```
+
+## Linux
+
+Not sure which architecture your machine is? Run `uname -m` in your terminal.
+
+- `x86_64` → use `amd64`
+- `aarch64` → use `arm64`
+
+```bash
+# x86 64-bit (amd64)
+curl -LO https://github.com/parseablehq/pb/releases/latest/download/pb_linux_amd64
+chmod +x pb_linux_amd64
+sudo mv pb_linux_amd64 /usr/local/bin/pb
+```
+
+```bash
+# ARM 64-bit (arm64)
+curl -LO https://github.com/parseablehq/pb/releases/latest/download/pb_linux_arm64
+chmod +x pb_linux_arm64
+sudo mv pb_linux_arm64 /usr/local/bin/pb
+```
+
+## Windows
+
+Download `pb_windows_amd64` from the [releases page](https://github.com/parseablehq/pb/releases), rename it to `pb.exe`, and move it to a folder that is in your system `PATH`.
+
+## Using Go
+
+If you have Go 1.21 or later installed, you can install `pb` directly with:
+
+```bash
+go install github.com/parseablehq/pb@latest
+```
+
+This builds `pb` from source and places it in your `$GOPATH/bin`. Make sure `$GOPATH/bin` is in your `PATH`.
+
+## Verify installation
+
+After installing, run:
+
+```bash
+pb --version
+```
+
+You should see the version number and build commit printed to the terminal. If you get a `command not found` error, check that the folder where `pb` was moved is included in your `PATH`.
+
+## Shell autocomplete
+
+`pb` can generate completion scripts so your shell auto-completes commands and flags. Run this once after installation.
+
+**bash**
+```bash
+pb autocomplete bash > /etc/bash_completion.d/pb
+source /etc/bash_completion.d/pb
+```
+
+**zsh**
+```bash
+pb autocomplete zsh > /usr/local/share/zsh/site-functions/_pb
+autoload -Uz compinit && compinit
+```
+
+**PowerShell**
+```powershell
+pb autocomplete powershell > $env:USERPROFILE\Documents\PowerShell\pb_complete.ps1
+. $env:USERPROFILE\Documents\PowerShell\pb_complete.ps1
+```

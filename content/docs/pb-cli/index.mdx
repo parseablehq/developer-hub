@@ -1,0 +1,60 @@
+---
+title: pb CLI
+description: A command-line interface for Parseable that lets you query logs, analyze metrics, and stream live events directly from your terminal.
+---
+
+`pb` is the official CLI for Parseable. It provides a terminal-based interface for querying log datasets with SQL, running PromQL queries on metrics, streaming live events, and managing datasets, users, and roles without opening a browser.
+
+`pb` is built for developers who work in the terminal and want full access to Parseable from shell scripts, CI pipelines, or day-to-day workflows. It supports both a standard command-line mode for scripting and automation, and a full-screen interactive TUI for exploratory work.
+
+> Currently, `pb` works with self-hosted Parseable deployments only. Cloud support is coming soon.
+
+## Commands
+
+| Command | Description |
+|---|---|
+| `pb login` | Start an interactive wizard to connect to a Parseable server and save the connection as a profile |
+| `pb profile` | List, switch, update, and remove saved server connections |
+| `pb status` | Verify the active connection and display server version information |
+| `pb query run` | Execute SQL queries against a log dataset, with support for time ranges, JSON output, and interactive TUI mode |
+| `pb query promql` | Run PromQL range and instant queries on a metrics dataset, with label exploration and cardinality analysis |
+| `pb tail` | Stream live log events from a dataset in real time as newline-delimited JSON |
+| `pb dataset` | List, create, inspect, and delete datasets on the connected server |
+| `pb user` | Create users, assign roles, and manage user access |
+| `pb role` | Define roles with specific privilege levels and dataset scopes |
+
+## Interactive mode
+
+Both SQL log queries and PromQL metrics queries support an interactive full-screen TUI using the `-i` flag. In this mode, `pb` opens a panel-based interface where you can write and edit your query, adjust the time range, and browse through paginated results this all without leaving the terminal.
+
+```bash
+# Open the interactive SQL query interface
+pb query run -i
+
+# Open the interactive PromQL interface
+pb query run -i --promql
+#or
+pb query promql run -i
+```
+
+Navigate between panels using `Tab` and `Shift+Tab`. Press `Ctrl+R` to run the query. Results are displayed in a scrollable table with column navigation and inline row filtering.
+
+## Output formats
+
+Every `pb` command that returns data supports `--output json` for machine-readable output. The default output is a human-readable table.
+
+```bash
+# Human-readable table (default)
+pb dataset list
+
+# JSON output for scripting or piping to jq
+pb dataset list --output json
+pb query run "SELECT level, count(*) FROM logs GROUP BY level" --from 1h --output json
+```
+
+## Getting started
+
+1. [Install pb](/docs/pb-cli/install) — download the binary for macOS, Linux, or Windows
+2. [Connect to a server](/docs/pb-cli/connect) — authenticate and save a server profile
+3. [Run a SQL query](/docs/pb-cli/query) — query a log dataset with a time range
+4. [Run a PromQL query](/docs/pb-cli/promql) — query a metrics dataset

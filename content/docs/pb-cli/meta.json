@@ -1,0 +1,15 @@
+{
+  "title": "pb CLI",
+  "description": "Command-line interface for Parseable",
+  "defaultOpen": true,
+  "pages": [
+    "index",
+    "install",
+    "connect",
+    "query",
+    "promql",
+    "tail",
+    "datasets",
+    "admin"
+  ]
+}
