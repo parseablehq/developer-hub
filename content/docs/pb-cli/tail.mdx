@@ -1,0 +1,72 @@
+---
+title: "Live Tail"
+description: "Stream log events from a dataset in real time with pb tail."
+---
+
+`pb tail` connects to a dataset and streams new events as they arrive. It is designed for real-time monitoring, watching an ingestion pipeline, debugging a running service, or confirming that data is flowing.
+
+## Usage
+
+```bash
+pb tail <dataset-name>
+```
+
+```bash
+# Watch a dataset called "backend"
+pb tail backend
+```
+
+Events are printed as newline-delimited JSON, one event per line. Press `Ctrl+C` to stop.
+
+```
+● watching backend... (ctrl+c to stop)
+{"level":"info","msg":"request received","service":"api","ts":"2024-01-15T10:23:01Z"}
+{"level":"error","msg":"db timeout","service":"api","ts":"2024-01-15T10:23:02Z"}
+```
+
+## Piping to jq
+
+Because output is newline-delimited JSON, you can pipe directly to `jq` for filtering and formatting:
+
+```bash
+# Pretty-print all events
+pb tail backend | jq .
+
+# Show only error-level events
+pb tail backend | jq 'select(.level == "error")'
+
+# Extract specific fields
+pb tail backend | jq '{time: .ts, msg: .msg}'
+```
+
+## Piping to grep
+
+```bash
+# Show only lines containing "timeout"
+pb tail backend | grep timeout
+
+# Exclude health check noise
+pb tail backend | grep -v "health_check"
+```
+
+## How it works
+
+`pb tail` uses Apache Arrow Flight over gRPC for streaming. This means it needs access to **two ports** on your Parseable server, not just the main HTTP port:
+
+| Port | Protocol | Purpose |
+|---|---|---|
+| `8000` | HTTP | Main Parseable API (login, query, datasets) |
+| `8001` | gRPC | Arrow Flight streaming (used by `pb tail`) |
+
+## Troubleshooting
+
+**Error: `rpc error: code = Unavailable ... dial tcp <ip>:8001: i/o timeout`**
+
+This means `pb tail` connected to the server successfully over HTTP, but could not reach the gRPC port on `8001`. This is the most common error when using `pb tail`.
+
+Possible causes:
+- Port `8001` is blocked by a firewall on the server
+- Port `8001` is not exposed in your Docker or Kubernetes setup
+- Your network restricts outbound gRPC connections
+
+To fix it, make sure port `8001` is open and reachable from your machine. If you are running Parseable in Docker, add `-p 8001:8001` to your run command. If you are behind a firewall, allow outbound TCP on port `8001`.
