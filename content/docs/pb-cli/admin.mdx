@@ -30,18 +30,26 @@ This starts an interactive prompt where you choose a privilege level and the dat
 
 ```bash
 pb role add log-readers
-# → select privilege: reader
-# → select dataset: backend_logs
 ```
 
 ### List roles
 
-```bash
-pb role list
+<Tabs items={['Table', 'JSON']}>
+  <Tab value="Table">
 
-# JSON output
-pb role list --output json
-```
+  ```bash
+  pb role list
+  ```
+
+  </Tab>
+  <Tab value="JSON">
+
+  ```bash
+  pb role list --output json
+  ```
+
+  </Tab>
+</Tabs>
 
 ### Delete a role
 
@@ -59,19 +67,30 @@ pb user add <username>
 
 The server generates a password and prints it. Save it — it cannot be retrieved later.
 
+Assign roles at creation time:
+
 ```bash
-# Create a user and assign roles immediately
 pb user add bob --role log-readers,developers
 ```
 
 ### List users
 
-```bash
-pb user list
+<Tabs items={['Table', 'JSON']}>
+  <Tab value="Table">
 
-# JSON output
-pb user list --output json
-```
+  ```bash
+  pb user list
+  ```
+
+  </Tab>
+  <Tab value="JSON">
+
+  ```bash
+  pb user list --output json
+  ```
+
+  </Tab>
+</Tabs>
 
 ### Update user roles
 
@@ -80,7 +99,6 @@ pb user set-role <username> <roles>
 ```
 
 ```bash
-# Assign (or replace) roles
 pb user set-role bob log-readers,admins
 ```
 

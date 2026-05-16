@@ -30,27 +30,31 @@ For scripts and CI pipelines, use `pb profile add` to create a profile without p
 pb profile add <name> <url> <username> <password>
 ```
 
-```bash
-# Example
-pb profile add production https://logs.mycompany.com admin s3cr3t
+With username and password:
 
-# With an API key instead of username/password
+```bash
+pb profile add production https://logs.mycompany.com admin s3cr3t
+```
+
+With an API key:
+
+```bash
 pb profile add ci https://logs.mycompany.com --token myapikey
 ```
 
 ## Managing profiles
 
+List and switch profiles:
+
 ```bash
-# List all saved profiles
 pb profile list
-
-# Switch the active default profile
 pb profile default staging
+```
 
-# Update a profile's server URL
+Update or remove a profile:
+
+```bash
 pb profile update production https://new-url.mycompany.com
-
-# Remove a profile
 pb profile remove old-staging
 ```
 

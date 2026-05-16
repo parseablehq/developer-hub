@@ -1,6 +1,8 @@
 {
   "title": "pb CLI",
   "description": "Command-line interface for Parseable",
+  "root": true,
+  "icon": "Terminal",
   "defaultOpen": true,
   "pages": [
     "index",
