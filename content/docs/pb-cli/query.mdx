@@ -21,24 +21,42 @@ pb query run "SELECT * FROM backend" --from 10m --to now
 | Absolute | `2024-01-15T00:00:00Z` | Exact RFC3339 timestamp |
 | Keyword | `now` | Current time |
 
+Last 30 minutes:
+
 ```bash
-# Last 30 minutes
 pb query run "SELECT * FROM logs LIMIT 100" --from 30m
+```
 
-# Specific time window
+Specific time window:
+
+```bash
 pb query run "SELECT count(*) FROM logs" --from 2024-01-01T00:00:00Z --to 2024-01-02T00:00:00Z
+```
 
-# Default: last 1 minute
+Default (last 1 minute if `--from` is not specified):
+
+```bash
 pb query run "SELECT * FROM logs"
 ```
 
-## JSON output
+## Output format
 
-Use `--output json` to get structured output suitable for scripting:
+<Tabs items={['Table', 'JSON']}>
+  <Tab value="Table">
 
-```bash
-pb query run "SELECT * FROM logs LIMIT 50" --from 1h --output json
-```
+  ```bash
+  pb query run "SELECT * FROM logs LIMIT 50" --from 1h
+  ```
+
+  </Tab>
+  <Tab value="JSON">
+
+  ```bash
+  pb query run "SELECT * FROM logs LIMIT 50" --from 1h --output json
+  ```
+
+  </Tab>
+</Tabs>
 
 ## Save and reuse queries
 

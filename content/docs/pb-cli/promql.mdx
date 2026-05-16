@@ -11,13 +11,22 @@ Parseable can store metrics data ingested via OpenTelemetry or Prometheus remote
 pb query promql run "<expr>" --dataset <metrics-dataset> --from <duration>
 ```
 
-```bash
-# Range query: rate of HTTP requests over the last hour, 1-minute resolution
-pb query promql run "rate(http_requests_total[5m])" --dataset otel_metrics --from 1h --step 1m
+<Tabs items={['Range', 'Instant']}>
+  <Tab value="Range">
 
-# Instant query: current value only
-pb query promql run "up" --dataset otel_metrics --instant
-```
+  ```bash
+  pb query promql run "rate(http_requests_total[5m])" --dataset otel_metrics --from 1h --step 1m
+  ```
+
+  </Tab>
+  <Tab value="Instant">
+
+  ```bash
+  pb query promql run "up" --dataset otel_metrics --instant
+  ```
+
+  </Tab>
+</Tabs>
 
 ### Flags
 
@@ -41,14 +50,21 @@ The TUI has panels for Dataset, Query expression, Time Range, Step size, and Res
 
 ## Explore labels and series
 
+List all label names in a metrics dataset:
+
 ```bash
-# List all label names in a metrics dataset
 pb query promql labels --dataset otel_metrics
+```
 
-# List all values for a specific label
+List all values for a specific label:
+
+```bash
 pb query promql label-values job --dataset otel_metrics
+```
 
-# Find series matching a selector
+Find series matching a selector:
+
+```bash
 pb query promql series --match 'http_requests_total' --dataset otel_metrics
 pb query promql series --match '{job="api-server"}' --dataset otel_metrics
 ```
@@ -57,14 +73,21 @@ pb query promql series --match '{job="api-server"}' --dataset otel_metrics
 
 High cardinality labels are a common cause of performance issues. These commands help you find them.
 
+Labels with the most distinct values:
+
 ```bash
-# Labels with the most distinct values
 pb query promql cardinality label-names --dataset otel_metrics --limit 20
+```
 
-# Series count per value for a specific label
+Series count per value for a specific label:
+
+```bash
 pb query promql cardinality label-values --label job --dataset otel_metrics
+```
 
-# Currently active series
+Currently active series:
+
+```bash
 pb query promql cardinality active-series --dataset otel_metrics --selector '{job="api"}'
 ```
 

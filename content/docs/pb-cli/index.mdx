@@ -7,7 +7,7 @@ description: A command-line interface for Parseable that lets you query logs, an
 
 `pb` is built for developers who work in the terminal and want full access to Parseable from shell scripts, CI pipelines, or day-to-day workflows. It supports both a standard command-line mode for scripting and automation, and a full-screen interactive TUI for exploratory work.
 
-> Currently, `pb` works with self-hosted Parseable deployments only. Cloud support is coming soon.
+Currently, `pb` works with self-hosted Parseable deployments only. Cloud support is coming soon.
 
 ## Commands
 
@@ -27,15 +27,22 @@ description: A command-line interface for Parseable that lets you query logs, an
 
 Both SQL log queries and PromQL metrics queries support an interactive full-screen TUI using the `-i` flag. In this mode, `pb` opens a panel-based interface where you can write and edit your query, adjust the time range, and browse through paginated results this all without leaving the terminal.
 
-```bash
-# Open the interactive SQL query interface
-pb query run -i
+<Tabs items={['SQL', 'PromQL']}>
+  <Tab value="SQL">
 
-# Open the interactive PromQL interface
-pb query run -i --promql
-#or
-pb query promql run -i
-```
+  ```bash
+  pb query run -i
+  ```
+
+  </Tab>
+  <Tab value="PromQL">
+
+  ```bash
+  pb query run -i --promql
+  ```
+
+  </Tab>
+</Tabs>
 
 Navigate between panels using `Tab` and `Shift+Tab`. Press `Ctrl+R` to run the query. Results are displayed in a scrollable table with column navigation and inline row filtering.
 
