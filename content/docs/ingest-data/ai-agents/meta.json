@@ -1,5 +1,5 @@
 {
-  "title": "LLM Observability",
+  "title": "AI Agents & LLMs",
   "pages": [
     "openai",
     "anthropic",
@@ -11,6 +11,7 @@
     "autogen",
     "crewai",
     "dspy",
-    "n8n"
+    "n8n",
+    "temporal"
   ]
 }
