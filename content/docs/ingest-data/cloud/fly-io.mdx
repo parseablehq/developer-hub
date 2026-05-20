@@ -1,0 +1,148 @@
+---
+title: Fly.io
+description: Ingest Fly.io platform logs and metrics into Parseable
+---
+
+Ship logs and platform metrics from your [Fly.io](https://fly.io) apps to Parseable. Both pipelines are dedicated Fly apps deployed alongside (not inside) your workload apps; your existing `fly.toml` files are not modified.
+
+## Overview
+
+| Pipeline | Source                                                     | Shipper                                                                                       | Parseable route               | Availability                  |
+| -------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------------------------- | ----------------------------- |
+| Logs     | Fly's NATS log stream (`nats://[fdaa::3]:4223`)            | [`fly-log-shipper`](https://github.com/superfly/fly-log-shipper) with Parseable Vector sink   | `POST /api/v1/logstream/...`  | All Parseable editions        |
+| Metrics  | Fly's managed Prometheus (`api.fly.io/prometheus/<org>/federate`) | [`parseable-fly-metrics`](https://github.com/parseablehq/parseable-fly-io-metrics) (Go agent)    | `POST /v1/prometheus/write`   | **Parseable Enterprise / Prism only** |
+
+One agent per Fly org covers every app in that org - no per-app config.
+
+---
+
+## Logs
+
+### Architecture
+
+```
+your-app-1 ─┐
+your-app-2 ─┤── Fly NATS logs stream ──▶ fly-log-shipper ──▶ Parseable
+your-app-N ─┘    (nats://[fdaa::3]:4223)    (Fly app)         /api/v1/logstream/<stream>
+```
+
+### Deploy
+
+`fly-log-shipper` is Fly's official log forwarder, with a Parseable sink available in the upstream repo (see [PR #76](https://github.com/superfly/fly-log-shipper/pull/76)).
+
+```bash
+git clone https://github.com/superfly/fly-log-shipper
+cd fly-log-shipper
+
+# create the shipper app in your Fly org
+flyctl apps create <org>-fly-log-shipper --org <your-fly-org>
+
+# auth + Parseable sink secrets
+flyctl secrets set \
+  ACCESS_TOKEN=$(flyctl auth token) \
+  ORG=<your-fly-org-slug> \
+  PARSEABLE_URL=https://<your-parseable-host> \
+  PARSEABLE_USERNAME=<user> \
+  PARSEABLE_PASSWORD=<pass> \
+  PARSEABLE_STREAM=fly_logs
+
+flyctl deploy --ha=false
+```
+
+Logs from every app in the org now flow into the `fly_logs` stream. Refer to the [fly-log-shipper README](https://github.com/superfly/fly-log-shipper#sinks) for the full list of sink env vars.
+
+---
+
+## Metrics
+
+<OfferingPills pro enterprise className="mb-4" />
+
+The Fly metrics pipeline writes via Parseable's `POST /v1/prometheus/write` route, which is available in **Parseable Enterprise** and **Prism** (distributed) deployments. The open-source Parseable server does not expose this route.
+
+### Architecture
+
+```
+your-app-1 ─┐
+your-app-2 ─┤── Fly managed Prometheus ──▶ parseable-fly-metrics ──▶ Parseable
+your-app-N ─┘    api.fly.io/prometheus/<org>/federate    (Fly app)     /v1/prometheus/write
+                                                                       (ingestor node)
+```
+
+### Deploy
+
+```bash
+git clone https://github.com/parseablehq/parseable-fly-metrics
+cd parseable-fly-metrics
+
+# edit fly.toml - set `app = "<your-unique-name>"` and `primary_region`
+
+flyctl apps create <your-unique-name> --org <your-fly-org>
+
+flyctl secrets set \
+  FLY_ORG=<your-fly-org-slug> \
+  FLY_METRICS_TOKEN=$(flyctl auth token) \
+  PARSEABLE_URL=https://<your-parseable-ingestor>:8010 \
+  PARSEABLE_USERNAME=<user> \
+  PARSEABLE_PASSWORD=<pass>
+
+flyctl deploy --ha=false
+```
+
+Expected log line per scrape interval:
+
+```
+scrape ok: families=61 series=134 samples=134 duration=460ms
+```
+
+`PARSEABLE_URL` must point at a Prism **ingestor** node, not the query node. Run a single agent machine per org; multiple instances would double-scrape.
+
+### Configuration
+
+| Variable               | Required | Default       | Notes                                                                                              |
+| ---------------------- | -------- | ------------- | -------------------------------------------------------------------------------------------------- |
+| `FLY_ORG`              | yes      | -             | Fly org slug. Find via `flyctl orgs list`.                                                         |
+| `FLY_METRICS_TOKEN`    | yes      | -             | Output of `flyctl auth token` or `flyctl tokens create readonly -o <org>`.                         |
+| `PARSEABLE_URL`        | yes      | -             | Base URL of the Parseable ingestor.                                                                |
+| `PARSEABLE_USERNAME`   | yes      | -             | HTTP basic auth username.                                                                          |
+| `PARSEABLE_PASSWORD`   | yes      | -             | HTTP basic auth password.                                                                          |
+| `PARSEABLE_STREAM`     | no       | `fly_metrics` | Target stream name. Parseable creates the stream automatically on first write.                     |
+| `SCRAPE_INTERVAL_SECS` | no       | `30`          | Seconds between scrapes.                                                                           |
+
+---
+
+## Verify
+
+Query the Parseable query node:
+
+```bash
+curl -u <user>:<pass> -X POST \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"select metric_name, app, region, data_point_value from fly_metrics order by p_timestamp desc limit 5","startTime":"1h","endTime":"now"}' \
+  https://<your-parseable-query-node>/api/v1/query
+```
+
+Sample row from the `fly_metrics` stream:
+
+```json
+{
+  "app": "hellofly",
+  "region": "sin",
+  "instance": "9080d161a52928",
+  "metric_name": "fly_instance_memory_buffers",
+  "metric_type": "gauge",
+  "data_point_value": 778240,
+  "time_unix_nano": "2026-05-18T06:45:38.637",
+  "scope_name": "prometheus_remote_write",
+  "p_format": "otel-metrics"
+}
+```
+
+For logs, query the `fly_logs` stream the same way.
+
+---
+
+## Notes
+
+- **Auth scheme.** Fly's Prometheus endpoint requires `Authorization: FlyV1 <token>` for tokens issued by recent `flyctl` versions. The agent handles this automatically; the `Bearer` scheme returns HTTP 401.
+- **Idle apps.** Apps with `auto_stop_machines = "stop"` stop emitting metrics until they are woken. Fly's `/federate` returns HTTP 200 with an empty body in that state.
+- **Self-observability blind spot.** Both agents (logs and metrics) are themselves Fly apps in the same org, so they appear in their own data. If an agent crashes, its own outage is invisible from Parseable; set a stream-silence alert as a watchdog.

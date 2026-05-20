@@ -2,8 +2,13 @@
   "title": "Cloud Providers",
   "pages": [
     "aws-cloudwatch",
+    "aws-lambda",
+    "aws-data-firehose",
     "aws-kinesis",
     "azure-event-hubs",
-    "gcp-pubsub"
+    "azure-api-service",
+    "azure-service-bus",
+    "gcp-pubsub",
+    "fly-io"
   ]
 }

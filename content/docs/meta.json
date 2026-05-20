@@ -49,6 +49,7 @@
     "api",
     "---Self Hosted---",
     "self-hosted/installation",
+    "self-hosted/aws",
     "self-hosted/configuration",
     "self-hosted/storage-targets",
     "self-hosted/metrics",
