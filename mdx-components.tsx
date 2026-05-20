@@ -2,6 +2,7 @@ import { ImageZoom } from 'fumadocs-ui/components/image-zoom';
 import defaultMdxComponents from 'fumadocs-ui/mdx';
 import { Callout } from 'fumadocs-ui/components/callout';
 import { Card, Cards } from 'fumadocs-ui/components/card';
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
 import { createAPIPage } from 'fumadocs-openapi/ui';
 import { openapi } from './lib/source'; 
 import type { MDXComponents } from 'mdx/types';
@@ -23,6 +24,8 @@ export function getMDXComponents(components: MDXComponents = {}): MDXComponents 
     Callout,
     Card,
     Cards,
+    Tabs,
+    Tab,
     ProBadge,
     EnterpriseBadge,
     OfferingPills,

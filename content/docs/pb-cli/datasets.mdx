@@ -1,0 +1,78 @@
+---
+title: "Dataset Management"
+description: "Create, inspect, and delete datasets with pb dataset."
+---
+
+Datasets are the top-level containers for log and metrics data in Parseable. Use the `pb dataset` subcommands to manage them from the terminal.
+
+## List datasets
+
+<Tabs items={['Table', 'JSON']}>
+  <Tab value="Table">
+
+  ```bash
+  pb dataset list
+  ```
+
+  </Tab>
+  <Tab value="JSON">
+
+  ```bash
+  pb dataset list --output json
+  ```
+
+  </Tab>
+</Tabs>
+
+## Create a dataset
+
+```bash
+pb dataset add <name>
+```
+
+```bash
+pb dataset add backend_logs
+pb dataset add otel_metrics
+```
+
+Dataset names must be lowercase and contain no spaces.
+
+## Inspect a dataset
+
+<Tabs items={['Table', 'JSON']}>
+  <Tab value="Table">
+
+  ```bash
+  pb dataset info backend_logs
+  ```
+
+  </Tab>
+  <Tab value="JSON">
+
+  ```bash
+  pb dataset info backend_logs --output json
+  ```
+
+  </Tab>
+</Tabs>
+
+Shows:
+- Event count and ingestion size
+- Storage size and compression ratio
+- Retention period (if configured)
+- Active alerts (if any)
+- Dataset type (logs or metrics)
+
+## Delete a dataset
+
+```bash
+pb dataset remove <name>
+```
+
+```bash
+pb dataset remove old_logs
+```
+
+<Callout type="warn">
+Deleting a dataset removes all data it contains. This action cannot be undone.
+</Callout>

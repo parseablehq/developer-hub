@@ -1,0 +1,113 @@
+---
+title: "Users and Roles"
+description: "Manage users and role-based access control with pb user and pb role."
+---
+
+<Callout type="info">
+These commands require admin privileges on the Parseable server.
+</Callout>
+
+Parseable uses role-based access control (RBAC). Roles define what a user can do on which datasets. You create roles first, then assign them to users.
+
+## Roles
+
+### Create a role
+
+```bash
+pb role add <name>
+```
+
+This starts an interactive prompt where you choose a privilege level and the dataset it applies to.
+
+**Privilege levels:**
+
+| Privilege | Access |
+|---|---|
+| `reader` | Read-only access to a specific dataset |
+| `writer` | Read and write access to a specific dataset |
+| `ingestor` | Write-only (ingest) access to a specific dataset |
+| `admin` | Full system-wide access |
+
+```bash
+pb role add log-readers
+```
+
+### List roles
+
+<Tabs items={['Table', 'JSON']}>
+  <Tab value="Table">
+
+  ```bash
+  pb role list
+  ```
+
+  </Tab>
+  <Tab value="JSON">
+
+  ```bash
+  pb role list --output json
+  ```
+
+  </Tab>
+</Tabs>
+
+### Delete a role
+
+```bash
+pb role remove <name>
+```
+
+## Users
+
+### Create a user
+
+```bash
+pb user add <username>
+```
+
+The server generates a password and prints it. Save it — it cannot be retrieved later.
+
+Assign roles at creation time:
+
+```bash
+pb user add bob --role log-readers,developers
+```
+
+### List users
+
+<Tabs items={['Table', 'JSON']}>
+  <Tab value="Table">
+
+  ```bash
+  pb user list
+  ```
+
+  </Tab>
+  <Tab value="JSON">
+
+  ```bash
+  pb user list --output json
+  ```
+
+  </Tab>
+</Tabs>
+
+### Update user roles
+
+```bash
+pb user set-role <username> <roles>
+```
+
+```bash
+pb user set-role bob log-readers,admins
+```
+
+### Delete a user
+
+```bash
+pb user remove <username>
+```
+
+<Callout type="warn">
+Roles must exist before they can be assigned to a user. Create roles with `pb role add` first.
+</Callout>
