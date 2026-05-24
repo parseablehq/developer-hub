@@ -192,6 +192,11 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - query
+                - startTime
+                - endTime
+                - streamName
               properties:
                 query:
                   type: string
