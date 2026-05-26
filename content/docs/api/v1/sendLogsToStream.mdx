@@ -3,7 +3,6 @@ title: Send logs to a dataset
 full: true
 _openapi:
   method: POST
-  route: /api/v1/logstream/{stream_name}
   toc: []
   structuredData:
     headings: []
@@ -11,11 +10,11 @@ _openapi:
       - content: >
           **Log Ingestion API via Stream Endpoint**  
 
-          In this approach, you need to create a dataset first using the **Create
-          Stream API**.  
+          In this approach, you need to create a dataset first using the
+          **Create Stream API**.  
 
-          Once the dataset is created, you can send logs to the dataset ingestion
-          API endpoint:  
+          Once the dataset is created, you can send logs to the dataset
+          ingestion API endpoint:  
 
           **http://INGESTION_ENDPOINT/api/v1/logstream/`stream_name`**  
 
@@ -33,4 +32,4 @@ Once the dataset is created, you can send logs to the dataset ingestion API endp
 This API does not require any headers for specifying the dataset name.
 
 
-<APIPage document={"public/parseable-api-schema-cleaned.yaml"} operations={[{"path":"/api/v1/logstream/{stream_name}","method":"post"}]} webhooks={[]} hasHead={false} />
+<APIPage document={"./public/parseable-api-schema-cleaned.yaml"} operations={[{"path":"/api/v1/logstream/{stream_name}","method":"post"}]} />

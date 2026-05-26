@@ -28,12 +28,12 @@ Logs are the generally highest-volume. They range from unstructured text to semi
 
 Parseable can ingest logs with dynamic or fixed schema. For dynamic schema, new fields are picked up automatically, and sparse or wide events stay cheap because columnar storage only reads the columns a query touches.
 
-For verbose log strings, Parseable offer [LogIQ, a mechanism to split the log data into separate columns](/docs/user-guide/log-iq) automatically, allowing best compression and performance.
+For verbose, unstructured log strings, Parseable offers [LogIQ](/docs/user-guide/log-iq), a mechanism to split the log data into separate columns automatically, allowing best compression and performance.
 
 ### Metrics
 Metrics are numeric time series identified by a name and a set of labels. The hard problem is cardinality: every new combination of label values is another series, and traditional TSDBs slow down or fall over as that count climbs.
 
-Parseable stores metrics in the same columnar data lake and exposes them through native PromQL. With additional metadata like label hash and frequency, label values are stored as column data rather than expanded into a per-series index, so high-cardinality labels don't carry any penalty. Metrics can be ingested over [OpenTelemetry](/docs/ingest-data/otel/metrics) or [Prometheus remote write](docs/ingest-data/prometheus).
+Parseable stores metrics in the columnar data lake and exposes them through native PromQL. With additional metadata like series hash and frequency, label values are stored as column data rather than expanded into a per-series index, so high-cardinality labels don't carry any penalty. Metrics can be ingested over [OpenTelemetry](/docs/ingest-data/otel/metrics) or [Prometheus remote write](docs/ingest-data/prometheus).
 
 ### Traces
 A trace is a tree of spans tied together by a trace ID, where each span is a structured event with its own timing and attributes. Trace workloads mix two access patterns: fetch a single trace by ID, and aggregate across many spans for service-level views — latency percentiles, error rates, dependency maps.
@@ -42,33 +42,38 @@ Parseable stores spans as columnar events, so both patterns run on the same data
 
 ## Use cases
 
+- Consolidating a multi-tool observability stack
+- Cutting the cost of high-volume logs and long retention
+- Observability where data cannot leave your environment
+- High-cardinality and wide-event workloads
+- Telemetry data as an open, queryable data asset
 
 ## Key differentiators
 
 <Cards>
 
-<Card icon={<IconCpu2 />} title='Up to 70% less compute resources'>
+<Card icon={<IconCpu2  className="text-blue-500" />} className="text-blue-500" title='Up to 70% less compute resources'>
 70% less CPU than traditional Java solutions like Elasticsearch under similar workloads. 
 </Card>
 
-<Card icon={<IconSortDescendingSmallBig />} title='Up to 90% compression'>
+<Card icon={<IconSortDescendingSmallBig  className="text-blue-500" />} className="text-blue-500" title='Up to 90% compression'>
 Built-in compression to compress observability and telemetry data by up to 90%. 
 </Card>
 
-<Card icon={<IconBolt />} title='Fast queries'>
+<Card icon={<IconBolt  className="text-blue-500" />}  className="text-blue-500" title='Fast queries'>
 Fast query response with Rust based design, modern query techniques, and intelligent caching on SSDs / NVMe and memory.
 </Card>
 
-<Card icon={<IconCloudDataConnection />} title='Object store first'>
+<Card icon={<IconCloudDataConnection  className="text-blue-500" />}  className="text-blue-500" title='Object store first'>
 Excellent storage efficiency and cost with object stores like S3, GCS, Azure Blob as the primary storage layer.
 </Card>
 
-<Card icon={<IconTelescope />} title='OpenTelemetry native'>
+<Card icon={<IconTelescope  className="text-blue-500" />} className="text-blue-500" title='OpenTelemetry native'>
 Ingest, manage and query OpenTelemetry logs, metrics or traces natively. Zero configuration needed. 
 </Card>
 
-<Card icon={<IconFileTextShield />} title='Data privacy and security'>
-Deploy across public or private clouds, containers, VMs, or bare metal environments with complete data security and privacy.
+<Card icon={<IconFileTextShield  className="text-blue-500" />}  className="text-blue-500" title='Data privacy and security'>
+Deploy across public or private clouds, containers, or bare metal environments with complete data security and privacy.
 </Card>
 
 </Cards>
