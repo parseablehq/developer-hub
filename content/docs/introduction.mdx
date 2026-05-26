@@ -3,32 +3,34 @@ title: What is Parseable?
 icon: Sparkles
 ---
 
-import { IconCpu2,IconSortDescendingSmallBig,IconLayersIntersect,IconRocket,IconBolt,IconTelescope,IconCloudDataConnection,IconFileTextShield } from '@tabler/icons-react';
+import { IconCpu2,IconSortDescendingSmallBig,IconLayersIntersect,IconRocket,IconBolt,IconTelescope,IconCloudDataConnection,IconLockOpen,IconFileTextShield } from '@tabler/icons-react';
 
-Parseable is an open source, column-oriented data lake platform, purpose built for observability. It treats the growth of observability data as a data engineering problem rather than a search or time-series problem — telemetry is big data, and it should be stored, compressed, and queried like big data, in open formats, instead of being forced into systems that were never designed for this scale or cardinality.
+Parseable is an open source, column-oriented data lake platform, purpose built for observability. It treats growing telemetry data as a data engineering problem rather than a search or time-series problem. 
 
 Parseable is written in Rust and built on Apache Arrow and Apache Parquet. Rust gives predictable, low-latency performance with no garbage collection pauses and a small memory footprint. 
 
-Arrow is the in-memory columnar representation, which makes query execution vectorized and data exchange zero copy. Parquet is the storage at rest format — open, columnar, and widely supported. Because every telemetry signal is stored as standard Parquet on object storage, the data is never trapped inside Parseable: any Parquet compatible engine can read it.
+Arrow is the in-memory columnar representation, which makes query execution vectorized and data exchange zero copy. Parquet is the storage at rest format — open, columnar, and widely supported.
 
-- <strong>Data lake engine</strong>: At the core of Parseable is the data lake engine, built for high-throughput ingestion. Incoming telemetry is staged locally and then forwarded to object storage in batches — a stage-and-forward design that absorbs ingestion spikes without pushing backpressure onto the sender, and writes efficiently sized objects to the store. The engine handles compression, object storage prefix and partition layout, and metadata management, so the cost, durability, and consistency characteristics of object storage stay abstracted away from the user.
+- <strong>Data lake engine</strong>: The Parseable data lake engine is built for high-throughput ingestion. Incoming telemetry is staged locally and then forwarded to object storage in batches. This stage-and-forward design absorbs ingestion spikes without pushing backpressure onto the sender, and writes efficiently sized objects to the store. The engine handles compression, object storage prefix and partition layout, and metadata management.
 
 - <strong>Query engine</strong>: The query engine supports SQL and PromQL natively. Storage and compute are separate, so query nodes scale independently of ingestion. To keep queries fast, the engine caches frequently accessed data on the query node's local disk, serving hot queries from local NVMe rather than round-tripping to object storage on every call.
 
 ![](./static/intro-image.png)
 
+As every telemetry signal is stored as standard Parquet on object storage, the data is never trapped inside Parseable: any Parquet compatible engine can read it.
+
 ## Telemetry signals
 
-Telemetry signals have different shapes, query patterns, and volumes. Logs are wide and dynamic, metrics are dense and numeric, traces are linked trees of spans — and each performs best when its storage layout, schema handling, and query interface match the way that signal is actually produced and read. Forcing all three into one model causes friction while using the product.
+Telemetry signals have different shapes, query patterns, and volumes. Logs are wide and dynamic, metrics are dense and numeric, traces are linked trees of spans — and each performs best when its storage layout, schema handling, and query interface match the way that signal is actually produced and read.
 
 Data lake architecture was built for exactly this: holding distinct but related datasets — structured, semi-structured, and unstructured, in one open store. With storage decoupled from compute so each dataset can be queried on its own terms. That makes the data lake the natural foundation for observability.
 
 ### Logs
-Logs are the generally highest-volume. They range from unstructured text to semi-structured JSON, with constantly drifting schemas. The common pattern for queries is a filter over a time window — where people are trying to find the needle. Teams are also increasingly using aggregations over [wide, high-cardinality events](https://www.parseable.com/blog/decision-framework-wide-events-or-traces). 
+Logs are the generally highest-volume signals. They range from unstructured text to semi-structured JSON, with constantly drifting schemas. The common pattern for queries is a filter over a time window — where people are trying to find the needle. Teams are also increasingly using aggregations over [wide, high-cardinality events](https://www.parseable.com/blog/decision-framework-wide-events-or-traces). 
 
 Parseable can ingest logs with dynamic or fixed schema. For dynamic schema, new fields are picked up automatically, and sparse or wide events stay cheap because columnar storage only reads the columns a query touches.
 
-For verbose, unstructured log strings, Parseable offers [LogIQ](/docs/user-guide/log-iq), a mechanism to split the log data into separate columns automatically, allowing best compression and performance.
+For verbose, unstructured log strings, Parseable offers [LogIQ](/docs/user-guide/log-iq), a mechanism to split the log data into separate columns automatically, allowing better compression and performance.
 
 ### Metrics
 Metrics are numeric time series identified by a name and a set of labels. The hard problem is cardinality: every new combination of label values is another series, and traditional TSDBs slow down or fall over as that count climbs.
@@ -42,64 +44,61 @@ Parseable stores spans as columnar events, so both patterns run on the same data
 
 ## Use cases
 
-- Consolidating a multi-tool observability stack
-- Cutting the cost of high-volume logs and long retention
-- Observability where data cannot leave your environment
-- High-cardinality and wide-event workloads
-- Telemetry data as an open, queryable data asset
+- <strong>Cutting observability costs</strong>: Object storage as the primary store, with columnar Parquet compression, ties cost to S3 rather than an always-hot SSD fleet.
+- <strong>Observability for sensitive environments</strong>: Complete telemetry data sovereignty while maintaining full observability capabilities.
+- <strong>High-cardinality and wide-event workloads</strong>: Columnar storage and query execution make high-cardinality labels and wide, dynamic logs first-class citizens.
+- <strong>Telemetry data as an open, queryable data asset</strong>: Whether for ad-hoc analysis, LLM training or fine-tuning, or custom applications, your telemetry data is always open and accessible in Parquet format.
+- <strong>Consolidating observability tooling</strong>: Get rid of tool sprawl with a unified layer for all your telemetry signals, and a single source of truth for your data.
 
 ## Key differentiators
 
 <Cards>
 
-<Card icon={<IconCpu2  className="text-blue-500" />} className="text-blue-500" title='Up to 70% less compute resources'>
-70% less CPU than traditional Java solutions like Elasticsearch under similar workloads. 
+<Card icon={<IconCpu2  className="text-blue-500" />} className="text-blue-500" title='Data lake design'>
+All signals share a columnar foundation, with storage decoupled from compute. Up to 90% compression
 </Card>
 
-<Card icon={<IconSortDescendingSmallBig  className="text-blue-500" />} className="text-blue-500" title='Up to 90% compression'>
-Built-in compression to compress observability and telemetry data by up to 90%. 
-</Card>
-
-<Card icon={<IconBolt  className="text-blue-500" />}  className="text-blue-500" title='Fast queries'>
-Fast query response with Rust based design, modern query techniques, and intelligent caching on SSDs / NVMe and memory.
-</Card>
-
-<Card icon={<IconCloudDataConnection  className="text-blue-500" />}  className="text-blue-500" title='Object store first'>
-Excellent storage efficiency and cost with object stores like S3, GCS, Azure Blob as the primary storage layer.
+<Card icon={<IconFileTextShield  className="text-blue-500" />}  className="text-blue-500" title='Run anywhere'>
+Deploy as a managed cloud, in your own cloud account, on-prem, or fully air-gapped.
 </Card>
 
 <Card icon={<IconTelescope  className="text-blue-500" />} className="text-blue-500" title='OpenTelemetry native'>
-Ingest, manage and query OpenTelemetry logs, metrics or traces natively. Zero configuration needed. 
+Ingest, manage and query OpenTelemetry logs, metrics or traces natively. Zero configuration needed
 </Card>
 
-<Card icon={<IconFileTextShield  className="text-blue-500" />}  className="text-blue-500" title='Data privacy and security'>
-Deploy across public or private clouds, containers, or bare metal environments with complete data security and privacy.
+<Card icon={<IconLockOpen  className="text-blue-500" />}  className="text-blue-500" title='Zero lock-in'>
+Open source code, open Parquet storage. Zero lock-in of your observability data
+</Card>
+
+<Card icon={<IconBolt  className="text-blue-500" />}  className="text-blue-500" title='Built for speed'>
+Vectorized query execution and millisecond-range responses, backed by NVMe and memory caching
+</Card>
+
+<Card icon={<IconSortDescendingSmallBig  className="text-blue-500" />} className="text-blue-500" title='Resource utilization'>
+Up to 75% less memory and 50% less CPU than Elastic at the same ingestion and query load
 </Card>
 
 </Cards>
 
 ## Next steps
 
-<Cards>
+<a href="/docs/architecture" title='Architecture'>
+Learn about the telemetry data lake architecture
+</a>
 
-<Card href="/docs/architecture" icon={<IconTelescope className="text-blue-500" />} className="text-blue-500" title='Architecture'>
-Learn about the telemetry data lake architecture.
-</Card>
-
-<Card href="/docs/get-started" icon={<IconRocket className="text-blue-500" />} className="text-blue-500" title='Get started'>
+<a href="/docs/get-started" title='Get started'>
 Start with Parseable Cloud or run it on your laptop
-</Card>
+</a>
 
-<Card href="/docs/ingestion" icon={<IconCloudDataConnection className="text-blue-500" />} className="text-blue-500" title='Ingest data'>
-Send telemetry data into Parseable.
-</Card>
+<a href="/docs/ingestion" title='Ingest data'>
+Send telemetry data into Parseable
+</a>
 
-<Card href="/docs/features" icon={<IconFileTextShield className="text-blue-500" />} className="text-blue-500" title='Features'>
+<a href="/docs/features" title='Features'>
 PromQL, alerting, dashboards, anomaly detection
-</Card>
+</a>
 
-<Card href="/docs/integrations" icon={<IconLayersIntersect className="text-blue-500" />} className="col-span-2 text-blue-500" title='Integrations'>
-Integrate with your existing tools and workflows.
-</Card>
+<a href="/docs/integrations" title='Integrations'>
+Integrate with your existing tools and workflows
+</a>
 
-</Cards>
