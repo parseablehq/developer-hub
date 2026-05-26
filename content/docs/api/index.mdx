@@ -55,11 +55,13 @@ Before you begin, make sure you have:
 
 ## Authentication
 
-All API requests require authentication. Include your API key in the `Authorization` header:
+API reference endpoints require authentication. The OpenAPI reference uses HTTP Basic authentication by default:
 
 ```bash
-Authorization: Bearer YOUR_API_KEY
+Authorization: Basic <base64-encoded-credentials>
 ```
+
+If you use Parseable API keys, send the key in the `X-API-Key` header as described in the [API Keys](/docs/user-guide/api-keys) guide.
 
 ## Rate Limiting
 

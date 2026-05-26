@@ -118,8 +118,8 @@ paths:
         
         The query API accepts the following parameters:
         - **query**: The SQL query to execute (required)
-        - **startTime**: The start time for the query range (optional)
-        - **endTime**: The end time for the query range (optional)
+        - **startTime**: The start time for the query range (required)
+        - **endTime**: The end time for the query range (required)
         - **streamName**: The name of the log dataset to query (required)
         
         Example request body:
@@ -139,6 +139,8 @@ paths:
               required:
                 - query
                 - streamName
+                - startTime
+                - endTime
               properties:
                 query:
                   type: string

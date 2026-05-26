@@ -1,5 +1,5 @@
 ---
-title: Quickstart Guide
+title: Quickstart
 icon: Rocket
 redirect_from:
   - /get-started
@@ -8,23 +8,9 @@ redirect_from:
 import { IconChartCohort, IconDirections, IconCloudDataConnection, IconBrandInertia, IconFileTypeSql, IconServerBolt,
  IconSchema, IconFileDigitFilled, IconCloudComputing, IconCloud } from '@tabler/icons-react';
 
-## Parseable Pro
-<OfferingPills pro/>
-
-The fastest way to get started is Parseable Cloud Pro tier. Sign up for Parseable Pro for a free 14 days trial. No credit card needed.
-
-<Cards>
-<Card href="/docs/quickstart/cloud" icon={<IconCloud className="text-blue-500" />}  title='Parseable Cloud' className="text-blue-500">
-Sign up for fully featured trial.
-</Card>
-<Card href="/docs/quickstart/binary" icon={<IconFileDigitFilled className="text-blue-500" />}  title='Executable Binary' className="text-blue-500">
-Download and run the binary directly.
-</Card>
-</Cards>
-
 ## Run locally
 
-You can also run Parseable Open Source edition locally. To run Parseable locally, run the following command to start Parseable in local mode on your machine:
+To run Parseable locally, run the following command to start Parseable in local mode on your machine:
 
 ```bash
 docker run -p 8000:8000 \
@@ -35,6 +21,16 @@ parseable local-store
 Once the container is running successfully, go to [http://localhost:8000](http://localhost:8000) and login with the default credentials `admin` / `admin`.
 
 You'll see the setup screen where you can import sample data in one click. This will also create few dashboards and queries to get you started.
+
+## Parseable Pro
+
+To get started with our full managed cloud offering, sign up for Parseable Pro for a free 14 days trial. No credit card needed.
+
+<Cards>
+<Card href="/docs/quickstart/cloud" icon={<IconCloud className="text-blue-500" />}  title='Parseable Cloud' className="col-span-2 text-blue-500">
+Sign up for fully featured trial.
+</Card>
+</Cards>
 
 ## Production installation
 

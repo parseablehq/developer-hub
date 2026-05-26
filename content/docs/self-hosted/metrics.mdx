@@ -4,17 +4,18 @@ redirect_from:
   - /parseable-metrics
 ---
 
-### Export Parseable to Prometheus
+## Export Parseable to Prometheus
+
 Prometheus offers a multi-dimensional data model with time series data identified by metric name and key/value pairs. The data collection happens via a pull model over HTTP/HTTPS.
 
-Parseable server exposes Prometheus metrics at `/api/v1/metrics` endpoint (unauthorized). The metrics are exposed in Prometheus exposition format.
+Parseable server exposes Prometheus metrics at the `/api/v1/metrics` endpoint in Prometheus exposition format. If authentication is enabled for your Parseable instance, scrape the endpoint with valid Parseable credentials.
 
-### Prerequisites
+## Prerequisites
 Parseable server installed and running. See installation guide for more details.
 
 Prometheus installed and running. See installation guide for more details.
 
-### Configuration
+## Configuration
 Prometheus configuration is done via a YAML file. Locate your Prometheus configuration file `prometheus.yml` and add the following section to scrape Parseable server metrics.
 
 
@@ -33,9 +34,10 @@ Make sure to replace localhost:8000 with the actual host and port where Parseabl
 
 ### List of metrics exposed by Parseable
 
-Parseable server exposes the following metrics on `/api/v1/metrics` endpoint. All of these can be accessed via Prometheus dashboard. A sample list of exposed metrics along with their definition is available in the demo server at `https://demo.parseable.com/api/v1/metrics`.   
+Parseable server exposes the following metrics on the `/api/v1/metrics` endpoint. All of these can be accessed via Prometheus dashboard. A sample list of exposed metrics along with their definition is available in the demo server at `https://demo.parseable.com/api/v1/metrics`.
 
+For a local self-hosted instance, authenticate with your configured Parseable credentials:
 
 ```bash
-curl https://demo.parseable.com/api/v1/metrics
+curl -u admin:admin http://localhost:8000/api/v1/metrics
 ```
