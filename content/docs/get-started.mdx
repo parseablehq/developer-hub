@@ -7,15 +7,15 @@ redirect_from:
 ---
 import { IconChartCohort, IconDirections, IconCloudDataConnection, IconBrandInertia, IconFileTypeSql, IconServerBolt,
  IconSchema, IconFileDigitFilled, IconCloudComputing, IconCloud } from '@tabler/icons-react';
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+
 
 ## Run locally
 
 To run Parseable locally, run the following command to start Parseable in local mode on your machine:
 
 ```bash
-docker run -p 8000:8000 \
-parseable/parseable:edge \
-parseable local-store
+docker run -p 8000:8000 parseable/parseable:latest parseable local-store
 ```
 
 Once the container is running successfully, go to [http://localhost:8000](http://localhost:8000) and login with the default credentials `admin` / `admin`.
@@ -24,22 +24,36 @@ You'll see the setup screen where you can import sample data in one click. This 
 
 ## Parseable Pro
 
-To get started with our full managed cloud offering, sign up for Parseable Pro for a free 14 days trial. No credit card needed.
+To get started with our full managed cloud offering, sign up for Parseable Pro for a free 14 days trial, without any credit card required. Parseable Pro includes all the features of Parseable, with the added benefits of a fully managed service, automatic updates, and dedicated support.
 
-<Cards>
-<Card href="/docs/quickstart/cloud" icon={<IconCloud className="text-blue-500" />}  title='Parseable Cloud' className="col-span-2 text-blue-500">
-Sign up for fully featured trial.
-</Card>
-</Cards>
+<Steps>
+<Step>
+### Sign up
+
+Sign up on [https://app.parseable.com/](https://app.parseable.com/) to create your account.
+
+</Step>
+<Step>
+### Ingest data
+
+You can connect to your data sources in a few clicks and start ingesting your data. Parseable supports a wide range of data sources - refer the "Ingesting data" section in the documentation for more details. 
+
+</Step>
+
+<Step>
+### Create your first dashboard
+
+Once your data is ingested, you can start creating dashboards and queries to analyze your data.
+</Step>
+
+<Step>
+### Set your first alert
+
+You can set up alerts to get notified when certain conditions are met in your data. For example, you can set up an alert to get notified when the number of errors in your application exceeds a certain threshold.
+
+</Step>
+</Steps>
 
 ## Production installation
 
-To deploy Parseable in a production environment, refer to the self-hosted installation guide:
-
-<Cards>
-
-<Card href="/docs/self-hosted/installation" icon={<IconSchema className="text-blue-500" />} title='Self-hosted installation' className="col-span-2 text-blue-500">
-Deploy Parseable in your own environment.
-</Card>
-
-</Cards>
+To deploy Parseable in a production environment, refer to the [production installation guide](/docs/self-hosted/installation).
