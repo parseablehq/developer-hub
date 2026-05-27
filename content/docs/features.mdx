@@ -4,7 +4,7 @@ redirect_from:
   - /features
   - /features/index
 ---
-import { IconSparkles, IconBellRinging, IconDashboard, IconCode, IconSql, IconLock, IconBrain, IconUserCircle, IconDatabase, IconRefresh, IconApi } from '@tabler/icons-react';
+import { IconSparkles, IconBellRinging, IconDashboard, IconCode, IconSql,IconGauge, IconLock, IconBrain, IconUserCircle, IconDatabase, IconRefresh, IconApi } from '@tabler/icons-react';
 
 Explore Parseable's features designed to enhance your observability experience. From intuitive dashboards to advanced search capabilities, these features will help you get the most out of your telemetry data and streamline your observability workflow.
 
@@ -20,6 +20,10 @@ Set up real-time alerts to notify you of important events or anomalies in your t
 
 <Card href="/docs/user-guide/dashboards" icon={<IconDashboard className="text-purple-600" />} title='Dashboards'>
 Create customizable dashboards to visualize your telemetry data and gain insights at a glance.
+</Card>
+
+<Card href="/docs/user-guide/promql" icon={<IconGauge className="text-purple-600" />} title='PromQL'>
+Native PromQL support with Grafana Prometheus data source for seamless visualization.
 </Card>
 
 <Card href="/docs/user-guide/sql-editor" icon={<IconSql className="text-purple-600" />} title='SQL Editor'>
