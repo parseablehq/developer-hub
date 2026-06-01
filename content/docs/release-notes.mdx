@@ -3,6 +3,61 @@ title: Release notes
 icon: Book
 ---
 
+## v2.8 (May 30, 2026)
+
+### Hot Tier Improvements
+
+Hot tier now has a more concurrent and tunable sync model. The refactor separates latest-data sync from historic-data sync, gives each stream its own background tasks, and makes object-store downloads safer through ranged, chunked downloads with partial-file staging.
+
+**What's new:**
+
+- Historic data sync and latest data sync now run as separate hot-tier tasks.
+- Each stream gets its own hot-tier background sync tasks, improving concurrency across streams.
+- Hot-tier file downloads are parallelized and chunked, with partial-file staging before final rename.
+- Operators can tune hot-tier object-store access with `P_HOT_TIER_DOWNLOAD_CHUNK_SIZE`, `P_HOT_TIER_DOWNLOAD_CONCURRENCY`, `P_HOT_TIER_FILES_PER_STREAM_CONCURRENCY`, `P_HOT_TIER_LATEST_MINUTES`, and `P_HOT_TIER_HISTORIC_SYNC_MINUTES`.
+
+### Metrics and PromQL Improvements
+
+Metrics workflows get better series handling, better read behavior, and a smoother PromQL experience in the console. This release adds deterministic per-series hashing during ingestion, improves Parquet layout for metric reads, and expands PromQL support in Prism.
+
+**What's new:**
+
+- OpenTelemetry metrics known fields now include quantile value fields.
+- Metrics ingestion now writes a stable per-series hash, helping Parseable identify physical metric series consistently.
+- Metrics batches are sorted by metric name before Parquet write, improving pruning for metric-name based reads.
+- Prism adds PromQL querying, PromQL fixes, metric row filtering and copy actions, improved no-data views, and tooltip fixes in Metrics Explore.
+
+### Query and Ingestion Reliability
+
+Parseable now surfaces more ingestion failures instead of hiding them behind panics or failed background operations. Query streaming and DataFusion execution tuning were also improved for larger workloads and multi-partition result delivery.
+
+**What's new:**
+
+- Streaming query merge was redesigned for more stable multi-partition result delivery.
+- Ingestion and staging operations now return and propagate errors instead of relying on unwraps or hidden failures.
+- Query execution adds tuning for target partitions, Parquet filtering, page index use, metadata sizing, predicate cache size, and execution batch sizing.
+
+### Tracing and Observability Improvements
+
+Tracing is easier to enable in local and development environments, and operators get richer visibility into storage and hot-tier paths. Parseable can now export application traces directly to stdout in JSON format when the OpenTelemetry endpoint is configured for stdout.
+
+**What's new:**
+
+- Set `OTEL_EXPORTER_OTLP_ENDPOINT=stdout` or `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=stdout` to export application traces to stdout.
+- Tracing enablement and stdout behavior are simpler and clearer, including endpoint and header handling.
+- Hot-tier, object-store, startup sync, and storage paths now include richer tracing and metrics for operator visibility.
+
+### Console and User Experience Improvements
+
+Prism received reliability and usability updates across Logs, Metrics, Traces, SQL, Alerts, and Errors. The changes reduce visual inconsistencies, improve filtering and copy workflows, and make empty or error states more consistent.
+
+**What's new:**
+
+- Empty-state handling is more consistent, including preventing flashes before query loaders in Logs, Metrics, and Traces.
+- Trace views now align start times more consistently and show timestamps in bubble chart tooltips.
+- Traces and metrics tables now support include, exclude, filter, and copy actions where relevant.
+- SQL autocomplete quote handling, sidebar collapse behavior, timezone changes, Errors page dataset reset, and non-exception error details were improved, with expanded Playwright coverage across core console workflows.
+
 
 ## v2.7 (May 8, 2026)
 
