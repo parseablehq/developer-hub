@@ -29,7 +29,7 @@ Both query and ingest nodes must share the same admin credentials. The template 
 3. Set `P_USERNAME` (defaults to `admin`) and optionally `P_PASSWORD`. Leave the password blank to have Railway generate a secure value.
 4. Click **Deploy**.
 
-Railway provisions the Bucket, attaches a persistent volume at `/data/staging` on each node, injects the Bucket credentials into both services as variable references, builds the container from `parseable/parseable:edge`, and starts each node with the `parseable s3-store` command. The query node starts in `P_MODE=query` and the ingest node in `P_MODE=ingest`.
+Railway provisions the Bucket, attaches a persistent volume at `/data/staging` on each node, injects the Bucket credentials into both services as variable references, builds the container from `quay.io/parseablehq/parseable:edge`, and starts each node with the `parseable s3-store` command. The query node starts in `P_MODE=query` and the ingest node in `P_MODE=ingest`.
 
 ## Architecture
 
@@ -187,4 +187,4 @@ The ingestor registers in `.parseable/.parseable.json` in the Bucket on first su
 
 ### Container shell access
 
-The `parseable/parseable:edge` image is distroless and ships only the Parseable binary at `/usr/bin/parseable`. There is no shell inside the container, so `railway ssh` will not give an interactive prompt. For debugging, rely on the service logs in the Railway dashboard and the Parseable HTTP API.
+The `quay.io/parseablehq/parseable:edge` image is distroless and ships only the Parseable binary at `/usr/bin/parseable`. There is no shell inside the container, so `railway ssh` will not give an interactive prompt. For debugging, rely on the service logs in the Railway dashboard and the Parseable HTTP API.

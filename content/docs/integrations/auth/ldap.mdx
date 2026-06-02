@@ -51,7 +51,7 @@ P_LDAP_TLS_CA_CERT=/path/to/ca.crt
 version: '3.8'
 services:
   parseable:
-    image: parseable/parseable:latest
+    image: quay.io/parseablehq/parseable:latest
     environment:
       - P_LDAP_URL=ldap://ldap.example.com:389
       - P_LDAP_BIND_DN=cn=admin,dc=example,dc=com
