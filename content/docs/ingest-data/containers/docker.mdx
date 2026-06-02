@@ -147,7 +147,7 @@ services:
     command: ["/fluent-bit/bin/fluent-bit", "-c", "/fluent-bit/etc/fluent-bit.yaml"]
 
   parseable:
-    image: parseable/parseable:latest
+    image: quay.io/parseablehq/parseable:latest
     ports:
       - "8000:8000"
     environment:

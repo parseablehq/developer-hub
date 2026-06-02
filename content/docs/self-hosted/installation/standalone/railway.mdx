@@ -27,7 +27,7 @@ Railway Buckets are required for object storage. Buckets are available on Railwa
 3. Set `P_USERNAME` (defaults to `admin`) and optionally `P_PASSWORD`. Leave the password blank to have Railway generate a secure value.
 4. Click **Deploy**.
 
-Railway provisions the Bucket, attaches a persistent volume at `/data/staging`, injects the Bucket credentials into the Parseable service as variable references, builds the container from `parseable/parseable:edge`, and starts the server with the `parseable s3-store` command.
+Railway provisions the Bucket, attaches a persistent volume at `/data/staging`, injects the Bucket credentials into the Parseable service as variable references, builds the container from `quay.io/parseablehq/parseable:edge`, and starts the server with the `parseable s3-store` command.
 
 ## Storage layout
 
@@ -85,4 +85,4 @@ Railway's reverse proxy is trying to reach a port Parseable is not listening on.
 
 ### Container shell access
 
-The `parseable/parseable:edge` image is distroless and ships only the Parseable binary at `/usr/bin/parseable`. There is no shell inside the container, so `railway ssh` will not give an interactive prompt. For debugging, rely on the service logs in the Railway dashboard and the Parseable HTTP API.
+The `quay.io/parseablehq/parseable:edge` image is distroless and ships only the Parseable binary at `/usr/bin/parseable`. There is no shell inside the container, so `railway ssh` will not give an interactive prompt. For debugging, rely on the service logs in the Railway dashboard and the Parseable HTTP API.

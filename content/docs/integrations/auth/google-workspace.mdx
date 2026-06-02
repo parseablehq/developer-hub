@@ -67,7 +67,7 @@ P_OIDC_REDIRECT_URI=https://your-parseable.com/callback
 version: '3.8'
 services:
   parseable:
-    image: parseable/parseable:latest
+    image: quay.io/parseablehq/parseable:latest
     environment:
       - P_OIDC_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - P_OIDC_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
