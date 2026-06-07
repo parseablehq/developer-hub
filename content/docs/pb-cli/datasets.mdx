@@ -3,7 +3,7 @@ title: "Dataset Management"
 description: "Create, inspect, and delete datasets with pb dataset."
 ---
 
-Datasets are the top-level containers for log and metrics data in Parseable. Use the `pb dataset` subcommands to manage them from the terminal.
+Datasets are the top-level containers for logs, metrics, and traces in Parseable. Use `pb dataset` to manage them from the terminal.
 
 ## List datasets
 
@@ -12,6 +12,7 @@ Datasets are the top-level containers for log and metrics data in Parseable. Use
 
   ```bash
   pb dataset list
+  pb dataset ls
   ```
 
   </Tab>
@@ -27,15 +28,16 @@ Datasets are the top-level containers for log and metrics data in Parseable. Use
 ## Create a dataset
 
 ```bash
-pb dataset add <name>
+pb dataset add <name> --type <logs|metrics|traces>
 ```
 
 ```bash
-pb dataset add backend_logs
-pb dataset add otel_metrics
+pb dataset add backend_logs --type logs
+pb dataset add frontend_metrics --type metrics
+pb dataset add checkout_traces --type traces
 ```
 
-Dataset names must be lowercase and contain no spaces.
+If `--type` is omitted, `pb` opens an interactive picker for `logs`, `metrics`, or `traces`.
 
 ## Inspect a dataset
 
@@ -44,6 +46,7 @@ Dataset names must be lowercase and contain no spaces.
 
   ```bash
   pb dataset info backend_logs
+  pb dataset stat backend_logs
   ```
 
   </Tab>
@@ -61,18 +64,21 @@ Shows:
 - Storage size and compression ratio
 - Retention period (if configured)
 - Active alerts (if any)
-- Dataset type (logs or metrics)
+- Dataset type (`logs`, `metrics`, or `traces`)
 
 ## Delete a dataset
 
 ```bash
 pb dataset remove <name>
+pb dataset rm <name>
 ```
 
 ```bash
-pb dataset remove old_logs
+pb dataset remove old_logs --type logs
 ```
 
 <Callout type="warn">
 Deleting a dataset removes all data it contains. This action cannot be undone.
 </Callout>
+
+Use `--type` with `remove` when you want the command to fail if the dataset is not the expected type.

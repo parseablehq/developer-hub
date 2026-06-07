@@ -12,6 +12,7 @@
     "promql",
     "tail",
     "datasets",
-    "admin"
+    "admin",
+    "aliases"
   ]
 }

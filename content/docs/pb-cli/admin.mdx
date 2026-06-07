@@ -55,6 +55,7 @@ pb role add log-readers
 
 ```bash
 pb role remove <name>
+pb role rm <name>
 ```
 
 ## Users
@@ -65,7 +66,7 @@ pb role remove <name>
 pb user add <username>
 ```
 
-The server generates a password and prints it. Save it — it cannot be retrieved later.
+The server generates a password and prints it. Save it because it cannot be retrieved later.
 
 Assign roles at creation time:
 
@@ -106,6 +107,7 @@ pb user set-role bob log-readers,admins
 
 ```bash
 pb user remove <username>
+pb user rm <username>
 ```
 
 <Callout type="warn">

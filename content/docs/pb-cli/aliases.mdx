@@ -1,0 +1,53 @@
+---
+title: "Aliases and Reference"
+description: "Short command aliases and the current pb command surface."
+---
+
+`pb` includes Linux-style aliases for common commands, so they are easy to remember if you already use shell commands like `ls`, `rm`, `stat`, and `ps`. Use the long form in scripts when readability matters, and the short form for day-to-day terminal work.
+
+| Linux-style alias | Meaning in `pb` |
+|---|---|
+| `ls` | List items |
+| `rm` | Remove an item |
+| `stat` | Show dataset info and statistics |
+| `ps` | Show active PromQL queries |
+
+## Aliases
+
+| Long command | Alias |
+|---|---|
+| `pb sql list` | `pb sql ls` |
+| `pb dataset list` | `pb dataset ls` |
+| `pb dataset info <dataset>` | `pb dataset stat <dataset>` |
+| `pb dataset remove <dataset>` | `pb dataset rm <dataset>` |
+| `pb profile list` | `pb profile ls` |
+| `pb profile remove <profile>` | `pb profile rm <profile>` |
+| `pb profile update <profile> <url>` | `pb profile set-url <profile> <url>` |
+| `pb user list` | `pb user ls` |
+| `pb user remove <user>` | `pb user rm <user>` |
+| `pb role list` | `pb role ls` |
+| `pb role remove <role>` | `pb role rm <role>` |
+| `pb promql active-queries` | `pb promql ps` |
+
+## Command groups
+
+| Area | Commands | What you can do |
+|---|---|---|
+| Query logs | `pb sql` | Run SQL, save queries, list saved queries, open the interactive table view |
+| Query metrics | `pb promql` | Run PromQL, inspect labels and series, analyze cardinality, view TSDB stats |
+| Stream events | `pb tail` | Watch new events from a dataset |
+| Datasets | `pb dataset` | List, inspect, create, and remove datasets |
+| Profiles | `pb login`, `pb profile`, `pb logout` | Manage Parseable server connections |
+| Access control | `pb user`, `pb role` | Manage users and roles |
+| System | `pb status`, `pb version` | Check connectivity and print CLI version details |
+
+## Help
+
+Use built-in help to inspect flags and examples for any command:
+
+```bash
+pb --help
+pb sql run --help
+pb promql run --help
+pb dataset add --help
+```

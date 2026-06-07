@@ -7,16 +7,15 @@ description: "Create a profile and authenticate with your Parseable instance."
 
 ## Interactive login (recommended)
 
-Run `pb login` to start the interactive wizard. It walks you through selecting a server type, entering your URL, choosing an authentication method, and saving the profile.
+Run `pb login` to start the interactive wizard. It walks you through the server URL, authentication method, credentials, and profile name.
 
 ```bash
 pb login
 ```
 
 The wizard prompts you for:
-- Server type (self-hosted or cloud)
 - Server URL (e.g. `https://logs.mycompany.com`)
-- Auth method — username/password or API key
+- Auth method - username/password or API key
 - Credentials
 - Profile name (defaults to `default`)
 
@@ -30,16 +29,14 @@ For scripts and CI pipelines, use `pb profile add` to create a profile without p
 pb profile add <name> <url> <username> <password>
 ```
 
-With username and password:
-
 ```bash
 pb profile add production https://logs.mycompany.com admin s3cr3t
 ```
 
-With an API key:
+You can also omit credentials and let `pb` prompt for them:
 
 ```bash
-pb profile add ci https://logs.mycompany.com --token myapikey
+pb profile add production https://logs.mycompany.com
 ```
 
 ## Managing profiles
@@ -55,7 +52,9 @@ Update or remove a profile:
 
 ```bash
 pb profile update production https://new-url.mycompany.com
+pb profile set-url production https://new-url.mycompany.com
 pb profile remove old-staging
+pb profile rm old-staging
 ```
 
 ## Check connection status
@@ -64,13 +63,13 @@ pb profile remove old-staging
 pb status
 ```
 
-This validates that the active profile can reach the server and shows the server version:
+This validates that the active profile can reach the server and shows server details when available:
 
 ```
 Profile : production
 URL     : https://logs.mycompany.com
 User    : admin
-Status  : ✓ Connected  (server v1.4.2)
+Status  : Connected  (server v1.4.2)
 ```
 
 ## Logout
@@ -80,6 +79,13 @@ pb logout
 ```
 
 Removes credentials from the active profile. To log out of a specific profile, switch to it first with `pb profile default <name>`, then run `pb logout`.
+
+If you want to remove the saved profile completely, delete it instead:
+
+```bash
+pb profile remove <name>
+pb profile rm <name>
+```
 
 ## Config file location
 

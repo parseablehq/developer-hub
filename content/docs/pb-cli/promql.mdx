@@ -3,26 +3,26 @@ title: "PromQL Queries"
 description: "Query metrics datasets in Parseable using PromQL."
 ---
 
-Parseable can store metrics data ingested via OpenTelemetry or Prometheus remote write. The `pb query promql` subcommands let you query, explore, and analyze those metrics from the terminal.
+Parseable can store metrics data ingested via OpenTelemetry or Prometheus remote write. The `pb promql` commands let you query, explore, and analyze those metrics from the terminal.
 
 ## Run a PromQL query
 
 ```bash
-pb query promql run "<expr>" --dataset <metrics-dataset> --from <duration>
+pb promql run "<expr>" --dataset <metrics-dataset> --from <duration>
 ```
 
 <Tabs items={['Range', 'Instant']}>
   <Tab value="Range">
 
   ```bash
-  pb query promql run "rate(http_requests_total[5m])" --dataset otel_metrics --from 1h --step 1m
+  pb promql run "rate(http_requests_total[5m])" --dataset otel_metrics --from=1h --step=1m
   ```
 
   </Tab>
   <Tab value="Instant">
 
   ```bash
-  pb query promql run "up" --dataset otel_metrics --instant
+  pb promql run "up" --dataset otel_metrics --instant
   ```
 
   </Tab>
@@ -32,10 +32,10 @@ pb query promql run "<expr>" --dataset <metrics-dataset> --from <duration>
 
 | Flag | Default | Description |
 |---|---|---|
-| `--dataset` / `-d` | — | Metrics dataset to query (required) |
+| `--dataset` / `-d` | `select-dataset` | Metrics dataset to query |
 | `--from` / `-f` | `5m` | Start of query window |
 | `--to` / `-t` | `now` | End of query window |
-| `--step` | `1m` | Resolution step for range queries |
+| `--step` | `auto` | Resolution step for range queries |
 | `--instant` | false | Run as instant query instead of range |
 | `--output` / `-o` | `text` | Output format: `text` or `json` |
 | `--interactive` / `-i` | false | Open interactive TUI |
@@ -43,30 +43,33 @@ pb query promql run "<expr>" --dataset <metrics-dataset> --from <duration>
 ## Interactive TUI
 
 ```bash
-pb query promql run -i
+pb promql run -i
+pb promql run "http_requests_total" --dataset otel_metrics --from=1h -i
 ```
 
-The TUI has panels for Dataset, Query expression, Time Range, Step size, and Results. Navigate with `Tab` / `Shift+Tab`, run with `Ctrl+R`.
+The TUI has panels for dataset, query expression, time range, step size, and results. Navigate with `Tab` / `Shift+Tab`, run with `Ctrl+R`, and press `Space` on the step panel to toggle between range and instant mode.
+
+The PromQL TUI also includes a builder flow for exploring metrics, labels, and values from the selected dataset before inserting an expression.
 
 ## Explore labels and series
 
 List all label names in a metrics dataset:
 
 ```bash
-pb query promql labels --dataset otel_metrics
+pb promql labels --dataset otel_metrics
 ```
 
 List all values for a specific label:
 
 ```bash
-pb query promql label-values job --dataset otel_metrics
+pb promql label-values job --dataset otel_metrics
 ```
 
 Find series matching a selector:
 
 ```bash
-pb query promql series --match 'http_requests_total' --dataset otel_metrics
-pb query promql series --match '{job="api-server"}' --dataset otel_metrics
+pb promql series --match 'http_requests_total' --dataset otel_metrics
+pb promql series --match '{job="api-server"}' --dataset otel_metrics
 ```
 
 ## Cardinality analysis
@@ -76,25 +79,25 @@ High cardinality labels are a common cause of performance issues. These commands
 Labels with the most distinct values:
 
 ```bash
-pb query promql cardinality label-names --dataset otel_metrics --limit 20
+pb promql cardinality label-names --dataset otel_metrics --limit 20
 ```
 
 Series count per value for a specific label:
 
 ```bash
-pb query promql cardinality label-values --label job --dataset otel_metrics
+pb promql cardinality label-values --label job --dataset otel_metrics
 ```
 
 Currently active series:
 
 ```bash
-pb query promql cardinality active-series --dataset otel_metrics --selector '{job="api"}'
+pb promql cardinality active-series --dataset otel_metrics --selector '{job="api"}'
 ```
 
 ## TSDB statistics
 
 ```bash
-pb query promql tsdb --dataset otel_metrics --top 10
+pb promql tsdb --dataset otel_metrics --top 10
 ```
 
 Shows storage statistics for the metrics dataset, broken down by the top N series by size.
@@ -102,7 +105,8 @@ Shows storage statistics for the metrics dataset, broken down by the top N serie
 ## Active queries
 
 ```bash
-pb query promql active-queries
+pb promql active-queries
+pb promql ps
 ```
 
 Lists any PromQL queries currently running on the server. Useful for debugging slow or stuck queries.
