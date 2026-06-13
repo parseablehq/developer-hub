@@ -1,0 +1,128 @@
+---
+title: "SQL Queries"
+description: "Run SQL queries against Parseable datasets using pb sql."
+---
+
+`pb sql` runs SQL queries against Parseable datasets. Use it for quick one-off searches, JSON output in scripts, saved queries, or the interactive table TUI.
+
+## Basic usage
+
+```bash
+pb sql run "SELECT * FROM backend" --from=10m --to=now
+```
+
+`--from` and `--to` define the time window to query. The dataset name is the SQL `FROM` target.
+
+## Time range syntax
+
+| Format | Example | Meaning |
+|---|---|---|
+| Relative | `10m`, `2h`, `7d` | Last N minutes / hours / days |
+| Absolute | `2024-01-15T00:00:00Z` | Exact RFC3339 timestamp |
+| Keyword | `now` | Current time |
+
+Last 30 minutes:
+
+```bash
+pb sql run "SELECT * FROM logs LIMIT 100" --from=30m
+```
+
+Specific time window:
+
+```bash
+pb sql run "SELECT count(*) FROM logs" --from=2024-01-01T00:00:00Z --to=2024-01-02T00:00:00Z
+```
+
+Default (last 1 minute if `--from` is not specified):
+
+```bash
+pb sql run "SELECT * FROM logs"
+```
+
+## Output modes
+
+Without `-i`, `pb sql run` prints the query response directly to the terminal. Use `--output json` when you need JSON for scripts. Use `-i` when you want the interactive table UI.
+
+<Tabs items={['Plain output', 'JSON', 'Interactive table']}>
+  <Tab value="Plain output">
+
+  ```bash
+  pb sql run "SELECT * FROM logs LIMIT 50" --from=1h
+  ```
+
+  </Tab>
+  <Tab value="JSON">
+
+  ```bash
+  pb sql run "SELECT * FROM logs LIMIT 50" --from=1h --output json
+  ```
+
+  </Tab>
+  <Tab value="Interactive table">
+
+  ```bash
+  pb sql run "SELECT * FROM logs LIMIT 50" --from=1h -i
+  ```
+
+  </Tab>
+</Tabs>
+
+## Save and reuse queries
+
+Save a query for later with `--save-as`:
+
+```bash
+pb sql run "SELECT level, count(*) FROM logs GROUP BY level" --from=1h --save-as=error-summary
+```
+
+Save without running the query:
+
+```bash
+pb sql save "SELECT * FROM frontend WHERE status >= 500" --name=frontend-errors --from=1h --to=now
+```
+
+List and manage saved queries:
+
+```bash
+pb sql list
+pb sql ls
+pb sql list --output json
+```
+
+Without `--output json`, the list command opens an interactive menu for selecting saved queries.
+
+## Interactive TUI mode
+
+Add `-i` to open the full-screen interactive query interface:
+
+```bash
+pb sql run -i
+pb sql run "SELECT * FROM backend WHERE status = 500" --from=1h -i
+```
+
+The TUI includes panels for query editing, time range, dataset selection, columns, and results. Navigate between panels with `Tab` / `Shift+Tab`.
+
+| Key | Action |
+|---|---|
+| `Tab` / `Shift+Tab` | Switch between panels |
+| `Ctrl+R` | Run query |
+| `↑` / `↓` | Scroll rows |
+| `Shift+↑` / `Shift+↓` | Page up / down |
+| Left / Right | Scroll columns |
+| `/` | Filter table rows |
+| `Esc` | Clear filter |
+| `Ctrl+B` | Previous page of results |
+
+<Callout type="info">
+Field names containing dots (OTel convention, e.g. `service.name`) or hyphens are automatically quoted in queries. You don't need to add quotes manually.
+</Callout>
+
+## Command reference
+
+| Command | Description |
+|---|---|
+| `pb sql run [query]` | Run a SQL query and print plain terminal output |
+| `pb sql run -i` | Open the interactive SQL table view |
+| `pb sql save [query]` | Save a SQL query without running it |
+| `pb sql list` | List saved queries |
+| `pb sql ls` | Alias for `pb sql list` |

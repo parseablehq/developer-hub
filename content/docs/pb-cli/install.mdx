@@ -1,0 +1,97 @@
+---
+title: "Installation"
+description: "Download and install pb on macOS, Linux, or Windows."
+---
+
+## Quick install
+
+The installer downloads the latest release, verifies the SHA-256 checksum, and installs `pb` into `~/.local/bin` by default.
+
+<Tabs items={['Linux / macOS', 'Windows PowerShell']}>
+  <Tab value="Linux / macOS">
+
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/parseablehq/pb/main/scripts/install.sh | sh
+  ```
+
+  Install somewhere else by setting `INSTALL_DIR`:
+
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/parseablehq/pb/main/scripts/install.sh | INSTALL_DIR=/usr/local/bin sh
+  ```
+
+  </Tab>
+  <Tab value="Windows PowerShell">
+
+  ```powershell
+  powershell -ExecutionPolicy Bypass -c "irm https://raw.githubusercontent.com/parseablehq/pb/main/scripts/install.ps1 | iex"
+  ```
+
+  This installs to `%USERPROFILE%\bin` and adds that folder to your user `PATH`. Open a new PowerShell window after installation.
+
+  </Tab>
+</Tabs>
+
+## Homebrew
+
+```bash
+brew install parseablehq/tap/pb
+```
+
+<Callout type="warn">
+Use the full tap name. `brew install pb` installs an unrelated Homebrew cask.
+</Callout>
+
+## Release archive
+
+Download the latest archive for your operating system and architecture from the [GitHub releases page](https://github.com/parseablehq/pb/releases/latest), extract it, and move the binary to a directory in your `PATH`.
+
+```bash
+tar xzf pb_*.tar.gz
+chmod +x pb
+sudo mv pb /usr/local/bin/
+```
+
+Windows archives contain `pb.exe`; extract the `.zip` and move `pb.exe` to a folder in your `PATH`.
+
+| Platform | Archive |
+|---|---|
+| macOS Apple Silicon | `pb_<version>_darwin_arm64.tar.gz` |
+| macOS Intel | `pb_<version>_darwin_amd64.tar.gz` |
+| Linux x86 64-bit | `pb_<version>_linux_amd64.tar.gz` |
+| Linux ARM 64-bit | `pb_<version>_linux_arm64.tar.gz` |
+| Windows x86 64-bit | `pb_<version>_windows_amd64.zip` |
+| Windows ARM 64-bit | `pb_<version>_windows_arm64.zip` |
+
+On macOS, a manually downloaded binary may be blocked on first run. Allow it once with:
+
+```bash
+xattr -d com.apple.quarantine /usr/local/bin/pb
+```
+
+## Using Go
+
+If you have Go installed, you can build and install `pb` from source:
+
+```bash
+go install github.com/parseablehq/pb@latest
+```
+
+This builds `pb` from source and places it in your `$GOPATH/bin`. Make sure `$GOPATH/bin` is in your `PATH`.
+
+## Verify installation
+
+After installing, confirm that `pb` is on your `PATH`:
+
+```bash
+pb --help
+```
+
+To print version details:
+
+```bash
+pb version
+pb --version
+```
+
+If you get a `command not found` error, make sure the install directory is included in your `PATH`.

@@ -1,0 +1,89 @@
+---
+title: pb CLI
+description: Query logs, explore metrics, tail live events, and manage Parseable from your terminal.
+---
+
+`pb` is the official command line interface for Parseable. It gives developers and operators a fast terminal workflow for SQL log queries, PromQL metrics exploration, live event tailing, saved investigations, profiles, datasets, users, and roles.
+
+Use it as a regular CLI in scripts and CI, or open the full-screen interactive TUIs when you want a table-driven way to explore logs or metrics without leaving your shell.
+
+## Quick start
+
+```bash
+# Connect to a Parseable server
+pb login
+
+# Open the interactive SQL table view
+pb sql run -i
+
+# Run SQL directly
+pb sql run "SELECT * FROM backend WHERE status >= 500" --from=1h
+
+# Open the interactive PromQL table view
+pb promql run -i
+
+# Run PromQL directly
+pb promql run "rate(http_requests_total[5m])" --dataset otel_metrics --from=1h
+
+# Stream live events
+pb tail backend
+```
+
+## Commands
+
+| Command | Description |
+|---|---|
+| `pb login` | Start an interactive wizard to connect to a Parseable server and save the connection as a profile |
+| `pb profile` | Add, list, switch, update, and remove saved server profiles |
+| `pb status` | Verify the active connection and display server version information |
+| `pb sql` | Run SQL queries, save SQL queries, and open the interactive SQL table view |
+| `pb promql` | Run PromQL range and instant queries, explore labels and series, and inspect cardinality |
+| `pb tail` | Stream live log events from a dataset in real time as newline-delimited JSON |
+| `pb dataset` | List, create, inspect, and delete log, metrics, and traces datasets |
+| `pb user` | Create users, assign roles, and manage user access |
+| `pb role` | Define roles with specific privilege levels and dataset scopes |
+| `pb version` | Print the CLI version and build commit |
+
+## Interactive mode
+
+SQL and PromQL both support an interactive full-screen TUI with `-i`. In this mode, `pb` opens a panel-based interface where you can write a query, select a dataset, adjust the time range, and browse paginated results.
+
+<Tabs items={['SQL', 'PromQL']}>
+  <Tab value="SQL">
+
+  ```bash
+  pb sql run -i
+  ```
+
+  </Tab>
+  <Tab value="PromQL">
+
+  ```bash
+  pb promql run -i
+  ```
+
+  </Tab>
+</Tabs>
+
+Navigate between panels with `Tab` and `Shift+Tab`. Press `Ctrl+R` to run the query. Results open in a scrollable table with row navigation, column navigation, and filtering.
+
+## Output modes
+
+Commands that return structured data support `--output json` for automation. SQL queries without `-i` print plain terminal output; add `-i` to open the interactive table view.
+
+```bash
+pb dataset list
+pb dataset list --output json
+pb sql run "SELECT * FROM logs LIMIT 50" --from=1h
+pb sql run "SELECT * FROM logs LIMIT 50" --from=1h -i
+pb sql run "SELECT level, count(*) FROM logs GROUP BY level" --from=1h --output json
+pb promql run "up" --dataset otel_metrics --instant --output json
+```
+
+## Getting started
+
+1. [Install pb](/docs/pb-cli/install) - install with the script, Homebrew, Go, or a release archive
+2. [Connect to a server](/docs/pb-cli/connect) - authenticate and save a server profile
+3. [Run a SQL query](/docs/pb-cli/query) - query logs with `pb sql`
+4. [Run a PromQL query](/docs/pb-cli/promql) - query metrics with `pb promql`
+5. [Use aliases](/docs/pb-cli/aliases) - learn the short command forms such as `ls`, `rm`, `stat`, and `set-url`

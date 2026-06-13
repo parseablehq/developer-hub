@@ -1,0 +1,101 @@
+---
+title: "Connecting to a Server"
+description: "Create a profile and authenticate with your Parseable instance."
+---
+
+`pb` stores server connections as named **profiles**. A profile holds the server URL and credentials for one Parseable instance. You can have multiple profiles and switch between them, useful when working with separate staging and production deployments.
+
+## Interactive login (recommended)
+
+Run `pb login` to start the interactive wizard. It walks you through the server URL, authentication method, credentials, and profile name.
+
+```bash
+pb login
+```
+
+The wizard prompts you for:
+- Server URL (e.g. `https://logs.mycompany.com`)
+- Auth method - username/password or API key
+- Credentials
+- Profile name (defaults to `default`)
+
+Once complete, the profile is saved and set as the active default.
+
+## Non-interactive login
+
+For scripts and CI pipelines, use `pb profile add` to create a profile without prompts:
+
+```bash
+pb profile add <name> <url> <username> <password>
+```
+
+```bash
+pb profile add production https://logs.mycompany.com admin s3cr3t
+```
+
+You can also omit credentials and let `pb` prompt for them:
+
+```bash
+pb profile add production https://logs.mycompany.com
+```
+
+## Managing profiles
+
+List and switch profiles:
+
+```bash
+pb profile list
+pb profile default staging
+```
+
+Update or remove a profile:
+
+```bash
+pb profile update production https://new-url.mycompany.com
+pb profile set-url production https://new-url.mycompany.com
+pb profile remove old-staging
+pb profile rm old-staging
+```
+
+## Check connection status
+
+```bash
+pb status
+```
+
+This validates that the active profile can reach the server and shows server details when available:
+
+```
+Profile : production
+URL     : https://logs.mycompany.com
+User    : admin
+Status  : Connected  (server v1.4.2)
+```
+
+## Logout
+
+```bash
+pb logout
+```
+
+Removes credentials from the active profile. To log out of a specific profile, switch to it first with `pb profile default <name>`, then run `pb logout`.
+
+If you want to remove the saved profile completely, delete it instead:
+
+```bash
+pb profile remove <name>
+pb profile rm <name>
+```
+
+## Config file location
+
+Profiles are stored in a TOML config file on disk:
+
+| Platform | Path |
+|---|---|
+| macOS / Linux | `~/.config/pb/config.toml` |
+| Windows | `%AppData%\pb\config.toml` |
+
+<Callout type="info">
+All commands use the active default profile automatically. Use `pb profile default <name>` to switch between servers without specifying a profile on every command.
+</Callout>
