@@ -10,13 +10,113 @@ For each agent run, you want to capture:
 
 | What | Where it goes | Why |
 |------|--------------|-----|
-| **Agent run** — which agent ran, total tokens, total cost, exit status | OTel **`invoke_agent` span** | End-to-end agent observability, run-level dashboards |
+| **Agent run** — which agent ran, total tokens, total cost, exit status | OTel **`invoke-agent` span** | End-to-end agent observability, run-level dashboards |
 | **LLM call metadata** — model name, token counts, latency, temperature, finish reason, errors | OTel **`chat` span** | Per-call dashboards, aggregation, alerting, cost tracking |
 | **Full conversation content** — system prompts, user messages, assistant responses, tool results | OTel **log records** (correlated to `chat` spans) | Conversation reconstruction, debugging, quality analysis |
 | **Tool calls** — which tools the LLM called, with full arguments | OTel **log records** (correlated to `chat` spans) + **`execute_tool` spans** | Tool usage analytics, debugging |
 | **Thinking/reasoning** — Claude's chain-of-thought reasoning blocks | OTel **log records** (correlated to `chat` spans) | Reasoning analysis, debugging |
 
 The OpenTelemetry GenAI semantic conventions define how to structure this data. This guide shows exactly how to implement it.
+
+## Manual instrumentation rules
+
+Keep manual instrumentation intentionally small. Instrument only agent runs, LLM calls, tool executions, and their event logs.
+
+### Agent invocation
+
+Create one parent span for the full agent invocation.
+
+- Span name: `invoke-agent`
+- Required span attributes:
+  - `gen_ai.operation.name`: `invoke_agent`
+  - `gen_ai.agent.name`
+  - `gen_ai.provider.name`
+  - `gen_ai.request.model`
+- Completion span attributes:
+  - `gen_ai.usage.input_tokens`: total input tokens across all chat calls
+  - `gen_ai.usage.output_tokens`: total output tokens across all chat calls
+  - `gen_ai.response.finish_reasons`
+- Required logs:
+  - `gen_ai.user.message`: task, prompt, issue, or problem statement that started the run
+  - `gen_ai.agent.finish`: final status, total tokens, submission/result metadata
+
+All child `chat {model}` and `execute_tool {tool.name}` spans should be created inside this span context so the trace waterfall shows the full agent decision path.
+
+### Chat calls
+
+Create one child span for each LLM request.
+
+- Span name: `chat {model}`
+- Required span attributes:
+  - `gen_ai.operation.name`: `chat`
+  - `gen_ai.provider.name`
+  - `gen_ai.request.model`
+  - `gen_ai.request.temperature` when used
+  - `gen_ai.request.top_p` when used
+  - `gen_ai.request.max_tokens` when used
+  - `gen_ai.response.model`
+  - `gen_ai.response.id`
+  - `gen_ai.response.finish_reasons`
+  - `gen_ai.usage.input_tokens`
+  - `gen_ai.usage.output_tokens`
+
+Attach input and output tokens to every successful chat span. Prefer provider usage fields, for example `response.usage.prompt_tokens` and `response.usage.completion_tokens`. Do not compute output tokens only from assistant message text: tool-call responses often have empty `message.content` even though `completion_tokens` is non-zero.
+
+Emit logs inside the active chat span for:
+
+- `gen_ai.system.message`
+- `gen_ai.user.message`
+- `gen_ai.assistant.message`
+- `gen_ai.tool.message`
+- `gen_ai.choice`
+- `gen_ai.tool.call`
+- `gen_ai.thinking` when the provider exposes reasoning or thinking blocks
+
+Each log should include relevant `gen_ai.*` fields as log attributes, not only as span attributes. This keeps logs queryable without joining back to traces.
+
+### Tool execution
+
+Create one child span for each tool execution.
+
+- Span name: `execute_tool {tool.name}`
+- Required span attributes:
+  - `gen_ai.operation.name`: `execute_tool`
+  - `gen_ai.tool.name`
+  - `gen_ai.tool.type`
+  - `gen_ai.tool.call.id` when available
+
+Emit logs inside the active tool span for:
+
+- `gen_ai.tool.input`: command, function arguments, request body, or tool input
+- `gen_ai.tool.output`: observation, result, response body, or failure output
+
+Use `gen_ai.tool.call.id` on both chat and tool telemetry when function calling provides an ID. This lets you correlate `gen_ai.tool.call` logs from a chat span with the matching `execute_tool {tool.name}` span.
+
+### Errors
+
+Failures should mark the active span as errored.
+
+For chat failures:
+
+- Mark the `chat {model}` span with error status.
+- Set `error.type` to the exception class, provider error class, or provider error code.
+- Use the error message as the status description.
+- Emit any available provider metadata as `gen_ai.*` attributes.
+
+For tool failures:
+
+- Mark the `execute_tool {tool.name}` span with error status.
+- Set `error.type`.
+- Emit a `gen_ai.tool.output` log containing the failure output or error string.
+
+### Field placement
+
+Expose every relevant `gen_ai.*` field in both traces and logs:
+
+- Put run, chat, tool, token, model, provider, response, and error fields on spans.
+- Put `gen_ai.event.name` and the same query-critical `gen_ai.*` fields on logs.
+- Keep full message/tool/reasoning content in the log body.
+- Avoid truncating content in instrumentation unless your security or retention policy requires it.
 
 ## Architecture
 
@@ -149,8 +249,8 @@ export OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
 # Required: identifies your application in traces
 export OTEL_SERVICE_NAME=my-genai-agent
 
-# Required: disable auto-instrumentor to prevent duplicates
-export OTEL_PYTHON_DISABLED_INSTRUMENTATIONS=openai_v2
+# Required: disable auto-instrumentors to prevent duplicate/noisy spans
+export OTEL_PYTHON_DISABLED_INSTRUMENTATIONS=openai,openai_v2,requests,urllib3,urllib,httpx,aiohttp-client,aiohttp-server,jinja2,grpc_client,grpc_aio_client,grpc_server,grpc_aio_server,sqlite3,click,asyncio,threading,tortoiseorm,logging
 ```
 
 | Variable | Purpose | Required |
@@ -158,7 +258,7 @@ export OTEL_PYTHON_DISABLED_INSTRUMENTATIONS=openai_v2
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Collector address. `4318` for HTTP, `4317` for gRPC. | Yes |
 | `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` (HTTP) or `grpc` | Yes |
 | `OTEL_SERVICE_NAME` | Service name that appears on every span and log record as a resource attribute | Yes |
-| `OTEL_PYTHON_DISABLED_INSTRUMENTATIONS` | Comma-separated list of auto-instrumentors to skip. Set to `openai_v2` to prevent the OpenAI auto-instrumentor from loading. | Yes (if `opentelemetry-instrumentation-openai-v2` is installed) |
+| `OTEL_PYTHON_DISABLED_INSTRUMENTATIONS` | Comma-separated list of auto-instrumentors to skip. Disable model SDKs, HTTP clients, template engines, DB/framework instrumentors, and any other instrumentation that would create duplicate `POST`, `jinja2.compile`, or framework spans around your manual GenAI spans. | Yes (when using manual instrumentation) |
 | `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT` | Controls whether *auto*-instrumentors capture message content. Irrelevant when auto is disabled, but harmless to set. | No |
 
 ### Launch Command
@@ -214,13 +314,13 @@ _otel_logger = get_logger_provider().get_logger("my-agent.llm", "1.1.0")
 
 ### Instrumenting the Agent Run (invoke_agent)
 
-Wrap the entire agent loop in an `invoke_agent` span. All `chat` and `execute_tool` spans created inside this context automatically become children via OTel context propagation.
+Wrap the entire agent loop in an agent invocation span named `invoke-agent`. Set `gen_ai.operation.name` to `invoke_agent`. All `chat` and `execute_tool` spans created inside this context automatically become children via OTel context propagation.
 
 ```python
 def run_agent(model_name: str, provider: str, problem: str):
     """Example: wrap an agent run with an invoke_agent span."""
 
-    span_name = "invoke_agent my-agent"
+    span_name = "invoke-agent"
     with _tracer.start_as_current_span(span_name, kind=trace.SpanKind.CLIENT) as span:
         span.set_attribute("gen_ai.operation.name", "invoke_agent")
         span.set_attribute("gen_ai.agent.name", "my-agent")
@@ -317,6 +417,18 @@ def execute_tool(action: str, tool_call_id: str | None = None):
         except TimeoutError as e:
             span.set_attribute("error.type", type(e).__name__)
             span.set_status(trace.StatusCode.ERROR, "Command timed out")
+            _otel_logger.emit(
+                body=str(e),
+                severity_number=SeverityNumber.INFO,
+                event_name="gen_ai.tool.output",
+                attributes={
+                    "gen_ai.operation.name": "execute_tool",
+                    "gen_ai.tool.name": tool_name,
+                    "gen_ai.tool.type": "function",
+                    "gen_ai.tool.call.id": tool_call_id or "",
+                    "gen_ai.event.name": "gen_ai.tool.output",
+                },
+            )
             raise
 
         # Emit tool output log (the observation)
@@ -399,6 +511,9 @@ def call_llm(model: str, messages: list[dict], temperature: float = 0.0, **kwarg
             span.set_attribute("gen_ai.usage.input_tokens", response.usage.prompt_tokens)
             span.set_attribute("gen_ai.usage.output_tokens", response.usage.completion_tokens)
 
+        # Prefer provider usage fields for token counts. Tool-call responses can
+        # have empty message.content even though completion_tokens is non-zero.
+
         # ── Step 5: Emit response log records ──
         finish_reasons = []
         for i, choice in enumerate(response.choices):
@@ -475,11 +590,11 @@ def call_llm(model: str, messages: list[dict], temperature: float = 0.0, **kwarg
 
 **Three span types** (in the traces pipeline):
 
-**`invoke_agent` span** — one per agent run:
+**`invoke-agent` span** — one per agent run:
 
 | Attribute | Example |
 |-----------|---------|
-| `span_name` | `"invoke_agent my-agent"` |
+| `span_name` | `"invoke-agent"` |
 | `gen_ai.operation.name` | `"invoke_agent"` |
 | `gen_ai.agent.name` | `"my-agent"` |
 | `gen_ai.provider.name` | `"openai"` |
@@ -1042,10 +1157,10 @@ If they use different scope names, correlation still works (via `trace_id`/`span
 The auto-instrumentor is still active. Verify:
 ```bash
 echo $OTEL_PYTHON_DISABLED_INSTRUMENTATIONS
-# Should output: openai_v2
+# Should include: openai,openai_v2,requests,urllib3,httpx,jinja2
 ```
 
-If `opentelemetry-instrumentation-openai-v2` is installed and not disabled, it will create its own spans alongside your manual spans.
+If OpenAI, HTTP client, Jinja2, DB, or framework auto-instrumentors are installed and not disabled, they can create their own spans alongside your manual spans. Common unwanted child spans are HTTP `POST` and `jinja2.compile`.
 
 ### Log records have empty trace_id/span_id
 
