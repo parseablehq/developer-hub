@@ -50,15 +50,15 @@ Each individual card in the main grid acts as a standalone monitoring panel for 
 Selecting a metric card directly will trigger a comprehensive breakdown view, which also includes quick-access options to analyze additional related telemetry signals.
 </Callout>
 
-### Exporting data with PromQL
+### Exploring data with PromQL
 
 <OfferingPills pro enterprise className="mb-4" />
 
 ![Metrics explorer page overview](../static/metrics_promql.png)
 
-Additionally, the [Parseable enterprise](https://www.parseable.com/docs/user-guide/promql) includes a built-in PromQL engine that lets you query metrics stored in Parseable using the standard Prometheus Query Language. 
+Additionally, Parseable enterprise includes a [built-in PromQL engine](https://www.parseable.com/docs/user-guide/promql) that lets you query metrics stored in Parseable using the standard Prometheus Query Language. 
 
 * **No separate instance needed:** You can ingest, store, and query metrics all within Parseable.
 * **Standard conventions:** All endpoints live under the `/prometheus/api/v1` base path and follow the Prometheus HTTP API conventions.
-* **Compatibility:** Existing grafana dashboards and Prometheus-compatible tooling work without changes pointing to the datasource at your Parseable instance.
+* **Compatibility:** Existing Grafana dashboards and Prometheus-compatible tooling work without changes pointing to the datasource at your Parseable instance. Refer to the [Parseable Grafana plugin](https://www.parseable.com/docs/integrations/visualization/grafana) for details on how to configure Grafana to use Parseable as a Prometheus-compatible datasource.
 
