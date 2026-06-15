@@ -12,13 +12,12 @@ The Logs Explore page is organized into four main areas:
 
 - **Top Toolbar** - Dataset selector, time range picker, refresh controls, saved views, and the AI summarization button
 - **Left Sidebar (Fields Panel)** - System-detected field categories, table fields currently displayed, and all available fields in the selected dataset
-- **Histogram Chart** - A time-series bar chart that visualizes log volume over the selected time range, with an optional forecast overlay
+- **Volume Chart** - A time-series bar chart that visualizes log volume over the selected time range, with an optional forecast overlay
 - **Log Table** - Individual log records in a paginated, sortable table with configurable columns and inline expansion
 
 ## Dataset Selector
 
 The dataset selector dropdown is at the top-left of the content area. Click it to search for and switch between available log datasets. The dropdown includes a search box that filters the list as you type. Selecting a different dataset reloads the page with that dataset's data and fields.
-
 
 ## Time Range Picker
 
@@ -29,7 +28,6 @@ Click the time range button (e.g., "Last 1 hour") to open the time range configu
 - **Timezone** - Choose the timezone for the displayed times (e.g., "UTC (UTC) +0:00")
 
 Click **Apply** to execute the query or **Cancel** to discard changes.
-
 
 <Callout type="info">
 Parseable requires a time range for every query. By scoping queries to a specific time window, the engine only reads the relevant Parquet files from storage, keeping response times fast even over large datasets.
