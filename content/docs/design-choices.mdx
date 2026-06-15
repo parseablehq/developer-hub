@@ -39,7 +39,7 @@ We chose SQL as the query language for Parseable because it is widely used and u
 ### Trade-offs
 
 #### Staged writes
-Staging data locally on the ingestor node for at least a minute, leads to a minor lag in querying the data. We trades immediate persistence for low latency ingestion.
+Staging data locally on the ingestor node for at least a minute, leads to a minor lag in querying the data. We trade immediate persistence for low latency ingestion.
 
 #### Occasional Cold Queries
 The query layer fetches indexes from object storage (e.g., S3) and uses intelligent caching to accelerate future access. During the initial cache warm-up, some queries may access data directly from cold storage, resulting in higher latencies.
