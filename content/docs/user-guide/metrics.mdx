@@ -20,7 +20,10 @@ The "Explore" tab is the second tab. It is an ad-hoc query workspace for isolati
 
 The "Table" tab switches to a raw data metrics spreadsheet view. It displays incoming data points in horizontal rows showing exact timestamps, ingestion values, and structured metadata attributes.
 
-Additionally, the page has a top control bar with search and filtering inputs, layout scaling toggles, and a time range picker.
+Additionally, the page has a top control bar with search and filtering inputs, layout scaling toggles, and a time range picker. You can also 
+
+* **Save view:** Saves your active configuration settings, filters, and zoom levels into a persistent workspace profile.
+* **Summarize button:** A sparkle icon that prints a plain text summary explaining telemetry anomalies and potential root causes.
 
 ## Typical workflow
 
@@ -43,7 +46,9 @@ Each individual card in the main grid acts as a standalone monitoring panel for 
 * **Metric key name:** Located at the top-left corner of the card (for example, `process.cpu.time`, `process.memory.usage`, or `process.disk.io`).
 * **Card context menu:** This three-dot icon sits at the top-right corner of each card, providing a shortcut to launch a detailed breakdown for that specific metric exploration.
 
-> 💡 **Tip:** Selecting a metric card directly will trigger a comprehensive breakdown view, which also includes quick-access options to analyze additional related telemetry signals.
+<Callout title="Tip">
+Selecting a metric card directly will trigger a comprehensive breakdown view, which also includes quick-access options to analyze additional related telemetry signals.
+</Callout>
 
 ### Exporting data with PromQL
 
@@ -57,9 +62,3 @@ Additionally, the [Parseable enterprise](https://www.parseable.com/docs/user-gui
 * **Standard conventions:** All endpoints live under the `/prometheus/api/v1` base path and follow the Prometheus HTTP API conventions.
 * **Compatibility:** Existing grafana dashboards and Prometheus-compatible tooling work without changes pointing to the datasource at your Parseable instance.
 
-### Action toolbar features
-
-![Metrics explorer page overview](../static/metrics_2.png)
-
-* **Save view:** Saves your active configuration settings, filters, and zoom levels into a persistent workspace profile.
-* **Summarize button:** A sparkle icon that prints a plain text summary explaining telemetry anomalies and potential root causes.
