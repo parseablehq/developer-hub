@@ -31,6 +31,7 @@ This document lists all the environment variables and HTTP headers supported by 
 | `P_MAX_EVENT_PAYLOAD_SIZE` | `No` | Maximum allowed event payload size in bytes for ingest endpoints. | `10485760` | `20971520` |
 | `P_MAX_FLATTEN_LEVEL` | `No` | Maximum level of flattening allowed for events. Prevents nested list type fields from getting created. | `10` | `5` |
 | `P_QUERY_MEMORY_LIMIT` | `No` | Set a fixed memory limit for query in GiB. | `-` | `4` |
+| `P_SQL_TIMEOUT` | `No` | SQL query execution timeout in seconds. Queries exceeding this duration return a timeout error. | `300` | `120` |
 | `P_ACTIX_REQUEST_TIMEOUT` | `No` | Client request timeout in seconds. | `5` | `10` |
 | `P_ACTIX_KEEP_ALIVE` | `No` | Server keep-alive in seconds. | `5` | `10` |
 | `P_ACTIX_NUM_WORKERS` | `No` | Number of workers for actix-web. Defaults to the number of CPU cores. | `<num_cpus>` | `8` |
