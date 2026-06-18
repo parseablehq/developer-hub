@@ -1,0 +1,120 @@
+---
+title: Overview
+description: Ship Temporal workflow and activity execution events to Parseable as OpenTelemetry logs and traces
+---
+
+Parseable provides middleware plugins for [Temporal](https://temporal.io/) that ship workflow and activity execution events to a Parseable instance as OpenTelemetry **logs** and **traces**. Drop the plugin into a worker and every workflow run produces:
+
+- A flame-graph trace of the run, including child workflows and activity calls.
+- A flat, queryable log schema with `workflow_id`, `activity_name`, `attempt`, `duration_ms`, `status`, `error`, etc.
+- Custom domain events via a replay-safe `workflowEvent()` / `workflow_event()` helper - useful for AI agents and multi-step orchestrators that want to emit "tool called", "plan chosen", "step started" alongside Temporal's built-in lifecycle events.
+
+## Pick your SDK
+
+| SDK         | Package                                                              | Install guide                |
+|-------------|----------------------------------------------------------------------|------------------------------|
+| TypeScript  | [`@parseable/temporal`](https://www.npmjs.com/package/@parseable/temporal) | [TypeScript](./typescript)   |
+| Python      | [`temporal-parseable`](https://pypi.org/project/temporal-parseable/)      | [Python](./python)           |
+| Java        | `com.parseable:temporal-parseable` *(Maven Central pending)*         | [Java](./java)               |
+
+All three plugins emit the **same log schema** and OTLP trace format, so dashboards, alerts, and SQL queries are portable across workers in different languages.
+
+## What gets captured
+
+- **Workflow lifecycle** - `started`, `completed`, `failed` records with `duration_ms`, `workflow_id`, `run_id`, `workflow_name`.
+- **Activity lifecycle** - per-attempt `started`/`completed`/`failed` records with `activity_name`, `activity_id`, `attempt`, `duration_ms`. Retries produce one record per attempt.
+- **Signals, queries, updates** - inbound message records.
+- **Child workflows, outbound signals, continue-as-new** - outbound message records (`direction: 'outbound'`).
+- **Custom user events** via the `workflow_event` helper.
+- **OpenTelemetry trace spans** - `RunWorkflow:*`, `StartActivity:*`, `RunActivity:*` emitted by Temporal's official OTel instrumentation, sanitized for OTLP-strict ingest.
+
+All workflow-side emission is **replay-safe**: every plugin guards emission so workflow records and user events are not duplicated when Temporal replays history (worker recovery, cache eviction, manual replay). Verified by automated replay tests in each SDK.
+
+## Endpoints
+
+Logs are POSTed to `${endpoint}/v1/logs`; traces to `${endpoint}/v1/traces`. The two pipelines are independently configurable - disable either layer per-SDK (`logs: false`, `traces: false`, `logs=None`, etc.).
+
+Streams default to `temporal-logs` and `temporal-traces`. Pre-create them once before first run:
+
+```bash
+curl -u admin:admin -X PUT https://<parseable-host>/api/v1/logstream/temporal-logs
+curl -u admin:admin -X PUT https://<parseable-host>/api/v1/logstream/temporal-traces
+```
+
+## Log schema
+
+All three SDKs write to one log stream (default `temporal-logs`). Records share a common envelope with fields specialized by `type`:
+
+| Field                | Type                                                                                                  | Notes |
+|----------------------|-------------------------------------------------------------------------------------------------------|-------|
+| `type`               | `'activity'` &#124; `'workflow'` &#124; `'user_event'` &#124; `'signal'` &#124; `'query'` &#124; `'update'` &#124; `'child_workflow'` &#124; `'continue_as_new'` | discriminator |
+| `status`             | `'started'` &#124; `'completed'` &#124; `'failed'`                                                    | omitted on `user_event` |
+| `service_name`       | `string`                                                                                              | from plugin config |
+| `timestamp`          | ISO 8601 string                                                                                       | event time |
+| `workflow_id`        | `string`                                                                                              | |
+| `run_id`             | `string`                                                                                              | |
+| `workflow_name`      | `string`                                                                                              | |
+| `activity_name`      | `string`                                                                                              | activity records only |
+| `activity_id`        | `string`                                                                                              | activity records only |
+| `attempt`            | `number`                                                                                              | activity records only |
+| `duration_ms`        | `number`                                                                                              | on `completed`/`failed` |
+| `error`              | `string`                                                                                              | on `failed` |
+| `direction`          | `'inbound'` &#124; `'outbound'`                                                                       | message records only |
+| `message_name`       | `string`                                                                                              | message records only |
+| `target_workflow_id` | `string`                                                                                              | outbound signals/child workflows |
+| `event_name`         | `string`                                                                                              | user events only |
+| `event_data`         | object                                                                                                | user events only |
+
+All logs and traces carry a `parseable.plugin.version` resource attribute so consumers can correlate behaviour with plugin releases.
+
+Trace spans are emitted by Temporal's official OTel instrumentation - see the [Temporal observability docs](https://docs.temporal.io/develop/typescript/observability) for the span schema.
+
+## Example queries
+
+Failure rate per activity over the last hour:
+
+```sql
+SELECT activity_name,
+       COUNT(*)                                          AS attempts,
+       SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) AS failures,
+       1.0 * SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) / COUNT(*) AS failure_rate
+FROM "temporal-logs"
+WHERE type = 'activity'
+  AND status IN ('completed','failed')
+  AND p_timestamp > now() - INTERVAL '1 hour'
+GROUP BY activity_name
+ORDER BY failure_rate DESC;
+```
+
+p95 workflow duration by workflow type:
+
+```sql
+SELECT workflow_name,
+       APPROX_PERCENTILE_CONT(duration_ms, 0.95) AS p95_ms
+FROM "temporal-logs"
+WHERE type = 'workflow'
+  AND status = 'completed'
+GROUP BY workflow_name;
+```
+
+Trace a single workflow run (correlate logs with the trace stream):
+
+```sql
+SELECT timestamp, type, status, activity_name, attempt, duration_ms, error
+FROM "temporal-logs"
+WHERE workflow_id = '<workflow_id>'
+ORDER BY timestamp;
+```
+
+## Caveats (apply to all SDKs)
+
+- **Throw `ApplicationFailure` for graceful handler failures.** Signal/update handlers that throw a plain `Error` / `Exception` are treated by Temporal as a workflow-task failure: the task is retried until it succeeds, and the plugin emits one `started`+`failed` record pair per retry. Throw `ApplicationFailure` with `nonRetryable: true` (TypeScript) or raise `ApplicationFailure(non_retryable=True)` (Python) instead - the interceptor records exactly one `failed` event and the error propagates to the client as an update failure rather than a task failure.
+- **`child_workflow` completion is tracked from the child, not the start RPC.** The outbound interceptor wraps the result promise so `status: 'completed'` (or `failed`) fires when the child actually finishes - not when the start call returns. Start-time RPC errors and run-time child failures are reported with distinct `failed` records.
+- **OTel SDK pinned to 1.x.** Temporal's OTel plugin pins the 1.x line; the Parseable plugins follow until Temporal moves to 2.x.
+- **Empty-body warning on OTLP success is benign.** Parseable returns HTTP 200 with an empty body for accepted OTLP payloads. OTel's deserializer logs `Export succeeded but could not deserialize response - is the response specification compliant?` at `DEBUG` level only.
+
+## Links
+
+- TypeScript plugin: [github.com/parseablehq/temporal-plugin](http://github.com/parseablehq/temporal-plugin)
+- Python plugin: [github.com/parseablehq/temporal-plugin-python](https://github.com/parseablehq/temporal-plugin-python)
+- Java plugin: [github.com/parseablehq/temporal-plugin-java](https://github.com/parseablehq/temporal-plugin-java)

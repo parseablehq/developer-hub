@@ -1,4 +1,8 @@
 import { createMDX } from 'fumadocs-mdx/next';
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const withMDX = createMDX();
 
@@ -7,6 +11,9 @@ const config = {
   reactStrictMode: true,
   trailingSlash: false,
   assetPrefix: "/docs",
+  turbopack: {
+    root: __dirname,
+  },
   images: {
     domains: ["lh3.googleusercontent.com"],
     dangerouslyAllowSVG: true,
