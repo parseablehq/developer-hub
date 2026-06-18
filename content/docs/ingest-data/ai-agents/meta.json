@@ -12,6 +12,7 @@
     "crewai",
     "dspy",
     "n8n",
+    "dbos",
     "temporal"
   ]
 }
