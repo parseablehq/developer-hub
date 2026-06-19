@@ -166,7 +166,6 @@ These columns are computed server-side by Parseable at ingest time. They do not 
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `p_genai_cost_usd` | Float | Estimated cost in USD for this span, computed from the model name and token counts using Parseable's built-in pricing table. |
 | `p_genai_tokens_total` | Int | Sum of `gen_ai.usage.input_tokens` + `gen_ai.usage.output_tokens`. |
 | `p_genai_tokens_per_sec` | Float | Throughput: `output_tokens / (span_duration_seconds)`. Useful for comparing model and provider performance. |
 | `p_genai_duration_ms` | Float | Span duration in milliseconds, computed from `span_end_time_unix_nano - span_start_time_unix_nano`. |
