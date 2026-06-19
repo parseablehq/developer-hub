@@ -3,6 +3,24 @@ title: Release notes
 icon: Book
 ---
 
+## v2.9.0 (June 13, 2026)
+
+This release is focused on making Parseable easier to use for AI agents and day-to-day observability workflows. If you are already using Parseable for logs, metrics, or traces, the console should now feel more consistent across the product. If you are building agentic applications, you now get a dedicated way to understand how your agents behave in production.
+
+### Introducing Agent Observability
+
+You can now inspect AI agent sessions directly in Parseable. This helps when you want to understand what prompt was used, which LLM calls were made, which tools were called, how many tokens were consumed, where latency came from, and whether errors or unusual sentiment showed up in the flow.
+
+Instead of looking at disconnected logs or traces, you can follow the agent workflow in one place and see what happened step by step. This should make debugging slower responses, failed tool calls, or unexpected answers much easier.
+
+### Prism UI refresh
+
+We have refreshed Prism across Logs, Metrics, Traces, Datasets, and the Home overview. The aim is simple: moving between observability views should feel familiar, with cleaner layouts getting in the way less often.
+
+Alongside this, the release includes fixes and improvements around ingestion, API key ingestion, Helm configuration, S3 IRSA support, metric pruning, and field stats aggregation.
+
+For a detailed walkthrough, read the [Parseable v2.9.0 release blog](https://www.parseable.com/blog/parseable-v290-release). For the complete changelog, contributors, and tagged release assets, see the [GitHub v2.9.0 release](https://github.com/parseablehq/parseable/releases/tag/v2.9.0).
+
 ## v2.8 (May 30, 2026)
 
 ### Hot Tier Improvements
@@ -726,4 +744,3 @@ Whether you're scaling infrastructure or just want to avoid surprises, forecasti
 - ALB Log Regex Fix - Resolved regex parsing issues for ALB logs, ensuring accurate log ingestion.
 
 - Create Index Form Validation - Fixed validation logic in the Create Index form, resolving form submission issues and improving user feedback during index creation.
-b
