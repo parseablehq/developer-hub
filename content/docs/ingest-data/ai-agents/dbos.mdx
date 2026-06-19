@@ -54,6 +54,10 @@ OTEL_EXPORTER_OTLP_TRACES_HEADERS=Authorization=Basic <base64 user:pass>,X-P-Str
 
 After restarting the DBOS app, trigger a workflow and check the `dbos-logs` and `dbos-traces` streams in Parseable.
 
+![DBOS traces stream in Parseable](./static/dbos-traces.png)
+
+![DBOS logs stream in Parseable](./static/dbos-logs.png)
+
 ## Metrics
 
 DBOS metrics are exposed by DBOS Conductor, not by the application process directly. The app connects to Conductor using the Conductor URL and API key:
@@ -129,6 +133,8 @@ Check Parseable:
 - `dbos-logs` should contain DBOS application log records.
 - `dbos-traces` should contain DBOS workflow and step spans.
 - `dbos-conductor-metrics` should contain DBOS Conductor metrics when Parseable Enterprise metrics ingest is enabled.
+
+![DBOS Conductor metrics in Parseable](./static/dbos-metrics.png)
 
 ## Troubleshooting
 
