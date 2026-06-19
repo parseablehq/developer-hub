@@ -7,7 +7,7 @@ import { IconDatabase, IconCode, IconTerminal2 } from '@tabler/icons-react';
 
 Agents are already becoming part of everyday software, sometimes users interact with them directly, and sometimes they run quietly behind a workflow. A single request can turn into a chain of model calls, tool calls, external APIs, retries, and intermediate outputs before the final answer is returned.
 
-When that final answer is wrong, slow, or unexpectedly expensive, the response alone does not explain enough. You need to see the complete invocation. This includes the original prompt, the model used, the tools called, the input sent to those tools, the output received, token usage, latency, and where the answer started to drift. That is the problem Agent Observability is meant to solve.
+When that final answer is wrong, slow, or hard to explain, the response alone does not tell you enough. You need to see the complete invocation. This includes the original prompt, the model used, the tools called, the input sent to those tools, the output received, token usage, latency, and where the answer started to drift. That is the problem Agent Observability is meant to solve.
 
 ## Agent observability with Parseable
 
@@ -15,10 +15,10 @@ Parseable Agent Observability gives you that view in Prism. You can start with a
 
 This is built on the [OpenTelemetry GenAI semantic conventions](https://github.com/open-telemetry/semantic-conventions-genai), so telemetry follows a standard shape for model calls, token usage, inputs, outputs, tool calls, and agent spans. Instead of putting agent telemetry in a custom black box, Parseable lets you observe it alongside the rest of your telemetry.
 
-Once your agent is instrumented, the Agents page becomes the place to understand how your agents are behaving in production. You can see how often they run, how much they cost, where they spend time, what they call, and where the answer starts to drift.
+Once your agent is instrumented, the Agents page becomes the place to understand how your agents are behaving in production. You can see how often they run, which models they use, how many tokens they consume, where they spend time, what they call, and where the answer starts to drift.
 
 <Callout type="idea">
-Parseable enriches GenAI telemetry at ingest time with fields like `p_genai_cost_usd`, `p_genai_tokens_total`, `p_genai_tokens_per_sec`, and `p_genai_duration_ms`, so cost, token, and duration analysis is available without client-side tracking.
+Parseable enriches GenAI telemetry at ingest time with fields like `p_genai_tokens_total`, `p_genai_tokens_per_sec`, and `p_genai_duration_ms`, so token usage and latency analysis is available without extra client-side tracking.
 </Callout>
 
 ## Typical workflow
@@ -67,9 +67,7 @@ Under it, the waterfall tree shows the full agent flow: the top-level invocation
 
 Use this view when you need to understand which prompt started the run, which model was used, which tools were called, what input was sent to the tool, what output came back, and where the run slowed down or failed.
 
-## Instrumentation path
-
-### Manual instrumentation using the OpenTelemetry SDK
+## Manual instrumentation using the OpenTelemetry SDK
 
 You can manually create spans with `gen_ai.*` attributes using the OpenTelemetry SDK directly.
 This lets you instrument any provider, framework, or custom LLM client, and add the exact attributes your team needs for debugging and analysis.

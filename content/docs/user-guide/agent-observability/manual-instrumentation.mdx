@@ -10,8 +10,8 @@ For each agent run, you want to capture:
 
 | What | Where it goes | Why |
 |------|--------------|-----|
-| **Agent run** — which agent ran, total tokens, total cost, exit status | OTel **`invoke-agent` span** | End-to-end agent observability, run-level dashboards |
-| **LLM call metadata** — model name, token counts, latency, temperature, finish reason, errors | OTel **`chat` span** | Per-call dashboards, aggregation, alerting, cost tracking |
+| **Agent run** — which agent ran, total tokens, exit status | OTel **`invoke-agent` span** | End-to-end agent observability, run-level dashboards |
+| **LLM call metadata** — model name, token counts, latency, temperature, finish reason, errors | OTel **`chat` span** | Per-call dashboards, aggregation, alerting, usage tracking |
 | **Full conversation content** — system prompts, user messages, assistant responses, tool results | OTel **log records** (correlated to `chat` spans) | Conversation reconstruction, debugging, quality analysis |
 | **Tool calls** — which tools the LLM called, with full arguments | OTel **log records** (correlated to `chat` spans) + **`execute_tool` spans** | Tool usage analytics, debugging |
 | **Thinking/reasoning** — Claude's chain-of-thought reasoning blocks | OTel **log records** (correlated to `chat` spans) | Reasoning analysis, debugging |
@@ -157,7 +157,7 @@ Expose every relevant `gen_ai.*` field in both traces and logs:
 │  Parseable                                              │
 │  - genai-traces stream (flattened spans)                │
 │  - genai-logs stream (flattened log records)            │
-│  - SQL-queryable, with server-side cost enrichment      │
+│  - SQL-queryable, with token and duration enrichment    │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -169,7 +169,7 @@ Expose every relevant `gen_ai.*` field in both traces and logs:
 | Your code (manual instrumentation) | Creates spans (`_tracer.start_as_current_span(...)`) and emits log records (`_otel_logger.emit(...)`). This is where all GenAI-specific attributes and content are set. |
 | `BatchSpanProcessor` / `BatchLogRecordProcessor` | Accumulates spans and logs in memory, exports them in batches via OTLP. Configured by the CLI. |
 | OTel Collector | Receives OTLP data, applies processors (batching, filtering), and exports to one or more backends. Converts protobuf to JSON for Parseable. |
-| Parseable | Stores traces and logs as flattened, SQL-queryable records. Enriches with computed columns (`p_genai_cost_usd`, `p_genai_tokens_total`, etc.). |
+| Parseable | Stores traces and logs as flattened, SQL-queryable records. Enriches with computed columns such as `p_genai_tokens_total`, `p_genai_tokens_per_sec`, and `p_genai_duration_ms`. |
 
 ## The opentelemetry-instrument CLI
 
@@ -1071,7 +1071,7 @@ Some scenarios where `gen_ai.usage.input_tokens` and `gen_ai.usage.output_tokens
 | Local/self-hosted models | Some local model servers don't return usage | Span has no token attributes |
 | Wrapper library filtering | Some wrappers strip usage from the response object | Span has no token attributes |
 
-**Backend impact:** Token-based aggregations (cost, total tokens) should handle NULL gracefully.
+**Backend impact:** Token-based aggregations should handle NULL gracefully.
 
 ### The body Field Can Be Very Large
 
@@ -1151,6 +1151,10 @@ If they use different scope names, correlation still works (via `trace_id`/`span
 ### Duplicate spans per LLM call
 
 Check whether your application or framework is creating additional spans around the same LLM request. Keep one `chat {model}` span for each LLM call, and remove any extra SDK middleware or framework tracing that emits duplicate HTTP, template, database, or model-client spans for the same operation.
+
+:::info
+If duplicate spans still appear, check whether auto instrumentation is enabled in the runtime. For Python, review environment variables such as `OTEL_PYTHON_DISABLED_INSTRUMENTATIONS` and disable any framework, HTTP, database, template, or model-client instrumentation that is creating spans you do not need.
+:::
 
 ### Log records have empty trace_id/span_id
 
