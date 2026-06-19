@@ -45,7 +45,7 @@ The table lists each invocation with the timestamp, prompt, model, token usage, 
 
 You can also change the duration percentile from the dropdown in the Duration card, for example `p50`, `p95`, or `p99`, depending on whether you want to inspect typical latency or tail latency.
 
-### Filtering and time range
+#### Filtering and time range
 
 ![Invocations filter menu showing fields for tool, model, duration, tokens, and errors](./static/agent-filters.png)
 
@@ -74,10 +74,10 @@ This lets you instrument any provider, framework, or custom LLM client, and add 
 
 At minimum, instrument these parts of the agent workflow:
 
-1. **Agent-level spans** — `invoke_agent` spans that wrap the full agent loop
-2. **Chat spans** — one `chat {model}` span for every LLM request
-3. **Tool execution spans** — one `execute_tool {tool.name}` span for every tool or command execution
-4. **GenAI event logs** — user messages, assistant messages, choices, tool calls, tool inputs, tool outputs, and reasoning blocks
+1. **Agent-level spans:** `invoke_agent` spans that wrap the full agent loop
+2. **Chat spans:** one `chat {model}` span for every LLM request
+3. **Tool execution spans:** one `execute_tool {tool.name}` span for every tool or command execution
+4. **GenAI event logs:** user messages, assistant messages, choices, tool calls, tool inputs, tool outputs, and reasoning blocks
 
 Refer the [manual instrumentation guide](/docs/user-guide/agent-observability/manual-instrumentation) for detailed instructions on how to structure spans and what attributes to capture for complete agent observability.
 

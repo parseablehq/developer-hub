@@ -10,11 +10,11 @@ For each agent run, you want to capture:
 
 | What | Where it goes | Why |
 |------|--------------|-----|
-| **Agent run** — which agent ran, total tokens, exit status | OTel **`invoke-agent` span** | End-to-end agent observability, run-level dashboards |
-| **LLM call metadata** — model name, token counts, latency, temperature, finish reason, errors | OTel **`chat` span** | Per-call dashboards, aggregation, alerting, usage tracking |
-| **Full conversation content** — system prompts, user messages, assistant responses, tool results | OTel **log records** (correlated to `chat` spans) | Conversation reconstruction, debugging, quality analysis |
-| **Tool calls** — which tools the LLM called, with full arguments | OTel **log records** (correlated to `chat` spans) + **`execute_tool` spans** | Tool usage analytics, debugging |
-| **Thinking/reasoning** — Claude's chain-of-thought reasoning blocks | OTel **log records** (correlated to `chat` spans) | Reasoning analysis, debugging |
+| **Agent run:** which agent ran, total tokens, exit status | OTel **`invoke-agent` span** | End-to-end agent observability, run-level dashboards |
+| **LLM call metadata:** model name, token counts, latency, temperature, finish reason, errors | OTel **`chat` span** | Per-call dashboards, aggregation, alerting, usage tracking |
+| **Full conversation content:** system prompts, user messages, assistant responses, tool results | OTel **log records** (correlated to `chat` spans) | Conversation reconstruction, debugging, quality analysis |
+| **Tool calls:** which tools the LLM called, with full arguments | OTel **log records** (correlated to `chat` spans) + **`execute_tool` spans** | Tool usage analytics, debugging |
+| **Thinking/reasoning:** Claude's chain-of-thought reasoning blocks | OTel **log records** (correlated to `chat` spans) | Reasoning analysis, debugging |
 
 The OpenTelemetry GenAI semantic conventions define how to structure this data. This guide shows exactly how to implement it.
 
@@ -165,7 +165,7 @@ Expose every relevant `gen_ai.*` field in both traces and logs:
 
 | Layer | Responsibility |
 |-------|----------------|
-| `opentelemetry-instrument` CLI | Bootstraps the SDK — creates `TracerProvider`, `LoggerProvider`, configures OTLP exporters. You do not call `set_tracer_provider()` or `set_logger_provider()` manually. |
+| `opentelemetry-instrument` CLI | Bootstraps the SDK, creates `TracerProvider` and `LoggerProvider`, and configures OTLP exporters. You do not call `set_tracer_provider()` or `set_logger_provider()` manually. |
 | Your code (manual instrumentation) | Creates spans (`_tracer.start_as_current_span(...)`) and emits log records (`_otel_logger.emit(...)`). This is where all GenAI-specific attributes and content are set. |
 | `BatchSpanProcessor` / `BatchLogRecordProcessor` | Accumulates spans and logs in memory, exports them in batches via OTLP. Configured by the CLI. |
 | OTel Collector | Receives OTLP data, applies processors (batching, filtering), and exports to one or more backends. Converts protobuf to JSON for Parseable. |
@@ -188,11 +188,11 @@ When you run `opentelemetry-instrument python my_agent.py`, the CLI:
 
 Because the CLI handles provider setup:
 
-- Do NOT call `set_tracer_provider()` — it's already set
-- Do NOT call `set_logger_provider()` — it's already set
-- Do NOT create `BatchSpanProcessor` or `OTLPSpanExporter` — already configured
-- Do NOT create `BatchLogRecordProcessor` or `OTLPLogExporter` — already configured
-- Just call `trace.get_tracer(...)` and `get_logger_provider().get_logger(...)` — they return the pre-configured providers
+- Do NOT call `set_tracer_provider()` because it is already set
+- Do NOT call `set_logger_provider()` because it is already set
+- Do NOT create `BatchSpanProcessor` or `OTLPSpanExporter` because they are already configured
+- Do NOT create `BatchLogRecordProcessor` or `OTLPLogExporter` because they are already configured
+- Just call `trace.get_tracer(...)` and `get_logger_provider().get_logger(...)` because they return the pre-configured providers
 
 ### Manual Provider Setup (Without CLI)
 
@@ -271,7 +271,7 @@ opentelemetry-instrument \
 |------|-------|---------|
 | `--traces_exporter` | `otlp` | Export spans via OTLP |
 | `--logs_exporter` | `otlp` | Export log records via OTLP |
-| `--metrics_exporter` | `none` | Disable metrics (optional — set to `otlp` if you want metrics) |
+| `--metrics_exporter` | `none` | Disable metrics. Optional, set to `otlp` if you want metrics. |
 
 The CLI reads `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_PROTOCOL` to configure the exporters.
 
@@ -370,7 +370,7 @@ def run_agent(model_name: str, provider: str, problem: str):
 ```
 
 **Key points:**
-- `kind=trace.SpanKind.CLIENT` — the agent is a client of the LLM service
+- `kind=trace.SpanKind.CLIENT`: the agent is a client of the LLM service
 - Token counts on `invoke_agent` are **totals** across all LLM calls in the run
 - `gen_ai.agent.name` lives here, NOT on individual `chat` spans
 - `gen_ai.provider.name` replaces the older `gen_ai.system` attribute per current spec
@@ -445,7 +445,7 @@ def execute_tool(action: str, tool_call_id: str | None = None):
 ```
 
 **Key points:**
-- `kind=trace.SpanKind.INTERNAL` — tool execution is an internal operation
+- `kind=trace.SpanKind.INTERNAL`: tool execution is an internal operation
 - `gen_ai.tool.call.id` links this execution back to the LLM's tool call request (from function calling mode)
 - Error status is set on timeout or failure, making failed tool executions queryable
 - `gen_ai.tool.input` log captures the command sent to the tool
@@ -586,7 +586,7 @@ def call_llm(model: str, messages: list[dict], temperature: float = 0.0, **kwarg
 
 **Three span types** (in the traces pipeline):
 
-**`invoke-agent` span** — one per agent run:
+**`invoke-agent` span:** one per agent run:
 
 | Attribute | Example |
 |-----------|---------|
@@ -602,7 +602,7 @@ def call_llm(model: str, messages: list[dict], temperature: float = 0.0, **kwarg
 | `scope_name` | `"my-agent"` |
 | `service.name` | `"my-genai-agent"` |
 
-**`chat` span** — one per LLM call (child of `invoke_agent`):
+**`chat` span:** one per LLM call, child of `invoke_agent`:
 
 | Attribute | Example |
 |-----------|---------|
@@ -622,7 +622,7 @@ def call_llm(model: str, messages: list[dict], temperature: float = 0.0, **kwarg
 | `error.type` | `"RateLimitError"` (only on error) |
 | `scope_name` | `"my-agent.llm"` |
 
-**`execute_tool` span** — one per tool execution (child of `invoke_agent`):
+**`execute_tool` span:** one per tool execution, child of `invoke_agent`:
 
 | Attribute | Example |
 |-----------|---------|
@@ -637,7 +637,7 @@ def call_llm(model: str, messages: list[dict], temperature: float = 0.0, **kwarg
 | `scope_name` | `"my-agent"` |
 
 <Callout type="info">
-The `gen_ai.tool.call.id` attribute on `chat` spans enables cross-span correlation — you can JOIN a `chat` span to its corresponding `execute_tool` spans via the shared tool call ID.
+The `gen_ai.tool.call.id` attribute on `chat` spans enables cross-span correlation. You can JOIN a `chat` span to its corresponding `execute_tool` spans via the shared tool call ID.
 </Callout>
 
 **Multiple log records** (in the logs pipeline), carrying matching `trace_id` + `span_id` from their respective spans. Log records are emitted in all three span types:
@@ -721,10 +721,10 @@ service:
 
 ### Key Points
 
-- **Two pipelines** — traces and logs are separate OTel signals. The collector routes them independently.
-- **One receiver** — both signals arrive at the same OTLP endpoint from the SDK.
-- **JSON encoding** — the collector converts OTel protobuf to JSON before sending to the backend. This is what the backend flattens into queryable records.
-- **Batch processor** — accumulates records and sends them in batches. Tune `timeout` and `send_batch_size` for your throughput. For development, lower values (1s, 10 records) give faster feedback. For production, higher values reduce network overhead.
+- **Two pipelines:** traces and logs are separate OpenTelemetry signals. The collector routes them independently.
+- **One receiver:** both signals arrive at the same OTLP endpoint from the SDK.
+- **JSON encoding:** the collector converts OpenTelemetry protobuf to JSON before sending to the backend. This is what the backend flattens into queryable records.
+- **Batch processor:** accumulates records and sends them in batches. Tune `timeout` and `send_batch_size` for your throughput. For development, lower values (1s, 10 records) give faster feedback. For production, higher values reduce network overhead.
 
 ### Running the Collector
 
@@ -827,7 +827,7 @@ Every log record carries:
 
 | Attribute | Type | Description |
 |-----------|------|-------------|
-| `gen_ai.operation.name` | string | `"chat"`, `"invoke_agent"`, or `"execute_tool"` — identifies which span type emitted this log |
+| `gen_ai.operation.name` | string | `"chat"`, `"invoke_agent"`, or `"execute_tool"`. Identifies which span type emitted this log. |
 | `gen_ai.event.name` | string | Duplicates `event_name` for queryability as a flat column |
 
 **Additional attributes on `chat` log records:**
@@ -945,7 +945,7 @@ The LLM responds with tool calls instead of (or in addition to) text content.
 - 1 span: `chat gpt-4o`, `finish_reasons: ["tool_calls"]`
 - N input message logs
 - 1 choice log (may have empty body if the LLM only returned tool calls)
-- 1+ `gen_ai.tool.call` logs — each with the tool name and JSON arguments in `body`
+- 1+ `gen_ai.tool.call` logs, each with the tool name and JSON arguments in `body`
 
 ### Claude Thinking/Reasoning Blocks
 
@@ -955,7 +955,7 @@ Claude (and some other models) return a `thinking_blocks` array alongside the re
 - 1 span: `chat claude-sonnet-4-20250514`
 - N input message logs
 - 1 choice log (the actual response text)
-- 1+ `gen_ai.thinking` logs — each with the full reasoning text in `body`
+- 1+ `gen_ai.thinking` logs, each with the full reasoning text in `body`
 
 This is one of the main reasons to instrument the agent yourself. Thinking blocks are provider-specific, so capture them explicitly as `gen_ai.thinking` logs when your model exposes them.
 
@@ -973,14 +973,14 @@ except RateLimitError as e:
 - 1 span: `chat gpt-4o`, `span_status=ERROR`, `error.type=RateLimitError`
 - N input message logs (emitted before the call, so they still exist)
 - 0 choice/tool/thinking logs (call failed before response)
-- All logs still have `trace_id` + `span_id` — you can see what was sent to the LLM even though it failed
+- All logs still have `trace_id` + `span_id`, so you can see what was sent to the LLM even though it failed
 
 ### Error: Context Window Exceeded
 
 The LLM returns a 400 because the input is too long.
 
 **Produces:**
-- Same as above — span with ERROR status, input message logs but no response logs.
+- Same as above: span with ERROR status, input message logs but no response logs.
 - `error.type=ContextWindowExceededError`
 - This is queryable: find all spans where `error.type = 'ContextWindowExceededError'`, then JOIN with logs to see what input caused it.
 
@@ -1044,7 +1044,7 @@ If your agent uses a wrapper library like LiteLLM that abstracts over multiple p
 - Instrument at the **wrapper call site**, not inside the wrapper library
 - The model name you pass to the wrapper becomes `gen_ai.request.model`
 - The `gen_ai.provider.name` should reflect the actual underlying provider (if known)
-- The response object structure may differ from the raw OpenAI SDK — adapt the attribute extraction accordingly
+- The response object structure may differ from the raw OpenAI SDK, so adapt the attribute extraction accordingly
 
 ## Limitations and Edge Cases
 
@@ -1077,7 +1077,7 @@ Some scenarios where `gen_ai.usage.input_tokens` and `gen_ai.usage.output_tokens
 
 System prompts in agent applications can be 10,000+ tokens. LLM responses can be similarly large. Tool call arguments can contain large JSON payloads. Thinking blocks can be tens of thousands of tokens.
 
-There is **no truncation** in the instrumentation. The full content is emitted as the log record body. This is intentional — truncation would make conversation reconstruction incomplete.
+There is **no truncation** in the instrumentation. The full content is emitted as the log record body. This is intentional because truncation would make conversation reconstruction incomplete.
 
 **Backend impact:** The logs stream will be significantly larger (in bytes) than the traces stream. Plan storage and indexing accordingly.
 
@@ -1086,7 +1086,7 @@ There is **no truncation** in the instrumentation. The full content is emitted a
 If `_otel_logger.emit()` is called **outside** a `start_as_current_span()` context, the log record will have empty `trace_id` and `span_id`. This means:
 
 - The log record exists in the logs stream but cannot be correlated with any span
-- This is a bug in the instrumentation code — all GenAI log emissions should be inside a span context
+- This is a bug in the instrumentation code. All GenAI log emissions should be inside a span context.
 
 The manual instrumentation approach prevents this by design: all `emit()` calls are inside the `with _tracer.start_as_current_span(...):` block.
 
@@ -1098,7 +1098,7 @@ OTel context propagation is thread-local (and async-task-local in asyncio). If y
 - **asyncio:** OTel SDK supports async context propagation via `contextvars`. Each coroutine gets its own context.
 - **Multiprocessing:** Each process has its own TracerProvider/LoggerProvider. Spans from different processes have different `trace_id`s.
 
-Concurrency does not break correlation — each LLM call's logs are always linked to that call's span.
+Concurrency does not break correlation. Each LLM call's logs are always linked to that call's span.
 
 ### Provider-Specific Response Formats
 
@@ -1124,7 +1124,7 @@ If the OTel Collector is not running when the application starts:
 - The SDK will buffer spans and log records in memory
 - It will periodically retry exporting
 - If the buffer fills up, the oldest records are dropped (configurable via `OTEL_BSP_MAX_QUEUE_SIZE`, default 2048 for spans)
-- No application errors are raised — telemetry loss is silent
+- No application errors are raised, so telemetry loss is silent
 
 For production, ensure the collector is running before the application starts. For development, data loss during collector restarts is acceptable.
 
@@ -1143,7 +1143,7 @@ If they use different scope names, correlation still works (via `trace_id`/`span
 
 ### No spans or logs appearing
 
-1. **Is the collector running?** Check `curl http://localhost:4318/v1/traces` — should return a response (even an error response means it's listening).
+1. **Is the collector running?** Check `curl http://localhost:4318/v1/traces`. It should return a response, even an error response means it is listening.
 2. **Is the CLI wrapping the process?** Run `opentelemetry-instrument --help` to verify it's installed. Check that your launch command uses `opentelemetry-instrument python ...`, not just `python ...`.
 3. **Are exporters configured?** Check that `--traces_exporter otlp --logs_exporter otlp` are passed to the CLI.
 4. **Is the endpoint correct?** `OTEL_EXPORTER_OTLP_ENDPOINT` must match where the collector is listening.
@@ -1151,10 +1151,6 @@ If they use different scope names, correlation still works (via `trace_id`/`span
 ### Duplicate spans per LLM call
 
 Check whether your application or framework is creating additional spans around the same LLM request. Keep one `chat {model}` span for each LLM call, and remove any extra SDK middleware or framework tracing that emits duplicate HTTP, template, database, or model-client spans for the same operation.
-
-:::info
-If duplicate spans still appear, check whether auto instrumentation is enabled in the runtime. For Python, review environment variables such as `OTEL_PYTHON_DISABLED_INSTRUMENTATIONS` and disable any framework, HTTP, database, template, or model-client instrumentation that is creating spans you do not need.
-:::
 
 ### Log records have empty trace_id/span_id
 
@@ -1168,7 +1164,7 @@ You are calling `set_logger_provider()` in your application code, but the CLI al
 
 1. Check that `--logs_exporter otlp` is passed to the CLI (not `none`).
 2. Check that the collector config has a `logs` pipeline (not just `traces`).
-3. Verify that `_otel_logger.emit()` is being called — add a `print()` before the emit to confirm the code path is reached.
+3. Verify that `_otel_logger.emit()` is being called. Add a `print()` before the emit to confirm the code path is reached.
 
 ### Logs appear but with wrong event_name
 
