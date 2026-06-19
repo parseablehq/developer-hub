@@ -1,0 +1,116 @@
+---
+title: Java
+description: Install and configure the temporal-parseable plugin for Temporal Java workers
+---
+
+The `com.parseable:temporal-parseable` plugin is a [Temporal](https://temporal.io/) middleware that ships workflow and activity execution events to Parseable. See the [Temporal overview](./) for the full schema, example queries, and shared caveats.
+
+<Callout type="info">
+Maven Central publication is pending. Until the artifact is live, build from source: clone [parseablehq/temporal-plugin-java](https://github.com/parseablehq/temporal-plugin-java) and run `mvn install -DskipTests`.
+</Callout>
+
+## Prerequisites
+
+- JDK 11+
+- A Temporal worker built on the Java SDK (`io.temporal:temporal-sdk`)
+- A reachable Parseable instance
+
+## Installation
+
+**Maven:**
+
+```xml
+<dependency>
+  <groupId>com.parseable</groupId>
+  <artifactId>temporal-parseable</artifactId>
+  <version>0.1.0</version>
+</dependency>
+```
+
+**Gradle:**
+
+```groovy
+implementation 'com.parseable:temporal-parseable:0.1.0'
+```
+
+## Quick start
+
+```java
+import com.parseable.temporal.ParseablePlugin;
+import com.parseable.temporal.ParseableConfig;
+import io.temporal.client.WorkflowClient;
+import io.temporal.serviceclient.WorkflowServiceStubs;
+import io.temporal.serviceclient.WorkflowServiceStubsOptions;
+import io.temporal.worker.Worker;
+import io.temporal.worker.WorkerFactory;
+
+// 1. Create the plugin (reads PARSEABLE_* env vars)
+ParseablePlugin plugin = new ParseablePlugin(ParseableConfig.fromEnv());
+
+// 2. Register the plugin on service stubs
+WorkflowServiceStubs stubs = WorkflowServiceStubs.newServiceStubs(
+    WorkflowServiceStubsOptions.newBuilder()
+        .setTarget("localhost:7233")
+        .setPlugins(plugin)
+        .build());
+
+WorkflowClient client = WorkflowClient.newInstance(stubs);
+
+// 3. Create a worker factory - the plugin is propagated automatically
+WorkerFactory factory = WorkerFactory.newInstance(client);
+Worker worker = factory.newWorker("my-queue");
+
+worker.registerWorkflowImplementationTypes(MyWorkflow.class);
+worker.registerActivitiesImplementations(new MyActivitiesImpl());
+factory.start();
+
+// 4. Flush on shutdown
+Runtime.getRuntime().addShutdownHook(new Thread(plugin::close));
+```
+
+## Configuration
+
+All settings can be set via environment variables or `ParseableConfig.Builder`:
+
+| Environment variable                | Builder method                | Default                              |
+|-------------------------------------|-------------------------------|--------------------------------------|
+| `PARSEABLE_ENDPOINT`                | `.endpoint(...)`              | **required**                         |
+| `PARSEABLE_USERNAME`                | `.username(...)`              | **required**                         |
+| `PARSEABLE_PASSWORD`                | `.password(...)`              | **required**                         |
+| `PARSEABLE_LOG_STREAM`              | `.logStream(...)`             | `temporal-logs`                      |
+| `PARSEABLE_TRACE_STREAM`            | `.traceStream(...)`           | `temporal-traces`                    |
+| `PARSEABLE_TEMPORAL_NAMESPACE`      | `.temporalNamespace(...)`     | `default`                            |
+| `PARSEABLE_SERVICE_NAME`            | `.serviceName(...)`           | `temporal-worker`                    |
+| `PARSEABLE_BATCH_EXPORT_TIMEOUT_MS` | `.batchExportTimeoutMs(...)`  | `5000`                               |
+
+Builder example:
+
+```java
+ParseableConfig config = ParseableConfig.newBuilder()
+    .endpoint("https://parseable.example.com")
+    .username("admin")
+    .password("secret")
+    .serviceName("orders-worker")
+    .logStream("temporal-logs")
+    .traceStream("temporal-traces")
+    .build();
+
+ParseablePlugin plugin = new ParseablePlugin(config);
+```
+
+## Tracing instrumentation
+
+Spans are produced by Temporal's official `temporal-opentracing` module - `OpenTracingClientInterceptor` for client-side calls (start, signal, query, update, cancel, terminate) and `OpenTracingWorkerInterceptor` for worker-side workflow + activity executions. Replay safety, context propagation through the server, and child workflow + local activity correctness are owned by the Temporal SDK team.
+
+The OpenTracing tracer is bridged to OpenTelemetry via `opentracing-shim`; spans flow through the OTel `SdkTracerProvider` and out as OTLP/HTTP to Parseable.
+
+## Java-specific notes
+
+- **No sandbox concern.** Unlike the Python SDK, the Java SDK has no workflow sandbox restriction, so no passthrough configuration is needed.
+- **Graceful shutdown.** Call `plugin.close()` (or register it as a shutdown hook) before your JVM exits. This force-flushes both the tracer and logger providers so in-flight batches are sent.
+- **`SanitizingSpanExporter`** converts array-typed span attributes to comma-joined strings and drops map-typed attributes before forwarding to the OTLP exporter, matching Parseable's strict OTLP attribute requirements.
+
+## Links
+
+- Plugin source: [github.com/parseablehq/temporal-plugin-java](https://github.com/parseablehq/temporal-plugin-java)
+- Temporal Java docs: [docs.temporal.io/develop/java](https://docs.temporal.io/develop/java)

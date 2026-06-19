@@ -1,0 +1,94 @@
+---
+title: TypeScript
+description: Install and configure the @parseable/temporal plugin for Temporal TypeScript workers
+---
+
+The [`@parseable/temporal`](https://www.npmjs.com/package/@parseable/temporal) plugin is a [Temporal](https://temporal.io/) middleware that ships workflow and activity execution events to Parseable. See the [Temporal overview](./) for the full schema, example queries, and shared caveats.
+
+## Prerequisites
+
+- Node.js 20+
+- A Temporal worker built on `@temporalio/worker` v1.13+ (plugin API based)
+- A reachable Parseable instance
+
+## Installation
+
+```bash
+npm install @parseable/temporal
+```
+
+## Configuration
+
+```ts
+import { Worker } from '@temporalio/worker';
+import { ParseablePlugin } from '@parseable/temporal';
+
+const worker = await Worker.create({
+  taskQueue: 'hello-world',
+  workflowsPath: require.resolve('./workflows'),
+  activities,
+  // highlight-start
+  plugins: [
+    new ParseablePlugin({
+      serviceName: 'temporal-worker',
+      endpoint: process.env.PARSEABLE_URL, // e.g. https://parseable.example:8000
+      auth: {
+        username: process.env.PARSEABLE_USERNAME,
+        password: process.env.PARSEABLE_PASSWORD,
+      },
+      // optional, defaults shown:
+      logs: { stream: 'temporal-logs' },
+      traces: { stream: 'temporal-traces' },
+    }),
+  ],
+  // highlight-end
+});
+
+await worker.run();
+```
+
+### Options
+
+| Option        | Type                                       | Default                          | Notes |
+|---------------|--------------------------------------------|----------------------------------|-------|
+| `serviceName` | `string`                                   | required                         | Becomes the `service.name` resource attribute and `service_name` log field. |
+| `endpoint`    | `string`                                   | required if logs/traces enabled  | Parseable host base URL. |
+| `auth`        | `{ username, password }`                   | required if logs/traces enabled  | HTTP basic auth. |
+| `logs`        | `false` &#124; `{ stream?: string }`       | `{ stream: 'temporal-logs' }`    | Set to `false` to disable log emission. |
+| `traces`      | `false` &#124; `{ stream?: string }`       | `{ stream: 'temporal-traces' }`  | Set to `false` to disable trace emission. |
+
+## Custom domain events from workflow code
+
+Workflows can emit replay-safe domain events via the `workflowEvent` helper. Each call lands as a log record with `type: 'user_event'`, `event_name`, and an arbitrary serializable `event_data` payload.
+
+```ts
+import { workflowEvent } from '@parseable/temporal/workflow';
+import { proxyActivities } from '@temporalio/workflow';
+
+const { planActivity, runStep } = proxyActivities<typeof activities>({
+  startToCloseTimeout: '1 minute',
+});
+
+export async function agentWorkflow(input: AgentInput): Promise<AgentResult> {
+  workflowEvent('agent.started', { user_id: input.userId });
+
+  const plan = await planActivity(input);
+  workflowEvent('agent.plan.chosen', { steps: plan.steps.length });
+
+  for (const step of plan.steps) {
+    workflowEvent('agent.step.start', { tool: step.tool });
+    await runStep(step);
+  }
+
+  workflowEvent('agent.completed', { total_steps: plan.steps.length });
+  return { ok: true };
+}
+```
+
+Events flow through the same sink as the built-in workflow lifecycle events, so they are deduplicated on replay.
+
+## Links
+
+- npm package: [npmjs.com/package/@parseable/temporal](https://www.npmjs.com/package/@parseable/temporal)
+- Plugin source: [github.com/parseablehq/temporal-plugin](http://github.com/parseablehq/temporal-plugin)
+- Temporal TypeScript observability docs: [docs.temporal.io/develop/typescript/observability](https://docs.temporal.io/develop/typescript/observability)

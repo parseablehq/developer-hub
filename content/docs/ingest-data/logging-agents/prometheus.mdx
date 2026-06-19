@@ -12,12 +12,13 @@ To configure Prometheus to send metrics directly to Parseable using remote write
 
 ```yaml
 remote_write:
-  - url: "http://<parseable-endpoint>:8000/api/v1/ingest"
+  - url: "http://<parseable-endpoint>:8000/v1/prometheus/write"
     basic_auth:
       username: <username>
       password: <password>
     headers:
       X-P-Stream: prometheus-metrics
+      X-P-Log-Source: otel-metrics
 ```
 
 ## Fluent Bit with OpenTelemetry Output
