@@ -1,20 +1,20 @@
-import './global.css';
-import { RootProvider } from 'fumadocs-ui/provider/next';
-import { Inter } from 'next/font/google';
-import type { ReactNode } from 'react';
-import Analytics from '../components/GoogleAnalytics';
-import KoalaAnalytics from '../components/KoalaAnalytics';
-import { SearchProvider } from '../components/SearchProvider';
-import { DeploymentModeProvider } from '../components/DeploymentModeProvider';
+import "./global.css";
+import { RootProvider } from "fumadocs-ui/provider/next";
+import { Inter } from "next/font/google";
+import type { ReactNode } from "react";
+import Analytics from "../components/GoogleAnalytics";
+import KoalaAnalytics from "../components/KoalaAnalytics";
+import { SearchProvider } from "../components/SearchProvider";
+import { DeploymentModeProvider } from "../components/DeploymentModeProvider";
 
 const inter = Inter({
-  subsets: ['latin'],
+  subsets: ["latin"],
 });
 
 export default function Layout({ children }: { children: ReactNode }) {
   const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
   const koalaApiKey = process.env.NEXT_PUBLIC_KOALA_PUBLIC_API_KEY;
-  
+
   return (
     <html lang="en" className={inter.className} suppressHydrationWarning>
       <head>
@@ -22,6 +22,11 @@ export default function Layout({ children }: { children: ReactNode }) {
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
           rel="stylesheet"
         />
+        <script
+          src="https://analytics.ahrefs.com/analytics.js"
+          data-key="GxqcjYkg06+p3vP+5KglwA"
+          async
+        ></script>
       </head>
       <body className="flex flex-col min-h-screen" suppressHydrationWarning>
         <RootProvider
@@ -30,9 +35,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           }}
         >
           <DeploymentModeProvider>
-            <SearchProvider>
-              {children}
-            </SearchProvider>
+            <SearchProvider>{children}</SearchProvider>
           </DeploymentModeProvider>
         </RootProvider>
         {gaId && <Analytics gaId={gaId} />}
