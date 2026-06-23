@@ -118,23 +118,19 @@ If a record contains a long message or many fields, use the row actions to inspe
 
 ### Log context
 
+![Log context view showing timeline, filters, wrapped rows, and the referenced line](../static/logs-context.gif)
+
 Sometimes one log row is not enough. An error record usually makes more sense when you can see what the service wrote just before it and what happened immediately after it.
 
 Open the row actions menu at the end of a log row and choose **Show context**.
 
-![Log row actions menu showing the Show context option](../static/logs-row-context-action.png)
-
 Parseable opens the **Log context** view around that row. The row you started from becomes the referenced line. By default, the view starts with one minute before and one minute after the referenced line, so you can inspect the short window around the event without building a new query from scratch.
-
-![Log context view showing surrounding log records and the referenced line control](../static/logs-context-view.png)
 
 Use the timeline to widen or narrow the context window when you need more history around the event. For example, you can move from a small window around the error to a wider window when the cause may have started earlier.
 
 If you scroll away from the original row, use **Referenced line** to jump back to the log line that opened the context. Use search when you want to find a value inside the surrounding records, and use wrap when long messages need to be easier to read.
 
 You can also apply filters inside Log context. This helps when the surrounding window has many records and you only want to keep a service, log category, source IP, user agent, or another field that matters for the investigation.
-
-![Log context filter panel showing field groups and value counts](../static/logs-context-filter.png)
 
 ### Saved views, sharing, and summaries
 
