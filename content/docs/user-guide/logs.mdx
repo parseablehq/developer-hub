@@ -26,7 +26,7 @@ Use this page when you want to answer questions like:
 
 Start with the dataset selector and the time range picker.
 
-Select the log dataset from the breadcrumb at the top of the page. The rest of the page updates for that dataset, including the available fields, filters, chart, and table columns.
+Select the log dataset from the dataset selector at the top of the page. The rest of the page updates for that dataset, including the available fields, filters, chart, and table columns.
 
 Use the time range picker to decide how much data you want to inspect. A smaller time range works well when you already know when something happened. A wider range is useful when you want to see how log volume changed over time.
 
@@ -102,6 +102,26 @@ The table toolbar also gives you a few useful controls:
 
 If a record contains a long message or many fields, use the row actions to inspect more detail. Structured logs make this easier because each field can be read, filtered, or added as a column.
 
+### Log context
+
+Sometimes one log row is not enough. An error record usually makes more sense when you can see what the service wrote just before it and what happened immediately after it.
+
+Open the row actions menu at the end of a log row and choose **Show context**.
+
+![Log row actions menu showing the Show context option](../static/logs-row-context-action.png)
+
+Parseable opens the **Log context** view around that row. The row you started from becomes the referenced line. By default, the view starts with one minute before and one minute after the referenced line, so you can inspect the short window around the event without building a new query from scratch.
+
+![Log context view showing surrounding log records and the referenced line control](../static/logs-context-view.png)
+
+Use the timeline to widen or narrow the context window when you need more history around the event. For example, you can move from a small window around the error to a wider window when the cause may have started earlier.
+
+If you scroll away from the original row, use **Referenced line** to jump back to the log line that opened the context. Use search when you want to find a value inside the surrounding records, and use wrap when long messages need to be easier to read.
+
+You can also apply filters inside Log context. This helps when the surrounding window has many records and you only want to keep a service, log category, source IP, user agent, or another field that matters for the investigation.
+
+![Log context filter panel showing field groups and value counts](../static/logs-context-filter.png)
+
 ### Group by
 
 Use **Group by** when you want to compare records by a field instead of reading individual rows.
@@ -139,4 +159,4 @@ Most log investigations follow the same loop:
 5. Open or expand the records that look relevant.
 6. Save, share, export, summarize, or move into SQL when needed.
 
-The goal is not to read every log line. Use the page to narrow the data until the records you need are easy to inspect.
+With Parseable logs, the goal is to narrow the data until the records you need are easy to inspect.
