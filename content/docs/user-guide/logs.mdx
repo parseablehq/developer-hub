@@ -85,6 +85,20 @@ Active filters appear as pills above the chart. You can remove one filter at a t
 
 After filters are applied, use **Find in data** to search within the visible rows. This is useful when you want to find a word, id, product name, endpoint, or message fragment inside the current page.
 
+### Group by
+
+Use **Group by** when you want to compare records by a field instead of reading individual rows.
+
+Good fields to group by include:
+
+- `p_log_category`, to compare `INFO`, `WARN`, and `ERROR` volume
+- `service.name`, to see which service is producing the most logs
+- `host.name` or container fields, to find noisy infrastructure
+- `http.status_code`, to separate successful and failing requests
+- Error fields, to see repeated failure patterns
+
+Grouping is useful when the table is too large to read directly. It helps you see which services, hosts, categories, or status codes are contributing the most records.
+
 ### Log table
 
 The table shows the actual log records. By default, you see ingestion time and log data. If the dataset has many fields, add the columns that are useful for the current task.
@@ -121,20 +135,6 @@ If you scroll away from the original row, use **Referenced line** to jump back t
 You can also apply filters inside Log context. This helps when the surrounding window has many records and you only want to keep a service, log category, source IP, user agent, or another field that matters for the investigation.
 
 ![Log context filter panel showing field groups and value counts](../static/logs-context-filter.png)
-
-### Group by
-
-Use **Group by** when you want to compare records by a field instead of reading individual rows.
-
-Good fields to group by include:
-
-- `p_log_category`, to compare `INFO`, `WARN`, and `ERROR` volume
-- `service.name`, to see which service is producing the most logs
-- `host.name` or container fields, to find noisy infrastructure
-- `http.status_code`, to separate successful and failing requests
-- Error fields, to see repeated failure patterns
-
-Grouping is useful when the table is too large to read directly. It helps you see which services, hosts, categories, or status codes are contributing the most records.
 
 ### Saved views, sharing, and summaries
 
