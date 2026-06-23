@@ -2,154 +2,157 @@
 title: Logs
 ---
 
-Logs explorer is the primary interface for searching, filtering and analyzing log data in Parseable. It supports field level filtering, SQL querying, time-series visualization with forecasting, and exporting results.
+Logs are often the first place you go when something in production needs context. A chart can tell you that traffic changed. An alert can tell you something failed. Logs help you see what the service actually wrote at that exact moment.
 
-![Logs Explore page overview](../static/logs-explore.png)
+The Logs page in Parseable is built for that flow. You choose a dataset, pick the time range, look at log volume, narrow the data with fields and filters, and then inspect the records that explain what happened.
 
-## Page Layout
+## Logs with Parseable
 
-The Logs Explore page is organized into four main areas:
+Parseable stores logs as structured records. That means the Logs page is not only a place to search text. You can use fields like service name, host name, container metadata, HTTP details, trace ids, span ids, and log category to move from a broad view to a focused set of rows.
 
-- **Top Toolbar** - Dataset selector, time range picker, refresh controls, saved views, and the AI summarization button
-- **Left Sidebar (Fields Panel)** - System-detected field categories, table fields currently displayed, and all available fields in the selected dataset
-- **Volume Chart** - A time-series bar chart that visualizes log volume over the selected time range, with an optional forecast overlay
-- **Log Table** - Individual log records in a paginated, sortable table with configurable columns and inline expansion
+Use this page when you want to answer questions like:
 
-## Dataset Selector
+- Which service produced these logs
+- When did the log volume change
+- Are the records mostly `INFO`, `WARN`, `ERROR`, or `UNSPECIFIED`
+- Which host, container, endpoint, or trace is involved
+- What fields should be added to the table so the data is easier to scan
 
-The dataset selector dropdown is at the top-left of the content area. Click it to search for and switch between available log datasets. The dropdown includes a search box that filters the list as you type. Selecting a different dataset reloads the page with that dataset's data and fields.
+![Logs page with dataset, fields, chart, and table](../static/logs-overview-current.png)
 
-## Time Range Picker
+## Typical workflow
 
-Click the time range button (e.g., "Last 1 hour") to open the time range configuration panel:
+### Dataset and time range
 
-- **Quick presets** - Select common durations: 10 min, 1 hr, 5 hrs, 1 day, and 3 days
-- **Custom range** - Use the calendar and time inputs to set precise "From" and "To" dates and times
-- **Timezone** - Choose the timezone for the displayed times (e.g., "UTC (UTC) +0:00")
+Start with the dataset selector and the time range picker.
 
-Click **Apply** to execute the query or **Cancel** to discard changes.
+Select the log dataset from the dataset selector at the top of the page. The rest of the page updates for that dataset, including the available fields, filters, chart, and table columns.
+
+Use the time range picker to decide how much data you want to inspect. A smaller time range works well when you already know when something happened. A wider range is useful when you want to see how log volume changed over time.
+
+You can also choose the timezone from the picker, including your local timezone, so timestamps are easier to read for your team.
+
+![Dataset selector and time range picker in the Logs page](../static/logs-dataset-time-range.png)
+
+The top toolbar also gives you quick access to refresh, auto-refresh, saved views, and summarization. Use auto-refresh when you want to keep watching a live window of logs.
 
 <Callout type="info">
-Parseable requires a time range for every query. By scoping queries to a specific time window, the engine only reads the relevant Parquet files from storage, keeping response times fast even over large datasets.
+Every logs query is scoped by time. This keeps the query focused on the period you want to inspect and avoids reading more data than needed.
 </Callout>
 
-## Refresh and Auto-Refresh
+### Logs over time
 
-- **Manual refresh** - The circular arrow icon triggers an immediate re-query of the data within the current time range
-- **Auto-refresh** - The button labeled "Off" (by default) opens a dropdown with interval options: 10s, 30s, 1m, 5m, 10m, and 20m. Selecting an interval causes the query to re-execute automatically at that cadence
+After choosing the dataset and time range, look at the Logs over time chart. It shows how many log records were found in the selected window.
 
-## Save View
+The chart is split by log category. Categories such as `UNSPECIFIED`, `INFO`, `WARN`, and `ERROR` appear in the legend. Click a category when you want to focus on that type of log. The chart and table update around that selection.
 
-Click **Save view** to persist the current query configuration (filters, selected fields, and optionally the time range) for future reuse. The dialog includes a required Title field, an optional Description field, and an **Include time range** toggle.
+![Logs chart split by category with INFO selected](../static/logs-category-filter.png)
 
-## View Library
+Turn on **Forecast** when you want Parseable to project the current log volume forward. This is useful when you are watching traffic during a rollout, load test, or spike.
 
-Click **Library** to open a slide-out panel with three tabs:
+### Field groups
 
-- **Recent** - Views you have recently accessed
-- **My views** - Views you have created
-- **All views** - All saved views across the team
+The fields panel on the left shows the fields Parseable found in the selected dataset. Use it before adding filters or columns. It helps you understand what data is available.
 
-A search bar at the top lets you filter saved views by name. Click a saved view to load its stored configuration.
+Fields are grouped into sections such as:
 
-## Summarize My Data
+- **Core**, for common log fields and log category
+- **Error**, for error-related fields
+- **Service**, for service name, service instance, namespace, and version
+- **Span**, for trace and span context
+- **Host**, **Container**, **HTTP**, **Process**, **Telemetry**, and other runtime fields
+- **All fields**, when you want to search across everything
 
-Click the **Summarize my data** button (purple with a sparkle icon) to trigger an AI-powered summary of the current log data. This analyzes the queried logs and generates insights about patterns, anomalies, and key observations. See [AI Native](/docs/user-guide/ai-native) for more details.
+Use **Search field names** when you already know the field you need. Expand a field group to see values and counts. The counts help you decide which values are worth filtering on.
 
-## Fields Panel
+### Filters
 
-The fields panel on the left side organizes the dataset's schema into three sections.
+When the table has too many records, use **Add filter** to narrow the page.
 
+![Add filter panel showing service fields and value counts](../static/logs-add-filter.png)
 
-### System Fields
+The filter panel lets you search across fields and values. Values are shown with counts, so you can choose the value that matches what you want to inspect.
 
-The **System** section surfaces automatically detected field categories:
+For example:
 
-- **Log formats** - Detected log format patterns with occurrence counts. Each entry has include (funnel with plus) and exclude (funnel with minus) filter icons for one-click filtering
-- **User agents** - Detected user agent strings with include/exclude filter options
-- **Source IPs** - Detected source IP addresses with include/exclude filter options
+- Filter by `service.name` to inspect one service
+- Filter by `host.name` when a problem looks node-specific
+- Filter by `p_log_category` to look at `INFO`, `WARN`, or `ERROR` logs
+- Filter by HTTP fields when you are following a request path
+- Filter by trace or span fields when you want to connect logs back to traces
 
-### Table Fields
+Active filters appear as pills above the chart. You can remove one filter at a time, or use **Clear all** to return to the broader view.
 
-Shows columns currently displayed in the log table. By default, these are "Ingestion Time" and "Data." Click a table field to expand it and see its **Top 5 Values** with occurrence counts. Each value has include/exclude filter icons.
+After filters are applied, use **Find in data** to search within the visible rows. This is useful when you want to find a word, id, product name, endpoint, or message fragment inside the current page.
 
-Each table field shows action icons on hover: a pin icon, a filter icon, a minus icon (to remove the column), and a collapse arrow. Fields can be reordered by drag-and-drop.
+### Group by
 
-### Available Fields
+Use **Group by** when you want to compare records by a field instead of reading individual rows.
 
-Lists all fields in the dataset not currently shown as table columns. The count in the header (e.g., "Available fields (39)") indicates how many fields exist. Click the plus icon on any field to add it as a table column.
+Good fields to group by include:
 
-### Search Field Names
+- `p_log_category`, to compare `INFO`, `WARN`, and `ERROR` volume
+- `service.name`, to see which service is producing the most logs
+- `host.name` or container fields, to find noisy infrastructure
+- `http.status_code`, to separate successful and failing requests
+- Error fields, to see repeated failure patterns
 
-A search box at the top of the fields panel ("Search field names") filters the field list by partial name match.
+Grouping is useful when the table is too large to read directly. It helps you see which services, hosts, categories, or status codes are contributing the most records.
 
-## Add Filter
+### Log table
 
-Click **Add filter** to open a comprehensive filter panel. This panel organizes filterable fields into semantic categories: Service, Kubernetes, Container, Cloud, HTTP, Telemetry, and All fields.
+The table shows the actual log records. By default, you see ingestion time and log data. If the dataset has many fields, add the columns that are useful for the current task.
 
-For each field, you see available values along with occurrence counts. Click a value to add it as a filter condition. A search box at the top ("Search and add filters") locates specific fields or values quickly. Some fields show a "Show more values" link when there are more values than initially displayed.
+![Logs table actions with expand rows control](../static/logs-table-actions.png)
 
-## Edit with SQL
+Use **Add columns** to choose fields that should appear as table columns. For example, you might add `service.name`, `host.name`, `http.status_code`, `trace_id`, or a field from the log body.
 
-Click **Edit with SQL** to open the [SQL Editor](/docs/user-guide/sql-editor) in a new tab with a pre-populated query (`select * from "dataset-name"`) targeting the current dataset.
+The table toolbar also gives you a few useful controls:
 
-## Group By
+- **Expand rows**, to show more of each record without opening records one by one
+- **Share**, to copy a link to the current view
+- **Find in data**, to search within the current rows
+- **Pagination and page size**, to move through large result sets without changing the query
 
-Click **Group by** and select a field from the dropdown (body, cloud.provider, cloud.region, http.method, http.status_code, etc.). This groups the log data by that field's values, restructuring the histogram and table to show aggregated results.
+If a record contains a long message or many fields, use the row actions to inspect more detail. Structured logs make this easier because each field can be read, filtered, or added as a column.
 
+### Log context
 
-## Histogram Chart
+![Log context view showing timeline, filters, wrapped rows, and the referenced line](../static/logs-context.gif)
 
-The histogram chart visualizes the volume of log records over time. The Y-axis shows the record count and the X-axis shows time intervals. The chart automatically adjusts its time granularity based on the selected range.
+Sometimes one log row is not enough. An error record usually makes more sense when you can see what the service wrote just before it and what happened immediately after it.
 
+Open the row actions menu at the end of a log row and choose **Show context**.
 
-### Forecast
+Parseable opens the **Log context** view around that row. The row you started from becomes the referenced line. By default, the view starts with one minute before and one minute after the referenced line, so you can inspect the short window around the event without building a new query from scratch.
 
-A **Forecast** toggle in the upper-right of the chart enables predictive analytics. When enabled, the chart extends beyond the current time to show projected log volume. The legend differentiates between "Historical" data (solid line) and "Forecast" data (dashed line), with the forecast region shown as a shaded area.
+Use the timeline to widen or narrow the context window when you need more history around the event. For example, you can move from a small window around the error to a wider window when the cause may have started earlier.
 
+If you scroll away from the original row, use **Referenced line** to jump back to the log line that opened the context. Use search when you want to find a value inside the surrounding records, and use wrap when long messages need to be easier to read.
 
-## Log Table
+You can also apply filters inside Log context. This helps when the surrounding window has many records and you only want to keep a service, log category, source IP, user agent, or another field that matters for the investigation.
 
-The log table displays individual log records.
+### Saved views, sharing, and summaries
 
+When you have a useful view, save it. Saved views help you come back to the same dataset, filters, fields, and time range without setting everything again.
 
-### Sorting
+Use the share control when you want another teammate to open the same view. Use export when you need the current result set outside Parseable.
 
-Click any column header to toggle between ascending and descending sort order.
+The **Summarize** button can generate a report for the selected data. Use it when you want a quick read of the current logs before looking deeper.
 
-### Row Display
+![Logs summary report with suggested drilldown queries](../static/logs-summary-report.png)
 
-Each row shows values for the configured table columns. By default, "Ingestion Time" shows the timestamp and "Data" shows a formatted view of the log record's key-value pairs. Field names appear in a muted color while values appear in an accent color for easy scanning.
+The summary can also suggest drilldown queries. Use those as starting points. Open a query in a new tab when you want to keep the current Logs page open and continue in SQL.
 
-### Row Expansion
+## A simple way to use the page
 
-Click a log row to reveal an expand icon and a copy icon. Click the expand icon to display all fields of the log record in a formatted key-value layout, including body, cloud metadata, HTTP details, Kubernetes labels, telemetry information, trace and span IDs, and all other attributes.
+Most log investigations follow the same loop:
 
+1. Pick the dataset and time range.
+2. Look at the chart to understand volume and severity.
+3. Use fields or **Add filter** to narrow the data.
+4. Add columns that make the table easier to scan.
+5. Open or expand the records that look relevant.
+6. Save, share, export, summarize, or move into SQL when needed.
 
-### Pagination
-
-Pagination controls include previous/next page arrows, a page size selector (10, 50, 100), and a status indicator showing total records found and query execution time (e.g., "Found 3K records in 163.73 ms").
-
-### Find in Data
-
-A search box labeled "Find in data" provides client-side text search within the currently displayed log records.
-
-## Table Toolbar
-
-The table toolbar includes four icon buttons to the right of the "Find in data" box:
-
-- **Share** - Generates a shareable link to the current view
-- **Maximize** - Expands the table to a larger view
-- **Wrap Text** - Toggles text wrapping in the Data column
-- **Export** - Opens a dropdown with two options: **Export CSV** and **Export JSON**
-
-## Toggle Fields Panel
-
-A small icon button to the left of the "Add filter" button toggles the visibility of the left fields panel. Collapsing it gives the histogram and log table the full width of the page.
-
-## Keyboard Shortcuts
-
-| Shortcut | Action |
-| --- | --- |
-| `⌘ K` | Open the global search dialog from anywhere in the application |
-| `⌘ ↵` (Cmd+Enter) | Execute a query in the SQL Editor |
+With Parseable logs, the goal is to narrow the data until the records you need are easy to inspect.
