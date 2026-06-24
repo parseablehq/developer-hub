@@ -3,17 +3,23 @@ title: Release notes
 icon: Book
 ---
 
-## v2.9.0 (June 13, 2026)
+## v2.9
+
+June 13, 2026
 
 This release is focused on making Parseable easier to use for AI agents and day-to-day observability workflows. If you are already using Parseable for logs, metrics, or traces, the console should now feel more consistent across the product. If you are building agentic applications, you now get a dedicated way to understand how your agents behave in production.
 
-### Introducing Agent Observability
+#### Introducing Agent Observability
 
 You can now inspect AI agent sessions directly in Parseable. This helps when you want to understand what prompt was used, which LLM calls were made, which tools were called, how many tokens were consumed, where latency came from, and whether errors or unusual sentiment showed up in the flow.
 
 Instead of looking at disconnected logs or traces, you can follow the agent workflow in one place and see what happened step by step. This should make debugging slower responses, failed tool calls, or unexpected answers much easier.
 
-### Prism UI refresh
+#### Log context
+
+Logs now include a **Log context** view in Prism. From any log row, open the row actions menu and choose **Show context** to see the records around that exact line. This helps when an error log does not explain enough on its own, because you can quickly check what happened before and after it, adjust the surrounding time window, jump back to the referenced line, and apply filters while staying in the same investigation.
+
+#### Prism UI refresh
 
 We have refreshed Prism across Logs, Metrics, Traces, Datasets, and the Home overview. The aim is simple: moving between observability views should feel familiar, with cleaner layouts getting in the way less often.
 
@@ -21,7 +27,9 @@ Alongside this, the release includes fixes and improvements around ingestion, AP
 
 For a detailed walkthrough, read the [Parseable v2.9.0 release blog](https://www.parseable.com/blog/parseable-v290-release). For the complete changelog, contributors, and tagged release assets, see the [GitHub v2.9.0 release](https://github.com/parseablehq/parseable/releases/tag/v2.9.0).
 
-## v2.8 (May 30, 2026)
+## v2.8
+
+May 30, 2026
 
 ### Hot Tier Improvements
 
@@ -77,7 +85,9 @@ Prism received reliability and usability updates across Logs, Metrics, Traces, S
 - SQL autocomplete quote handling, sidebar collapse behavior, timezone changes, Errors page dataset reset, and non-exception error details were improved, with expanded Playwright coverage across core console workflows.
 
 
-## v2.7 (May 8, 2026)
+## v2.7
+
+May 8, 2026
 
 ### APM Support
 
@@ -138,7 +148,9 @@ What's new:
 
 ![API Keys Access Management](./release-notes/static/access-management-api-keys.webp)
 
-## v2.5 (December 8, 2025)
+## v2.5
+
+December 8, 2025
 
 **Parseable v2.5.0** is here! This major update significantly expands our platform capabilities, introducing a dedicated **Trace View**, a **Metrics View**, and powerful AI-native integrations connecting Keystone with the alerting ecosystem.
 
@@ -185,7 +197,9 @@ The alerting engine has been optimized for performance and better context.
 * **Recents Management:** The "Recents" list now automatically cleans itself by removing entries that are no longer valid.
 * **Timezones:** Fixed an issue with URL parameter handling to ensure selected timezones persist correctly during navigation.
 
-## v2.4.3 (September 22, 2025)
+## v2.4.3
+
+September 22, 2025
 
 We're excited to announce Parseable v2.4.3. This release was focussed on improving the user experience of using SQL via our SQL editor. 
 
@@ -227,7 +241,9 @@ From a triggered Alert:
 
 ![Investigate from Alert](./release-notes/static/investigate-alert-page.png)
 
-## v2.4.1 (August 18, 2025)
+## v2.4.1
+
+August 18, 2025
 
 We're thrilled to announce Parseable v2.4.1, packed with powerful new features that enhance monitoring, visualization, and data ingestion capabilities. This release introduces advanced alerting mechanisms, expanded dashboard visualization options, and native Protocol Buffer support.
 
@@ -332,7 +348,9 @@ kubectl set image deployment/parseable parseable=parseable/parseable:v2.4.1
 ```
 
 
-## v2.4.0 (July 22, 2025)
+## v2.4.0
+
+July 22, 2025
 
 It’s that time again, a new Parseable release, and this one’s big. We’re moving up from v2.3.x to v2.4.0. Read on for all the highlights, new features, and tips to get the most out of v2.4.0
 
@@ -512,7 +530,9 @@ P_GCS_BUCKET=<your-bucket-name>
 ```
 - Parseable will use your specified GCS bucket for all data storage.
 
-## v2.3.5 (June 26, 2025)
+## v2.3.5
+
+June 26, 2025
 
 We’re excited to roll out Parseable **v2.3.5**, a release packed with features that make exploring, debugging, and managing your observability data simpler and more powerful than ever. Here’s everything new:
 
@@ -589,7 +609,9 @@ Teams often need flexible, fine-grained access control—now Parseable’s OIDC 
 * All roles are respected in UI and API, just assign them in your OIDC provider and Parseable does the rest
 
 
-## v2.3.3 (June 17, 2025)
+## v2.3.3
+
+June 17, 2025
 
 ### Performance Improvements
 
@@ -605,7 +627,9 @@ Teams often need flexible, fine-grained access control—now Parseable’s OIDC 
 
 - **Fixed Poison Errors**: Resolved issues with poison errors that occurred when write locks acquired by ingestion threads panicked.
 
-## v2.3.2 (June 3, 2025)
+## v2.3.2
+
+June 3, 2025
 
 ### New Features
 
