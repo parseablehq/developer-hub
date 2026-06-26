@@ -15,7 +15,7 @@ Node.js service ──OTLP HTTP──▶  OTel Collector :4318  ──▶  Parse
 The OTel Collector is the single point that holds Parseable credentials. Neither the Restate server nor the application process needs auth configuration.
 
 <Callout type="info">
-  Restate exports **traces only** — workflow and invocation spans. It does not export metrics or logs via OTLP. Application logs must be instrumented separately using the OpenTelemetry Logs SDK.
+  Restate exports **traces only** — server-side spans covering ingress, invocation lifecycle, and retry attempts. It does not export metrics or logs via OTLP. Application logs must be instrumented separately using the OpenTelemetry Logs SDK.
 </Callout>
 
 ## Prerequisites
@@ -162,6 +162,7 @@ const exampleWorkflow = restate.workflow({
       await ctx.run("emit-completed", async () => {
         logger.emit({
           severityNumber: SeverityNumber.INFO,
+          severityText: "INFO",
           body: `ExampleWorkflow done: ${greeting}`,
           attributes: { workflow: "ExampleWorkflow", name },
         });
@@ -231,16 +232,16 @@ LIMIT 20;
 
 ### Traces (`restate-traces`)
 
-Restate emits one trace per invocation. Spans cover the full invocation lifecycle:
+These are **Restate server spans** exported via `RESTATE_TRACING_ENDPOINT`. The server emits one trace per invocation:
 
 | Span | Description |
 |------|-------------|
-| `restate_sdk.invocation` | Root span for the handler invocation |
-| `restate_sdk.run` | Each `ctx.run()` side-effect block |
-| `restate_sdk.sleep` | Each `ctx.sleep()` call |
-| `restate_sdk.call` | Outbound service or workflow calls |
+| `ingress` | Root span — HTTP entry point where the request was accepted |
+| `invocation` | Logical invocation; child of `ingress` |
+| `invocation_attempt` | One span per execution attempt; retries produce new attempt spans |
+| `invocation_end` | Marks completion (success, failure, or cancellation) |
 
-Spans carry `restate.invocation.id`, `restate.service.name`, and `restate.handler.name` as attributes.
+`ctx.run()` blocks, `ctx.sleep()`, and outbound service calls appear as **events on the `invocation_attempt` span**, not as child spans. Attempt spans carry `restate.invocation.id`, `restate.service.name`, and `restate.handler.name` as attributes.
 
 ### Logs (`restate-logs`)
 
