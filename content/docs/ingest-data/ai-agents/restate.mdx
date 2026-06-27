@@ -15,7 +15,7 @@ Node.js service ──OTLP HTTP──▶  OTel Collector :4318  ──▶  Parse
 The OTel Collector is the single point that holds Parseable credentials. Neither the Restate server nor the application process needs auth configuration.
 
 <Callout type="info">
-  Restate exports **traces only** — server-side spans covering ingress, invocation lifecycle, and retry attempts. It does not export metrics or logs via OTLP. Application logs must be instrumented separately using the OpenTelemetry Logs SDK.
+  Restate exports **traces only**: server-side spans covering ingress, invocation lifecycle, and retry attempts. It does not export metrics or logs via OTLP. Application logs must be instrumented separately using the OpenTelemetry Logs SDK.
 </Callout>
 
 ## Prerequisites
@@ -25,7 +25,7 @@ The OTel Collector is the single point that holds Parseable credentials. Neither
 - Docker (for the OTel Collector)
 - A reachable Parseable instance
 
-## Step 1 — Run the OTel Collector
+## Step 1: Run the OTel Collector
 
 Create `otel-collector-config.yaml`:
 
@@ -86,7 +86,7 @@ Start the collector:
 docker compose up -d
 ```
 
-## Step 2 — Start Restate with tracing
+## Step 2: Start Restate with tracing
 
 <Callout type="warn">
   The `[tracing]` TOML section is silently ignored by `restate-server`. Use the `RESTATE_TRACING_ENDPOINT` environment variable instead.
@@ -107,7 +107,7 @@ RESTATE_TRACING_ENDPOINT=otlp+http://localhost:4318/v1/traces \
   restate-server
 ```
 
-## Step 3 — Instrument service logs
+## Step 3: Instrument service logs
 
 Install the OTel Logs SDK:
 
@@ -178,7 +178,7 @@ const exampleWorkflow = restate.workflow({
   Wrap `logger.emit()` inside `ctx.run()` to make log emission durable and replay-safe. Restate replays handler code on retry; calls outside `ctx.run()` execute on every replay and produce duplicate log records.
 </Callout>
 
-## Step 4 — Register and run
+## Step 4: Register and run
 
 Start the service:
 
@@ -236,12 +236,16 @@ These are **Restate server spans** exported via `RESTATE_TRACING_ENDPOINT`. The 
 
 | Span | Description |
 |------|-------------|
-| `ingress` | Root span — HTTP entry point where the request was accepted |
+| `ingress` | Root span for the HTTP entry point where the request was accepted |
 | `invocation` | Logical invocation; child of `ingress` |
 | `invocation_attempt` | One span per execution attempt; retries produce new attempt spans |
 | `invocation_end` | Marks completion (success, failure, or cancellation) |
 
 `ctx.run()` blocks, `ctx.sleep()`, and outbound service calls appear as **events on the `invocation_attempt` span**, not as child spans. Attempt spans carry `restate.invocation.id`, `restate.service.name`, and `restate.handler.name` as attributes.
+
+In Parseable, the trace stream gives you a timeline of Restate invocations and the span attributes attached to each attempt. This is where you can inspect duration, invocation metadata, and retry behavior for a workflow.
+
+![Restate traces in Parseable](./static/restate-traces.png)
 
 ### Logs (`restate-logs`)
 
@@ -254,9 +258,13 @@ Logs are application-defined. The OTel SDK attaches `service.name` and any attri
 | `service.name` | Set in `resourceFromAttributes` |
 | `workflow` | Add as attribute for cross-signal correlation |
 
+In the logs stream, Parseable shows the emitted application records along with severity, service attributes, and workflow attributes. This makes it easier to connect what the service wrote with the Restate invocation you are investigating.
+
+![Restate logs in Parseable](./static/restate-logs.png)
+
 ## Troubleshooting
 
-- **No traces in collector** — The `[tracing]` TOML key is silently ignored. Confirm `RESTATE_TRACING_ENDPOINT` is set in the environment, not in the config file.
-- **gRPC connection refused or FRAME_SIZE_ERROR** — Remove any `grpc://` or bare `http://` prefix. Use `otlp+http://localhost:4318/v1/traces` to force HTTP/1.
-- **Duplicate log records on retry** — `logger.emit()` calls must be inside `ctx.run()`. Code outside `ctx.run()` re-executes on every Restate replay.
-- **Collector deprecation warning `"otlphttp" alias is deprecated`** — Use `otlp_http/` as the exporter key (underscore, not camel-case). Both work; `otlp_http/` suppresses the warning.
+- **No traces in collector**: The `[tracing]` TOML key is silently ignored. Confirm `RESTATE_TRACING_ENDPOINT` is set in the environment, not in the config file.
+- **gRPC connection refused or FRAME_SIZE_ERROR**: Remove any `grpc://` or bare `http://` prefix. Use `otlp+http://localhost:4318/v1/traces` to force HTTP/1.
+- **Duplicate log records on retry**: `logger.emit()` calls must be inside `ctx.run()`. Code outside `ctx.run()` re-executes on every Restate replay.
+- **Collector deprecation warning `"otlphttp" alias is deprecated`**: Use `otlp_http/` as the exporter key (underscore, not camel-case). Both work; `otlp_http/` suppresses the warning.
