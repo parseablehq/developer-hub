@@ -13,6 +13,7 @@
     "dspy",
     "n8n",
     "dbos",
-    "temporal"
+    "temporal",
+    "restate"
   ]
 }
