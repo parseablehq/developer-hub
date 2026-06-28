@@ -1,0 +1,122 @@
+---
+title: Starburst Galaxy
+description: Ship Starburst Galaxy cluster metrics to Parseable using Prometheus remote write for long-term retention and SQL-based analysis.
+---
+
+[Starburst Galaxy](https://www.starburst.io/platform/starburst-galaxy/) is a managed query engine (SaaS) built on Trino that lets you query data across multiple sources — S3, Snowflake, PostgreSQL, BigQuery — without moving data. Galaxy exposes cluster health metrics (query throughput, memory, CPU, active workers, queued queries) in OpenMetrics/Prometheus format.
+
+This guide shows how to ship those metrics to Parseable using Prometheus remote write.
+
+## Architecture
+
+```
+Starburst Galaxy          Prometheus              Parseable
+  /v1/metrics    ──────►  scrape + remote  ──────►  /v1/prometheus/write
+  (OpenMetrics)            write                     (starburst-metrics stream)
+```
+
+## Prerequisites
+
+- Starburst Galaxy account with a running cluster
+- Prometheus running (Docker example below)
+- Parseable instance with ingestor endpoint accessible
+
+## Step 1 — Create a dedicated role in Galaxy
+
+1. Galaxy UI → **Access** → **Roles and privileges**
+2. Click **Add role** → name it `metrics-scraper` → click **Add role**
+3. Click `metrics-scraper` → **Privileges** tab → **Add privilege**
+4. Click **Cluster** tab → select your cluster → check **Monitor cluster** → **Save privileges**
+
+## Step 2 — Create a service account
+
+1. Galaxy UI → **Access** → **Service accounts**
+2. Click **Create new service account** → name it `metrics-scraper`
+3. Set **Default role** to `metrics-scraper`
+4. Check **Generate password** → click **Create**
+5. Copy and save the generated password — it is shown only once
+
+The full username format is: `metrics-scraper@<your-account>.galaxy.starburst.io`
+
+## Step 3 — Get your cluster URL
+
+1. Galaxy UI → **Partner connect** → click **Trino Python** tile
+2. Select your cluster from the dropdown
+3. Copy the **Host** value (e.g. `my-cluster.trino.galaxy.starburst.io`)
+
+## Step 4 — Configure Prometheus
+
+Create `prometheus.yml`:
+
+```yaml
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'starburst-galaxy'
+    metrics_path: /v1/metrics
+    scheme: https
+    basic_auth:
+      username: 'metrics-scraper@<your-account>.galaxy.starburst.io'
+      password: '<service-account-password>'
+    static_configs:
+      - targets: ['<cluster-host>']
+        labels:
+          cluster: 'starburst-galaxy'
+
+remote_write:
+  - url: "http://<parseable-ingestor>:8000/v1/prometheus/write"
+    basic_auth:
+      username: <parseable-username>
+      password: <parseable-password>
+    headers:
+      X-P-Stream: starburst-metrics
+      X-P-Log-Source: otel-metrics
+```
+
+## Step 5 — Run Prometheus
+
+```yaml
+# docker-compose.yml
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--enable-feature=remote-write-receiver'
+    restart: unless-stopped
+```
+
+```bash
+docker-compose up -d
+```
+
+Verify the scrape target is healthy: open `http://localhost:9090/targets` — `starburst-galaxy` should show **UP**.
+
+## Step 6 — Verify data in Parseable
+
+Run this query in Parseable against the `starburst-metrics` stream:
+
+```sql
+SELECT
+  COUNT(*) AS count,
+  "metric_name",
+  "metric_description",
+  "metric_type"
+FROM "starburst-metrics"
+WHERE "metric_type" IN ('sum', 'gauge', 'summary', 'histogram', 'exponential_histogram')
+GROUP BY "metric_name", "metric_description", "metric_type"
+ORDER BY count DESC, "metric_name"
+```
+
+You should see hundreds of JVM, query, and cluster metrics from your Galaxy cluster.
+
+## Notes
+
+- Galaxy clusters **auto-suspend** when idle on the free tier. Metrics are only available when the cluster status is **Running**. Resume the cluster and run a query to wake it before scraping.
+- Each cluster requires a separate scrape job in `prometheus.yml`. Add additional `scrape_configs` entries for multiple clusters using the same service account (grant `Monitor cluster` privilege for each cluster).
+- Parseable automatically creates the `starburst-metrics` stream on first ingest — no manual setup needed.
