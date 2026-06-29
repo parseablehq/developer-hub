@@ -6,7 +6,9 @@ redirect_from:
 
 import { Card, Cards } from 'fumadocs-ui/components/card';
 
-This section covers the main HTTP endpoints that developers use with Parseable. It includes the older JSON and dataset APIs, along with the newer native OTLP endpoints for logs, traces, metrics, and Prometheus remote write.
+This section is the quickest way to understand how data reaches Parseable and which HTTP endpoint fits your integration.
+
+Most teams do not need every route listed here. In practice, you usually start with one ingestion path, send data into a dataset, and then use the query and dataset APIs only when you need direct control from your own tooling.
 
 ## Getting Started
 
@@ -17,10 +19,18 @@ Before you begin, make sure you have:
 
 Most integrations fall into one of these paths:
 
-- Use `/api/v1/ingest` when you want to send JSON events and select the destination dataset with headers.
-- Use `/v1/logs`, `/v1/traces`, or `/v1/metrics` when you are sending native OTLP data.
-- Use `/v1/prometheus/write` when you are forwarding Prometheus Remote Write traffic.
-- Use `/api/v1/query` and `/api/v1/logstream/{stream_name}` for SQL querying and dataset management.
+- Use `/api/v1/ingest` when your application already has JSON events and you want to route them with headers.
+- Use `/v1/logs`, `/v1/traces`, or `/v1/metrics` when your collector or SDK is already sending native OTLP data.
+- Use `/v1/prometheus/write` when Prometheus or another compatible system is forwarding metrics through Remote Write.
+- Use `/api/v1/query` and `/api/v1/logstream/{stream_name}` when you need SQL queries or direct dataset management from your own code.
+
+If you are deciding where to start, the simplest rule is this:
+
+- JSON events from an app or script: `/api/v1/ingest`
+- OpenTelemetry logs: `/v1/logs`
+- OpenTelemetry traces: `/v1/traces`
+- OpenTelemetry metrics: `/v1/metrics`
+- Prometheus Remote Write metrics: `/v1/prometheus/write`
 
 ## Ingestion APIs
 
@@ -88,13 +98,15 @@ Most integrations fall into one of these paths:
 
 ## Authentication
 
-API reference endpoints require authentication. The OpenAPI reference uses HTTP Basic authentication by default:
+These endpoints require authentication. The reference uses HTTP Basic authentication in the examples:
 
 ```bash
 Authorization: Basic <base64-encoded-credentials>
 ```
 
 If you use Parseable API keys, send the key in the `X-API-Key` header as described in the [API Keys](/docs/user-guide/api-keys) guide.
+
+For ingestion endpoints, the other header to pay attention to is usually `X-P-Stream`. That header tells Parseable which dataset should receive the payload. OTLP routes also use `X-P-Log-Source` to identify whether the payload is logs, traces, or metrics.
 
 ## Need Help?
 

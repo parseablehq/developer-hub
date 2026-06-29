@@ -13,7 +13,8 @@ _openapi:
           `X-P-Log-Source: otel-logs` to identify the payload type.
 ---
 
-Send OpenTelemetry logs to Parseable using the native `/v1/logs` endpoint.
-Use `X-P-Stream` to choose the destination dataset and `X-P-Log-Source: otel-logs` to identify the payload type.
+Use this route when your collector or SDK is already exporting OpenTelemetry logs in OTLP format.
+
+`X-P-Stream` chooses the destination dataset, and `X-P-Log-Source: otel-logs` tells Parseable how to interpret the payload. This is the route to use when you want native OTLP logs rather than custom JSON ingestion.
 
 <APIPage document={"./public/parseable-api-schema-cleaned.yaml"} operations={[{"path":"/v1/logs","method":"post"}]} />
