@@ -1,0 +1,20 @@
+---
+title: Ingest OTLP traces
+full: true
+_openapi:
+  method: POST
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: >
+          Send OpenTelemetry traces to Parseable using the native `/v1/traces`
+          endpoint. Use `X-P-Stream` to choose the destination dataset and
+          `X-P-Log-Source: otel-traces` to identify the payload type.
+---
+
+Use this route when your collector or SDK is exporting OpenTelemetry traces and you want Parseable to receive them directly.
+
+`X-P-Stream` chooses the destination dataset, and `X-P-Log-Source: otel-traces` identifies the payload type. This is the endpoint to use for native OTLP traces instead of custom event ingestion.
+
+<APIPage document={"./public/parseable-api-schema-cleaned.yaml"} operations={[{"path":"/v1/traces","method":"post"}]} />

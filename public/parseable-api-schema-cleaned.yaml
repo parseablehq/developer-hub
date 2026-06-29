@@ -28,11 +28,11 @@ paths:
     put:
       tags:
         - Dataset Management
-      summary: Create a log dataset
+      summary: Create a dataset
       operationId: createLogStream
       description: |
-        This endpoint is used to create a new log dataset within Parseable.  
-        A **log dataset** is a group of similar logs. For example, you can create a log dataset for a specific application's logs, another log dataset for your database logs, and so on. You can create as many log streams as needed to organize and manage logs efficiently.  
+        Create a dataset in Parseable using the dataset name in the path.
+        This endpoint is used for stream creation before writing JSON events directly to `/api/v1/logstream/{stream_name}`.
       security:
         - basicAuth: []
       parameters:
@@ -49,11 +49,11 @@ paths:
     delete:
       tags:
         - Dataset Management
-      summary: Delete a log dataset
+      summary: Delete a dataset
       operationId: deleteLogStream
       description: |
-        This endpoint is used to delete an existing log dataset.
-        When a log dataset is deleted, all associated data is permanently removed.
+        Delete an existing dataset.
+        When a dataset is deleted, all associated data is permanently removed.
       security:
         - basicAuth: []
       parameters:
@@ -70,14 +70,11 @@ paths:
     post:
       tags:
         - Dataset Management
-      summary: Send logs to a dataset
+      summary: Send JSON events to a dataset
       operationId: sendLogsToStream
       description: |
-        **Log Ingestion API via Stream Endpoint**  
-        In this approach, you need to create a dataset first using the **Create Stream API**.  
-        Once the dataset is created, you can send logs to the dataset ingestion API endpoint:  
-        **http://INGESTION_ENDPOINT/api/v1/logstream/{stream_name}**  
-        This API does not require any headers for specifying the dataset name.
+        Send JSON events directly to an existing dataset.
+        The destination dataset is taken from the `{stream_name}` path parameter, so no `X-P-Stream` header is needed.
       requestBody:
         content:
           application/json:
@@ -109,28 +106,12 @@ paths:
   /api/v1/query:
     post:
       tags:
-        - Query API
-      summary: Query a log dataset
+        - Query
+      summary: Query a dataset with SQL
       operationId: queryLogStream
       description: |
-        **Parseable Log Query API**  
-        This endpoint allows you to query logs using PostgreSQL syntax.  
-        
-        The query API accepts the following parameters:
-        - **query**: The SQL query to execute (required)
-        - **startTime**: The start time for the query range (required)
-        - **endTime**: The end time for the query range (required)
-        - **streamName**: The name of the log dataset to query (required)
-        
-        Example request body:
-        ```json
-        {
-          "query": "SELECT * FROM log WHERE log ILIKE '%error%';",
-          "startTime": "2023-01-01 00:00:00.000000",
-          "endTime": "2023-01-01 23:59:59.999999",
-          "streamName": "example-dataset"
-        }
-        ```
+        Run a SQL query in Parseable.
+        The dataset is selected inside the SQL statement itself, typically in the `FROM` clause.
       requestBody:
         content:
           application/json:
@@ -138,7 +119,6 @@ paths:
               type: object
               required:
                 - query
-                - streamName
                 - startTime
                 - endTime
               properties:
@@ -148,8 +128,16 @@ paths:
                   type: string
                 endTime:
                   type: string
-                streamName:
-                  type: string
+                sendNull:
+                  type: boolean
+                streaming:
+                  type: boolean
+              example:
+                query: SELECT * FROM "example-dataset" WHERE level = 'error'
+                startTime: "2023-01-01T00:00:00Z"
+                endTime: "2023-01-01T23:59:59Z"
+                sendNull: false
+                streaming: false
       security:
         - basicAuth: []
       responses:
@@ -160,45 +148,44 @@ paths:
   /api/v1/ingest:
     post:
       tags:
-        - Log Ingestion
-      summary: Ingest logs with headers
+        - JSON Ingestion
+      summary: Ingest JSON events with headers
       operationId: ingestLogsWithHeaders
       description: |
-        **Log Ingestion API via Custom Headers**  
-        This approach allows you to send logs to Parseable using custom headers to specify the target dataset.  
-        
-        Required headers:
-        - **X-P-Stream**: The name of the dataset to ingest logs into
-        
-        The API accepts logs in JSON format. You can send single log entries or arrays of log entries.
-        
-        Example:
-        ```json
-        {
-          "level": "info",
-          "message": "User logged in",
-          "timestamp": "2023-01-01T12:00:00Z",
-          "user_id": "user123"
-        }
-        ```
-        
-        Or as an array:
-        ```json
-        [
-          {
-            "level": "info",
-            "message": "User logged in",
-            "timestamp": "2023-01-01T12:00:00Z",
-            "user_id": "user123"
-          },
-          {
-            "level": "error",
-            "message": "Failed to process request",
-            "timestamp": "2023-01-01T12:01:00Z",
-            "error_code": "ERR-1001"
-          }
-        ]
-        ```
+        Ingest JSON events and route them with request headers.
+        Use `X-P-Stream` to specify the destination dataset.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                level: info
+                message: User logged in
+                timestamp: "2023-01-01T12:00:00Z"
+                user_id: user123
+      security:
+        - basicAuth: []
+      parameters:
+        - name: X-P-Stream
+          in: header
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /v1/logs:
+    post:
+      tags:
+        - OTLP Ingestion
+      summary: Ingest OTLP logs
+      operationId: ingestOtlpLogs
+      description: |
+        Ingest OpenTelemetry logs through Parseable's native OTLP logs endpoint.
+        Use `X-P-Stream` to choose the destination dataset and `X-P-Log-Source: otel-logs` to identify the payload type.
       requestBody:
         content:
           application/json:
@@ -211,6 +198,117 @@ paths:
           in: header
           schema:
             type: string
+          required: true
+        - name: X-P-Log-Source
+          in: header
+          schema:
+            type: string
+            enum:
+              - otel-logs
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /v1/traces:
+    post:
+      tags:
+        - OTLP Ingestion
+      summary: Ingest OTLP traces
+      operationId: ingestOtlpTraces
+      description: |
+        Ingest OpenTelemetry traces through Parseable's native OTLP traces endpoint.
+        Use `X-P-Stream` to choose the destination dataset and `X-P-Log-Source: otel-traces` to identify the payload type.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      security:
+        - basicAuth: []
+      parameters:
+        - name: X-P-Stream
+          in: header
+          schema:
+            type: string
+          required: true
+        - name: X-P-Log-Source
+          in: header
+          schema:
+            type: string
+            enum:
+              - otel-traces
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /v1/metrics:
+    post:
+      tags:
+        - OTLP Ingestion
+      summary: Ingest OTLP metrics
+      operationId: ingestOtlpMetrics
+      description: |
+        Ingest OpenTelemetry metrics through Parseable's native OTLP metrics endpoint.
+        Use `X-P-Stream` to choose the destination dataset and `X-P-Log-Source: otel-metrics` to identify the payload type.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      security:
+        - basicAuth: []
+      parameters:
+        - name: X-P-Stream
+          in: header
+          schema:
+            type: string
+          required: true
+        - name: X-P-Log-Source
+          in: header
+          schema:
+            type: string
+            enum:
+              - otel-metrics
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /v1/prometheus/write:
+    post:
+      tags:
+        - Prometheus Remote Write
+      summary: Ingest Prometheus remote write metrics
+      operationId: prometheusRemoteWrite
+      description: |
+        Ingest metrics using the Prometheus Remote Write protocol.
+        This endpoint accepts snappy-compressed protobuf payloads and routes the converted metrics into the target dataset.
+      security:
+        - basicAuth: []
+      parameters:
+        - name: Content-Encoding
+          in: header
+          schema:
+            type: string
+            enum:
+              - snappy
+          required: true
+        - name: X-P-Stream
+          in: header
+          schema:
+            type: string
+          required: true
+        - name: X-P-Log-Source
+          in: header
+          schema:
+            type: string
+            enum:
+              - otel-metrics
           required: true
       responses:
         '200':

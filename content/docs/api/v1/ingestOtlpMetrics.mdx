@@ -1,0 +1,20 @@
+---
+title: Ingest OTLP metrics
+full: true
+_openapi:
+  method: POST
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: >
+          Send OpenTelemetry metrics to Parseable using the native `/v1/metrics`
+          endpoint. Use `X-P-Stream` to choose the destination dataset and
+          `X-P-Log-Source: otel-metrics` to identify the payload type.
+---
+
+Use this route when OpenTelemetry metrics are being forwarded directly to Parseable.
+
+`X-P-Stream` chooses the destination dataset, and `X-P-Log-Source: otel-metrics` marks the payload as OTLP metrics. This route is useful when metrics are already in the OpenTelemetry pipeline and do not need Prometheus Remote Write.
+
+<APIPage document={"./public/parseable-api-schema-cleaned.yaml"} operations={[{"path":"/v1/metrics","method":"post"}]} />

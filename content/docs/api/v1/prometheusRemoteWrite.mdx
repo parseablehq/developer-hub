@@ -1,0 +1,21 @@
+---
+title: Prometheus Remote Write
+full: true
+_openapi:
+  method: POST
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: >
+          Send snappy-compressed Prometheus Remote Write payloads to
+          `/v1/prometheus/write`. Use `X-P-Stream` to choose the destination
+          dataset and `X-P-Log-Source: otel-metrics` to identify the payload
+          type.
+---
+
+Use this route when metrics are being forwarded with the Prometheus Remote Write protocol.
+
+This endpoint accepts the standard snappy-compressed Remote Write payload. `X-P-Stream` chooses the destination dataset, and `X-P-Log-Source: otel-metrics` tells Parseable to store the converted payload as metrics data.
+
+<APIPage document={"./public/parseable-api-schema-cleaned.yaml"} operations={[{"path":"/v1/prometheus/write","method":"post"}]} />

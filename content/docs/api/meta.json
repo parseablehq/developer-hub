@@ -3,9 +3,13 @@
   "pages": [
     "---v1---",
     "v1/ingestLogsWithHeaders",
+    "v1/ingestOtlpLogs",
+    "v1/ingestOtlpTraces",
+    "v1/ingestOtlpMetrics",
+    "v1/prometheusRemoteWrite",
     "v1/queryLogStream",
-    "v1/deleteLogStream",
     "v1/sendLogsToStream",
-    "v1/createLogStream"
+    "v1/createLogStream",
+    "v1/deleteLogStream"
   ]
 }
