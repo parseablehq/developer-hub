@@ -6,7 +6,7 @@ redirect_from:
 
 import { Card, Cards } from 'fumadocs-ui/components/card';
 
-This section provides detailed information about the available API endpoints for interacting with Parseable.
+This section covers the main HTTP endpoints that developers use with Parseable. It includes the older JSON and dataset APIs, along with the newer native OTLP endpoints for logs, traces, metrics, and Prometheus remote write.
 
 ## Getting Started
 
@@ -15,41 +15,74 @@ Before you begin, make sure you have:
 - The base URL of your Parseable server
 - Required authentication credentials (if authentication is enabled)
 
-## API Endpoints
+Most integrations fall into one of these paths:
+
+- Use `/api/v1/ingest` when you want to send JSON events and select the destination dataset with headers.
+- Use `/v1/logs`, `/v1/traces`, or `/v1/metrics` when you are sending native OTLP data.
+- Use `/v1/prometheus/write` when you are forwarding Prometheus Remote Write traffic.
+- Use `/api/v1/query` and `/api/v1/logstream/{stream_name}` for SQL querying and dataset management.
+
+## Ingestion APIs
 
 <Cards>
   <Card 
-    href="/docs/api/v1/logstream/stream_name/put"
-    title="Create log dataset"
+    href="/api/v1/ingestLogsWithHeaders"
+    title="Ingest JSON events with headers"
   >
-    Create a new log dataset with the specified name and configuration.
+    Send JSON events and route them with the `X-P-Stream` header.
   </Card>
   <Card 
-    href="/docs/api/v1/logstream/stream_name/post"
-    title="Send logs to a dataset"
+    href="/api/v1/ingestOtlpLogs"
+    title="Ingest OTLP logs"
   >
-    Send logs to an existing log dataset.
+    Send OpenTelemetry logs to Parseable using the native `/v1/logs` endpoint.
   </Card>
+  <Card 
+    href="/api/v1/ingestOtlpTraces"
+    title="Ingest OTLP traces"
+  >
+    Send OpenTelemetry traces to Parseable using the native `/v1/traces` endpoint.
+  </Card>
+  <Card 
+    href="/api/v1/ingestOtlpMetrics"
+    title="Ingest OTLP metrics"
+  >
+    Send OpenTelemetry metrics to Parseable using the native `/v1/metrics` endpoint.
+  </Card>
+  <Card
+    href="/api/v1/prometheusRemoteWrite"
+    title="Prometheus Remote Write"
+  >
+    Send snappy-compressed Prometheus Remote Write payloads to `/v1/prometheus/write`.
+  </Card>
+</Cards>
 
-  <Card 
-    href="/docs/api/v1/logstream/stream_name/delete"
-    title="Delete log dataset"
-  >
-    Delete an existing log dataset and all its associated data.
-  </Card>
+## Query and Dataset APIs
 
+<Cards>
   <Card 
-    href="/docs/api/v1/ingest"
-    title="Ingest logs with headers"
+    href="/api/v1/queryLogStream"
+    title="Query a dataset with SQL"
   >
-    Send log data to a specific log dataset using HTTP headers.
+    Run SQL queries across datasets. The dataset is selected inside the `FROM` clause.
   </Card>
-
   <Card 
-    href="/docs/api/v1/query"
-    title="Query API"
+    href="/api/v1/sendLogsToStream"
+    title="Send JSON events to a dataset"
   >
-    Query data from log streams using SQL.
+    Send JSON events directly to an existing dataset by path.
+  </Card>
+  <Card 
+    href="/api/v1/createLogStream"
+    title="Create a dataset"
+  >
+    Create a dataset before writing events directly to `/api/v1/logstream/{stream_name}`.
+  </Card>
+  <Card 
+    href="/api/v1/deleteLogStream"
+    title="Delete a dataset"
+  >
+    Delete a dataset and its associated data.
   </Card>
 </Cards>
 
@@ -62,23 +95,6 @@ Authorization: Basic <base64-encoded-credentials>
 ```
 
 If you use Parseable API keys, send the key in the `X-API-Key` header as described in the [API Keys](/docs/user-guide/api-keys) guide.
-
-## Rate Limiting
-
-API requests are subject to rate limiting. The default rate limit is 100 requests per minute per IP address.
-
-## Error Handling
-
-All error responses follow a standard format:
-
-```json
-{
-  "error": {
-    "code": "error_code",
-    "message": "Human-readable error message"
-  }
-}
-```
 
 ## Need Help?
 
