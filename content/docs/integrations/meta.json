@@ -3,6 +3,7 @@
   "pages": [
     "alerting",
     "auth",
+    "data-platforms",
     "visualization"
   ]
 }
