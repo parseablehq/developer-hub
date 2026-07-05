@@ -98,13 +98,13 @@ If you are deciding where to start, the simplest rule is this:
 
 ## Authentication
 
-These endpoints require authentication. The reference uses HTTP Basic authentication in the examples:
+These endpoints require authentication. This reference uses API keys so new integrations can start with the recommended machine-to-machine flow.
 
 ```bash
-Authorization: Basic <base64-encoded-credentials>
+X-API-Key: <api-key>
 ```
 
-If you use Parseable API keys, send the key in the `X-API-Key` header as described in the [API Keys](/docs/user-guide/api-keys) guide.
+You can find the setup flow in the [API Keys](/docs/user-guide/api-keys) guide.
 
 For ingestion endpoints, the other header to pay attention to is usually `X-P-Stream`. That header tells Parseable which dataset should receive the payload. OTLP routes also use `X-P-Log-Source` to identify whether the payload is logs, traces, or metrics.
 

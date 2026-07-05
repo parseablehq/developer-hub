@@ -18,11 +18,12 @@ servers:
         default: '8000'
 components:
   securitySchemes:
-    basicAuth:
-      type: http
-      scheme: basic
+    apiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
 security:
-  - basicAuth: []
+  - apiKey: []
 paths:
   /api/v1/logstream/{stream_name}:
     put:
@@ -34,7 +35,7 @@ paths:
         Create a dataset in Parseable using the dataset name in the path.
         This endpoint is used for stream creation before writing JSON events directly to `/api/v1/logstream/{stream_name}`.
       security:
-        - basicAuth: []
+        - apiKey: []
       parameters:
         - name: stream_name
           in: path
@@ -55,7 +56,7 @@ paths:
         Delete an existing dataset.
         When a dataset is deleted, all associated data is permanently removed.
       security:
-        - basicAuth: []
+        - apiKey: []
       parameters:
         - name: stream_name
           in: path
@@ -91,7 +92,7 @@ paths:
                   status: 500
                   referrer: http://www.google.com/
       security:
-        - basicAuth: []
+        - apiKey: []
       parameters:
         - name: stream_name
           in: path
@@ -128,18 +129,12 @@ paths:
                   type: string
                 endTime:
                   type: string
-                sendNull:
-                  type: boolean
-                streaming:
-                  type: boolean
               example:
                 query: SELECT * FROM "example-dataset" WHERE level = 'error'
                 startTime: "2023-01-01T00:00:00Z"
                 endTime: "2023-01-01T23:59:59Z"
-                sendNull: false
-                streaming: false
       security:
-        - basicAuth: []
+        - apiKey: []
       responses:
         '200':
           description: Successful response
@@ -165,7 +160,7 @@ paths:
                 timestamp: "2023-01-01T12:00:00Z"
                 user_id: user123
       security:
-        - basicAuth: []
+        - apiKey: []
       parameters:
         - name: X-P-Stream
           in: header
@@ -192,7 +187,7 @@ paths:
             schema:
               type: object
       security:
-        - basicAuth: []
+        - apiKey: []
       parameters:
         - name: X-P-Stream
           in: header
@@ -226,7 +221,7 @@ paths:
             schema:
               type: object
       security:
-        - basicAuth: []
+        - apiKey: []
       parameters:
         - name: X-P-Stream
           in: header
@@ -260,7 +255,7 @@ paths:
             schema:
               type: object
       security:
-        - basicAuth: []
+        - apiKey: []
       parameters:
         - name: X-P-Stream
           in: header
@@ -289,7 +284,7 @@ paths:
         Ingest metrics using the Prometheus Remote Write protocol.
         This endpoint accepts snappy-compressed protobuf payloads and routes the converted metrics into the target dataset.
       security:
-        - basicAuth: []
+        - apiKey: []
       parameters:
         - name: Content-Encoding
           in: header
