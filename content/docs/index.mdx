@@ -5,7 +5,7 @@ icon: House
 
 import {IconEmpathize,IconTelescope, IconRocket, IconCloudDataConnection, IconFileTextShield, IconLayersIntersect, IconHandClick,IconGeometry,IconBrandSpeedtest,IconBrandInertia,IconFileTypeSql, IconCloud,IconBrandTabler,IconBrandOpenSource } from '@tabler/icons-react';
 import { Banner } from 'fumadocs-ui/components/banner';
-
+import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 
 Parseable is an open source, column oriented, data lake platform, purpose built for observability. It provides SQL & PromQL queries and major observability features like agent observability, alerting, dashboards, anomaly detection, APM - all within a single binary.
 
@@ -17,38 +17,50 @@ Teams use Parseable to unify telemetry data from across their infrastructure, ap
 
 ## Get started
 
-Run Parseable locally with Docker:
+Download and run the Parseable binary on your laptop:
 
 ```bash
-docker run -p 8000:8000 quay.io/parseablehq/parseable:latest parseable local-store
+curl -fsSL https://logg.ing/install | bash
+```
+
+<Callout title="For Windows users">
+```bash
+powershell -c "irm https://logg.ing/install-windows | iex"
+```
+</Callout>
+
+Once you have Parseable running, send an event with the command below. This will send logs to the demo stream. You can see the logs in the dashboard.
+
+```bash
+curl --location --request POST 'http://localhost:8000/api/v1/ingest' \
+--header 'X-P-Stream: demo' \
+--header 'Authorization: Basic YWRtaW46YWRtaW4=' \
+--header 'Content-Type: application/json' \
+--data-raw '[
+    {
+        "id": "434a5f5e-2f5f-11ed-a261-0242ac120002",
+        "datetime": "24/Jun/2022:14:12:15 +0000",
+        "host": "153.10.110.81"
+    }
+]'
 ```
 
 Open the console at [http://localhost:8000](http://localhost:8000) and sign in with `admin` / `admin`. For other install options and a full walkthrough, see the [Quickstart](/docs/quickstart).
+
+## Editions
+
+Parseable is available in three editions. <a href="/docs/editions/compare">Compare editions ↗︎</a>
+
+<Accordions type="single">
+    <Accordion title="Parseable Cloud">Fully managed cloud platform with all advanced features</Accordion>
+    <Accordion title="Parseable Enterprise">Mission critical deployments with advanced features - deploy anywhere</Accordion>
+    <Accordion title="Parseable OSS">The open-source core, free to self-host</Accordion>
+</Accordions>
 
 <Callout title="Tip">
 Working with an AI assistant? Point it at [parseable.com/llms.txt](https://www.parseable.com/llms.txt), or use **Copy Markdown** on any documentation page.
 </Callout>
 
-
-## Editions
-
-Parseable is available as cloud hosted Parseable Pro (full managed by Parseable), Parseable Enterprise for mission critical deployments with additional features and SLA, and Parseable OSS.
-
-<Cards>
-
-<Card href="/docs/flavours/pro" icon={<IconCloud className="text-blue-500" />}  className="text-blue-500 col-span-2" title='Parseable Pro'>
-Fully managed cloud platform
-</Card>
-
-<Card href="/docs/flavours/enterprise" icon={<IconBrandTabler className="text-blue-500" />} className="text-blue-500" title='Parseable Enterprise'>
-Mission critical deployments with advanced features
-</Card>
-
-<Card href="/docs/flavours/oss" icon={<IconBrandOpenSource className="text-blue-500" />} className="text-blue-500" title='Parseable OSS'>
-The open-source core, free to self-host
-</Card>
-
-</Cards>
 
 ## Next steps
 

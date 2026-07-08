@@ -31,7 +31,7 @@ You can use HTTP headers to control how data is ingested and processed.
 |--------|-------------|---------|-----------------|
 | `X-P-Stream` | Target dataset name. Creates the dataset if it doesn't exist. | `nginx-logs` | Valid dataset name |
 | `Authorization` | Basic auth credentials (base64 encoded `username:password`) | `Basic YWRtaW46YWRtaW4=` | Valid credentials |
-| `X-P-Tenant-ID` | Target tenant ID. | `tenant-123` | Valid tenant ID - only applicable for multi-tenant setups (for example Parseable Pro) |
+| `X-P-Tenant-ID` | Target tenant ID. | `tenant-123` | Valid tenant ID - only applicable for multi-tenant setups (for example Parseable Cloud) |
 | `Content-Type` | Content type of the request body | `application/json` | `application/json`,`application/protobuf` |
 
 ### Optional headers
@@ -290,7 +290,7 @@ Integrate Parseable with Ruby applications using standard logging frameworks.
 
 ## Log processing
 
-<OfferingPills pro enterprise className="mb-4" />
+<OfferingPills cloud enterprise className="mb-4" />
 
 When agents like Fluent Bit or Vector send logs to Parseable, they typically send the entire log line in a single field (usually named `log` or `message`). With log extraction enabled, Parseable can automatically parse this raw log line and extract structured fields using regex patterns.
 
