@@ -55,9 +55,9 @@ export function ProBadge({ className = '' }: BadgeProps) {
         onMouseLeave={() => setShowTooltip(false)}
         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#F3E8FF] text-[#7E22CE] dark:bg-[#1F162A] dark:text-[#C084FC] hover:bg-[#E9D5FF] dark:hover:bg-[#2A1E3A] transition-colors cursor-pointer no-underline ${className}`}
       >
-        Pro
+        Cloud
       </Link>
-      {showTooltip && <Tooltip text="Available in Parseable Pro plan" position={position} />}
+      {showTooltip && <Tooltip text="Available in Parseable Cloud plan" position={position} />}
     </>
   );
 }
@@ -93,15 +93,15 @@ export function EnterpriseBadge({ className = '' }: BadgeProps) {
 }
 
 interface OfferingPillsProps {
-  pro?: boolean;
+  cloud?: boolean;
   enterprise?: boolean;
   className?: string;
 }
 
-export function OfferingPills({ pro = false, enterprise = false, className = '' }: OfferingPillsProps) {
+export function OfferingPills({ cloud = false, enterprise = false, className = '' }: OfferingPillsProps) {
   return (
     <div className={`inline-flex gap-1.5 ${className}`}>
-      {pro && <ProBadge />}
+      {cloud && <ProBadge />}
       {enterprise && <EnterpriseBadge />}
     </div>
   );

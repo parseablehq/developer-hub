@@ -1,0 +1,49 @@
+---
+title: Compare editions
+---
+
+Parseable is available in three editions: the free, [self-hosted OSS](https://github.com/parseablehq/parseable) core, the [fully managed Cloud](https://telemetry.new/) offering, and Enterprise for mission-critical deployments. This page compares what's included in each.
+
+| | OSS | Cloud | Enterprise |
+|---|---|---|---|
+| Deployment | Self-hosted | Fully managed on Parseable infrastructure | Fully managed, BYOC, or On-Premises |
+| Infrastructure | Self-managed | Shared infrastructure | Dedicated infrastructure |
+| License | AGPLv3 | Commercial | Commercial |
+
+## Platform features
+
+| Feature | OSS | Cloud | Enterprise |
+|---------|:---:|:---:|:---:|
+| [Threshold alerts](/docs/user-guide/alerting/standard-threshold) | ✅ | ✅ | ✅ |
+| [Dashboards](/docs/user-guide/dashboards) | ✅ | ✅ | ✅ |
+| [SQL query](/docs/key-concepts/query) | ✅ | ✅ | ✅ |
+| [OpenID Connect](/docs/user-guide/openid) (SSO) | ✅ | ✅ | ✅ |
+| Unlimited users | ✅ | ✅ | ✅ |
+| Unlimited hosts | ⚠️ (Maximum 1 query node) | ✅ | ✅ |
+| [Role based access control](/docs/user-guide/rbac) | ⚠️ (Groups not supported) | ✅ | ✅ |
+| Customizable [retention](/docs/user-guide/retention) | ✅ | ✅ (365 days included) | ✅ |
+| Customizable object [storage](/docs/key-concepts/storage)  | ✅ | ✅ (Parseable managed) | ✅ |
+| [PromQL query](/docs/key-concepts/query) | ❌ | ✅ | ✅ |
+| [High availability cluster](/docs/key-concepts/high-availability) | ❌ | ✅ | ✅ |
+| [Smart cache](/docs/user-guide/smart-cache) | ❌ | ✅ | ✅ |
+| Natural language Q&A with [Keystone](/docs/user-guide/ai-native/keystone) | ❌ | ✅ | ✅ |
+| [Anomaly detection alerts](/docs/user-guide/alerting/anomaly) | ❌ | ✅ | ✅ |
+| [Forecasting alerts](/docs/user-guide/alerting/forecasting) | ❌ | ✅ | ✅ |
+| [AI SQL generation](/docs/user-guide/ai-native/text-to-sql) | ❌ | ✅ | ✅ |
+| [Summarization](/docs/user-guide/ai-native/summary) | ❌ | ✅ | ✅ |
+| [Custom partitioning](/docs/key-concepts/partitioning) | ❌ | ❌ | ✅ |
+| Multi-tenant cluster | ❌ | ❌ | ✅ |
+| Audit Logging | ❌ | ❌ | ✅ |
+| Live Tailing | ❌ | ❌ | ✅ |
+| Bring Your Own [Cloud, LLM, OAuth] | ❌ | ❌ | ✅ |
+| Data Residency Options | ❌ | ❌ | ✅ |
+
+## Support
+
+| Feature | OSS | Cloud | Enterprise |
+|---------|:---:|:---:|:---:|
+| Community (Slack, GitHub) | ✅ | ✅ | ✅ |
+| Architecture and design support | ❌ | ✅ | ✅ |
+| 24x7 product support via portal | ❌ | ✅ | ✅ |
+| Dedicated SLA | ❌ | ✅ | ✅ |
+| Ingestion agent management | ❌ | ❌ | ✅ |

@@ -12,19 +12,39 @@ import { Step, Steps } from 'fumadocs-ui/components/steps';
 
 ## Run locally
 
-To run Parseable locally, run the following command to start Parseable in local mode on your machine:
+Download and run the Parseable binary on your laptop:
 
 ```bash
-docker run -p 8000:8000 quay.io/parseablehq/parseable:latest parseable local-store
+curl -fsSL https://logg.ing/install | bash
 ```
 
-Once the container is running successfully, go to [http://localhost:8000](http://localhost:8000) and login with the default credentials `admin` / `admin`.
+For Windows users
 
-You'll see the setup screen where you can import sample data in one click. This will also create few dashboards and queries to get you started.
+```bash
+powershell -c "irm https://logg.ing/install-windows | iex"
+```
 
-## Parseable Pro
+Once you have Parseable running, send an event with the command below. This will send logs to the demo stream. You can see the logs in the dashboard.
 
-To get started with our full managed cloud offering, sign up for Parseable Pro for a free 14 days trial, without any credit card required. Parseable Pro includes all the features of Parseable, with the added benefits of a fully managed service, automatic updates, and dedicated support.
+```bash
+curl --location --request POST 'http://localhost:8000/api/v1/ingest' \
+--header 'X-P-Stream: demo' \
+--header 'Authorization: Basic YWRtaW46YWRtaW4=' \
+--header 'Content-Type: application/json' \
+--data-raw '[
+    {
+        "id": "434a5f5e-2f5f-11ed-a261-0242ac120002",
+        "datetime": "24/Jun/2022:14:12:15 +0000",
+        "host": "153.10.110.81"
+    }
+]'
+```
+
+Open the console at [http://localhost:8000](http://localhost:8000) and sign in with `admin` / `admin`. For other install options and a full walkthrough, see the [Quickstart](/docs/quickstart).
+
+## Parseable Cloud
+
+To get started with our fully managed cloud offering, sign up for Parseable Cloud for a free 14-day trial, without any credit card required. Parseable Cloud includes all the features of Parseable, with the added benefits of a fully managed service, automatic updates, and dedicated support.
 
 <Steps>
 <Step>
