@@ -1,246 +1,264 @@
 ---
 title: n8n
-description: Complete observability for n8n workflow automation
+description: Send n8n workflow traces and related telemetry to Parseable
 ---
 
-Set up end-to-end observability for n8n workflow automation with Parseable using OpenTelemetry.
+n8n is often where a lot of small decisions in a system come together. A workflow might start from a webhook, call a few APIs, run an AI node, update a database, and then wait for another event before it continues.
 
-## Overview
+When that workflow is simple, the execution page in n8n is usually enough. But once workflows become production paths, you need to see them beside the rest of your application telemetry. Parseable can receive n8n workflow traces through OpenTelemetry, so you can query and inspect workflow behavior from the same place where you already work with logs and traces.
 
-Integrate n8n with Parseable to:
+## What n8n exports
 
-- **Workflow Tracing** - Track every workflow and node execution
-- **Performance Metrics** - Monitor durations, error rates, and token usage
-- **Structured Logging** - Capture logs with Winston + OpenTelemetry
-- **AI Agent Debugging** - Debug non-deterministic agentic workflows
-- **Unified Observability** - Single OTLP pipeline for logs, traces, and metrics
+n8n now has native OpenTelemetry tracing for workflow and node executions. When tracing is enabled, n8n exports:
 
-## Architecture
+- `workflow.execute`: one span for the workflow run
+- `node.execute`: one child span for each node execution
 
+The workflow span carries details such as workflow ID, workflow name, execution ID, execution mode, status, node count, and error type when the run fails. Node spans carry node ID, node name, node type, node version, and item counts.
+
+n8n also supports W3C trace context. If a webhook request includes a `traceparent` header, n8n can use that as the parent for the workflow span. For outbound HTTP requests, n8n can inject trace context so downstream services can continue the same trace.
+
+> Native OpenTelemetry support in n8n is currently focused on traces. n8n's documentation notes that OpenTelemetry-formatted metrics are still under development. For logs, collect the n8n process or container logs separately if you want them in Parseable.
+
+## Telemetry paths
+
+Think of the integration as three paths, not one single stream where every signal behaves the same way.
+
+Native n8n workflow traces go through OpenTelemetry:
+
+```text
+n8n workflow and node executions
+  -> OpenTelemetry Collector
+  -> Parseable /v1/traces
+  -> n8n-traces dataset
 ```
-┌───────────┐    ┌───────────────────────┐    ┌──────────────────────┐
-│   n8n     │───▶│ OpenTelemetry (OTLP)  │───▶│ Parseable (Datasets) │
-│           │    │ - Traces              │    │ - otel-traces        │
-│ Workflows │    │ - Metrics             │    │ - otel-metrics       │
-│ Nodes     │    │ - Logs (Winston)      │    │ - otel-logs          │
-└───────────┘    └───────────────────────┘    └──────────────────────┘
+
+Logs are collected separately from the n8n process or container:
+
+```text
+n8n process or container logs
+  -> log shipper or Collector filelog receiver
+  -> Parseable /v1/logs
+  -> n8n-logs dataset
 ```
+
+Metrics are separate for now:
+
+```text
+runtime or infrastructure metrics
+  -> metrics collector or Prometheus pipeline
+  -> Parseable metrics dataset
+```
+
+The trace path is the main integration in this guide. Logs and metrics can still live in Parseable, but they should not be described as native n8n OpenTelemetry output today.
+
+## How the setup works
+
+The clean path is to send n8n traces to an OpenTelemetry Collector and let the Collector export them to Parseable.
+
+```text
+n8n
+  -> OpenTelemetry Collector
+  -> Parseable /v1/traces
+  -> n8n-traces dataset
+```
+
+This keeps n8n configured with standard OpenTelemetry settings while Parseable-specific headers stay in the Collector. It also gives you one place to add batching, retries, filtering, or redaction later.
 
 ## Prerequisites
 
-- Docker and Docker Compose
-- n8n instance
-- Parseable instance
+You need a self-hosted n8n instance with OpenTelemetry tracing support, an OpenTelemetry Collector, and a Parseable instance that can receive OTLP traces.
 
-## Quick Start
+If you run n8n in queue mode, set the OpenTelemetry configuration on every n8n process where tracing should be enabled, including main, worker, and webhook processors.
 
-Clone the observability repository and start the stack:
+## Enable tracing in n8n
 
-```bash
-git clone https://github.com/parseablehq/n8n-observability.git
-cd n8n-observability
-cp .env.example .env
-# Edit .env with your passwords
-docker-compose up -d
-```
-
-Access the applications:
-- **n8n**: `http://localhost:5678` (admin/admin)
-- **Parseable**: `http://localhost:8000` (admin/admin)
-
-## Docker Compose Setup
-
-### Environment Variables
-
-Create a `.env` file:
+Set these environment variables on your n8n instance:
 
 ```bash
-# Parseable credentials
-PARSEABLE_USERNAME=admin
-PARSEABLE_PASSWORD=admin
-
-# n8n authentication
-N8N_BASIC_AUTH_PASSWORD=admin
-
-# Database password
-POSTGRES_PASSWORD=admin
-
-# Optional: Custom domain/protocol
-N8N_HOST=localhost
-N8N_PROTOCOL=http
-WEBHOOK_URL=http://localhost:5678/
+export N8N_OTEL_ENABLED=true
+export N8N_OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+export N8N_OTEL_EXPORTER_SERVICE_NAME=n8n
 ```
 
-### Docker Compose Configuration
+Restart n8n after setting the variables.
+
+The endpoint should point to the base OTLP HTTP endpoint of your Collector. n8n appends `/v1/traces` by default, so do not include `/v1/traces` in `N8N_OTEL_EXPORTER_OTLP_ENDPOINT`.
+
+By default, n8n exports production executions. If you also want traces from manual or test executions while validating the setup, set:
+
+```bash
+export N8N_OTEL_TRACES_PRODUCTION_ONLY=false
+```
+
+For high-volume instances, you can reduce trace volume with sampling:
+
+```bash
+export N8N_OTEL_TRACES_SAMPLE_RATE=0.1
+```
+
+This exports roughly 10 percent of traces. n8n uses trace ID ratio sampling, so a trace is either kept with all its spans or dropped together.
+
+## Send traces to Parseable
+
+Use the OpenTelemetry Collector to receive traces from n8n and export them to Parseable.
 
 ```yaml
-version: '3.8'
-services:
-  parseable:
-    image: quay.io/parseablehq/parseable:latest
-    ports:
-      - "8000:8000"
-    environment:
-      - P_USERNAME=${PARSEABLE_USERNAME}
-      - P_PASSWORD=${PARSEABLE_PASSWORD}
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
 
+processors:
+  batch:
+
+exporters:
+  otlphttp/parseabletraces:
+    endpoint: "https://<YOUR_PARSEABLE_URL>"
+    headers:
+      X-P-API-Key: "<YOUR_PARSEABLE_API_KEY>"
+      X-P-Stream: "n8n-traces"
+      X-P-Log-Source: "otel-traces"
+      Content-Type: "application/x-protobuf"
+    encoding: proto
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp/parseabletraces]
+```
+
+Replace `<YOUR_PARSEABLE_URL>` with your Parseable base URL, for example `http://parseable:8000` or your Parseable Cloud endpoint.
+
+If your Parseable deployment still uses basic authentication, use the `Authorization` header instead of `X-P-API-Key`.
+
+```yaml
+headers:
+  Authorization: "Basic <base64 encoded username:password>"
+  X-P-Stream: "n8n-traces"
+  X-P-Log-Source: "otel-traces"
+  Content-Type: "application/x-protobuf"
+```
+
+## Docker Compose example
+
+Here is a small example showing n8n and the Collector together. Keep the Parseable endpoint and API key in environment variables in your real deployment.
+
+```yaml
+services:
   n8n:
-    build:
-      dockerfile: Dockerfile.working
-    environment:
-      - PARSEABLE_URL=http://parseable:8000
-      - OTEL_SERVICE_NAME=n8n-comprehensive
-      - N8N_WINSTON_LOGGING=true
+    image: n8nio/n8n:latest
     ports:
       - "5678:5678"
-    depends_on:
-      - parseable
-      - postgres
-
-  postgres:
-    image: postgres:15-alpine
     environment:
-      - POSTGRES_DB=n8n
-      - POSTGRES_USER=n8n
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      N8N_OTEL_ENABLED: "true"
+      N8N_OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
+      N8N_OTEL_EXPORTER_SERVICE_NAME: "n8n"
+      N8N_OTEL_TRACES_PRODUCTION_ONLY: "false"
+    depends_on:
+      - otel-collector
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./otel-collector.yaml:/etc/otelcol/config.yaml
+    ports:
+      - "4318:4318"
 ```
 
-## Verification
+Run a workflow after the stack starts. You should then see a dataset such as `n8n-traces` in Parseable.
 
-Check that telemetry is flowing:
+## What to look for in Parseable
+
+Once traces arrive, start with the `n8n-traces` dataset. The useful fields are usually the ones that describe the workflow run and the node that ran inside it.
+
+![n8n workflow traces in Parseable](./static/n8n-traces.png)
+
+For recent failed executions:
+
+```sql
+SELECT
+  p_timestamp,
+  span_name,
+  "n8n.workflow.name",
+  "n8n.execution.id",
+  "n8n.execution.status",
+  "n8n.execution.error_type"
+FROM "n8n-traces"
+WHERE "n8n.execution.status" = 'error'
+ORDER BY p_timestamp DESC
+LIMIT 50;
+```
+
+For slow workflow spans:
+
+```sql
+SELECT
+  p_timestamp,
+  span_name,
+  "n8n.workflow.name",
+  "n8n.execution.id",
+  ROUND(("span_end_time_unix_nano" - "span_start_time_unix_nano") / 1000000.0, 2) AS duration_ms
+FROM "n8n-traces"
+WHERE span_name = 'workflow.execute'
+ORDER BY duration_ms DESC
+LIMIT 20;
+```
+
+For slow node spans:
+
+```sql
+SELECT
+  p_timestamp,
+  "n8n.workflow.name",
+  "n8n.node.name",
+  "n8n.node.type",
+  ROUND(("span_end_time_unix_nano" - "span_start_time_unix_nano") / 1000000.0, 2) AS duration_ms
+FROM "n8n-traces"
+WHERE span_name = 'node.execute'
+ORDER BY duration_ms DESC
+LIMIT 20;
+```
+
+These queries are meant as starting points. Field names can vary slightly depending on the n8n version and how the spans are flattened after ingestion, so check a few recent records in Parseable first and adjust the column names if required.
+
+## Logs and metrics
+
+n8n's native OpenTelemetry path currently sends workflow traces. If you also want logs in Parseable, collect n8n process or container logs with your existing log shipper or with the OpenTelemetry Collector `filelog` receiver, then export them to Parseable's `/v1/logs` endpoint.
+
+The log path usually looks like this:
+
+```text
+n8n logs
+  -> filelog receiver or log shipper
+  -> Parseable /v1/logs
+  -> n8n-logs
+```
+
+Metrics should be treated separately for now. n8n's own OpenTelemetry documentation says OpenTelemetry-formatted metrics are still coming, so avoid documenting them as native n8n OpenTelemetry output until that support is available.
+
+For metrics, use the metric source you already trust for your deployment, such as container, host, or Kubernetes metrics. Those can be sent to Parseable through your metrics pipeline, but they are not the same thing as n8n native OpenTelemetry metrics.
+
+## Troubleshooting
+
+If traces do not appear in Parseable, first check that n8n can reach the Collector:
 
 ```bash
-# Check service status
-docker-compose ps
-
-# View n8n logs for OpenTelemetry initialization
-docker logs n8n-comprehensive | grep "OpenTelemetry"
-
-# Verify Parseable streams exist
-curl -s http://localhost:8000/api/v1/logstream \
-  -H "Authorization: Basic $(echo -n 'admin:admin' | base64)"
+docker compose logs n8n | grep -i otel
+docker compose logs otel-collector
 ```
 
-You should see two streams: `otel-traces` and `otel-metrics`.
+Then verify the endpoint shape. n8n should point to the Collector base URL, such as `http://otel-collector:4318`. The Collector should point to the Parseable base URL, such as `https://<YOUR_PARSEABLE_URL>`, and the exporter should send trace data through the OTLP HTTP exporter.
 
-## Querying n8n Data
+Also check sampling and execution type. If `N8N_OTEL_TRACES_PRODUCTION_ONLY=true`, manual executions may not show up. During setup, temporarily set it to `false`, run a workflow, and then switch it back if production-only traces are what you want.
 
-### Workflow Execution Metrics
+## References
 
-```sql
-SELECT 
-  metric_name,
-  workflow_name,
-  workflow_id,
-  data_point_value,
-  time_unix_nano
-FROM "otel-metrics"
-WHERE metric_name LIKE '%workflow%'
-ORDER BY time_unix_nano DESC
-LIMIT 20
-```
-
-### Node Performance Metrics
-
-```sql
-SELECT 
-  metric_name,
-  node_type,
-  node_name,
-  workflow_name,
-  data_point_value,
-  time_unix_nano
-FROM "otel-metrics"
-WHERE metric_name LIKE '%node%'
-  AND node_type IS NOT NULL
-ORDER BY time_unix_nano DESC
-LIMIT 15
-```
-
-### HTTP Request Success Rate
-
-```sql
-SELECT 
-  "http.response.status_code",
-  COUNT(*) as request_count,
-  COUNT(*) * 100.0 / SUM(COUNT(*)) OVER() as percentage
-FROM "otel-metrics"
-WHERE metric_name LIKE '%http%'
-  AND "http.response.status_code" IS NOT NULL
-  AND p_timestamp > NOW() - INTERVAL '24 hours'
-GROUP BY "http.response.status_code"
-ORDER BY request_count DESC
-```
-
-### Slowest HTTP Requests
-
-```sql
-SELECT 
-  span_name,
-  "http.method",
-  "http.route",
-  EXTRACT(EPOCH FROM (span_end_time_unix_nano - span_start_time_unix_nano)) * 1000 as duration_ms,
-  "http.response.status_code",
-  span_status_description
-FROM "otel-traces"
-WHERE span_name LIKE 'GET %' OR span_name LIKE 'POST %'
-ORDER BY duration_ms DESC
-LIMIT 10
-```
-
-## Setting Up Alerts
-
-### HTTP Error Rate Alert
-
-Monitor when n8n experiences high error rates:
-
-1. **Dataset**: `otel-metrics`
-2. **Monitor**: `http.status_code` by COUNT
-3. **Filter**: `http.response.status_code >= 400`
-4. **Threshold**: Trigger when error count > 900 in 5 minutes
-5. **Evaluation**: Every 5 minutes
-
-### High Response Time Alert
-
-Get notified when API response times exceed thresholds:
-
-1. **Dataset**: `otel-metrics`
-2. **Monitor**: `data_point_value` (for duration metrics)
-3. **Filter**: `metric_name LIKE '%http%duration%'`
-4. **Threshold**: Trigger when average response time > 2000ms
-5. **Group by**: `http.route` to identify specific endpoints
-
-## Alert Delivery Options
-
-Parseable supports multiple notification channels:
-
-- **Webhook** - Send alerts to Slack, Discord, or custom endpoints
-- **Email** - Direct email notifications
-- **PagerDuty** - Integration for critical production alerts
-
-## Best Practices
-
-1. **Layered Alerting** - Set up multiple severity levels (warning, critical)
-2. **Context-Rich Notifications** - Include workflow IDs and execution details
-3. **Alert Fatigue Prevention** - Use appropriate thresholds to avoid noise
-4. **Escalation Policies** - Define clear escalation paths
-5. **Regular Review** - Periodically adjust alert thresholds based on patterns
-
-## What You Get
-
-- **Structured, correlated logs** from n8n using Winston + OpenTelemetry
-- **Distributed traces** for every workflow and node to pinpoint slow or failing steps
-- **Metrics** for durations, error rates, and token usage
-- **Single OTLP pipeline** into Parseable for unified storage and analysis
-- **Ready-to-use SQL queries**, dashboards, and alerts
-
-## Resources
-
-- [GitHub Repository](https://github.com/parseablehq/n8n-observability)
-- [Full Blog Post](https://www.parseable.com/blog/n8n-observability-with-parseable-a-complete-observability-setup)
-
-## Next Steps
-
-- Set up [alerts](/docs/user-guide/alerting) for workflow failures
-- Create [dashboards](/docs/user-guide/dashboards) for n8n monitoring
-- Configure [OpenTelemetry](/docs/ingest-data/otel) for other services
+- [n8n OpenTelemetry tracing](https://docs.n8n.io/deploy/host-n8n/keep-n8n-running/trace-executions-with-opentelemetry/)
+- [n8n OpenTelemetry environment variables](https://docs.n8n.io/deploy/host-n8n/configure-n8n/basic-configuration/use-environment-variables/opentelemetry/)
+- [Parseable OpenTelemetry traces](/docs/ingest-data/otel/traces)
+- [Parseable OpenTelemetry logs](/docs/ingest-data/otel/logs)

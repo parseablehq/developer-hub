@@ -10,6 +10,7 @@ import Image from "next/image";
  */
 export const baseOptions: BaseLayoutProps = {
   nav: {
+    url: "https://www.parseable.com",
     title: (
       <div className="flex items-center gap-2">
         <Image
