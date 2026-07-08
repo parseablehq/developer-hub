@@ -243,8 +243,6 @@ Metrics should be treated separately for now. n8n's own OpenTelemetry documentat
 
 For metrics, use the metric source you already trust for your deployment, such as container, host, or Kubernetes metrics. Those can be sent to Parseable through your metrics pipeline, but they are not the same thing as n8n native OpenTelemetry metrics.
 
-If you already use the older [parseablehq/n8n-observability](https://github.com/parseablehq/n8n-observability) repository, you can keep using it for a custom Docker-based setup. For new deployments, prefer n8n's native OpenTelemetry tracing path unless you specifically need the custom Winston logging and extra instrumentation from that repository.
-
 ## Troubleshooting
 
 If traces do not appear in Parseable, first check that n8n can reach the Collector:
