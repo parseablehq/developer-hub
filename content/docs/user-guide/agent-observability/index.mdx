@@ -5,17 +5,17 @@ import { IconDatabase, IconCode, IconTerminal2 } from '@tabler/icons-react';
 
 <OfferingPills cloud enterprise className="mb-4" />
 
-Agents are already becoming part of everyday software, sometimes users interact with them directly, and sometimes they run quietly behind a workflow. A single request can turn into a chain of model calls, tool calls, external APIs, retries, and intermediate outputs before the final answer is returned.
+Agents are already becoming part of everyday software. Sometimes users work with them directly. Sometimes they sit behind a workflow and quietly make decisions on their own. In both cases, a single request can quickly turn into multiple model calls, tool calls, retries, and intermediate steps before the final answer shows up.
 
-When that final answer is wrong, slow, or hard to explain, the response alone does not tell you enough. You need to see the complete invocation. This includes the original prompt, the model used, the tools called, the input sent to those tools, the output received, token usage, latency, and where the answer started to drift. That is the problem Agent Observability is meant to solve.
+That is usually where debugging gets hard. When the final answer is wrong, slow, or incomplete, the answer itself is not enough. You need to see the full run: what prompt started it, which model was used, what tools were called, what each tool received, what came back, how many tokens were spent, and where the run started to drift. That is the job of Agent Observability.
 
 ## Agent observability with Parseable
 
-Parseable Agent Observability gives you that view in Prism. You can start with a high-level view of agent activity, move into a single invocation, and then inspect the exact LLM call or tool execution that explains what happened.
+Parseable Agent Observability gives you that view inside Prism. You can begin with a high-level view of agent activity, move into a single invocation, and then drill down to the exact LLM call or tool execution that explains what happened.
 
-This is built on the [OpenTelemetry GenAI semantic conventions](https://github.com/open-telemetry/semantic-conventions-genai), so telemetry follows a standard shape for model calls, token usage, inputs, outputs, tool calls, and agent spans. Instead of putting agent telemetry in a custom black box, Parseable lets you observe it alongside the rest of your telemetry.
+It is built on the [OpenTelemetry GenAI semantic conventions](https://github.com/open-telemetry/semantic-conventions-genai), so the telemetry follows a standard shape for model calls, token usage, inputs, outputs, tool calls, and agent spans. That means you are not pushing agent telemetry into a custom black box. You are sending it in a format that stays close to the OpenTelemetry model and remains easy to reason about.
 
-Once your agent is instrumented, the Agents page becomes the place to understand how your agents are behaving in production. You can see how often they run, which models they use, how many tokens they consume, where they spend time, what they call, and where the answer starts to drift.
+Once your agent is instrumented, the Agents page becomes the place where you understand how that agent behaves in production. You can see how often it runs, which models it uses, how many tokens it consumes, where it spends time, what it calls, and where the answer starts to go off track.
 
 <Callout type="idea">
 Parseable enriches GenAI telemetry at ingest time with fields like `p_genai_tokens_total`, `p_genai_tokens_per_sec`, and `p_genai_duration_ms`, so token usage and latency analysis is available without extra client-side tracking.
@@ -27,7 +27,7 @@ Parseable enriches GenAI telemetry at ingest time with fields like `p_genai_toke
 
 ![Agents overview showing invocations, errors, token usage, and duration charts](./static/agent-overview.png)
 
-When you open the Agents page, you first land on the Overview tab. Start here when you want a quick health check of your agents over a selected time range.
+When you open the Agents page, this is where you land first. The Overview tab is the quickest way to understand whether things look healthy over a selected time range.
 
 The Invocations chart shows how many agent runs happened and how many of them ended in error. Token usage is split into input tokens and output tokens, grouped by model, so you can quickly see which model is consuming the most tokens. The Duration section helps you compare latency by tool and by model.
 
@@ -37,7 +37,7 @@ Use the time range picker in the top-right corner to change the window you are i
 
 ![Invocations tab showing session metrics, timeline, table columns, operations, and sentiment](./static/agent-invocations.png)
 
-When you need to inspect actual runs, switch to the Invocations tab. This is where the aggregate view turns into individual agent sessions.
+When you want to move from trends to actual runs, switch to the Invocations tab. This is where the broad view becomes a list of real agent sessions that you can inspect one by one.
 
 At the top, Parseable shows total sessions, total tokens, duration, and error rate for the selected period. Below that, the timeline shows when invocations happened and where errors appeared.
 
@@ -49,7 +49,7 @@ You can also change the duration percentile from the dropdown in the Duration ca
 
 ![Invocations filter menu showing fields for tool, model, duration, tokens, and errors](./static/agent-filters.png)
 
-When the list gets large, filters help you reduce the noise. Use Add filter to narrow the investigation to a smaller set of invocations.
+Once the list grows, filters help you cut through the noise. Use Add filter when you already have a rough idea of what you are looking for and want to narrow the list to a smaller set of invocations.
 
 You can filter by fields such as tool name, tool call count, model name, invocation duration, input tokens, output tokens, total tokens, and total errors. This is useful when you already know the shape of the problem. For example, you can filter to a specific model, look at sessions with a high token count, or focus only on invocations where a tool failed.
 
@@ -59,7 +59,7 @@ The Find in data search box helps you search within the visible invocation data 
 
 ![Invocation detail showing status, sentiment timeline, waterfall tree, messages, and tool input output](./static/agent-invocation-detail.png)
 
-The real debugging starts when you open a row from the Invocations table. This opens the invocation detail view for that specific agent run.
+This is where the real investigation starts. Open any row from the Invocations table to see the full detail view for that run.
 
 The header shows the status, duration, tokens used, AI model, created time, and ended time. The Sentiment timeline shows how the interaction changed across the conversation, so you can see where the answer stayed useful, where satisfaction dipped, and where the run may need review.
 
@@ -69,21 +69,20 @@ Use this view when you need to understand which prompt started the run, which mo
 
 ## Manual instrumentation using the OpenTelemetry SDK
 
-You can manually create spans with `gen_ai.*` attributes using the OpenTelemetry SDK directly.
-This lets you instrument any provider, framework, or custom LLM client, and add the exact attributes your team needs for debugging and analysis.
+If you want to instrument your own agent, you can do that directly with the OpenTelemetry SDK. This works well when you have a custom agent, a provider-specific client, or a framework setup where you want full control over what gets captured.
 
 At minimum, instrument these parts of the agent workflow:
 
 1. **Agent-level spans:** `invoke_agent` spans that wrap the full agent loop
 2. **Chat spans:** one `chat {model}` span for every LLM request
 3. **Tool execution spans:** one `execute_tool {tool.name}` span for every tool or command execution
-4. **GenAI event logs:** user messages, assistant messages, choices, tool calls, tool inputs, tool outputs, and reasoning blocks
+4. **Span events:** user messages, assistant messages, choices, tool calls, tool inputs, tool outputs, and reasoning blocks attached to the active span
 
-Refer the [manual instrumentation guide](/docs/user-guide/agent-observability/manual-instrumentation) for detailed instructions on how to structure spans and what attributes to capture for complete agent observability.
+The [manual instrumentation guide](/docs/user-guide/agent-observability/manual-instrumentation) shows how to structure those spans and what to capture so the data shows up cleanly in Parseable.
 
 ## Language support matrix
 
-Any language that can emit OpenTelemetry traces and logs over OTLP can send agent observability data to Parseable. The manual guide currently uses Python examples, but the schema is language-agnostic.
+Any language that can emit OpenTelemetry traces over OTLP can send agent observability data to Parseable. The manual guide currently uses Python examples, but the schema is language-agnostic.
 
 | Language   | Manual OpenTelemetry SDK |
 |------------|-----------------|
@@ -97,11 +96,11 @@ Any language that can emit OpenTelemetry traces and logs over OTLP can send agen
 
 ## Collector configuration
 
-After the instrumentation is set up in your application, configure how telemetry data is sent to Parseable. We recommend using an OpenTelemetry Collector for buffering, batching, and reliability, but you can also export directly from your application for simpler setups.
+After instrumentation is in place, the next step is deciding how you want to send the trace data to Parseable. For most teams, an OpenTelemetry Collector is the better default because it gives you batching and a more reliable path. If your setup is small, you can also export directly from the application.
 
 ### OpenTelemetry Collector (Recommended)
 
-Deploy an OpenTelemetry Collector between your application and Parseable for buffering, batching, and reliability. Save the following as `parseable-genai-collector.yaml`:
+Put an OpenTelemetry Collector between your application and Parseable when you want a cleaner and more production-friendly path for export. Save the following as `parseable-genai-collector.yaml`:
 
 ```yaml
 receivers:
@@ -147,7 +146,7 @@ otelcol-contrib --config parseable-genai-collector.yaml
 
 ### Direct to Parseable
 
-For simpler setups, you can export traces directly from your application to Parseable by setting OTLP environment variables. No collector process is needed.
+For smaller setups, you can send traces directly from the application to Parseable with OTLP environment variables. This avoids running a separate collector process.
 
 ```bash
 export OTEL_EXPORTER_OTLP_ENDPOINT=${PARSEABLE_URL}
@@ -161,7 +160,7 @@ export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
 <Cards>
 
 <Card href="/docs/user-guide/agent-observability/manual-instrumentation" icon={<IconTerminal2 className="text-purple-600" />} title='Manual instrumentation guide'>
-Complete reference for instrumenting any GenAI agent with OpenTelemetry traces and correlated logs.
+Complete reference for instrumenting any GenAI agent with OpenTelemetry traces and span events.
 </Card>
 
 <Card href="/docs/user-guide/agent-observability/schema-reference" icon={<IconDatabase className="text-purple-600" />} title='Schema Reference'>

@@ -2,7 +2,7 @@
 title: Schema Reference
 ---
 
-When Parseable receives GenAI traces at the `/v1/traces` endpoint, it flattens the nested OTel JSON into a single row per span event. This page documents every column you can query.
+When Parseable receives GenAI traces at the `/v1/traces` endpoint, it flattens the nested OTel JSON into queryable rows for both spans and span events. This page documents the columns you are most likely to query.
 
 ## Span Hierarchy
 
@@ -11,22 +11,24 @@ A single agent invocation produces a tree of spans sharing the same `span_trace_
 ```
 span_trace_id: abc123
 |
-+-- [root] agent_run (gen_ai.operation.name = "agent")
++-- [root] invoke-agent (gen_ai.operation.name = "invoke_agent")
       |
       +-- chat gpt-4o (gen_ai.operation.name = "chat")
-      |     +-- event: gen_ai.prompt   (event_name row)
-      |     +-- event: gen_ai.completion (event_name row)
+      |     +-- event: gen_ai.user.message
+      |     +-- event: gen_ai.choice
       |
       +-- execute_tool search_api (gen_ai.operation.name = "execute_tool")
+      |     +-- event: gen_ai.tool.input
+      |     +-- event: gen_ai.tool.output
       |
       +-- chat gpt-4o (gen_ai.operation.name = "chat")
-            +-- event: gen_ai.prompt   (event_name row)
-            +-- event: gen_ai.completion (event_name row)
+            +-- event: gen_ai.user.message
+            +-- event: gen_ai.choice
 ```
 
 Key points:
 - **Span rows** have `event_name IS NULL`. These contain the `gen_ai.*` attributes, token counts, and Parseable-enriched columns.
-- **Event rows** have `event_name` set (e.g., `gen_ai.prompt` or `gen_ai.completion`). These contain the message content in `event_gen_ai.prompt` or `event_gen_ai.completion`. Event rows are only present when content capture is enabled (`OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true`).
+- **Event rows** have `event_name` set (e.g., `gen_ai.user.message`, `gen_ai.choice`, or `gen_ai.tool.output`). Parseable flattens event attributes with an `event_` prefix, so event content and event metadata stay queryable alongside the parent span.
 - Use `span_parent_span_id` to reconstruct the call tree within a trace.
 
 ---
@@ -70,7 +72,7 @@ Columns that identify the GenAI operation being performed.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `gen_ai.operation.name` | String | Type of operation: `chat`, `text_completion`, `embeddings`, `execute_tool`, `agent`. |
+| `gen_ai.operation.name` | String | Type of operation: `chat`, `text_completion`, `embeddings`, `execute_tool`, `invoke_agent`. |
 | `gen_ai.system` | String | GenAI provider system identifier (e.g., `openai`, `anthropic`, `cohere`). |
 | `gen_ai.provider.name` | String | Provider name when different from system. |
 | `gen_ai.conversation.id` | String | Unique identifier for a multi-turn conversation thread. |
@@ -122,7 +124,7 @@ Columns tracking token consumption per span.
 
 ## Agent
 
-Columns specific to agent-level spans (where `gen_ai.operation.name = 'agent'`).
+Columns specific to agent-level spans (where `gen_ai.operation.name = 'invoke_agent'`).
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -146,15 +148,17 @@ Columns specific to tool call spans (where `gen_ai.operation.name = 'execute_too
 
 ---
 
-## Content Columns (Opt-In)
+## Event Columns
 
-These columns are only populated when content capture is enabled via `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true`. They appear on **event rows** (where `event_name` is not null).
+These columns appear on **event rows** where `event_name` is not null. The exact set depends on which event attributes your instrumentation emits.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `event_name` | String | Event type: `gen_ai.prompt`, `gen_ai.completion`, `gen_ai.tool.message`, etc. |
-| `event_gen_ai.prompt` | String | The full prompt or user message content. Present on `gen_ai.prompt` events. |
-| `event_gen_ai.completion` | String | The full completion or assistant message content. Present on `gen_ai.completion` events. |
+| `event_name` | String | Event type such as `gen_ai.user.message`, `gen_ai.choice`, `gen_ai.tool.call`, `gen_ai.tool.input`, or `gen_ai.tool.output`. |
+| `event_content` | String | Full content emitted with the event when your instrumentation uses a `content` field. |
+| `event_role` | String | Message role when present, for example `user`, `assistant`, `system`, or `tool`. |
+| `event_gen_ai.tool.name` | String | Tool name on tool-related events when emitted. |
+| `event_gen_ai.tool.call.id` | String | Tool call identifier on related events when emitted. |
 | `event_time_unix_nano` | BigInt | Event timestamp in nanoseconds since epoch. |
 | `event_dropped_attributes_count` | Int | Number of event attributes dropped due to limits. |
 
