@@ -4,7 +4,7 @@ title: Manual instrumentation guide
 
 This page shows how to instrument an agent in a way that makes sense once the data reaches Parseable. The goal is simple: when you open an invocation in the Agents view, you should be able to follow the run from start to finish without guessing what happened in between.
 
-The main thing to keep in mind is that agent observability here is trace-first. You do not need to think in terms of one pipeline for traces and another one for conversation logs. The agent run, each LLM call, and each tool execution are spans. The prompt, response, tool input, tool output, and reasoning details live as span events inside that same trace.
+The main thing to keep in mind is that agent observability here is trace-first. You do not need to think in terms of one pipeline for traces and another one for conversation logs. The agent run, each LLM call, and each tool execution are spans. The prompt, response, tool input, tool output, reasoning details, and evaluation results live as events attached to the relevant span inside that same trace.
 
 Parseable natively supports the OpenTelemetry GenAI semantic conventions, so if you already emit standard `gen_ai.*` fields, they stay close to the OpenTelemetry model and remain easy to query later.
 
@@ -17,7 +17,7 @@ For each agent run, capture these pieces. If you get these four parts right, the
 | **Agent run:** which agent ran, total tokens, exit status | OTel **`invoke-agent` span** | End-to-end agent observability and run-level summaries |
 | **LLM call metadata:** model, token counts, latency, finish reason, errors | OTel **`chat` span** | Per-call analysis, latency review, usage tracking |
 | **Tool execution:** which tool ran, how long it took, whether it failed | OTel **`execute_tool` span** | Tool debugging and operation-level visibility |
-| **Prompt, response, tool I/O, reasoning** | OTel **span events** attached to the active span | Conversation reconstruction and deeper debugging |
+| **Prompt, response, tool I/O, reasoning, evaluation results** | OpenTelemetry **events** attached to the active span | Conversation reconstruction, tool debugging, and answer quality review |
 
 ## Manual instrumentation rules
 
@@ -65,6 +65,7 @@ Create one child span for each LLM request. If the agent calls the model three t
 
 Inside that chat span, add events for the parts of the interaction you may want to inspect later:
 
+- `gen_ai.client.inference.operation.details` when your SDK supports the OpenTelemetry GenAI event shape
 - `gen_ai.system.message`
 - `gen_ai.user.message`
 - `gen_ai.assistant.message`
@@ -74,6 +75,8 @@ Inside that chat span, add events for the parts of the interaction you may want 
 - `gen_ai.thinking` when the provider exposes reasoning blocks
 
 Attach input and output token counts to every successful chat span. Prefer the usage values returned by the provider rather than trying to estimate them yourself.
+
+The OpenTelemetry GenAI conventions define `gen_ai.client.inference.operation.details` for the full request and response details of a model call. Use it when you can, especially when you want to keep `gen_ai.input.messages`, `gen_ai.output.messages`, system instructions, tool definitions, and request settings together in one structured event. If your SDK does not support that event shape yet, use the per-message events above and keep their names stable.
 
 ### Tool execution
 
@@ -93,6 +96,109 @@ Inside the tool span, add events for:
 
 When the model provides a tool call ID, use the same `gen_ai.tool.call.id` on both the chat span and the tool span. That makes it much easier to connect the model request with the real execution step.
 
+### Events
+
+Events are the detail layer of the trace. Spans tell you that an agent called a model or executed a tool. Events tell you what the model saw, what it returned, which tool it requested, what input the tool received, what output came back, and how the answer was evaluated.
+
+Use events for content you may need to read during an investigation. Keep span attributes for fields you want to group, filter, and aggregate often.
+
+For most agents, these event groups are enough:
+
+| Event group | Use it for | Attach it to |
+|-------------|------------|--------------|
+| `gen_ai.client.inference.operation.details` | Full model request and response details when supported by your SDK | `chat {model}` span |
+| Message events such as `gen_ai.user.message` and `gen_ai.assistant.message` | Individual system, user, assistant, and tool messages | `chat {model}` span |
+| `gen_ai.choice` | The model output choice, finish reason, and returned content | `chat {model}` span |
+| `gen_ai.tool.call` | The tool call requested by the model | `chat {model}` span |
+| `gen_ai.tool.input` and `gen_ai.tool.output` | The actual tool arguments and result | `execute_tool {tool.name}` span |
+| `gen_ai.thinking` | Provider-specific reasoning or thinking blocks when exposed | `chat {model}` span |
+| `gen_ai.evaluation.result` | Answer quality, sentiment, correctness, relevance, or other evaluator output | Span being evaluated, usually `chat {model}` or `invoke-agent` |
+
+For evaluation events, include fields such as `gen_ai.evaluation.name`, `gen_ai.evaluation.score.label`, `gen_ai.evaluation.score.value`, and `gen_ai.evaluation.explanation` when you have them. This helps the invocation view explain not only what the agent did, but also whether the answer looked useful after the run.
+
+If your application uses an event helper such as `_otel.emit(...)`, keep the shape consistent:
+
+```python
+import json
+
+
+def emit_genai_event(span, event_name: str, body, attributes: dict | None = None):
+    event_attributes = {
+        **(attributes or {}),
+        "gen_ai.event.name": event_name,
+    }
+
+    if isinstance(body, (dict, list)):
+        event_attributes["body"] = json.dumps(body)
+    else:
+        event_attributes["body"] = body
+
+    span.add_event(event_name, event_attributes)
+```
+
+Use the event name both as the OpenTelemetry event name and as `gen_ai.event.name`. Parseable keeps the event name in `event_name` and prefixes event attributes with `event_`, so `gen_ai.event.name` becomes `event_gen_ai.event.name` and `body` becomes `event_body`.
+
+For example:
+
+```python
+emit_genai_event(
+    span,
+    "gen_ai.user.message",
+    body=problem_statement,
+    attributes={
+        **invoke_attrs,
+        "role": "user",
+    },
+)
+
+emit_genai_event(
+    span,
+    "gen_ai.agent.finish",
+    body={
+        "exit_status": exit_status or "stop",
+        "total_input_tokens": total_input_tokens,
+        "total_output_tokens": total_output_tokens,
+    },
+    attributes={
+        **invoke_attrs,
+        "gen_ai.usage.input_tokens": total_input_tokens,
+        "gen_ai.usage.output_tokens": total_output_tokens,
+    },
+)
+
+emit_genai_event(
+    tool_span,
+    "gen_ai.tool.input",
+    body=tool_input,
+    attributes=tool_attrs,
+)
+
+emit_genai_event(
+    tool_span,
+    "gen_ai.tool.output",
+    body=tool_output,
+    attributes={
+        **tool_attrs,
+        "swe_agent.tool.output_bytes": len(tool_output.encode(errors="replace")),
+        "swe_agent.tool.execution_time.seconds": execution_time,
+    },
+)
+
+emit_genai_event(
+    chat_span,
+    "gen_ai.tool.call",
+    body=tool_call.get("function", tool_call),
+    attributes=tool_call_attrs,
+)
+
+emit_genai_event(
+    chat_span,
+    "gen_ai.thinking",
+    body=thinking_text,
+    attributes=response_attrs,
+)
+```
+
 ### Errors
 
 When something fails, mark the active span as failed. This is what makes bad runs easy to spot in the invocation view.
@@ -111,12 +217,12 @@ For tool failures:
 
 ### Field placement
 
-As a rule of thumb, put the fields you want to aggregate often on spans. Put the full content you want to inspect later on span events.
+As a rule of thumb, put the fields you want to aggregate often on spans. Put the full content you want to inspect later on events.
 
 That usually means:
 
 - spans hold model, provider, latency, token counts, status, and tool name
-- span events hold prompts, responses, tool input, tool output, and reasoning blocks
+- events hold prompts, responses, tool input, tool output, reasoning blocks, and evaluation results
 
 This keeps the full run in one trace while still giving Parseable enough detail to show both the summary and the step-by-step interaction.
 
@@ -437,10 +543,10 @@ A single agent run produces one trace with three span types:
 - `chat {model}` for each LLM call
 - `execute_tool {tool.name}` for each tool execution
 
-The messages and interaction details are kept as span events on those spans. Parseable stores:
+The messages and interaction details are kept as events on those spans. Parseable stores:
 
 - **span rows** for aggregate fields such as model, provider, token counts, duration, and status
-- **event rows** for the detailed interaction content such as prompts, responses, tool input, tool output, and reasoning
+- **event rows** for the detailed interaction content such as prompts, responses, tool input, tool output, reasoning, and evaluation results
 
 That is why the invocation view can show both a high-level run summary and a detailed drill-down without a separate GenAI logs pipeline.
 
@@ -485,14 +591,14 @@ service:
 
 - one OTLP receiver is enough
 - one traces pipeline is enough for agent observability in this model
-- span events are exported together with their parent spans
+- events are exported together with their parent spans
 - Parseable receives the trace payload and flattens both span and event data into queryable records
 
 ## Semantic conventions
 
 This guide follows the [OpenTelemetry GenAI semantic conventions](https://github.com/open-telemetry/semantic-conventions-genai), which now live in the dedicated GenAI semantic conventions repository.
 
-Use standard `gen_ai.*` span attributes wherever they apply. When you need to preserve prompt or response content, attach it as span events inside the active span so it stays tied to the exact part of the run that produced it.
+Use standard `gen_ai.*` span attributes wherever they apply. When you need to preserve prompt, response, tool, reasoning, or evaluation content, attach it as an event inside the active span so it stays tied to the exact part of the run that produced it.
 
 ## Scenarios
 
@@ -503,6 +609,7 @@ What you should expect:
 - one `chat` span
 - one event for each input message
 - one `gen_ai.choice` event for the response
+- optionally one `gen_ai.client.inference.operation.details` event for the full request and response
 
 ### Multi-turn conversation
 
@@ -511,6 +618,7 @@ What you should expect:
 - one `chat` span for the call
 - one span event for each system, user, assistant, or tool message that was part of the input
 - one or more `gen_ai.choice` events for the returned answer
+- optionally one `gen_ai.client.inference.operation.details` event when your SDK emits the full structured operation details
 
 ### Tool calling
 
@@ -524,6 +632,10 @@ What you should expect:
 ### Thinking or reasoning blocks
 
 If the provider exposes reasoning blocks, attach them as `gen_ai.thinking` span events on the active chat span.
+
+### Evaluation results
+
+If you evaluate the final response, attach the result as `gen_ai.evaluation.result`. Parent it to the span being evaluated when possible. For example, attach a relevance or sentiment score to the final `chat {model}` span, or attach an end-to-end success score to the `invoke-agent` span.
 
 ### Errors
 
@@ -565,6 +677,6 @@ After setup, verify the flow end to end. You should be able to open one invocati
 | Request fields present | Check `chat` span attributes | model, provider, request config present |
 | Token fields present | Check successful `chat` spans | input and output token fields present |
 | Tool fields present | Check `execute_tool` span attributes | tool name, tool type, optional tool call ID |
-| Event rows present | Open the same trace and inspect event rows | prompt, response, tool I/O, or reasoning events visible |
+| Event rows present | Open the same trace and inspect event rows | prompt, response, tool I/O, reasoning, or evaluation events visible |
 | Errors captured | Trigger a failed tool or model call | span has error status and `error.type` |
 | No duplicate spans | Compare one user-visible step to the trace | one logical operation maps to one span |

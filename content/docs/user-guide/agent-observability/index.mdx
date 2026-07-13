@@ -76,7 +76,7 @@ At minimum, instrument these parts of the agent workflow:
 1. **Agent-level spans:** `invoke_agent` spans that wrap the full agent loop
 2. **Chat spans:** one `chat {model}` span for every LLM request
 3. **Tool execution spans:** one `execute_tool {tool.name}` span for every tool or command execution
-4. **Span events:** user messages, assistant messages, choices, tool calls, tool inputs, tool outputs, and reasoning blocks attached to the active span
+4. **Span events:** user messages, assistant messages, choices, tool calls, tool inputs, tool outputs, reasoning blocks, and evaluation results attached to the active span
 
 The [manual instrumentation guide](/docs/user-guide/agent-observability/manual-instrumentation) shows how to structure those spans and what to capture so the data shows up cleanly in Parseable.
 
@@ -160,7 +160,7 @@ export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
 <Cards>
 
 <Card href="/docs/user-guide/agent-observability/manual-instrumentation" icon={<IconTerminal2 className="text-purple-600" />} title='Manual instrumentation guide'>
-Complete reference for instrumenting any GenAI agent with OpenTelemetry traces and span events.
+Complete reference for instrumenting any GenAI agent with OpenTelemetry traces, spans, and events.
 </Card>
 
 <Card href="/docs/user-guide/agent-observability/schema-reference" icon={<IconDatabase className="text-purple-600" />} title='Schema Reference'>
