@@ -14,21 +14,20 @@ span_trace_id: abc123
 +-- [root] invoke-agent (gen_ai.operation.name = "invoke_agent")
       |
       +-- chat gpt-4o (gen_ai.operation.name = "chat")
-      |     +-- event: gen_ai.user.message
-      |     +-- event: gen_ai.choice
+      |     +-- event: gen_ai.client.inference.operation.details
       |
       +-- execute_tool search_api (gen_ai.operation.name = "execute_tool")
-      |     +-- event: gen_ai.tool.input
-      |     +-- event: gen_ai.tool.output
+      |     +-- attributes: gen_ai.tool.call.arguments
+      |     +-- attributes: gen_ai.tool.call.result
       |
       +-- chat gpt-4o (gen_ai.operation.name = "chat")
-            +-- event: gen_ai.user.message
-            +-- event: gen_ai.choice
+            +-- event: gen_ai.client.inference.operation.details
+            +-- event: gen_ai.evaluation.result
 ```
 
 Key points:
 - **Span rows** have `event_name IS NULL`. These contain the `gen_ai.*` attributes, token counts, and Parseable-enriched columns.
-- **Event rows** have `event_name` set (e.g., `gen_ai.client.inference.operation.details`, `gen_ai.user.message`, `gen_ai.choice`, `gen_ai.tool.output`, or `gen_ai.evaluation.result`). Parseable flattens event attributes with an `event_` prefix, so event content and event metadata stay queryable alongside the parent span.
+- **Event rows** have `event_name` set, usually `gen_ai.client.inference.operation.details` or `gen_ai.evaluation.result` for native GenAI instrumentation. Parseable flattens event attributes with an `event_` prefix, so event content and event metadata stay queryable alongside the parent span.
 - Use `span_parent_span_id` to reconstruct the call tree within a trace.
 
 ---
@@ -118,7 +117,20 @@ Columns tracking token consumption per span.
 | `gen_ai.usage.input_tokens` | Int | Number of input (prompt) tokens consumed. |
 | `gen_ai.usage.output_tokens` | Int | Number of output (completion) tokens generated. |
 | `gen_ai.usage.input_token_details.cached_tokens` | Int | Number of input tokens served from cache. |
-| `gen_ai.usage.output_token_details.reasoning_tokens` | Int | Number of output tokens used for chain-of-thought reasoning. |
+| `gen_ai.usage.reasoning.output_tokens` | Int | Number of output tokens used for reasoning, when reported by the provider. |
+
+---
+
+## Message and Operation Details
+
+These columns are used when your instrumentation records native GenAI message details on the span itself. If your SDK records them on the `gen_ai.client.inference.operation.details` event instead, the same fields appear with the `event_` prefix on event rows.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `gen_ai.input.messages` | String | Chat history provided to the model. Messages use native roles such as `user`, `assistant`, and `tool`. |
+| `gen_ai.output.messages` | String | Messages returned by the model. The model or agent output is represented as an `assistant` message. |
+| `gen_ai.system_instructions` | String | System instructions when the provider or framework keeps them separate from the chat history. |
+| `gen_ai.tool.definitions` | String | Tool definitions available to the model for that request. |
 
 ---
 
@@ -154,19 +166,19 @@ These columns appear on **event rows** where `event_name` is not null. The exact
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `event_name` | String | Event type such as `gen_ai.client.inference.operation.details`, `gen_ai.user.message`, `gen_ai.choice`, `gen_ai.tool.call`, `gen_ai.tool.input`, `gen_ai.tool.output`, or `gen_ai.evaluation.result`. |
-| `event_gen_ai.event.name` | String | Event name repeated as a GenAI attribute when your instrumentation emits `gen_ai.event.name`. This usually matches `event_name`. |
-| `event_body` | String | Event payload when your instrumentation emits a `body` attribute. This is useful for prompt text, tool input, tool output, finish summaries, and reasoning text. |
-| `event_content` | String | Full content emitted with the event when your instrumentation uses a `content` field. |
-| `event_role` | String | Message role when present, for example `user`, `assistant`, `system`, or `tool`. |
-| `event_gen_ai.input.messages` | String | Input messages when emitted through the OpenTelemetry GenAI operation details event. |
-| `event_gen_ai.output.messages` | String | Output messages when emitted through the OpenTelemetry GenAI operation details event. |
-| `event_gen_ai.tool.name` | String | Tool name on tool-related events when emitted. |
-| `event_gen_ai.tool.call.id` | String | Tool call identifier on related events when emitted. |
+| `event_name` | String | Event type, usually `gen_ai.client.inference.operation.details` or `gen_ai.evaluation.result` for native GenAI instrumentation. |
+| `event_gen_ai.operation.name` | String | Operation name repeated on the event, for example `chat`. |
+| `event_gen_ai.provider.name` | String | Provider name repeated on the event. |
+| `event_gen_ai.request.model` | String | Requested model repeated on the event. |
+| `event_gen_ai.input.messages` | String | Input messages emitted through the OpenTelemetry GenAI operation details event. |
+| `event_gen_ai.output.messages` | String | Output messages emitted through the OpenTelemetry GenAI operation details event. |
+| `event_gen_ai.system_instructions` | String | System instructions emitted through the OpenTelemetry GenAI operation details event. |
+| `event_gen_ai.tool.definitions` | String | Tool definitions available to the model for that request. |
 | `event_gen_ai.evaluation.name` | String | Name of the evaluator or evaluation metric when `gen_ai.evaluation.result` is emitted. |
-| `event_gen_ai.evaluation.score.label` | String | Human-readable evaluation label, for example `satisfied`, `neutral`, `correct`, or `fail`. |
+| `event_gen_ai.evaluation.score.label` | String | Human-readable evaluation label, for example `correct`, `incorrect`, `pass`, or `fail`. |
 | `event_gen_ai.evaluation.score.value` | Float | Numeric evaluation score when available. |
 | `event_gen_ai.evaluation.explanation` | String | Free-form explanation for the evaluation result when available. |
+| `event_error.type` | String | Error type when the operation-details event is emitted for a failed model operation. |
 | `event_time_unix_nano` | BigInt | Event timestamp in nanoseconds since epoch. |
 | `event_dropped_attributes_count` | Int | Number of event attributes dropped due to limits. |
 
