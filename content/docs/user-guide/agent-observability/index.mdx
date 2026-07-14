@@ -11,61 +11,59 @@ That is usually where debugging gets hard. When the final answer is wrong, slow,
 
 ## Agent observability with Parseable
 
-Parseable Agent Observability gives you that view inside Prism. You can begin with a high-level view of agent activity, move into a single invocation, and then drill down to the exact LLM call or tool execution that explains what happened.
+Parseable Agent Observability gives you that view inside Prism. You can begin with a high-level view of agent activity, look at model and tool behavior separately, and then move into a single agent run when you need the full execution path.
 
-It is built on the [OpenTelemetry GenAI semantic conventions](https://github.com/open-telemetry/semantic-conventions-genai), so the telemetry follows a standard shape for model calls, token usage, inputs, outputs, tool calls, and agent spans. That means you are not pushing agent telemetry into a custom black box. You are sending it in a format that stays close to the OpenTelemetry model and remains easy to reason about.
+It is built on the [OpenTelemetry GenAI semantic conventions](https://github.com/open-telemetry/semantic-conventions-genai), so the telemetry follows a standard shape for model calls, token usage, inputs, outputs, tool calls, and agent spans. For message content, Parseable follows the native GenAI model: use `gen_ai.input.messages`, `gen_ai.output.messages`, `gen_ai.system_instructions`, and the `gen_ai.client.inference.operation.details` event when you capture full request and response details.
 
-Once your agent is instrumented, the Agents page becomes the place where you understand how that agent behaves in production. You can see how often it runs, which models it uses, how many tokens it consumes, where it spends time, what it calls, and where the answer starts to go off track.
+Once your agent is instrumented, the Agents page becomes the place where you understand how that agent behaves in production. You can see how often it runs, which models it uses, how many tokens it consumes, where it spends time, which tools it calls, and where a run needs review.
 
-<Callout type="idea">
-Parseable enriches GenAI telemetry at ingest time with fields like `p_genai_tokens_total`, `p_genai_tokens_per_sec`, and `p_genai_duration_ms`, so token usage and latency analysis is available without extra client-side tracking.
-</Callout>
+## Explore agent activity
 
-## Typical workflow
+The Agents page is organized around four tabs: Overview, Models, Tools, and Agent Runs. The dataset selector at the top lets you choose the traces dataset you want to inspect, while the time range picker controls the window used by every chart and table on the page.
 
-### Overview tab
+### Overview
 
 ![Agents overview showing invocations, errors, token usage, and duration charts](./static/agent-overview.png)
 
-When you open the Agents page, this is where you land first. The Overview tab is the quickest way to understand whether things look healthy over a selected time range.
+Start with the Overview tab when you want to understand the shape of agent activity before going deeper. It gives you the main health and usage signals in one place.
 
-The Invocations chart shows how many agent runs happened and how many of them ended in error. Token usage is split into input tokens and output tokens, grouped by model, so you can quickly see which model is consuming the most tokens. The Duration section helps you compare latency by tool and by model.
+The summary cards show total cost, agent runs, errors, total tokens, LLM calls, and tool calls for the selected period. These are useful first checks. You can quickly see whether usage increased, whether errors appeared, and whether the growth is coming from more agent runs, more model calls, more tool calls, or heavier token usage.
 
-Use the time range picker in the top-right corner to change the window you are investigating. The charts update with the selected time range, so you can move from a broad view to a smaller incident window without leaving the page.
+Below the summary, the charts break the run down by model, tool, user, and time. Total cost by model shows which model is driving spend. Tool usage shows which tools are being called most often. Token usage by user and model helps you see who or what is consuming tokens. Cost over time, latency by tool, and latency by model help you spot spikes that are easier to miss in a table.
 
-### Invocations tab
+Use the time range picker in the top-right corner when you want to move from a broad view to a smaller investigation window. The whole page follows that selected range.
 
-![Invocations tab showing session metrics, timeline, table columns, operations, and sentiment](./static/agent-invocations.png)
+### Models
 
-When you want to move from trends to actual runs, switch to the Invocations tab. This is where the broad view becomes a list of real agent sessions that you can inspect one by one.
+![Models tab showing cost, token usage, model usage, and model latency charts](./static/agent-models.png)
 
-At the top, Parseable shows total sessions, total tokens, duration, and error rate for the selected period. Below that, the timeline shows when invocations happened and where errors appeared.
+The Models tab is for understanding model behavior. Use it when you want to answer questions like: which model is used most, which model is the most expensive, where are tokens being spent, and whether a model is getting slower over time.
 
-The table lists each invocation with the timestamp, prompt, model, token usage, duration, operations, and sentiment. The Operations column shows how many chats and tool calls were part of the run, including failed tool calls when they are present. The Sentiment column helps you scan whether the response looked satisfied, neutral, or frustrated.
+The top cards show total cost, most used model, highest spend model, input tokens, output tokens, and cached tokens. This gives you a quick model-level summary before you inspect the charts.
 
-You can also change the duration percentile from the dropdown in the Duration card, for example `p50`, `p95`, or `p99`, depending on whether you want to inspect typical latency or tail latency.
+The charts let you compare total cost by model, cost over time by model, tokens by user and model, cost per agent, cost per team, cost by agent run, token usage over time, and model usage over time. This helps you see whether a cost spike came from a model switch, a specific user, a team, or a small number of expensive agent runs.
 
-#### Filtering and time range
+### Tools
 
-![Invocations filter menu showing fields for tool, model, duration, tokens, and errors](./static/agent-filters.png)
+![Tools tab showing tool calls, latency, usage, failures, and failed tool traces](./static/agent-tools.png)
 
-Once the list grows, filters help you cut through the noise. Use Add filter when you already have a rough idea of what you are looking for and want to narrow the list to a smaller set of invocations.
+The Tools tab helps you understand how the agent interacts with the outside world. This matters because many agent failures are not model failures. They happen when a tool is slow, returns unexpected output, fails repeatedly, or gets called too often.
 
-You can filter by fields such as tool name, tool call count, model name, invocation duration, input tokens, output tokens, total tokens, and total errors. This is useful when you already know the shape of the problem. For example, you can filter to a specific model, look at sessions with a high token count, or focus only on invocations where a tool failed.
+The top cards show the most used tool, slowest tool, total tool calls, total agent runs, and errors. The charts below show tool calls over time, tool latency over time, tool usage, and tool failures.
 
-The Find in data search box helps you search within the visible invocation data after the time range and filters are applied.
+The tool failures table gives you a path back to the run that failed. It includes the start time, tool name, duration, and trace ID, so you can move from a failing tool trend to the exact trace that explains it.
 
-### Drill into an invocation
+### Agent Runs
 
-![Invocation detail showing status, sentiment timeline, waterfall tree, messages, and tool input output](./static/agent-invocation-detail.png)
+![Agent Runs tab showing run timeline, filters, run table, token usage, cost, duration, and operations](./static/agent-run.gif)
 
-This is where the real investigation starts. Open any row from the Invocations table to see the full detail view for that run.
+The Agent Runs tab is where you move from charts to individual runs. Use it when you need to inspect a specific prompt, a failed run, an expensive run, or a run that called too many tools.
 
-The header shows the status, duration, tokens used, AI model, created time, and ended time. The Sentiment timeline shows how the interaction changed across the conversation, so you can see where the answer stayed useful, where satisfaction dipped, and where the run may need review.
+The timeline at the top shows when runs happened. The table below lists each run with date, prompt, model, tokens, cost, duration, and operations. Operations show how many model interactions and tool calls happened inside the run, including failed tool calls when they exist.
 
-Under it, the waterfall tree shows the full agent flow: the top-level invocation, each chat span, and each tool execution span. Selecting a chat or tool span opens the related details on the right, including user messages, assistant responses, tool inputs, tool outputs, and span-level details.
+Use Add filter to narrow the table when you already know what kind of run you are looking for. You can filter by fields such as model, tool, token counts, duration, errors, and other captured attributes. Use Find in data when you want to search within the currently visible results.
 
-Use this view when you need to understand which prompt started the run, which model was used, which tools were called, what input was sent to the tool, what output came back, and where the run slowed down or failed.
+When you open a run, Parseable shows the trace behind it. User-facing input appears as user messages in the UI. Model or agent output appears as agent messages. Under the hood, keep this telemetry native to OpenTelemetry by recording message content with `gen_ai.input.messages`, `gen_ai.output.messages`, and `gen_ai.client.inference.operation.details` rather than relying on custom message event names.
 
 ## Manual instrumentation using the OpenTelemetry SDK
 
@@ -76,7 +74,7 @@ At minimum, instrument these parts of the agent workflow:
 1. **Agent-level spans:** `invoke_agent` spans that wrap the full agent loop
 2. **Chat spans:** one `chat {model}` span for every LLM request
 3. **Tool execution spans:** one `execute_tool {tool.name}` span for every tool or command execution
-4. **Span events:** user messages, assistant messages, choices, tool calls, tool inputs, tool outputs, reasoning blocks, and evaluation results attached to the active span
+4. **GenAI events and message attributes:** `gen_ai.client.inference.operation.details`, `gen_ai.input.messages`, `gen_ai.output.messages`, `gen_ai.system_instructions`, tool calls, tool outputs, reasoning blocks, and evaluation results attached to the active span
 
 The [manual instrumentation guide](/docs/user-guide/agent-observability/manual-instrumentation) shows how to structure those spans and what to capture so the data shows up cleanly in Parseable.
 
