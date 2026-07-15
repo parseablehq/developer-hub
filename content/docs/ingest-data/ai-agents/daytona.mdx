@@ -238,7 +238,7 @@ Sandbox telemetry includes:
 - Organization CPU, RAM, and storage usage and quota metrics, pushed every 60 seconds
 
 <Callout type="warn">
-  In validation with Daytona Python SDK `0.197.0`, sandbox traces and metrics reached the collector, but sandbox logs did not. Daytona's entrypoint log API returned the expected stdout and stderr, confirming that Daytona captured the logs, while collector diagnostics showed no incoming OTLP log records and no Parseable exporter errors. Treat organization OTLP log export as unverified for this version and confirm it in your Daytona environment.
+  In validation with Daytona Python SDK `0.197.0`, sandbox traces and metrics reached the collector, but sandbox logs did not. Daytona's entrypoint log API returned the expected stdout and stderr, confirming that Daytona captured the logs, while collector diagnostics showed no incoming OTLP log records. A synthetic OTLP log sent through the same collector logs pipeline reached the `daytona-logs` dataset in Parseable, proving the collector-to-Parseable path was healthy. This isolates the missing signal upstream of the collector, likely in Daytona's organization log export or its account, region, or version availability. Treat it as a likely Daytona-side export issue rather than a universally confirmed product bug.
 </Callout>
 
 Daytona exports per-sandbox metrics including:
@@ -309,10 +309,10 @@ The collector route is independent from SDK tracing. SDK traces can continue exp
 - **Authentication fails** — Regenerate the Base64 value from the exact Parseable username and password, then keep the `Authorization=Basic ` prefix.
 - **Trace data reaches the wrong dataset** — Set `X-P-Stream=daytona-traces` and `X-P-Log-Source=otel-traces`.
 - **Shell reports `command not found` while sourcing variables** — Wrap the complete `OTEL_EXPORTER_OTLP_HEADERS` value in single quotes.
-- **Sandbox logs or metrics are missing** — Expected for this flow. Configure Daytona sandbox telemetry separately when those signals are required.
+- **Sandbox logs or metrics are missing from the SDK trace flow** — Expected. Configure Daytona organization sandbox telemetry separately when those signals are required.
 - **No sandbox telemetry appears** — Confirm the organization setting has had five minutes to apply and the collector is publicly reachable over HTTPS.
 - **Only one signal appears** — Confirm all three collector pipelines are present and each exporter uses the matching `X-P-Log-Source`.
-- **Daytona captures logs but `daytona-logs` remains absent** — Enable a collector `debug` exporter on the logs pipeline. If Daytona's entrypoint log API contains stdout/stderr but the debug exporter receives no `LogRecord`, the missing signal is upstream of the collector and should be reported to Daytona.
+- **Daytona captures logs but `daytona-logs` remains absent** — Enable a collector `debug` exporter on the logs pipeline and send a synthetic OTLP log through the same receiver. If the synthetic log reaches Parseable while Daytona's entrypoint log API contains stdout/stderr and the collector receives no Daytona `LogRecord`, the missing signal is upstream of the collector. Report it to Daytona with the account, region, and SDK/platform version.
 - **Collector receives data but Parseable is empty** — Check collector logs for authentication, endpoint, and exporter errors.
 - **Organization metrics are delayed** — Daytona pushes them every 60 seconds; allow additional time after saving the organization configuration.
 
