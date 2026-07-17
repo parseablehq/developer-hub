@@ -115,6 +115,8 @@ python test_daytona.py
 
 Open the `daytona-sdk-traces` dataset in Parseable. You should see traces for the SDK operations that created the sandbox, executed code, and deleted the sandbox.
 
+![Daytona SDK traces in Parseable](./static/daytona-traces.png)
+
 The line printed inside the sandbox is not exported as a log by SDK tracing. SDK tracing only describes the SDK calls. To collect stdout, stderr, runtime logs, and resource metrics from sandboxes, configure sandbox telemetry.
 
 ## Send sandbox telemetry to Parseable
