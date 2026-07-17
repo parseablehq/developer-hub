@@ -160,6 +160,10 @@ Daytona documents this configuration under **Daytona Dashboard > Settings > Open
 
 Because Daytona sends all sandbox telemetry to one OTLP endpoint, put an OpenTelemetry Collector between Daytona and Parseable.
 
+When this is set up, the `daytona-logs` dataset gives you the runtime side of the sandbox run. You can inspect the log volume over time, filter by log category, and open the matching records to see phase changes, stdout checkpoints, and other sandbox output in one place.
+
+![Daytona sandbox logs in Parseable](./static/daytona-logs.png)
+
 ### Configure the Collector
 
 Create `otel-collector-config.yaml`:
@@ -328,6 +332,10 @@ daytona.sandbox.used_cpu
 daytona.sandbox.used_ram
 daytona.sandbox.used_storage
 ```
+
+The `daytona-metrics` dataset is useful when you want to see how a sandbox behaved over time instead of only checking whether it succeeded. In practice, this is where CPU bursts, memory spikes, and filesystem changes are easiest to spot during longer code runs.
+
+![Daytona sandbox metrics in Parseable](./static/daytona-metrics.png)
 
 ## Direct export or Collector
 
