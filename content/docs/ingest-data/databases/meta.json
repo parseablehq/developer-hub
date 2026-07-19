@@ -5,6 +5,7 @@
     "mysql",
     "mongodb",
     "redis",
+    "sql-server",
     "elasticsearch"
   ]
 }

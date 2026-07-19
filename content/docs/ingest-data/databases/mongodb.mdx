@@ -1,37 +1,39 @@
 ---
 title: MongoDB
-description: Monitor MongoDB metrics with Parseable using OpenTelemetry
+description: Send MongoDB logs, metrics, and traces to Parseable with OpenTelemetry
 ---
 
-Monitor your MongoDB databases by collecting metrics using the OpenTelemetry Collector and sending them to Parseable.
+This guide creates a three-signal MongoDB integration with Parseable. The validated reference setup uses a three-member replica set, one Percona MongoDB exporter per member, an OpenTelemetry Collector, and a continuously running client workload.
 
-## Overview
+## What the integration collects
 
-The OpenTelemetry Collector's MongoDB receiver collects metrics from standalone MongoDB clusters including:
+| Signal | Source | Parseable dataset |
+|---|---|---|
+| Logs | `mongod` logs from every replica-set member | `mongodb-logs` |
+| Metrics | OpenTelemetry MongoDB receiver and Percona MongoDB exporter | `mongodb-metrics` |
+| Traces | Instrumented MongoDB client spans | `mongodb-traces` |
 
-- **Server Statistics** - Connections, operations, network traffic
-- **Database Metrics** - Document counts, storage sizes
-- **Collection Metrics** - Index usage, document operations
-- **Replication Metrics** - Replica set status and lag
+<Callout type="info">
+MongoDB server telemetry provides logs and metrics. Distributed traces come from the applications or workloads that execute MongoDB operations.
+</Callout>
 
 ## Prerequisites
 
-- MongoDB 4.0+ (supports 4.0, 5.0, 6.0, 7.0)
-- OpenTelemetry Collector with `mongodb` receiver
-- Parseable instance running and accessible
+- MongoDB 6.0 or later
+- OpenTelemetry Collector Contrib
+- [Percona MongoDB Exporter](https://github.com/percona/mongodb_exporter) for extended Prometheus metrics
+- A Parseable ingestor endpoint
 
-### Database User Setup
+## Configure MongoDB
 
-Create a monitoring user with the `clusterMonitor` role:
+Create a monitoring user in the `admin` database:
 
 ```javascript
-// Connect to admin database
 use admin
 
-// Create monitoring user
 db.createUser({
   user: "otel",
-  pwd: "your-secure-password",
+  pwd: "replace-me",
   roles: [
     { role: "clusterMonitor", db: "admin" },
     { role: "read", db: "local" }
@@ -39,47 +41,81 @@ db.createUser({
 })
 ```
 
-## OpenTelemetry Collector Configuration
+For a replica set, start every member with the same replica-set name and a persistent log path:
 
-### Basic Configuration
-
-Create an `otel-collector-config.yaml` file:
-
-```yaml
-receivers:
-  mongodb:
-    hosts:
-      - endpoint: localhost:27017
-    username: otel
-    password: ${env:MONGODB_PASSWORD}
-    collection_interval: 60s
-    initial_delay: 1s
-    tls:
-      insecure: true
-
-exporters:
-  otlphttp/parseable:
-    endpoint: "http://parseable:8000"
-    headers:
-      Authorization: "Basic YWRtaW46YWRtaW4="
-      X-P-Stream: "mongodb-metrics"
-      X-P-Log-Source: "otel-metrics"
-    tls:
-      insecure: true
-
-service:
-  pipelines:
-    metrics:
-      receivers: [mongodb]
-      exporters: [otlphttp/parseable]
+```bash
+mongod \
+  --replSet rs0 \
+  --bind_ip_all \
+  --logpath /data/db/mongod.log \
+  --logappend \
+  --profile 1 \
+  --slowms 50
 ```
 
-### Replica Set Configuration
+Initiate the replica set once:
 
-For monitoring MongoDB replica sets:
+```javascript
+rs.initiate({
+  _id: "rs0",
+  members: [
+    { _id: 0, host: "mongo1:27017", priority: 2 },
+    { _id: 1, host: "mongo2:27017", priority: 1 },
+    { _id: 2, host: "mongo3:27017", priority: 1 }
+  ]
+})
+```
+
+Run an exporter for each member. Direct connections preserve member-level replication and storage metrics:
+
+```yaml
+mongo-exporter1:
+  image: percona/mongodb_exporter:0.51.0
+  environment:
+    MONGODB_URI: >-
+      mongodb://otel:${MONGODB_PASSWORD}@mongo1:27017/admin
+      ?authSource=admin&directConnection=true
+  command:
+    - --mongodb.direct-connect
+    - --compatible-mode
+    - --discovering-mode
+    - --collector.diagnosticdata
+    - --collector.replicasetstatus
+    - --collector.dbstats
+    - --collector.topmetrics
+    - --collector.indexstats
+    - --collector.collstats
+```
+
+## Collector configuration
+
+Mount each MongoDB data volume read-only into the Collector and create `otel-collector.yaml`:
 
 ```yaml
 receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+  filelog/mongodb:
+    include:
+      - /mongo/mongo1/mongod.log
+      - /mongo/mongo2/mongod.log
+      - /mongo/mongo3/mongod.log
+    start_at: end
+    include_file_name: true
+    include_file_path: true
+    operators:
+      - type: move
+        from: body
+        to: attributes["mongodb.raw"]
+      - type: add
+        field: body
+        value: MongoDB structured log
+
   mongodb:
     hosts:
       - endpoint: mongo1:27017
@@ -88,132 +124,158 @@ receivers:
     username: otel
     password: ${env:MONGODB_PASSWORD}
     replica_set: rs0
-    collection_interval: 60s
-    timeout: 1m
-    tls:
-      insecure: false
-      insecure_skip_verify: false
-      ca_file: /path/to/ca.crt
-
-exporters:
-  otlphttp/parseable:
-    endpoint: "http://parseable:8000"
-    headers:
-      Authorization: "Basic YWRtaW46YWRtaW4="
-      X-P-Stream: "mongodb-metrics"
-      X-P-Log-Source: "otel-metrics"
+    collection_interval: 15s
+    initial_delay: 1s
+    timeout: 10s
     tls:
       insecure: true
 
+  prometheus/mongodb_exporter:
+    config:
+      scrape_configs:
+        - job_name: mongodb
+          scrape_interval: 15s
+          static_configs:
+            - targets:
+                - mongo-exporter1:9216
+                - mongo-exporter2:9216
+                - mongo-exporter3:9216
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+  resource/mongodb:
+    attributes:
+      - key: service.name
+        value: mongodb
+        action: upsert
+      - key: deployment.environment.name
+        value: production
+        action: upsert
+  batch:
+    timeout: 1s
+
+exporters:
+  otlphttp/parseable_logs:
+    endpoint: ${env:PARSEABLE_ENDPOINT}
+    encoding: json
+    headers:
+      Authorization: "Basic ${env:PARSEABLE_AUTH}"
+      X-P-Stream: mongodb-logs
+      X-P-Log-Source: otel-logs
+      Content-Type: application/json
+    retry_on_failure:
+      enabled: true
+      max_elapsed_time: 0s
+
+  otlphttp/parseable_metrics:
+    endpoint: ${env:PARSEABLE_ENDPOINT}
+    encoding: json
+    headers:
+      Authorization: "Basic ${env:PARSEABLE_AUTH}"
+      X-P-Stream: mongodb-metrics
+      X-P-Log-Source: otel-metrics
+      Content-Type: application/json
+    retry_on_failure:
+      enabled: true
+      max_elapsed_time: 0s
+
+  otlphttp/parseable_traces:
+    endpoint: ${env:PARSEABLE_ENDPOINT}
+    encoding: json
+    headers:
+      Authorization: "Basic ${env:PARSEABLE_AUTH}"
+      X-P-Stream: mongodb-traces
+      X-P-Log-Source: otel-traces
+      Content-Type: application/json
+    retry_on_failure:
+      enabled: true
+      max_elapsed_time: 0s
+
 service:
   pipelines:
+    logs:
+      receivers: [filelog/mongodb]
+      processors: [memory_limiter, resource/mongodb, batch]
+      exporters: [otlphttp/parseable_logs]
     metrics:
-      receivers: [mongodb]
-      exporters: [otlphttp/parseable]
+      receivers: [mongodb, prometheus/mongodb_exporter]
+      processors: [memory_limiter, resource/mongodb, batch]
+      exporters: [otlphttp/parseable_metrics]
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/parseable_traces]
 ```
 
-## Configuration Options
+The `filelog` operators retain the original structured log under `mongodb.raw` while keeping the OTLP body type stable. This avoids schema conflicts when different MongoDB log records have different nested shapes.
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `hosts` | `localhost:27017` | List of MongoDB endpoints |
-| `username` | - | Database username |
-| `password` | - | Database password |
-| `replica_set` | - | Replica set name for autodiscovery |
-| `collection_interval` | `1m` | Metrics collection interval |
-| `timeout` | `1m` | Command timeout |
-| `direct_connection` | `false` | Disable autodiscovery |
-| `tls.insecure` | - | Disable TLS |
+## Generate representative activity
 
-## Collected Metrics
+The reference workload creates customers, products, inventory, orders, events, a time-series measurements collection, and a churn collection. It then exercises transactions, inserts, updates, aggregation pipelines, lookups, index access, collection scans, TTL deletion, and intentional duplicate-key failures.
 
-The MongoDB receiver collects the following metrics:
+```javascript
+const d = db.getSiblingDB("telemetry")
 
-| Metric | Description |
-|--------|-------------|
-| `mongodb.cache.operations` | Cache operations count |
-| `mongodb.collection.count` | Number of collections |
-| `mongodb.connection.count` | Active connections |
-| `mongodb.cursor.count` | Open cursors |
-| `mongodb.cursor.timeout.count` | Timed out cursors |
-| `mongodb.database.count` | Number of databases |
-| `mongodb.document.operation.count` | Document operations |
-| `mongodb.global_lock.time` | Global lock time |
-| `mongodb.index.count` | Number of indexes |
-| `mongodb.index.size` | Index size in bytes |
-| `mongodb.memory.usage` | Memory usage |
-| `mongodb.network.io.receive` | Network bytes received |
-| `mongodb.network.io.transmit` | Network bytes transmitted |
-| `mongodb.operation.count` | Operation counts by type |
-| `mongodb.storage.size` | Storage size in bytes |
+d.orders.insertOne({
+  customerId: 42,
+  status: "paid",
+  total: 99.95,
+  items: [{ productId: 7, quantity: 1 }],
+  createdAt: new Date()
+})
 
-## Running the Collector
-
-### Docker
-
-```bash
-docker run -d \
-  --name otel-collector \
-  -v $(pwd)/otel-collector-config.yaml:/etc/otelcol/config.yaml \
-  -e MONGODB_PASSWORD=your-password \
-  otel/opentelemetry-collector-contrib:latest
+d.orders.aggregate([
+  { $match: { createdAt: { $gte: new Date(Date.now() - 3600000) } } },
+  { $unwind: "$items" },
+  { $lookup: {
+      from: "products",
+      localField: "items.productId",
+      foreignField: "_id",
+      as: "product"
+  } },
+  { $group: { _id: "$status", orders: { $sum: 1 }, revenue: { $sum: "$total" } } }
+]).toArray()
 ```
 
-### Docker Compose
+Instrument the MongoDB client and send spans to the Collector's OTLP HTTP endpoint. Recommended attributes include `db.system.name=mongodb`, `db.namespace`, `db.collection.name`, `db.operation.name`, `server.address`, and `server.port`.
 
-```yaml
-version: '3.8'
-services:
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:latest
-    volumes:
-      - ./otel-collector-config.yaml:/etc/otelcol/config.yaml
-    environment:
-      - MONGODB_PASSWORD=${MONGODB_PASSWORD}
-    depends_on:
-      - mongodb
-      - parseable
-```
-
-## Querying MongoDB Metrics in Parseable
-
-Once data is flowing, query your MongoDB metrics:
+## Verify ingestion
 
 ```sql
--- Get connection counts over time
-SELECT p_timestamp, connection_count 
-FROM "mongodb-metrics" 
-ORDER BY p_timestamp DESC 
-LIMIT 100
-
--- Find databases with high storage usage
-SELECT database_name, storage_size, index_size
-FROM "mongodb-metrics"
-WHERE p_timestamp > NOW() - INTERVAL '1 hour'
-ORDER BY storage_size DESC
+SELECT count(*) FROM "mongodb-logs"
+WHERE p_timestamp > NOW() - INTERVAL '10 minutes';
 ```
+
+```sql
+SELECT metric_name, count(*)
+FROM "mongodb-metrics"
+WHERE p_timestamp > NOW() - INTERVAL '10 minutes'
+GROUP BY metric_name
+ORDER BY metric_name;
+```
+
+```sql
+SELECT span_name, count(*)
+FROM "mongodb-traces"
+WHERE p_timestamp > NOW() - INTERVAL '10 minutes'
+GROUP BY span_name;
+```
+
+Use the resulting metrics for connections, operation rates, memory, WiredTiger cache, locks, cursors, collection/index sizes, replication state, and replica lag.
+
+## Dashboards
+
+Public Parseable dashboard templates are available in [parseablehq/dashboards](https://github.com/parseablehq/dashboards). Choose a MongoDB template and update its dataset variables if necessary.
+
+Exporter versions can change metric names. Use the template version that matches your Percona exporter, or translate the queries using the `metric_name` values present in `mongodb-metrics`.
 
 ## Troubleshooting
 
-### Connection Issues
-
-If the collector can't connect to MongoDB:
-
-1. Verify MongoDB is accepting connections on the configured port
-2. Check the user has `clusterMonitor` role
-3. Verify authentication database is correct (usually `admin`)
-4. Check firewall rules allow the connection
-
-### Missing Metrics
-
-If some metrics are not appearing:
-
-1. Ensure the monitoring user has proper roles
-2. Verify the replica set name is correct (if using replica sets)
-3. Check timeout settings if MongoDB is slow to respond
-
-## Next Steps
-
-- Set up [alerts](/docs/user-guide/alerting) for database performance thresholds
-- Create [dashboards](/docs/user-guide/dashboards) for MongoDB monitoring
-- Explore [SQL queries](/docs/user-guide/sql-editor) for custom analysis
+- Verify the monitoring account has `clusterMonitor` and access to the `local` database.
+- Verify `rs.status()` is healthy before starting the exporters.
+- Verify every exporter endpoint returns metrics on port `9216`.
+- Verify the Collector can read every `mongod.log` volume.
+- An HTTP `405` from Parseable normally means the exporter is pointed at a query/UI endpoint rather than the ingestor.

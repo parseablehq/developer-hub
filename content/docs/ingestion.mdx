@@ -3,7 +3,7 @@ title: Ingestion
 redirect_from:
   - /ingestion
 ---
-import { IconPlug, IconCode, IconWand, IconSettings, IconDatabase, IconChartDots, IconTimeline,IconBrandAws,IconBrandAzure,IconBrandGoogle } from '@tabler/icons-react';
+import { IconPlug, IconCode, IconWand, IconSettings, IconDatabase, IconServer, IconChartDots, IconTimeline,IconBrandAws,IconBrandAzure,IconBrandGoogle } from '@tabler/icons-react';
 
 Ingestion is the process of sending Telemetry signals (Metrics, Events, Logs, Traces) into Parseable. 
 
@@ -154,8 +154,16 @@ Ingest logs and metrics from MongoDB databases.
 Collect logs and metrics from Redis databases.
 </Card>
 
+<Card href="/docs/ingest-data/databases/sql-server" icon={<IconDatabase className="text-gray-600" />} title='Microsoft SQL Server'>
+Collect SQL Server logs, metrics, query events, and client traces.
+</Card>
+
 <Card href="/docs/ingest-data/databases/elasticsearch" icon={<IconDatabase className="text-gray-600" />} title='Elasticsearch'>
 Migrate or sync data from Elasticsearch to Parseable.
+</Card>
+
+<Card href="/docs/ingest-data/infrastructure/windows-server" icon={<IconServer className="text-blue-600" />} title='Windows Server'>
+Collect Windows Event Logs, windows_exporter metrics, and application traces.
 </Card>
 
 <Card href="/docs/ingest-data/containers/docker" icon={<IconDatabase className="text-orange-600" />} title='Docker'>
