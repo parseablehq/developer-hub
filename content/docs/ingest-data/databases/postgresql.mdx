@@ -30,7 +30,7 @@ PostgreSQL does not create distributed traces for SQL clients. Instrument the ap
 
 Enable statement statistics, I/O timing, replication data, and JSON logs:
 
-```conf
+```ini
 shared_preload_libraries = 'pg_stat_statements'
 pg_stat_statements.track = all
 track_io_timing = on

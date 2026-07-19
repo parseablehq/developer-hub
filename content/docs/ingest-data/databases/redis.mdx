@@ -30,7 +30,7 @@ The Collector must be able to reach Redis, the exporter, the Redis log files, an
 
 The following options enable persistence, latency data, slow-command history, and a file that the Collector can tail:
 
-```conf
+```ini
 appendonly yes
 appendfsync everysec
 slowlog-log-slower-than 1000
@@ -43,7 +43,7 @@ requirepass ${REDIS_PASSWORD}
 
 For a replica, add:
 
-```conf
+```ini
 replicaof redis-primary 6379
 masterauth ${REDIS_PASSWORD}
 ```
