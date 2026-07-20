@@ -6,6 +6,10 @@ redirect_from:
 
 The Parseable Kafka Connector enables log ingestion from Apache Kafka into Parseable, providing a high-performance, scalable, and efficient logging pipeline.
 
+<Callout type="info">
+For provider-specific managed Kafka setup, follow the [Amazon MSK on EKS guide](/docs/ingest-data/streaming/aws-msk) or the [Google Cloud Managed Kafka guide](/docs/ingest-data/streaming/gcp-managed-kafka).
+</Callout>
+
 ## Features
 - Consumer & Producer Support: Supports both consuming and producing messages (ready to use for DLT).
 - Configurable Buffering & Performance Settings: Optimized for high-throughput data processing.
@@ -107,10 +111,11 @@ For more details, refer to [Kafka's official documentation on producer configura
 | `--kerberos-service-name` | `P_KAFKA_KERBEROS_SERVICE_NAME` | `None` | Kerberos service name. | Required when using GSSAPI SASL mechanism. |
 | `--kerberos-principal` | `P_KAFKA_KERBEROS_PRINCIPAL` | `None` | Kerberos principal. | Used for Kerberos authentication. |
 | `--kerberos-keytab` | `P_KAFKA_KERBEROS_KEYTAB` | `None` | Path to Kerberos keytab file. | Required when using Kerberos authentication. |
-| `--oauth-token-endpoint` | `P_KAFKA_OAUTH_TOKEN_ENDPOINT` | `None` | OAuth Bearer token endpoint. | Required when using OAUTHBEARER SASL mechanism. |
+| `--oauth-provider` | `P_KAFKA_OAUTH_PROVIDER` | `None` | OAuth provider. | Use `aws-msk` for Amazon MSK IAM or `oidc` for a standard OIDC token endpoint. |
+| `--oauth-token-endpoint-url` | `P_KAFKA_OAUTH_TOKEN_ENDPOINT_URL` | `None` | OAuth Bearer token endpoint. | Required for the `oidc` provider. Not used for Amazon MSK IAM. |
 | `--oauth-client-id` | `P_KAFKA_OAUTH_CLIENT_ID` | `None` | OAuth client ID. | Used for authentication with an OAuth provider. |
 | `--oauth-client-secret` | `P_KAFKA_OAUTH_CLIENT_SECRET` | `None` | OAuth client secret. | Used to authenticate the OAuth client. |
-| `--oauth-scope` | `P_KAFKA_OAUTH_SCOPE` | `None` | OAuth scope. | Defines the permissions requested from the OAuth provider. |
+| `--aws-region` | `P_KAFKA_AWS_REGION` | `None` | AWS region for MSK IAM token signing. | Falls back to `AWS_REGION`, `AWS_DEFAULT_REGION`, then the AWS SDK region chain. |
 
 ### Security Configuration Combinations
 
@@ -147,15 +152,16 @@ Required parameters:
 - `--kerberos-service-name` and `--kerberos-principal` (for GSSAPI mechanism)
 - `--kerberos-keytab` (if using Kerberos authentication)
 
-#### OAuth Bearer Token Authentication (Not supported yet)
-- `--security-protocol=SASL_SSL or SASL_PLAINTEXT`
+#### OAuth Bearer Token Authentication
+- `--security-protocol=SASL_SSL`
 - `--sasl-mechanism=OAUTHBEARER`
 
-Required parameters:
-- `--oauth-token-endpoint`
-- `--oauth-client-id`
-- `--oauth-client-secret`
-- `--oauth-scope` (if required by the OAuth provider)
+Provider-specific parameters:
+
+- Amazon MSK IAM: `--oauth-provider=aws-msk` and `--aws-region=<region>`. AWS credentials are resolved through the AWS SDK default credential chain.
+- Standard OIDC: `--oauth-provider=oidc`, `--oauth-token-endpoint-url`, `--oauth-client-id`, and `--oauth-client-secret`.
+
+`SASL_PLAINTEXT` is rejected for OAuth bearer tokens because it would expose the token without TLS.
 
 #### Examples
 

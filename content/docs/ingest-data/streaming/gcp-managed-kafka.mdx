@@ -1,0 +1,454 @@
+---
+title: Google Cloud Managed Kafka
+description: Connect Parseable to Google Cloud Managed Service for Apache Kafka with OAuth and Application Default Credentials
+---
+
+This guide configures Parseable to consume JSON records from Google Cloud Managed Service for Apache Kafka. It covers Parseable running in Google Kubernetes Engine (GKE) or on a Compute Engine VM.
+
+Authentication uses `SASL_SSL` with `OAUTHBEARER`. Google's local authentication server obtains short-lived credentials through Application Default Credentials (ADC) and exposes them to Parseable on `127.0.0.1:14293`. No service account key is required.
+
+<Callout type="info">
+Use a Parseable image that includes the Kafka connector and the `oidc` OAuth provider. For non-Java clients such as Parseable, Google requires the local authentication server supplied in the `googleapis/managedkafka` repository.
+</Callout>
+
+## Architecture
+
+```text
+Application producers
+        |
+        | JSON records
+        v
++--------------------------------------+
+| Google Cloud Managed Kafka           |
+| topic -> partitions                  |
+| private bootstrap address: TCP 9092  |
++-------------------+------------------+
+                    |
+                    | SASL_SSL + OAUTHBEARER
+                    v
++----------------------------------------------------------------+
+| GKE pod or Compute Engine VM                                 |
+|                                                               |
+|  Google metadata server / Workload Identity                   |
+|                    |                                          |
+|                    | ADC                                      |
+|                    v                                          |
+|  kafka_gcp_credentials_server.py                              |
+|  listens only on 127.0.0.1:14293                              |
+|                    |                                          |
+|                    | short-lived OAuth token                  |
+|                    v                                          |
+|  Parseable ingestor(s) -> one Kafka consumer group            |
++---------------------------+------------------------------------+
+                            |
+                            | validate, batch, infer schema
+                            v
+               Parseable stream named after topic
+                            |
+                            v
+                  configured object store
+                            |
+                            v
+                  Parseable querier and API
+```
+
+The local authentication server and Parseable must share the same network namespace:
+
+- On GKE, run the server as a sidecar in each ingestor pod.
+- On Compute Engine, run the server on the same VM before starting Parseable.
+
+Do not expose port `14293` through a Kubernetes Service, load balancer, or firewall. The endpoint returns live credentials and is intended to remain local to the workload.
+
+## Prerequisites
+
+- An active Google Cloud Managed Service for Apache Kafka cluster.
+- A topic containing JSON records.
+- A VPC subnet connected to the Managed Kafka cluster.
+- Parseable running in distributed mode on GKE, or Parseable running on a Compute Engine VM.
+- A Google Cloud identity authorized to connect and consume.
+- Google Cloud CLI and `kubectl` access where applicable.
+
+The examples use these placeholders:
+
+| Placeholder | Example |
+| --- | --- |
+| `<project-id>` | `observability-prod` |
+| `<project-number>` | `123456789012` |
+| `<region>` | `us-central1` |
+| `<kafka-cluster>` | `parseable-kafka` |
+| `<topic>` | `parseable-events` |
+| `<consumer-group>` | `parseable-ingestor` |
+| `<namespace>` | `parseable` |
+| `<service-account>` | `parseable-ingestor` |
+
+## 1. Configure network access
+
+Managed Kafka runs in a Google-managed tenant VPC. Connecting a subnet creates Private Service Connect endpoints and Cloud DNS records in the consumer VPC. The connected subnet must be in the same region as the Kafka cluster.
+
+View the cluster's connected subnets and bootstrap address:
+
+```bash
+gcloud managed-kafka clusters describe <kafka-cluster> \
+  --project=<project-id> \
+  --location=<region>
+```
+
+Retrieve only the bootstrap address:
+
+```bash
+BOOTSTRAP=$(gcloud managed-kafka clusters describe <kafka-cluster> \
+  --project=<project-id> \
+  --location=<region> \
+  --format='value(bootstrapAddress)')
+
+echo "$BOOTSTRAP"
+```
+
+The address normally uses port `9092`. Unlike self-managed Kafka, this endpoint requires TLS and authentication.
+
+The GKE node or pod network, or the Compute Engine VM, must:
+
+1. Use a VPC connected to the Managed Kafka cluster.
+2. Resolve the bootstrap and broker DNS names created in that VPC.
+3. Permit egress to the cluster on TCP `9092`.
+
+See [Configure Managed Kafka networking](https://cloud.google.com/managed-service-for-apache-kafka/docs/networking-kafka).
+
+## 2. Create the workload identity
+
+Create a Google IAM service account for the Parseable Kafka workload:
+
+```bash
+gcloud iam service-accounts create parseable-kafka \
+  --project=<project-id> \
+  --display-name='Parseable Managed Kafka consumer'
+```
+
+The service account email is:
+
+```text
+parseable-kafka@<project-id>.iam.gserviceaccount.com
+```
+
+Grant the Managed Kafka Client role in the project containing the Kafka cluster:
+
+```bash
+gcloud projects add-iam-policy-binding <project-id> \
+  --member='serviceAccount:parseable-kafka@<project-id>.iam.gserviceaccount.com' \
+  --role='roles/managedkafka.client'
+```
+
+This role provides `managedkafka.clusters.connect`. Kafka ACLs separately control topic and consumer-group operations.
+
+<Callout type="warn">
+If the same identity also supplies Parseable's object-store credentials, grant it the required storage permissions as well. Prefer a dedicated ingestor identity so query-only workloads do not receive Kafka access.
+</Callout>
+
+See [Configure SASL authentication](https://cloud.google.com/managed-service-for-apache-kafka/docs/authentication-kafka).
+
+## 3. Configure Kafka ACLs
+
+IAM authorizes the principal to connect. Kafka ACLs authorize reads from the topic and use of the consumer group.
+
+Set reusable variables:
+
+```bash
+PROJECT_ID=<project-id>
+REGION=<region>
+KAFKA_CLUSTER=<kafka-cluster>
+TOPIC=<topic>
+GROUP_ID=<consumer-group>
+PRINCIPAL='User:parseable-kafka@<project-id>.iam.gserviceaccount.com'
+```
+
+Allow topic reads:
+
+```bash
+gcloud managed-kafka acls create "topic/$TOPIC" \
+  --project="$PROJECT_ID" \
+  --cluster="$KAFKA_CLUSTER" \
+  --location="$REGION" \
+  --acl-entry="principal=$PRINCIPAL,operation=READ,permission-type=ALLOW,host=*" \
+  --acl-entry="principal=$PRINCIPAL,operation=DESCRIBE,permission-type=ALLOW,host=*"
+```
+
+Allow consumer-group membership and offset commits:
+
+```bash
+gcloud managed-kafka acls create "consumerGroup/$GROUP_ID" \
+  --project="$PROJECT_ID" \
+  --cluster="$KAFKA_CLUSTER" \
+  --location="$REGION" \
+  --acl-entry="principal=$PRINCIPAL,operation=READ,permission-type=ALLOW,host=*" \
+  --acl-entry="principal=$PRINCIPAL,operation=DESCRIBE,permission-type=ALLOW,host=*"
+```
+
+If an ACL resource already exists, add entries to it instead of creating it again. Keep the ACL topic and consumer-group names synchronized with the Parseable environment variables.
+
+See [Create a Managed Kafka ACL](https://cloud.google.com/managed-service-for-apache-kafka/docs/kafka-acls/create-kafka-acls).
+
+## 4. Package the Google local authentication server
+
+Google maintains `kafka_gcp_credentials_server.py` in the [googleapis/managedkafka repository](https://github.com/googleapis/managedkafka/tree/main/kafka-auth-local-server). It binds to `localhost:14293`, uses ADC, refreshes access tokens, and returns the token response expected by Kafka OIDC clients.
+
+For production, pin the repository to a reviewed commit and build an internal image. Copy the official script into a build directory and add this `Dockerfile`:
+
+```dockerfile
+FROM python:3.12-slim
+
+WORKDIR /app
+COPY kafka_gcp_credentials_server.py /app/
+
+RUN pip install --no-cache-dir 'google-auth[urllib3]>=2.40.3'
+
+CMD ["python", "/app/kafka_gcp_credentials_server.py"]
+```
+
+Build and push it to Artifact Registry:
+
+```bash
+docker build -t <region>-docker.pkg.dev/<project-id>/<repository>/managed-kafka-auth:<tag> .
+docker push <region>-docker.pkg.dev/<project-id>/<repository>/managed-kafka-auth:<tag>
+```
+
+Google requires `google-auth` version `2.40.3` or later for direct GKE Workload Identity Federation with this server.
+
+## 5A. Run Parseable on GKE
+
+### Enable Workload Identity Federation
+
+Enable Workload Identity Federation for the GKE cluster if it is not already enabled:
+
+```bash
+gcloud container clusters update <gke-cluster> \
+  --project=<project-id> \
+  --location=<gke-location> \
+  --workload-pool=<project-id>.svc.id.goog
+```
+
+Create the Kubernetes ServiceAccount:
+
+```bash
+kubectl create serviceaccount <service-account> \
+  --namespace <namespace>
+```
+
+Allow it to impersonate the Google IAM service account:
+
+```bash
+gcloud iam service-accounts add-iam-policy-binding \
+  parseable-kafka@<project-id>.iam.gserviceaccount.com \
+  --project=<project-id> \
+  --role='roles/iam.workloadIdentityUser' \
+  --member='serviceAccount:<project-id>.svc.id.goog[<namespace>/<service-account>]'
+
+kubectl annotate serviceaccount <service-account> \
+  --namespace <namespace> \
+  iam.gke.io/gcp-service-account=parseable-kafka@<project-id>.iam.gserviceaccount.com \
+  --overwrite
+```
+
+This keyless linked-service-account method gives the authentication server a stable service account email that also matches the Kafka ACL principal.
+
+### Add the authentication sidecar and Kafka environment
+
+Add the local authentication server to the same pod as each Parseable ingestor. Containers in one pod share `127.0.0.1` and the Kubernetes ServiceAccount identity.
+
+```yaml
+spec:
+  template:
+    spec:
+      serviceAccountName: <service-account>
+      containers:
+        - name: parseable
+          env:
+            - name: P_KAFKA_BOOTSTRAP_SERVERS
+              value: "<bootstrap-address>"
+            - name: P_KAFKA_CONSUMER_TOPICS
+              value: "<topic>"
+            - name: P_KAFKA_CONSUMER_GROUP_ID
+              value: "<consumer-group>"
+            - name: P_KAFKA_CONSUMER_GROUP_INSTANCE_ID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: P_KAFKA_CONSUMER_AUTO_OFFSET_RESET
+              value: "earliest"
+            - name: P_KAFKA_SECURITY_PROTOCOL
+              value: "SASL_SSL"
+            - name: P_KAFKA_SASL_MECHANISM
+              value: "OAUTHBEARER"
+            - name: P_KAFKA_OAUTH_PROVIDER
+              value: "oidc"
+            - name: P_KAFKA_OAUTH_TOKEN_ENDPOINT_URL
+              value: "http://127.0.0.1:14293"
+            - name: P_KAFKA_OAUTH_CLIENT_ID
+              value: "unused"
+            - name: P_KAFKA_OAUTH_CLIENT_SECRET
+              value: "unused"
+
+        - name: managed-kafka-auth
+          image: <region>-docker.pkg.dev/<project-id>/<repository>/managed-kafka-auth:<tag>
+          resources:
+            requests:
+              cpu: 20m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+          readinessProbe:
+            exec:
+              command:
+                - python
+                - -c
+                - import socket; socket.create_connection(('127.0.0.1', 14293), 2).close()
+            periodSeconds: 5
+```
+
+Use a startup gate or native sidecar ordering when your Kubernetes version supports it. If Parseable starts before the authentication server, the connector can initially fail; restarting the Parseable container after the sidecar is ready resolves the race.
+
+If Helm manages the StatefulSet, add the sidecar and environment through chart values or templates. Direct StatefulSet edits are overwritten by later Helm reconciliation.
+
+### Direct GKE principal alternative
+
+Managed Kafka also supports direct Workload Identity Federation principals on GKE `1.31.1-gke.1241000` or later. This mode requires:
+
+- `iam.gke.io/return-principal-id-as-email: "true"` on the Kubernetes ServiceAccount.
+- `google-auth>=2.40.3` in the local server image.
+- `roles/managedkafka.client` and Kafka ACLs granted to the resulting GKE principal.
+
+Use the linked Google IAM service account method above when you want one stable email principal across GKE and Compute Engine.
+
+## 5B. Run Parseable on Compute Engine
+
+Attach `parseable-kafka@<project-id>.iam.gserviceaccount.com` to the VM with the `cloud-platform` access scope. The IAM roles on the service account remain the authorization boundary.
+
+Install and start the official local server before Parseable:
+
+```bash
+git clone https://github.com/googleapis/managedkafka.git
+cd managedkafka
+git checkout <reviewed-commit-sha>
+
+python3 -m venv /opt/managed-kafka-auth
+/opt/managed-kafka-auth/bin/pip install \
+  -r kafka-auth-local-server/requirements.txt
+
+/opt/managed-kafka-auth/bin/python \
+  kafka-auth-local-server/kafka_gcp_credentials_server.py
+```
+
+For production, run it as a `systemd` service with `Restart=always`, and start Parseable only after port `14293` is listening.
+
+Set the same Parseable variables used in GKE:
+
+```bash
+export P_KAFKA_BOOTSTRAP_SERVERS='<bootstrap-address>'
+export P_KAFKA_CONSUMER_TOPICS='<topic>'
+export P_KAFKA_CONSUMER_GROUP_ID='<consumer-group>'
+export P_KAFKA_CONSUMER_GROUP_INSTANCE_ID="$(hostname)"
+export P_KAFKA_CONSUMER_AUTO_OFFSET_RESET='earliest'
+export P_KAFKA_SECURITY_PROTOCOL='SASL_SSL'
+export P_KAFKA_SASL_MECHANISM='OAUTHBEARER'
+export P_KAFKA_OAUTH_PROVIDER='oidc'
+export P_KAFKA_OAUTH_TOKEN_ENDPOINT_URL='http://127.0.0.1:14293'
+export P_KAFKA_OAUTH_CLIENT_ID='unused'
+export P_KAFKA_OAUTH_CLIENT_SECRET='unused'
+```
+
+The VM metadata server supplies ADC. Do not create or download a service account key.
+
+## Parseable environment reference
+
+| Environment variable | Required | Value and purpose |
+| --- | --- | --- |
+| `P_KAFKA_BOOTSTRAP_SERVERS` | Yes | Bootstrap address returned by `gcloud managed-kafka clusters describe`. Empty values are rejected. |
+| `P_KAFKA_CONSUMER_TOPICS` | Yes | Comma-separated topics. Each topic becomes a Parseable stream. |
+| `P_KAFKA_CONSUMER_GROUP_ID` | Recommended | Shared by all ingestors and matched by the Kafka consumer-group ACL. |
+| `P_KAFKA_CONSUMER_GROUP_INSTANCE_ID` | Recommended | Unique stable member ID, such as a StatefulSet pod name or VM hostname. |
+| `P_KAFKA_CONSUMER_AUTO_OFFSET_RESET` | Recommended | `earliest` reads history when no committed offset exists; `latest` starts with new records. |
+| `P_KAFKA_SECURITY_PROTOCOL` | Yes | `SASL_SSL`. Managed Kafka does not support plaintext connections. |
+| `P_KAFKA_SASL_MECHANISM` | Yes | `OAUTHBEARER`. |
+| `P_KAFKA_OAUTH_PROVIDER` | Yes | `oidc`, because `librdkafka` retrieves tokens from the local HTTP endpoint. |
+| `P_KAFKA_OAUTH_TOKEN_ENDPOINT_URL` | Yes | `http://127.0.0.1:14293`. |
+| `P_KAFKA_OAUTH_CLIENT_ID` | Yes | `unused`; required by the OIDC client configuration. |
+| `P_KAFKA_OAUTH_CLIENT_SECRET` | Yes | `unused`; required by the OIDC client configuration. |
+
+Do not set `P_KAFKA_AWS_REGION` for Google Cloud. Do not set `GOOGLE_APPLICATION_CREDENTIALS` to a service account key when Workload Identity or an attached VM service account is available.
+
+## Scaling behavior
+
+- All ingestors use one consumer group, so Managed Kafka distributes topic partitions across replicas.
+- Each group instance ID must be unique. StatefulSet pod names are stable and work well for static membership.
+- A topic needs at least as many partitions as active ingestors to use every replica.
+- `P_KAFKA_PARTITION_LISTENER_CONCURRENCY` defaults to `2` per ingestor.
+- `P_KAFKA_CONSUMER_BUFFER_SIZE` defaults to `10000` records per partition.
+- `P_KAFKA_CONSUMER_BUFFER_TIMEOUT` defaults to `10000ms`; a new stream may not appear until the first batch flushes.
+- Committed offsets take precedence over `P_KAFKA_CONSUMER_AUTO_OFFSET_RESET`.
+
+## Validate the integration
+
+Check the local server without printing the returned token:
+
+```bash
+curl --fail --silent --output /dev/null \
+  http://127.0.0.1:14293
+```
+
+On GKE, run the check in the authentication sidecar:
+
+```bash
+kubectl -n <namespace> exec <ingestor-pod> \
+  --container managed-kafka-auth -- \
+  python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:14293', timeout=5).read()"
+```
+
+Check ingestor logs:
+
+```bash
+kubectl -n <namespace> logs <ingestor-pod> \
+  --container parseable \
+  --since=10m
+```
+
+Publish one valid JSON record with a separately authorized producer:
+
+```json
+{"message":"hello from Google Cloud Managed Kafka","level":"info"}
+```
+
+The Parseable stream is created lazily after the record is consumed and its batch is flushed. Query it:
+
+```bash
+curl --user "$PARSEABLE_USERNAME:$PARSEABLE_PASSWORD" \
+  --header 'Content-Type: application/json' \
+  --data '{"query":"SELECT * FROM \"<topic>\" LIMIT 10","startTime":"10m","endTime":"now"}' \
+  "https://<parseable-host>/api/v1/query"
+```
+
+Kafka-ingested records include `p_user_agent: kafka`.
+
+## Security recommendations
+
+- Use Workload Identity Federation or an attached VM service account; avoid service account keys.
+- Keep the local token endpoint bound to `127.0.0.1` and never expose it outside the pod or VM.
+- Pin and review the Google authentication-server source used in your image.
+- Use separate producer and consumer principals and ACLs.
+- Scope topic and group ACLs to exact names or narrow prefixes.
+- Use a dedicated identity for Parseable ingestors when possible.
+- Keep GKE, VM, and Managed Kafka traffic on connected private VPC networks.
+
+## Troubleshooting
+
+| Symptom | Likely cause | Resolution |
+| --- | --- | --- |
+| Bootstrap hostname does not resolve | Workload VPC or subnet is not connected to the cluster. | Connect the subnet and verify Cloud DNS visibility from the pod or VM. |
+| Connection timeout to port `9092` | Routing or egress firewall issue. | Test DNS and TCP from the same pod or VM running Parseable. |
+| Connection refused on `127.0.0.1:14293` | Local authentication server is not running or is in a different pod/host. | Run it as an ingestor sidecar or on the same VM and start it before Parseable. |
+| Local server cannot obtain credentials | Workload Identity, VM service account, or ADC configuration is missing. | Verify the KSA/GSA link or attached VM service account and metadata access. |
+| Local server cannot determine principal | Credential type does not expose an email principal. | Use the linked GSA method or set `GOOGLE_MANAGED_KAFKA_AUTH_PRINCIPAL` to the authorized principal. |
+| `SASL authentication failed` | Wrong endpoint, OAuth settings, or principal. | Use `SASL_SSL`, `OAUTHBEARER`, `oidc`, localhost token endpoint, and `unused` client credentials. |
+| Authorization error for topic | Topic ACL is missing or uses a different principal/topic. | Add `READ` and `DESCRIBE` entries to `topic/<topic>`. |
+| Authorization error for group | Consumer-group ACL differs from the configured group ID. | Add the principal to `consumerGroup/<consumer-group>`. |
+| `UnknownTopicOrPartition` | Topic does not exist or its name is wrong. | Create the topic and verify `P_KAFKA_CONSUMER_TOPICS`. |
+| No Parseable stream appears | No record has arrived, buffer has not flushed, or payload is not valid JSON. | Publish a JSON record and wait at least one buffer interval. |

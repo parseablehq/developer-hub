@@ -3,6 +3,8 @@
   "pages": [
     "cribl",
     "kafka",
+    "aws-msk",
+    "gcp-managed-kafka",
     "redpanda",
     "rabbitmq",
     "nats"
