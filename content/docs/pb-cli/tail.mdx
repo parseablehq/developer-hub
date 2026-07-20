@@ -51,22 +51,22 @@ pb tail backend | grep -v "health_check"
 
 ## How it works
 
-`pb tail` uses Apache Arrow Flight over gRPC for streaming. This means it needs access to **two ports** on your Parseable server, not just the main HTTP port:
+`pb tail` uses Apache Arrow Flight over gRPC for streaming. It first reads the gRPC port advertised by the connected Parseable server, then opens the streaming connection on that port. The default self-hosted ports are:
 
 | Port | Protocol | Purpose |
 |---|---|---|
 | `8000` | HTTP | Main Parseable API (login, query, datasets) |
-| `8001` | gRPC | Arrow Flight streaming (used by `pb tail`) |
+| `8001` | gRPC | Default streaming port used by `pb tail` |
 
 ## Troubleshooting
 
 **Error: `rpc error: code = Unavailable ... dial tcp <ip>:8001: i/o timeout`**
 
-This means `pb tail` connected to the server successfully over HTTP, but could not reach the gRPC port on `8001`. This is the most common error when using `pb tail`.
+This means `pb tail` connected to the server successfully over HTTP, but could not reach the server-advertised gRPC port. `8001` is the default, but deployments can configure another value.
 
 Possible causes:
-- Port `8001` is blocked by a firewall on the server
-- Port `8001` is not exposed in your Docker or Kubernetes setup
+- The advertised gRPC port is blocked by a firewall on the server
+- The advertised gRPC port is not exposed in your Docker or Kubernetes setup
 - Your network restricts outbound gRPC connections
 
-To fix it, make sure port `8001` is open and reachable from your machine. If you are running Parseable in Docker, add `-p 8001:8001` to your run command. If you are behind a firewall, allow outbound TCP on port `8001`.
+To fix it, make sure the configured gRPC port is open and reachable from your machine. For a default Docker setup, expose it with `-p 8001:8001`. For a custom deployment, expose the value configured by the server and allow outbound TCP access to that port.

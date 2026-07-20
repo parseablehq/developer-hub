@@ -23,10 +23,12 @@ This starts an interactive prompt where you choose a privilege level and the dat
 
 | Privilege | Access |
 |---|---|
+| `none` | No server privileges |
+| `admin` | Full system-wide access |
+| `editor` | Read and write access across datasets |
 | `reader` | Read-only access to a specific dataset |
 | `writer` | Read and write access to a specific dataset |
 | `ingestor` | Write-only (ingest) access to a specific dataset |
-| `admin` | Full system-wide access |
 
 ```bash
 pb role add log-readers

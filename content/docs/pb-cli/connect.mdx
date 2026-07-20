@@ -7,17 +7,13 @@ description: "Create a profile and authenticate with your Parseable instance."
 
 ## Interactive login (recommended)
 
-Run `pb login` to start the interactive wizard. It walks you through the server URL, authentication method, credentials, and profile name.
+Run `pb login` to start the interactive wizard. Choose self-hosted Parseable or Parseable Cloud, then select the available authentication method.
 
 ```bash
 pb login
 ```
 
-The wizard prompts you for:
-- Server URL (e.g. `https://logs.mycompany.com`)
-- Auth method - username/password or API key
-- Credentials
-- Profile name (defaults to `default`)
+For self-hosted Parseable, enter the server URL and authenticate with a username and password or an API key. For Parseable Cloud, authenticate in the browser or enter a Parseable Cloud API key. The selected Cloud workspace is saved in the profile.
 
 Once complete, the profile is saved and set as the active default.
 
@@ -31,6 +27,18 @@ pb profile add <name> <url> <username> <password>
 
 ```bash
 pb profile add production https://logs.mycompany.com admin s3cr3t
+```
+
+Use a self-hosted API key instead of username and password:
+
+```bash
+pb profile add production-key https://logs.mycompany.com --api-key psk_xxx
+```
+
+Add a Parseable Cloud API-key profile:
+
+```bash
+pb cloud profile add --name production-cloud --api-key psk_xxx
 ```
 
 You can also omit credentials and let `pb` prompt for them:

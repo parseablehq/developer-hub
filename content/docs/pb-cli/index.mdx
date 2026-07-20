@@ -3,7 +3,7 @@ title: pb CLI
 description: Query logs, explore metrics, tail live events, and manage Parseable from your terminal.
 ---
 
-`pb` is the official command line interface for Parseable. It gives developers and operators a fast terminal workflow for SQL log queries, PromQL metrics exploration, live event tailing, saved investigations, profiles, datasets, users, and roles.
+`pb` is the official command line interface for self-hosted Parseable and Parseable Cloud. It gives developers and operators a fast terminal workflow for SQL log queries, PromQL metrics exploration, live event tailing, saved investigations, profiles, datasets, users, and roles.
 
 Use it as a regular CLI in scripts and CI, or open the full-screen interactive TUIs when you want a table-driven way to explore logs or metrics without leaving your shell.
 
@@ -34,6 +34,7 @@ pb tail backend
 | Command | Description |
 |---|---|
 | `pb login` | Start an interactive wizard to connect to a Parseable server and save the connection as a profile |
+| `pb cloud profile` | Add a Parseable Cloud profile with a Cloud API key |
 | `pb profile` | Add, list, switch, update, and remove saved server profiles |
 | `pb status` | Verify the active connection and display server version information |
 | `pb sql` | Run SQL queries, save SQL queries, and open the interactive SQL table view |
@@ -82,8 +83,9 @@ pb promql run "up" --dataset otel_metrics --instant --output json
 
 ## Getting started
 
-1. [Install pb](/docs/pb-cli/install) - install with the script, Homebrew, Go, or a release archive
+1. [Install pb](/docs/pb-cli/install) - install with the script, Homebrew, or a release archive
 2. [Connect to a server](/docs/pb-cli/connect) - authenticate and save a server profile
 3. [Run a SQL query](/docs/pb-cli/query) - query logs with `pb sql`
 4. [Run a PromQL query](/docs/pb-cli/promql) - query metrics with `pb promql`
 5. [Use aliases](/docs/pb-cli/aliases) - learn the short command forms such as `ls`, `rm`, `stat`, and `set-url`
+6. [Use pb with AI agents](/docs/pb-cli/agents) - configure safe, read-only agent access
