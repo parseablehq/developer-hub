@@ -1,66 +1,111 @@
 ---
 title: Kubernetes
+description: Install Parseable OSS in standalone mode on Kubernetes with Helm.
 redirect_from:
   - /installation/standalone/k8s
 ---
 
-This page explains the steps required to setup Parseable (in S3 or Local mode) on Kubernetes via Helm.
+This page explains how to set up Parseable OSS in standalone mode on Kubernetes using Helm. You can use local storage or an object store such as Amazon S3 or MinIO.
 
-### Prerequisites
-- `kubectl` and `helm` installed and configured to point to relevant Kubernetes clusters.
+<Callout type="info">
+Standalone mode supports Parseable OSS only. To install Parseable Enterprise, use the [distributed Kubernetes installation](/docs/self-hosted/installation/distributed/k8s-helm).
+</Callout>
 
-### Setup Parseable with Local Storage
-#### Create configuration secret
+## Prerequisites
 
-Create a secret file with the configuration for Parseable.
+- `kubectl` and `Helm 3 or later` installed and configured for your Kubernetes cluster.
+- A Kubernetes storage class for Parseable volumes.
+
+Find the available storage classes:
+
+```bash
+kubectl get storageclass
+```
+
+Add the Parseable Helm repository and create a namespace:
+
+```bash
+helm repo add parseable https://charts.parseable.com
+helm repo update
+kubectl create namespace parseable
+```
+
+Choose one of the storage options below.
+
+## Set up Parseable with local storage
+
+Create a file named `parseable-env-secret`:
 
 ```bash
 cat << EOF > parseable-env-secret
 addr=0.0.0.0:8000
-staging.dir=./staging
-fs.dir=./data
 username=admin
 password=admin
 EOF
 ```
 
-You can add additional environment variables to the `parseable-env-secret` file as needed. You can find the details of all the environment variables in the [Environment Variables](/docs/self-hosted/configuration) section.
-
-Then create the secret in Kubernetes.
+Create the configuration Secret:
 
 ```bash
-kubectl create ns parseable
-kubectl create secret generic parseable-env-secret --from-env-file=parseable-env-secret -n parseable
+kubectl create secret generic parseable-env-secret \
+  --from-env-file=parseable-env-secret \
+  --namespace parseable
 ```
 
-#### Install Parseable
+Replace `YOUR_STORAGE_CLASS` with a storage class available in your cluster, then install Parseable:
 
 ```bash
-helm repo add parseable https://charts.parseable.com
-helm install parseable parseable/parseable -n parseable --set "parseable.local=true"
-kubectl port-forward svc/parseable 8000:80 -n parseable
+helm install parseable parseable/parseable \
+  --namespace parseable \
+  --set parseable.deploymentMode=standalone \
+  --set parseable.store.type=local-store \
+  --set parseable.store.secretName=parseable-env-secret \
+  --set parseable.standalone.unified.persistence.staging.storageClass=YOUR_STORAGE_CLASS \
+  --set parseable.standalone.unified.persistence.data.enabled=true \
+  --set parseable.standalone.unified.persistence.data.storageClass=YOUR_STORAGE_CLASS \
+  --wait
 ```
 
-You should now be able to point your browser to `http://localhost:8000` and see the Parseable login page. You can login with the values set in the username and password fields in the `parseable-env-secret` file above.
+The staging PVC temporarily buffers incoming data. The data PVC stores the actual local data and keeps it across pod replacements.
 
-### Setup Parseable with S3 Storage
-#### Setup object store
-This step is required only if you want to setup [MinIO](https://min.io/) as the backend for Parseable. Please skip this step if you have another object store, like S3, already available.
+## Set up Parseable with S3 storage
+
+### Set up MinIO for testing
+
+<Callout type="info">
+The MinIO steps below are for testing only. Skip this section if you already have an S3-compatible object store.
+</Callout>
 
 ```bash
 helm repo add minio https://charts.min.io/
-helm install --namespace minio --create-namespace --set "buckets[0].name=parseable,buckets[0].policy=none,buckets[0].purge=false,rootUser=minioadmin,rootPassword=minioadmin,replicas=1,persistence.enabled=false,resources.requests.memory=128Mi,mode=standalone" minio minio/minio
-kubectl port-forward svc/minio-console -n minio 9001:9001
+
+helm install minio minio/minio \
+  --namespace minio \
+  --create-namespace \
+  --set "buckets[0].name=parseable" \
+  --set "buckets[0].policy=none" \
+  --set "buckets[0].purge=false" \
+  --set rootUser=minioadmin \
+  --set rootPassword=minioadmin \
+  --set replicas=1 \
+  --set mode=standalone \
+  --set persistence.enabled=false \
+  --set resources.requests.memory=128Mi
 ```
-You can now access the MinIO console on http://localhost:9001. You should see a bucket called `parseable` created.
 
+To access the MinIO console:
 
-<Callout type="info">
-MinIO installation steps above are for testing purposes only. For production, please refer to the [MinIO documentation](https://min.io/docs/minio/linux/index.html).
-</Callout>
+```bash
+kubectl port-forward service/minio-console 9001:9001 --namespace minio
+```
 
-#### Create configuration secret
-Create a secret file with the configuration for Parseable. Note that the values set below are based on the MinIO installation above. If you are using a different object store, please update the values accordingly.
+Open `http://localhost:9001`. A bucket named `parseable` should be available.
+
+MinIO provides an S3-compatible API, so Parseable uses `s3-store` with the MinIO service as its S3 endpoint.
+
+### Create configuration secret
+
+Create a file named `parseable-env-secret`. The values below work with the MinIO test setup above.
 
 ```bash
 cat << EOF > parseable-env-secret
@@ -70,28 +115,47 @@ s3.secret.key=minioadmin
 s3.region=us-east-1
 s3.bucket=parseable
 addr=0.0.0.0:8000
-staging.dir=./staging
-fs.dir=./data
 username=admin
 password=admin
 EOF
 ```
 
-Then create the secret in Kubernetes.
+If you are using another S3-compatible object store, replace the endpoint and credentials with your own values.
+
+Create the configuration Secret:
 
 ```bash
-kubectl create ns parseable
-kubectl create secret generic parseable-env-secret --from-env-file=parseable-env-secret -n parseable
+kubectl create secret generic parseable-env-secret \
+  --from-env-file=parseable-env-secret \
+  --namespace parseable
 ```
 
-#### Install Parseable
+Replace `YOUR_STORAGE_CLASS`, then install Parseable:
 
 ```bash
-helm repo add parseable https://charts.parseable.com
-helm install parseable parseable/parseable -n parseable
-kubectl port-forward svc/parseable 8000:80 -n parseable
+helm install parseable parseable/parseable \
+  --namespace parseable \
+  --set parseable.deploymentMode=standalone \
+  --set parseable.store.type=s3-store \
+  --set parseable.store.secretName=parseable-env-secret \
+  --set parseable.standalone.unified.persistence.staging.storageClass=YOUR_STORAGE_CLASS \
+  --wait
 ```
 
-You should now be able to point your browser to `http://localhost:8000` and see the Parseable login page. You can login with the values set in the username and password fields in the `parseable-env-secret` file above.
+With S3 or MinIO, permanent data is stored in the object store. Only the local staging PVC is required.
 
+## Verify the installation
 
+```bash
+kubectl get pods,pvc,services --namespace parseable
+```
+
+The Parseable pod should be `Running` and its PVCs should be `Bound`.
+
+## Access Parseable
+
+```bash
+kubectl port-forward service/parseable-standalone-service 8000:80 --namespace parseable
+```
+
+Open `http://localhost:8000` and sign in with the username and password from `parseable-env-secret`.

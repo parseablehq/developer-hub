@@ -1,5 +1,6 @@
 ---
 title: Kubernetes
+description: Install Parseable OSS or Enterprise in distributed mode on Kubernetes with Helm.
 redirect_from:
   - /installation/distributed/k8s-helm
   - /server/installation/distributed/setup-distributed-parseable-on-kubernetes-via-helm
@@ -7,33 +8,57 @@ redirect_from:
   - /installation/setup-parseable-on-kubernetes-via-helm
 ---
 
-This page explains the steps required to setup Parseable in a distributed mode on Kubernetes via Helm.
+This page explains how to set up Parseable OSS or Enterprise in distributed mode on Kubernetes using Helm.
 
 ## Prerequisites
 
-- `kubectl` and `helm` installed and configured to point to relevant Kubernetes cluster.
-- Use S3 or a compatible object store such as MinIO to store logs.
+- `kubectl` and `Helm 3 or later` installed and configured for your Kubernetes cluster.
+- An S3-compatible object store such as Amazon S3 or MinIO.
+- Parseable license files if you are installing Enterprise.
+
+You can find the available storage classes with:
+
+```bash
+kubectl get storageclass
+```
 
 ## Set up object store
 
 <Callout type="info">
-The MinIO installation steps below are for testing purposes only. For production level deployment please refer to the [MinIO documentation](https://min.io/docs/minio/linux/index.html).
+The MinIO installation steps below are for testing purposes only. For production level deployment please refer to the [MinIO documentation](https://docs.min.io/aistor/).
 </Callout>
 
-This step is required only if you want to setup MinIO as the backend for Parseable. Please skip this step if you have another object store, like S3, already available.
-Make sure you configure `storageClass` in the helm install command.
+Replace `YOUR_STORAGE_CLASS` with a storage class available in your cluster.
 
 ```bash
 helm repo add minio https://charts.min.io/
-helm install --namespace minio --create-namespace --set "buckets[0].name=parseable,buckets[0].policy=none,buckets[0].purge=false,rootUser=minioadmin,rootPassword=minioadmin,replicas=1,persistence.enabled=true,persistence.storageClass="",resources.requests.memory=128Mi,mode=standalone" minio minio/minio
-kubectl port-forward svc/minio-console -n minio 9001:9001
+
+helm install minio minio/minio \
+  --namespace minio \
+  --create-namespace \
+  --set "buckets[0].name=parseable" \
+  --set "buckets[0].policy=none" \
+  --set "buckets[0].purge=false" \
+  --set rootUser=minioadmin \
+  --set rootPassword=minioadmin \
+  --set replicas=1 \
+  --set mode=standalone \
+  --set persistence.enabled=true \
+  --set persistence.storageClass=YOUR_STORAGE_CLASS \
+  --set resources.requests.memory=128Mi
 ```
 
-You can now access the MinIO console at `http://localhost:9001`. You should see a bucket called `parseable` created.
+To access the MinIO console:
+
+```bash
+kubectl port-forward service/minio-console 9001:9001 --namespace minio
+```
+
+Open `http://localhost:9001`. A bucket named `parseable` should be available.
 
 ### Create configuration secret
 
-Create a secret file with the configuration for Parseable. Note that the values set below are based on the MinIO installation above. If you are using a different object store, please update the values accordingly.
+Create a file named `parseable-env-secret` with the Parseable administrator and object-store configuration. The values below work with the MinIO test setup above.
 
 ```bash
 cat << EOF > parseable-env-secret
@@ -43,52 +68,118 @@ s3.secret.key=minioadmin
 s3.region=us-east-1
 s3.bucket=parseable
 addr=0.0.0.0:8000
-staging.dir=./staging
-fs.dir=./data
 username=admin
 password=admin
 EOF
 ```
 
-You can add additional environment variables to the `parseable-env-secret` file as needed. You can find the details of all the environment variables in the [Environment Variables](/docs/self-hosted/configuration) section.
+You can add additional environment variables to the `parseable-env-secret` file as needed. You can find the details of all the environment variables in the [Environment variables](/docs/self-hosted/configuration) documentation.
 
-
-After this, create the secret in Kubernetes.
-
-```bash
-kubectl create ns parseable
-kubectl create secret generic parseable-env-secret --from-env-file=parseable-env-secret -n parseable
-```
-
-### Install Parseable
+Create the namespace and Secret:
 
 ```bash
-helm repo add parseable https://charts.parseable.com/
-helm install parseable parseable/parseable -n parseable --set "parseable.highAvailability.enabled=true" --set "parseable.store=s3-store" --set "parseable.s3ModeSecret.enabled=true"
+kubectl create namespace parseable
+
+kubectl create secret generic parseable-env-secret \
+  --from-env-file=parseable-env-secret \
+  --namespace parseable
 ```
 
-<Callout type="info">
-Note that `parseable.highAvailability.enabled=true` flag enables high availability mode. By default, the helm chart installs 3 Parseable ingest services and 1 Parseable query service. It also creates a ClusterIP service for Parseable ingestors.
-</Callout>
+## Install Parseable
 
-### Access Parseable
-
-Since we're running Parseable in a distributed mode, the ingestor service and querier services are different. Any log agent or client should send events to the `parseable-ingestor-service` service. To expose the ingress service, you can use the following command:
+Add the Parseable Helm repository:
 
 ```bash
-kubectl port-forward svc/parseable-ingestor-service 8000:80 -n parseable
+helm repo add parseable https://charts.parseable.com
+helm repo update
 ```
 
-To access thePrism, you'll need to expose the `parseable-querier-service` service:
+The `parseable/parseable` chart supports both OSS and Enterprise. Replace `YOUR_STORAGE_CLASS` in the commands below.
+
+### Parseable OSS
 
 ```bash
-kubectl port-forward svc/parseable-querier-service 8001:80 -n parseable
+helm install parseable parseable/parseable \
+  --namespace parseable \
+  --set parseable.deploymentMode=distributed \
+  --set parseable.store.type=s3-store \
+  --set parseable.store.secretName=parseable-env-secret \
+  --set parseable.distributed.ingestor.persistence.staging.storageClass=YOUR_STORAGE_CLASS \
+  --set parseable.distributed.querier.persistence.hotTier.storageClass=YOUR_STORAGE_CLASS \
+  --wait
 ```
 
-You should now be able to point your browser to `http://localhost:8001` and see the Parseable login page. You can login with the values set in `username` and `password` fields in the `parseable-env-secret` file above.
+By default, the chart creates three ingestors and one querier.
 
-## Migration
+### Parseable Enterprise
 
-This section is for users using Parseable helm chart version `1.3.1` or previous. Parseable release `v1.4.0` introduced a hot-tier mechanism for query nodes. Accordingly, the query nodes in the helm chart are now deployed as a StatefulSet instead of a Deployment. The helm chart version `1.4.0` and above removes the Deployment and creates a StatefulSet for query nodes.
+<OfferingPills enterprise className="mb-4" />
 
-Since distributed mode always runs with S3 store mode, the data is stored remotely and there is no manual migration required. If you face any issues during the upgrade, please reach out to us in the [community Slack](https://logg.ing/community).
+Parseable Enterprise requires license files. Contact [sales@parseable.com](mailto:sales@parseable.com) to obtain a license and Enterprise image access.
+
+Create the license Secret:
+
+```bash
+kubectl create secret generic parseable-license \
+  --from-file=parseable_license.json=<path>/parseable_license.json \
+  --from-file=parseable_license.sig=<path>/parseable_license.sig \
+  --namespace parseable
+```
+
+Install Enterprise using the same chart with `parseable.enterprise.enabled=true`:
+
+```bash
+helm install parseable parseable/parseable \
+  --namespace parseable \
+  --set parseable.deploymentMode=distributed \
+  --set parseable.store.type=s3-store \
+  --set parseable.store.secretName=parseable-env-secret \
+  --set parseable.enterprise.enabled=true \
+  --set parseable.enterprise.license.secretName=parseable-license \
+  --set parseable.distributed.ingestor.persistence.staging.storageClass=YOUR_STORAGE_CLASS \
+  --set parseable.distributed.querier.persistence.hotTier.storageClass=YOUR_STORAGE_CLASS \
+  --wait
+```
+
+By default, Enterprise creates three ingestors, one querier, and one Prism node.
+
+## Verify the installation
+
+```bash
+kubectl get pods,pvc,services --namespace parseable
+```
+
+All pods should be `Running` and all PVCs should be `Bound`.
+
+## Access Parseable
+
+With the release name and namespace used above, send data to the ingestor service at:
+
+```text
+http://parseable-ingestor-service.parseable.svc.cluster.local
+```
+
+For OSS, forward the querier service:
+
+```bash
+kubectl port-forward service/parseable-querier-service 8000:80 --namespace parseable
+```
+
+For Enterprise, forward the Prism service:
+
+```bash
+kubectl port-forward service/parseable-prism-service 8000:80 --namespace parseable
+```
+
+Open `http://localhost:8000` and sign in with the username and password from `parseable-env-secret`.
+
+## Migrate from older chart values
+
+Chart version 3.0.0 uses a new values structure and one chart for both editions.
+
+| Older value | Chart 3 value |
+| --- | --- |
+| `parseable.highAvailability.enabled=true` | `parseable.deploymentMode=distributed` |
+| `parseable.store=s3-store` | `parseable.store.type=s3-store` |
+| `parseable.s3ModeSecret.enabled=true` | `parseable.store.secretName=parseable-env-secret` |
+| Separate Enterprise chart | `parseable.enterprise.enabled=true` |
