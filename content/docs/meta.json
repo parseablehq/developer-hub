@@ -33,6 +33,7 @@
     "user-guide/logs",
     "user-guide/metrics",
     "user-guide/traces",
+    "user-guide/apm",
     "user-guide/agent-observability",
     "user-guide/ai-native",
     "user-guide/alerting",
