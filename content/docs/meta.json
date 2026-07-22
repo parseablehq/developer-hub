@@ -22,6 +22,7 @@
     "ingest-data/ai-agents",
     "ingest-data/logging-agents",
     "ingest-data/databases",
+    "ingest-data/infrastructure",
     "ingest-data/containers",
     "ingest-data/streaming",
     "ingest-data/prometheus",
