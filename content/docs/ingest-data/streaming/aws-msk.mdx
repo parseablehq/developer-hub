@@ -1,0 +1,480 @@
+---
+title: Amazon MSK on EKS
+description: Connect Parseable ingestors running in Amazon EKS to Amazon MSK with IAM authentication
+---
+
+If your applications are already publishing JSON records to Amazon MSK, this setup lets Parseable read them directly from Kafka without adding another moving part in the middle. Parseable ingestors run on EKS, use EKS Pod Identity for AWS IAM authentication, and connect to MSK with short-lived credentials instead of long-lived AWS keys or Kafka secrets.
+
+<Callout type="info">
+Use a Parseable image that includes the Kafka connector and the `aws-msk` OAuth provider. The connector runs inside each Parseable ingestor; it is not a separate Kafka Connect deployment.
+</Callout>
+
+## Architecture
+
+```text
+Application producers
+        |
+        | JSON records
+        v
++---------------------------+
+| Amazon MSK                |
+| topic -> partitions       |
+| IAM listener: TCP 9098    |
++-------------+-------------+
+              |
+              | SASL_SSL + OAUTHBEARER
+              | AWS-signed, short-lived token
+              v
++-----------------------------------------------------------+
+| Amazon EKS                                                |
+|                                                           |
+|  EKS Pod Identity Agent <---- EKS Auth / AWS STS          |
+|             |                                             |
+|             | temporary role credentials                  |
+|             v                                             |
+|  Parseable ingestor StatefulSet                           |
+|   - ingestor-0  \                                         |
+|   - ingestor-1   +-- one Kafka consumer group             |
+|   - ingestor-N  /    partitions distributed across pods   |
++-----------------------------+-----------------------------+
+                              |
+                              | validate, batch, infer schema
+                              v
+                 Parseable stream named after topic
+                              |
+                              v
+                    S3-compatible object store
+                              |
+                              v
+                    Parseable querier and API
+```
+
+There are two parts to keep in mind here. The first is the data path: Parseable connects to the IAM-enabled brokers on port `9098`, joins a consumer group, and starts reading topic partitions. The second is the identity path: EKS Pod Identity gives the ingestor temporary AWS credentials, Parseable signs a short-lived OAuth bearer token from those credentials, and MSK validates that token against the IAM permissions on the role.
+
+At runtime, the flow is straightforward:
+
+1. EKS injects Pod Identity credential variables and a projected token into pods using the associated Kubernetes ServiceAccount.
+2. Parseable resolves credentials through the AWS SDK default credential chain.
+3. Parseable generates and refreshes an AWS MSK IAM token for the configured region.
+4. `librdkafka` connects with `SASL_SSL` and `OAUTHBEARER`.
+5. MSK distributes topic partitions across Parseable ingestors in the same consumer group.
+6. Each ingestor batches valid JSON records by partition. The Kafka topic name becomes the Parseable stream name.
+7. Parseable writes processed data to its configured object store and commits Kafka offsets.
+
+## Prerequisites
+
+- An active Amazon MSK Provisioned cluster running Apache Kafka `2.7.1` or later.
+- An Amazon EKS cluster with Linux EC2 worker nodes.
+- Network routing between the EKS nodes or pod subnets and the MSK broker subnets.
+- An MSK security group rule allowing TCP `9098` from the EKS node security group or the pod security group.
+- A Kafka topic containing JSON records.
+- Parseable running in distributed mode with an ingestor StatefulSet.
+- AWS CLI and `kubectl` access with permission to update MSK, IAM, and EKS resources.
+
+The examples below use these placeholders:
+
+| Placeholder | Example |
+| --- | --- |
+| `<region>` | `ap-south-1` |
+| `<account-id>` | `123456789012` |
+| `<eks-cluster>` | `parseable-eks` |
+| `<namespace>` | `parseable` |
+| `<service-account>` | `parseable-ingestor` |
+| `<msk-cluster-name>` | `parseable-msk` |
+| `<msk-cluster-uuid>` | The identifier after the cluster name in the MSK ARN |
+| `<topic>` | `parseable-events` |
+| `<consumer-group>` | `parseable-ingestor` |
+
+## 1. Enable IAM authentication on MSK
+
+Check the current authentication and encryption settings:
+
+```bash
+aws kafka describe-cluster-v2 \
+  --cluster-arn "<msk-cluster-arn>" \
+  --region "<region>" \
+  --query 'ClusterInfo.Provisioned.{Authentication:ClientAuthentication,Encryption:EncryptionInfo.EncryptionInTransit}'
+```
+
+If IAM authentication is disabled, retrieve the current MSK version token:
+
+```bash
+CURRENT_VERSION=$(aws kafka describe-cluster-v2 \
+  --cluster-arn "<msk-cluster-arn>" \
+  --region "<region>" \
+  --query 'ClusterInfo.CurrentVersion' \
+  --output text)
+```
+
+Enable IAM authentication, require TLS between clients and brokers, and disable unauthenticated clients:
+
+```bash
+OPERATION_ARN=$(aws kafka update-security \
+  --cluster-arn "<msk-cluster-arn>" \
+  --current-version "$CURRENT_VERSION" \
+  --client-authentication '{"Sasl":{"Iam":{"Enabled":true}},"Unauthenticated":{"Enabled":false}}' \
+  --encryption-info '{"EncryptionInTransit":{"ClientBroker":"TLS"}}' \
+  --region "<region>" \
+  --query 'ClusterOperationArn' \
+  --output text)
+```
+
+<Callout type="warn">
+Changing `ClientBroker` from `TLS_PLAINTEXT` to `TLS` disables plaintext endpoints. Disabling unauthenticated access also requires every client to use a configured authentication mechanism. Migrate existing clients before applying this change.
+</Callout>
+
+After the update starts, wait until the operation returns `UPDATE_COMPLETE`:
+
+```bash
+aws kafka describe-cluster-operation \
+  --cluster-operation-arn "$OPERATION_ARN" \
+  --region "<region>" \
+  --query 'ClusterOperationInfo.OperationState' \
+  --output text
+```
+
+Retrieve the IAM bootstrap address:
+
+```bash
+aws kafka get-bootstrap-brokers \
+  --cluster-arn "<msk-cluster-arn>" \
+  --region "<region>" \
+  --query 'BootstrapBrokerStringSaslIam' \
+  --output text
+```
+
+This returns a comma-separated broker list on port `9098`. Use that exact value for `P_KAFKA_BOOTSTRAP_SERVERS`. Do not switch it to the plaintext `9092` or the TLS-only `9094` bootstrap address.
+
+See [Update Amazon MSK security settings](https://docs.aws.amazon.com/msk/latest/developerguide/msk-update-security.html) and [IAM access control](https://docs.aws.amazon.com/msk/latest/developerguide/iam-access-control.html).
+
+## 2. Configure network access
+
+The Parseable pods must be able to resolve the private MSK broker hostnames and connect to every broker on TCP `9098`.
+
+If EKS and MSK are in the same VPC, this usually comes down to three checks. The MSK security group must allow inbound `9098` from the EKS node or pod security group. The subnets must be routable to each other. The network ACLs must also allow request and return traffic.
+
+If EKS and MSK live in different VPCs or different accounts, set up private connectivity first. VPC peering, Transit Gateway, or [MSK multi-VPC private connectivity](https://docs.aws.amazon.com/msk/latest/developerguide/aws-access-mult-vpc.html) are the usual options. In cross-account setups, make sure the cluster policy and IAM trust settings line up with the role used by the ingestors.
+
+Test DNS and TCP from an ingestor or a temporary pod:
+
+```bash
+kubectl -n <namespace> exec <pod-name> -- \
+  getent hosts <iam-bootstrap-broker-hostname>
+
+kubectl -n <namespace> exec <pod-name> -- \
+  sh -c 'nc -vz <iam-bootstrap-broker-hostname> 9098'
+```
+
+## 3. Install EKS Pod Identity Agent
+
+EKS Pod Identity needs the agent on every worker node. If you are using EKS Auto Mode, this is already handled for you. For other EKS clusters, install the add-on first.
+
+```bash
+aws eks create-addon \
+  --cluster-name "<eks-cluster>" \
+  --addon-name eks-pod-identity-agent \
+  --region "<region>"
+
+aws eks wait addon-active \
+  --cluster-name "<eks-cluster>" \
+  --addon-name eks-pod-identity-agent \
+  --region "<region>"
+```
+
+The worker node role must include `eks-auth:AssumeRoleForPodIdentity`. The AWS-managed `AmazonEKSWorkerNodePolicy` already includes that permission. If your nodes are in private subnets, they also need a path to the EKS Auth API, either through normal outbound access or through an EKS Auth VPC interface endpoint.
+
+See [Set up the EKS Pod Identity Agent](https://docs.aws.amazon.com/eks/latest/userguide/pod-id-agent-setup.html).
+
+## 4. Create the least-privilege MSK consumer policy
+
+The ingestor only needs data-plane permissions for the cluster, the topics it reads from, and the consumer group it joins. It does not need MSK admin permissions or producer permissions.
+
+Create `parseable-msk-consumer-policy.json`:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ConnectToCluster",
+      "Effect": "Allow",
+      "Action": [
+        "kafka-cluster:Connect"
+      ],
+      "Resource": [
+        "arn:aws:kafka:<region>:<account-id>:cluster/<msk-cluster-name>/<msk-cluster-uuid>"
+      ]
+    },
+    {
+      "Sid": "ReadTopic",
+      "Effect": "Allow",
+      "Action": [
+        "kafka-cluster:DescribeTopic",
+        "kafka-cluster:ReadData"
+      ],
+      "Resource": [
+        "arn:aws:kafka:<region>:<account-id>:topic/<msk-cluster-name>/<msk-cluster-uuid>/<topic>"
+      ]
+    },
+    {
+      "Sid": "UseConsumerGroup",
+      "Effect": "Allow",
+      "Action": [
+        "kafka-cluster:DescribeGroup",
+        "kafka-cluster:AlterGroup"
+      ],
+      "Resource": [
+        "arn:aws:kafka:<region>:<account-id>:group/<msk-cluster-name>/<msk-cluster-uuid>/<consumer-group>"
+      ]
+    }
+  ]
+}
+```
+
+The topic and group resource names must match `P_KAFKA_CONSUMER_TOPICS` and `P_KAFKA_CONSUMER_GROUP_ID`. For multiple topics, add each topic ARN or use a narrowly scoped wildcard.
+
+Create the customer-managed policy:
+
+```bash
+aws iam create-policy \
+  --policy-name ParseableMskConsumer \
+  --policy-document file://parseable-msk-consumer-policy.json
+```
+
+These actions are the permissions AWS documents for consuming data. See [Common MSK IAM authorization use cases](https://docs.aws.amazon.com/msk/latest/developerguide/iam-access-control-use-cases.html).
+
+## 5. Create or update the ingestor IAM role
+
+Create `parseable-pod-identity-trust.json`:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowEksPodIdentity",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "pods.eks.amazonaws.com"
+      },
+      "Action": [
+        "sts:AssumeRole",
+        "sts:TagSession"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/kubernetes-namespace": "<namespace>",
+          "aws:RequestTag/kubernetes-service-account": "<service-account>"
+        }
+      }
+    }
+  ]
+}
+```
+
+Create the role and attach the consumer policy:
+
+```bash
+aws iam create-role \
+  --role-name ParseableIngestorRole \
+  --assume-role-policy-document file://parseable-pod-identity-trust.json
+
+aws iam attach-role-policy \
+  --role-name ParseableIngestorRole \
+  --policy-arn arn:aws:iam::<account-id>:policy/ParseableMskConsumer
+```
+
+<Callout type="warn">
+One Kubernetes ServiceAccount can have only one EKS Pod Identity role association. If the Parseable ServiceAccount already has a role for S3, attach the MSK consumer policy to that existing role. Do not create a second association. The role must contain every permission required by that workload, including its object-store permissions.
+</Callout>
+
+For least privilege in distributed mode, use a dedicated ingestor ServiceAccount. A shared ServiceAccount gives both ingestor and querier pods the same IAM permissions even if only the ingestor has Kafka environment variables.
+
+## 6. Associate the role with the ServiceAccount
+
+Create the ServiceAccount if your deployment does not already provide it:
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: <service-account>
+  namespace: <namespace>
+```
+
+Associate the role:
+
+```bash
+aws eks create-pod-identity-association \
+  --cluster-name "<eks-cluster>" \
+  --namespace "<namespace>" \
+  --service-account "<service-account>" \
+  --role-arn "arn:aws:iam::<account-id>:role/ParseableIngestorRole" \
+  --region "<region>"
+```
+
+Unlike IAM Roles for Service Accounts (IRSA), EKS Pod Identity does not use a ServiceAccount annotation. New pods using this ServiceAccount receive the credential environment and token mount automatically.
+
+See [Assign an IAM role to a Kubernetes ServiceAccount](https://docs.aws.amazon.com/eks/latest/userguide/pod-id-association.html).
+
+## 7. Configure the Parseable ingestor
+
+Add the Kafka variables only to the ingestor container. The following is a StatefulSet pod-template fragment:
+
+```yaml
+spec:
+  template:
+    spec:
+      serviceAccountName: <service-account>
+      containers:
+        - name: parseable
+          env:
+            - name: P_KAFKA_BOOTSTRAP_SERVERS
+              value: "<broker-1>:9098,<broker-2>:9098"
+            - name: P_KAFKA_CONSUMER_TOPICS
+              value: "<topic>"
+            - name: P_KAFKA_CONSUMER_GROUP_ID
+              value: "<consumer-group>"
+            - name: P_KAFKA_CONSUMER_GROUP_INSTANCE_ID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: P_KAFKA_CONSUMER_AUTO_OFFSET_RESET
+              value: "earliest"
+            - name: P_KAFKA_SECURITY_PROTOCOL
+              value: "SASL_SSL"
+            - name: P_KAFKA_SASL_MECHANISM
+              value: "OAUTHBEARER"
+            - name: P_KAFKA_OAUTH_PROVIDER
+              value: "aws-msk"
+            - name: P_KAFKA_AWS_REGION
+              value: "<region>"
+```
+
+### Required and recommended variables
+
+| Environment variable | Required | Value and purpose |
+| --- | --- | --- |
+| `P_KAFKA_BOOTSTRAP_SERVERS` | Yes | Comma-separated `BootstrapBrokerStringSaslIam` result. Empty values are rejected. |
+| `P_KAFKA_CONSUMER_TOPICS` | Yes | Comma-separated topic names. Each topic becomes a Parseable stream. |
+| `P_KAFKA_CONSUMER_GROUP_ID` | Recommended | Stable group shared by all ingestor replicas. It must match the IAM group resource. |
+| `P_KAFKA_CONSUMER_GROUP_INSTANCE_ID` | Recommended | Unique, stable member ID. A StatefulSet pod name is a good value. |
+| `P_KAFKA_CONSUMER_AUTO_OFFSET_RESET` | Recommended | `earliest` reads history when no committed offset exists; `latest` starts with new records. `group` keeps the client fallback when no committed offset exists. |
+| `P_KAFKA_SECURITY_PROTOCOL` | Yes | Must be `SASL_SSL` for MSK IAM. |
+| `P_KAFKA_SASL_MECHANISM` | Yes | Must be `OAUTHBEARER`. |
+| `P_KAFKA_OAUTH_PROVIDER` | Yes | Set to `aws-msk` to use application-managed AWS signing. |
+| `P_KAFKA_AWS_REGION` | Recommended | MSK region. If absent, Parseable checks `AWS_REGION`, `AWS_DEFAULT_REGION`, then the AWS SDK region chain. |
+
+Do not set `P_KAFKA_OAUTH_TOKEN_ENDPOINT_URL`, `P_KAFKA_OAUTH_CLIENT_ID`, or `P_KAFKA_OAUTH_CLIENT_SECRET` for AWS MSK. Those variables configure standard OIDC providers, not AWS IAM signing. Do not inject `AWS_ACCESS_KEY_ID` or `AWS_SECRET_ACCESS_KEY`; Pod Identity supplies rotating credentials.
+
+If Helm manages the StatefulSet, add this configuration to the chart values or template and run `helm upgrade`. A direct `kubectl patch` is useful for testing but is overwritten by the next Helm reconciliation.
+
+Apply the deployment and watch the rollout:
+
+```bash
+kubectl -n <namespace> rollout status \
+  statefulset/<ingestor-statefulset> \
+  --timeout=10m
+```
+
+## Scaling behavior
+
+- All ingestor replicas should use the same consumer group ID.
+- Each replica should use a unique group instance ID. StatefulSet pod names remain stable across restarts and reduce unnecessary group churn.
+- Kafka assigns each partition to only one consumer in the group. To use all ingestor replicas, create at least as many partitions as ingestors.
+- `P_KAFKA_PARTITION_LISTENER_CONCURRENCY` controls processing concurrency within each ingestor. The default is `2`.
+- `P_KAFKA_CONSUMER_BUFFER_SIZE` and `P_KAFKA_CONSUMER_BUFFER_TIMEOUT` control per-partition micro-batches. Defaults are `10000` records and `10000ms`.
+- A committed group offset takes precedence over `P_KAFKA_CONSUMER_AUTO_OFFSET_RESET`. The reset setting matters when no valid committed offset exists.
+
+## Validate the integration
+
+Start by confirming that the ServiceAccount is actually linked to the IAM role you expect.
+
+### Confirm the identity association
+
+```bash
+aws eks list-pod-identity-associations \
+  --cluster-name "<eks-cluster>" \
+  --region "<region>" \
+  --query "associations[?namespace=='<namespace>' && serviceAccount=='<service-account>']"
+```
+
+After the rollout, the ingestor pod should receive the Pod Identity environment variables and projected token automatically.
+
+### Confirm Pod Identity injection
+
+After the rollout, the pod should contain `AWS_CONTAINER_CREDENTIALS_FULL_URI` and `AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE`:
+
+```bash
+kubectl -n <namespace> exec <ingestor-pod> -- \
+  sh -c 'env | sed -n "/^AWS_/s/=.*$/=<set>/p" | sort'
+```
+
+Once the pod has credentials, check the Parseable container logs. At this point you mainly want to confirm that it can reach the brokers, authenticate, and stay in the consumer group without repeated reconnects.
+
+### Check connector logs
+
+```bash
+kubectl -n <namespace> logs <ingestor-pod> \
+  --container parseable \
+  --since=10m
+```
+
+The pod should stay ready without authentication or authorization errors. Then publish at least one valid JSON record with a producer that is authorized separately from Parseable:
+
+```json
+{"message":"hello from Amazon MSK","level":"info"}
+```
+
+The producer identity needs `kafka-cluster:Connect`, `kafka-cluster:DescribeTopic`, and `kafka-cluster:WriteData`. Do not permanently grant producer permissions to the Parseable consumer role.
+
+Parseable creates the stream lazily after the first record is consumed and the batch is flushed. You can verify that the stream appeared with:
+
+```bash
+curl --header "X-API-Key: $PARSEABLE_API_KEY" \
+  "https://<parseable-host>/api/v1/logstream"
+```
+
+Then run a small query to confirm the test record is present:
+
+```bash
+curl --header "X-API-Key: $PARSEABLE_API_KEY" \
+  --header 'Content-Type: application/json' \
+  --data '{"query":"SELECT * FROM \"<topic>\" LIMIT 10","startTime":"10m","endTime":"now"}' \
+  "https://<parseable-host>/api/v1/query"
+```
+
+Kafka-ingested records include `p_user_agent: kafka`.
+
+## Security recommendations
+
+- Keep MSK and EKS on private networks; public broker access is not required.
+- Restrict the MSK security group to the EKS node or ingestor pod security group.
+- Scope IAM resources to the exact cluster, topics, and consumer-group names.
+- Use a dedicated producer identity for applications writing to MSK.
+- Use a dedicated ingestor ServiceAccount when the deployment supports separate ingestor and querier identities.
+- Avoid static AWS credentials in Secrets, environment variables, and container images.
+- Keep unauthenticated and plaintext MSK listeners disabled after all clients migrate.
+- Audit token use and denied actions with AWS CloudTrail and MSK broker logs.
+
+## Troubleshooting
+
+| Symptom | Likely cause | Resolution |
+| --- | --- | --- |
+| `BootstrapBrokerStringSaslIam` is empty or `None` | IAM authentication is disabled or the security update is incomplete. | Wait for `UPDATE_COMPLETE`, then retrieve the brokers again. |
+| Connection timeout | DNS, routing, network ACL, or security-group rule blocks port `9098`. | Test DNS and TCP from the pod; verify both directions between EKS and MSK subnets. |
+| Failed to generate an MSK IAM token | Pod Identity Agent, association, region, or AWS credential chain is missing. | Check the add-on, ServiceAccount name, role association, injected `AWS_*` variables, and `P_KAFKA_AWS_REGION`. |
+| `SASL authentication failed` | Wrong bootstrap type, OAuth provider, region, or credentials. | Use the IAM brokers on `9098`, `SASL_SSL`, `OAUTHBEARER`, and `P_KAFKA_OAUTH_PROVIDER=aws-msk`. |
+| `TopicAuthorizationFailed` | Topic ARN or topic actions do not match. | Grant `DescribeTopic` and `ReadData` on the exact topic resource. |
+| `GroupAuthorizationFailed` | Group ARN differs from `P_KAFKA_CONSUMER_GROUP_ID`. | Update the group IAM resource or the Parseable group ID. |
+| `UnknownTopicOrPartition` | Topic does not exist or the configured name is wrong. | Create the topic and verify `P_KAFKA_CONSUMER_TOPICS`. |
+| Ingestors are ready but no stream appears | No record has arrived, the batch timeout has not elapsed, or payloads are not valid JSON. | Publish a JSON test record and wait at least one buffer interval. |
+| Only some ingestors consume | The topic has fewer partitions than consumer replicas. | Increase the topic partition count or reduce ingestor replicas. |
+| New pods have no credentials | Role association was created after the pods started. | Restart or roll out the ingestor StatefulSet. |
+
+## IRSA alternative
+
+IAM Roles for Service Accounts (IRSA) also works because Parseable uses the AWS SDK default credential chain. With IRSA, configure the cluster OIDC provider, use a web-identity trust policy, and annotate the ServiceAccount with `eks.amazonaws.com/role-arn`.
+
+Choose either EKS Pod Identity or IRSA for a ServiceAccount. Avoid configuring both credential mechanisms on the same workload. See [IAM roles for service accounts](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html).
