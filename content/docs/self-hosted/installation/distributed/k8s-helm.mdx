@@ -126,7 +126,14 @@ kubectl create secret generic parseable-license \
   --namespace parseable
 ```
 
-Install Enterprise using the same chart with `parseable.enterprise.enabled=true`:
+Enterprise nodes require a shared cluster Secret for internal communication. Create it with a random 16-character value:
+
+```bash
+kubectl -n parseable create secret generic parseable-cluster-secret \
+  --from-literal=cluster-secret="$(openssl rand -hex 8)"
+```
+
+Install Enterprise using the same chart with Enterprise and the cluster Secret enabled:
 
 ```bash
 helm install parseable parseable/parseable \
@@ -134,6 +141,7 @@ helm install parseable parseable/parseable \
   --set parseable.deploymentMode=distributed \
   --set parseable.store.type=s3-store \
   --set parseable.store.secretName=parseable-env-secret \
+  --set parseable.clusterSecret.enabled=true \
   --set parseable.enterprise.enabled=true \
   --set parseable.enterprise.license.secretName=parseable-license \
   --set parseable.distributed.ingestor.persistence.staging.storageClass=YOUR_STORAGE_CLASS \
