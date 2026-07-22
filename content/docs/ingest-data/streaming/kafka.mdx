@@ -4,17 +4,15 @@ redirect_from:
   - /streaming/kafka
 ---
 
-The Parseable Kafka Connector enables log ingestion from Apache Kafka into Parseable, providing a high-performance, scalable, and efficient logging pipeline.
+The Parseable Kafka connector lets ingestors read JSON records from Kafka topics and store them as Parseable datasets. Use it when Kafka is already part of your data path and you want Parseable to consume from the topic directly instead of adding another shipper in between.
 
 <Callout type="info">
 For provider-specific managed Kafka setup, follow the [Amazon MSK on EKS guide](/docs/ingest-data/streaming/aws-msk) or the [Google Cloud Managed Kafka guide](/docs/ingest-data/streaming/gcp-managed-kafka).
 </Callout>
 
 ## Features
-- Consumer & Producer Support: Supports both consuming and producing messages (ready to use for DLT).
-- Configurable Buffering & Performance Settings: Optimized for high-throughput data processing.
-- Security Integration: Supports SSL/TLS and SASL authentication.
-- Fault Tolerance & Partitioning: Handles partition balancing, offsets, and error handling.
+
+The connector supports Kafka consumer configuration, configurable per-partition buffering, TLS and SASL authentication, consumer-group based scaling, and partition-aware processing. Producer settings are documented for future dead-letter-topic support, but normal ingestion only requires the consumer path.
 
 ## Configuration Options
 
@@ -26,9 +24,7 @@ For provider-specific managed Kafka setup, follow the [Amazon MSK on EKS guide](
 | `--partition-listener-concurrency` | `P_KAFKA_PARTITION_LISTENER_CONCURRENCY` | `2` | Number of parallel threads for Kafka partition listeners. | Determines the number of threads used to process Kafka partitions. | 
 | `--bad-data-policy` | `P_CONNECTOR_BAD_DATA_POLICY` | `fail` | Policy for handling bad data. | Determines how the client should handle corrupt or invalid messages. Options: fail, drop (not yet supported), dlt (not yet supported). |       
 
-- All parameters can be set using command-line arguments or environment variables.
-- Environment variables take precedence over default values.
-- When configuring both producer and consumer, make sure to specify relevant options in their respective sections.
+All parameters can be set using command-line arguments or environment variables. Environment variables take precedence over default values. For ingestion, start with the general and consumer configuration tables, then add security settings based on your Kafka cluster.
 
 For more details, refer to [Kafka's official documentation](https://kafka.apache.org/documentation).
 

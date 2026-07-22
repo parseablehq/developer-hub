@@ -3,7 +3,7 @@ title: PostgreSQL
 description: Send PostgreSQL logs, metrics, and traces to Parseable with OpenTelemetry
 ---
 
-This guide creates a three-signal PostgreSQL integration with Parseable. The validated reference setup uses a PostgreSQL primary and replica, `pg_stat_statements`, `pg_exporter`, an OpenTelemetry Collector, and a continuously running SQL workload.
+PostgreSQL issues are easier to understand when query activity, database health, and application spans sit next to each other. This guide shows how to send PostgreSQL logs, metrics, and traces to Parseable using a primary and replica, `pg_stat_statements`, `pg_exporter`, an OpenTelemetry Collector, and a continuously running SQL workload.
 
 ## What the integration collects
 
@@ -24,7 +24,7 @@ PostgreSQL does not create distributed traces for SQL clients. Instrument the ap
 - A supported PostgreSQL release
 - OpenTelemetry Collector Contrib
 - [`pg_exporter`](https://github.com/nbari/pg_exporter) for dashboard-compatible metrics
-- A Parseable ingestor endpoint
+- A Parseable ingestor endpoint and API key
 
 ## Configure PostgreSQL
 
@@ -81,7 +81,7 @@ pg-exporter:
 
 ## Collector configuration
 
-Mount the PostgreSQL data directories read-only into the Collector and create `otel-collector.yaml`:
+Mount the PostgreSQL data directories read-only into the Collector and create `otel-collector.yaml`. The exporter examples expect `PARSEABLE_ENDPOINT` and `PARSEABLE_API_KEY` to be set in the Collector environment:
 
 ```yaml
 receivers:
@@ -139,7 +139,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      Authorization: "Basic ${env:PARSEABLE_AUTH}"
+      X-API-Key: "${env:PARSEABLE_API_KEY}"
       X-P-Stream: postgres-logs
       X-P-Log-Source: otel-logs
       Content-Type: application/json
@@ -151,7 +151,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      Authorization: "Basic ${env:PARSEABLE_AUTH}"
+      X-API-Key: "${env:PARSEABLE_API_KEY}"
       X-P-Stream: postgres-metrics
       X-P-Log-Source: otel-metrics
       Content-Type: application/json
@@ -163,7 +163,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      Authorization: "Basic ${env:PARSEABLE_AUTH}"
+      X-API-Key: "${env:PARSEABLE_API_KEY}"
       X-P-Stream: postgres-traces
       X-P-Log-Source: otel-traces
       Content-Type: application/json
@@ -237,6 +237,16 @@ GROUP BY span_name;
 ```
 
 Use these signals to build panels for connections, query latency, cache hit ratio, locks, vacuum, WAL, replication lag, table activity, database size, and top statements.
+
+## View in Parseable
+
+After the Collector exports data, Parseable keeps PostgreSQL logs, metrics, and traces in separate datasets. This makes it easier to move from a database log line to the related health metrics or client spans without mixing the signal types.
+
+![PostgreSQL logs in Parseable](./static/postgres-logs.png)
+
+![PostgreSQL metrics in Parseable](./static/postgres-metrics.png)
+
+![PostgreSQL traces in Parseable](./static/postgres-traces.png)
 
 ## Dashboards
 

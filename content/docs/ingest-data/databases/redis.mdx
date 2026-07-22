@@ -3,7 +3,7 @@ title: Redis
 description: Send Redis logs, metrics, and traces to Parseable with OpenTelemetry
 ---
 
-This guide builds a three-signal Redis integration with Parseable. The reference setup uses a Redis primary with two replicas, one `redis_exporter` per node, an OpenTelemetry Collector, and a continuously running client workload.
+Redis often sits on the fast path for application traffic, so small changes in latency, memory, or command behavior can matter quickly. This guide shows how to send Redis logs, metrics, and traces to Parseable using a Redis primary with two replicas, one `redis_exporter` per node, an OpenTelemetry Collector, and a continuously running client workload.
 
 ## What the integration collects
 
@@ -21,7 +21,7 @@ Redis does not emit distributed traces by itself. Trace the application or workl
 
 - Redis 6.0 or later
 - OpenTelemetry Collector Contrib
-- A Parseable ingestor endpoint
+- A Parseable ingestor endpoint and API key
 - `redis_exporter` when you need Prometheus-compatible dashboard metrics
 
 The Collector must be able to reach Redis, the exporter, the Redis log files, and the Parseable **ingestor**. Do not point the OTLP exporter at a query-only endpoint.
@@ -60,7 +60,7 @@ redis-exporter-primary:
 
 ## Collector configuration
 
-Create `otel-collector.yaml`:
+Create `otel-collector.yaml`. The exporter examples expect `PARSEABLE_ENDPOINT` and `PARSEABLE_API_KEY` to be set in the Collector environment:
 
 ```yaml
 receivers:
@@ -117,7 +117,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      Authorization: "Basic ${env:PARSEABLE_AUTH}"
+      X-API-Key: "${env:PARSEABLE_API_KEY}"
       X-P-Stream: redis-logs
       X-P-Log-Source: otel-logs
       Content-Type: application/json
@@ -129,7 +129,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      Authorization: "Basic ${env:PARSEABLE_AUTH}"
+      X-API-Key: "${env:PARSEABLE_API_KEY}"
       X-P-Stream: redis-metrics
       X-P-Log-Source: otel-metrics
       Content-Type: application/json
@@ -141,7 +141,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      Authorization: "Basic ${env:PARSEABLE_AUTH}"
+      X-API-Key: "${env:PARSEABLE_API_KEY}"
       X-P-Stream: redis-traces
       X-P-Log-Source: otel-traces
       Content-Type: application/json
@@ -170,7 +170,7 @@ Set the environment variables before starting the Collector:
 ```bash
 export REDIS_PASSWORD='replace-me'
 export PARSEABLE_ENDPOINT='https://ingestor.example.com'
-export PARSEABLE_AUTH="$(printf '%s' 'username:password' | base64)"
+export PARSEABLE_API_KEY='<your-api-key>'
 ```
 
 Mount each Redis data volume read-only at the paths referenced by `filelog/redis`.
@@ -230,6 +230,16 @@ GROUP BY span_name;
 ```
 
 Expected metric families include native names such as `redis.clients.connected` and exporter names such as `redis_commands_total`, `redis_memory_used_bytes`, and `redis_db_keys`.
+
+## View in Parseable
+
+With the Redis datasets in place, you can inspect server logs, watch Redis and exporter metrics, and open traces from the client workload that is issuing Redis commands. This gives you enough context to see whether an application slowdown is coming from Redis itself or from the code path around it.
+
+![Redis logs in Parseable](./static/redis-logs.png)
+
+![Redis metrics in Parseable](./static/redis-metrics.png)
+
+![Redis traces in Parseable](./static/redis-traces.png)
 
 ## Dashboards
 

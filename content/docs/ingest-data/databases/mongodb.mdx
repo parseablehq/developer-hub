@@ -3,7 +3,7 @@ title: MongoDB
 description: Send MongoDB logs, metrics, and traces to Parseable with OpenTelemetry
 ---
 
-This guide creates a three-signal MongoDB integration with Parseable. The validated reference setup uses a three-member replica set, one Percona MongoDB exporter per member, an OpenTelemetry Collector, and a continuously running client workload.
+MongoDB is usually only one part of a larger service path. Parseable helps you bring the database logs, database metrics, and application traces for MongoDB-backed workloads into one place. The reference setup below uses a three-member replica set, one Percona MongoDB exporter per member, an OpenTelemetry Collector, and a continuously running client workload.
 
 ## What the integration collects
 
@@ -22,7 +22,7 @@ MongoDB server telemetry provides logs and metrics. Distributed traces come from
 - MongoDB 6.0 or later
 - OpenTelemetry Collector Contrib
 - [Percona MongoDB Exporter](https://github.com/percona/mongodb_exporter) for extended Prometheus metrics
-- A Parseable ingestor endpoint
+- A Parseable ingestor endpoint and API key
 
 ## Configure MongoDB
 
@@ -89,7 +89,7 @@ mongo-exporter1:
 
 ## Collector configuration
 
-Mount each MongoDB data volume read-only into the Collector and create `otel-collector.yaml`:
+Mount each MongoDB data volume read-only into the Collector and create `otel-collector.yaml`. The exporter examples expect `PARSEABLE_ENDPOINT` and `PARSEABLE_API_KEY` to be set in the Collector environment:
 
 ```yaml
 receivers:
@@ -162,7 +162,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      Authorization: "Basic ${env:PARSEABLE_AUTH}"
+      X-API-Key: "${env:PARSEABLE_API_KEY}"
       X-P-Stream: mongodb-logs
       X-P-Log-Source: otel-logs
       Content-Type: application/json
@@ -174,7 +174,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      Authorization: "Basic ${env:PARSEABLE_AUTH}"
+      X-API-Key: "${env:PARSEABLE_API_KEY}"
       X-P-Stream: mongodb-metrics
       X-P-Log-Source: otel-metrics
       Content-Type: application/json
@@ -186,7 +186,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      Authorization: "Basic ${env:PARSEABLE_AUTH}"
+      X-API-Key: "${env:PARSEABLE_API_KEY}"
       X-P-Stream: mongodb-traces
       X-P-Log-Source: otel-traces
       Content-Type: application/json
@@ -265,6 +265,16 @@ GROUP BY span_name;
 ```
 
 Use the resulting metrics for connections, operation rates, memory, WiredTiger cache, locks, cursors, collection/index sizes, replication state, and replica lag.
+
+## View in Parseable
+
+Once the Collector starts exporting, the three datasets appear separately in Parseable. The logs dataset helps you inspect MongoDB server events, the metrics dataset shows replica-set and exporter metrics, and the traces dataset shows the client-side database spans produced by your application workload.
+
+![MongoDB logs in Parseable](./static/mongodb-logs.png)
+
+![MongoDB metrics in Parseable](./static/mongodb-metrics.png)
+
+![MongoDB traces in Parseable](./static/mongodb-traces.png)
 
 ## Dashboards
 

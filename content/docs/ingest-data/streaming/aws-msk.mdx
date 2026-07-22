@@ -3,7 +3,7 @@ title: Amazon MSK on EKS
 description: Connect Parseable ingestors running in Amazon EKS to Amazon MSK with IAM authentication
 ---
 
-This guide configures Parseable ingestors running in Amazon EKS to consume JSON records from Amazon Managed Streaming for Apache Kafka (Amazon MSK). Authentication uses AWS IAM through EKS Pod Identity, so no long-lived AWS access keys, Kafka passwords, or OAuth client secrets are stored in Kubernetes.
+If your applications are already publishing JSON records to Amazon MSK, this setup lets Parseable read them directly from Kafka without adding another moving part in the middle. Parseable ingestors run on EKS, use EKS Pod Identity for AWS IAM authentication, and connect to MSK with short-lived credentials instead of long-lived AWS keys or Kafka secrets.
 
 <Callout type="info">
 Use a Parseable image that includes the Kafka connector and the `aws-msk` OAuth provider. The connector runs inside each Parseable ingestor; it is not a separate Kafka Connect deployment.
@@ -49,12 +49,9 @@ Application producers
                     Parseable querier and API
 ```
 
-Two independent paths are involved:
+There are two parts to keep in mind here. The first is the data path: Parseable connects to the IAM-enabled brokers on port `9098`, joins a consumer group, and starts reading topic partitions. The second is the identity path: EKS Pod Identity gives the ingestor temporary AWS credentials, Parseable signs a short-lived OAuth bearer token from those credentials, and MSK validates that token against the IAM permissions on the role.
 
-- **Data path:** Parseable connects privately to the MSK IAM bootstrap brokers on TCP `9098`, joins a Kafka consumer group, and consumes topic partitions.
-- **Identity path:** The EKS Pod Identity Agent supplies temporary role credentials to the ingestor. Parseable's MSK signer uses those credentials and the AWS region to generate a short-lived OAuth bearer token. MSK validates the token and authorizes Kafka actions through IAM.
-
-At runtime:
+At runtime, the flow is straightforward:
 
 1. EKS injects Pod Identity credential variables and a projected token into pods using the associated Kubernetes ServiceAccount.
 2. Parseable resolves credentials through the AWS SDK default credential chain.
@@ -74,7 +71,7 @@ At runtime:
 - Parseable running in distributed mode with an ingestor StatefulSet.
 - AWS CLI and `kubectl` access with permission to update MSK, IAM, and EKS resources.
 
-The examples use these placeholders:
+The examples below use these placeholders:
 
 | Placeholder | Example |
 | --- | --- |
@@ -126,7 +123,7 @@ OPERATION_ARN=$(aws kafka update-security \
 Changing `ClientBroker` from `TLS_PLAINTEXT` to `TLS` disables plaintext endpoints. Disabling unauthenticated access also requires every client to use a configured authentication mechanism. Migrate existing clients before applying this change.
 </Callout>
 
-Poll the operation until it returns `UPDATE_COMPLETE`:
+After the update starts, wait until the operation returns `UPDATE_COMPLETE`:
 
 ```bash
 aws kafka describe-cluster-operation \
@@ -146,21 +143,17 @@ aws kafka get-bootstrap-brokers \
   --output text
 ```
 
-The result is a comma-separated broker list using port `9098`. Set this exact value as `P_KAFKA_BOOTSTRAP_SERVERS`; do not use the plaintext `9092` or TLS-only `9094` bootstrap address.
+This returns a comma-separated broker list on port `9098`. Use that exact value for `P_KAFKA_BOOTSTRAP_SERVERS`. Do not switch it to the plaintext `9092` or the TLS-only `9094` bootstrap address.
 
 See [Update Amazon MSK security settings](https://docs.aws.amazon.com/msk/latest/developerguide/msk-update-security.html) and [IAM access control](https://docs.aws.amazon.com/msk/latest/developerguide/iam-access-control.html).
 
 ## 2. Configure network access
 
-The Parseable pods must resolve the private MSK broker hostnames and reach every broker on TCP `9098`.
+The Parseable pods must be able to resolve the private MSK broker hostnames and connect to every broker on TCP `9098`.
 
-For clusters in the same VPC:
+If EKS and MSK are in the same VPC, this usually comes down to three checks. The MSK security group must allow inbound `9098` from the EKS node or pod security group. The subnets must be routable to each other. The network ACLs must also allow request and return traffic.
 
-1. Allow inbound TCP `9098` on the MSK security group from the EKS node security group. If you use security groups for pods, use the ingestor pod security group instead.
-2. Confirm the EKS subnets can route to the MSK broker subnets.
-3. Ensure network ACLs permit the request and return traffic.
-
-For different VPCs or accounts, configure VPC peering, Transit Gateway, or [MSK multi-VPC private connectivity](https://docs.aws.amazon.com/msk/latest/developerguide/aws-access-mult-vpc.html). Cross-account deployments also require the corresponding MSK cluster policy and IAM trust configuration.
+If EKS and MSK live in different VPCs or different accounts, set up private connectivity first. VPC peering, Transit Gateway, or [MSK multi-VPC private connectivity](https://docs.aws.amazon.com/msk/latest/developerguide/aws-access-mult-vpc.html) are the usual options. In cross-account setups, make sure the cluster policy and IAM trust settings line up with the role used by the ingestors.
 
 Test DNS and TCP from an ingestor or a temporary pod:
 
@@ -174,7 +167,7 @@ kubectl -n <namespace> exec <pod-name> -- \
 
 ## 3. Install EKS Pod Identity Agent
 
-EKS Pod Identity requires the agent on every worker node. EKS Auto Mode includes this capability; other EKS clusters need the add-on.
+EKS Pod Identity needs the agent on every worker node. If you are using EKS Auto Mode, this is already handled for you. For other EKS clusters, install the add-on first.
 
 ```bash
 aws eks create-addon \
@@ -188,13 +181,13 @@ aws eks wait addon-active \
   --region "<region>"
 ```
 
-The worker-node role must include `eks-auth:AssumeRoleForPodIdentity`. The AWS-managed `AmazonEKSWorkerNodePolicy` includes this permission. Nodes in private subnets must also reach the EKS Auth API, either through outbound connectivity or an EKS Auth VPC interface endpoint.
+The worker node role must include `eks-auth:AssumeRoleForPodIdentity`. The AWS-managed `AmazonEKSWorkerNodePolicy` already includes that permission. If your nodes are in private subnets, they also need a path to the EKS Auth API, either through normal outbound access or through an EKS Auth VPC interface endpoint.
 
 See [Set up the EKS Pod Identity Agent](https://docs.aws.amazon.com/eks/latest/userguide/pod-id-agent-setup.html).
 
 ## 4. Create the least-privilege MSK consumer policy
 
-The ingestor needs data-plane permissions for one cluster, its subscribed topics, and its consumer group. It does not need MSK administrative permissions or producer permissions.
+The ingestor only needs data-plane permissions for the cluster, the topics it reads from, and the consumer group it joins. It does not need MSK admin permissions or producer permissions.
 
 Create `parseable-msk-consumer-policy.json`:
 
@@ -396,6 +389,8 @@ kubectl -n <namespace> rollout status \
 
 ## Validate the integration
 
+Start by confirming that the ServiceAccount is actually linked to the IAM role you expect.
+
 ### Confirm the identity association
 
 ```bash
@@ -404,6 +399,8 @@ aws eks list-pod-identity-associations \
   --region "<region>" \
   --query "associations[?namespace=='<namespace>' && serviceAccount=='<service-account>']"
 ```
+
+After the rollout, the ingestor pod should receive the Pod Identity environment variables and projected token automatically.
 
 ### Confirm Pod Identity injection
 
@@ -414,6 +411,8 @@ kubectl -n <namespace> exec <ingestor-pod> -- \
   sh -c 'env | sed -n "/^AWS_/s/=.*$/=<set>/p" | sort'
 ```
 
+Once the pod has credentials, check the Parseable container logs. At this point you mainly want to confirm that it can reach the brokers, authenticate, and stay in the consumer group without repeated reconnects.
+
 ### Check connector logs
 
 ```bash
@@ -422,7 +421,7 @@ kubectl -n <namespace> logs <ingestor-pod> \
   --since=10m
 ```
 
-The pod should remain ready without authentication or authorization errors. Publish at least one valid JSON record with a separately authorized producer:
+The pod should stay ready without authentication or authorization errors. Then publish at least one valid JSON record with a producer that is authorized separately from Parseable:
 
 ```json
 {"message":"hello from Amazon MSK","level":"info"}
@@ -430,17 +429,17 @@ The pod should remain ready without authentication or authorization errors. Publ
 
 The producer identity needs `kafka-cluster:Connect`, `kafka-cluster:DescribeTopic`, and `kafka-cluster:WriteData`. Do not permanently grant producer permissions to the Parseable consumer role.
 
-The Parseable stream is created lazily after the first record is consumed and the batch is flushed. List streams:
+Parseable creates the stream lazily after the first record is consumed and the batch is flushed. You can verify that the stream appeared with:
 
 ```bash
-curl --user "$PARSEABLE_USERNAME:$PARSEABLE_PASSWORD" \
+curl --header "X-API-Key: $PARSEABLE_API_KEY" \
   "https://<parseable-host>/api/v1/logstream"
 ```
 
-Query the test record:
+Then run a small query to confirm the test record is present:
 
 ```bash
-curl --user "$PARSEABLE_USERNAME:$PARSEABLE_PASSWORD" \
+curl --header "X-API-Key: $PARSEABLE_API_KEY" \
   --header 'Content-Type: application/json' \
   --data '{"query":"SELECT * FROM \"<topic>\" LIMIT 10","startTime":"10m","endTime":"now"}' \
   "https://<parseable-host>/api/v1/query"
@@ -479,4 +478,3 @@ Kafka-ingested records include `p_user_agent: kafka`.
 IAM Roles for Service Accounts (IRSA) also works because Parseable uses the AWS SDK default credential chain. With IRSA, configure the cluster OIDC provider, use a web-identity trust policy, and annotate the ServiceAccount with `eks.amazonaws.com/role-arn`.
 
 Choose either EKS Pod Identity or IRSA for a ServiceAccount. Avoid configuring both credential mechanisms on the same workload. See [IAM roles for service accounts](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html).
-

@@ -3,7 +3,7 @@ title: Windows Server
 description: Send Windows Event Logs, windows_exporter metrics, and application traces to Parseable
 ---
 
-This guide creates a three-signal Windows Server integration with Parseable. The validated reference setup uses a Windows Server VM on Google Compute Engine, `windows_exporter`, an OpenTelemetry Collector running as `LocalSystem`, and a scheduled PowerShell workload.
+Windows Server gives you Event Logs, host metrics, and application traces, but those signals are useful only when they are easy to inspect together. This guide sends them to Parseable using a Windows Server VM on Google Compute Engine, `windows_exporter`, an OpenTelemetry Collector running as `LocalSystem`, and a scheduled PowerShell workload.
 
 ## What the integration collects
 
@@ -180,7 +180,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      Authorization: "Basic ${env:PARSEABLE_AUTH}"
+      X-API-Key: "${env:PARSEABLE_API_KEY}"
       X-P-Stream: windows-logs
       X-P-Log-Source: otel-logs
       Content-Type: application/json
@@ -192,7 +192,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      Authorization: "Basic ${env:PARSEABLE_AUTH}"
+      X-API-Key: "${env:PARSEABLE_API_KEY}"
       X-P-Stream: windows-metrics
       X-P-Log-Source: otel-metrics
       Content-Type: application/json
@@ -204,7 +204,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      Authorization: "Basic ${env:PARSEABLE_AUTH}"
+      X-API-Key: "${env:PARSEABLE_API_KEY}"
       X-P-Stream: windows-traces
       X-P-Log-Source: otel-traces
       Content-Type: application/json
@@ -240,7 +240,7 @@ service:
       exporters: [otlphttp/parseable_traces]
 ```
 
-`PARSEABLE_ENDPOINT` must be the ingestor endpoint, not the query or UI endpoint. Use HTTPS in production. If the ingestor is HTTP, Basic credentials are transmitted without encryption.
+`PARSEABLE_ENDPOINT` must be the ingestor endpoint, not the query or UI endpoint. Use HTTPS in production so the API key is protected in transit.
 
 Validate and register the Collector as `LocalSystem` so it can access the Security Event Log:
 
@@ -347,6 +347,14 @@ GROUP BY span_name;
 ```
 
 Expected metrics include `windows_cpu_time_total`, `windows_logical_disk_free_bytes`, `windows_memory_physical_free_bytes`, `windows_net_bytes_received_total`, `windows_os_info`, and `windows_service_state`.
+
+## View in Parseable
+
+Once the Windows Server Collector is running, Event Logs and host metrics appear as separate datasets in Parseable. Use the logs view to inspect Application, System, and Security events, and use the metrics view to follow CPU, memory, disk, network, service, and process-level signals.
+
+![Windows Server logs in Parseable](./static/windowserver-logs.png)
+
+![Windows Server metrics in Parseable](./static/windowserver-metrics.png)
 
 ## Dashboards
 

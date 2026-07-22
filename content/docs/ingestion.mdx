@@ -30,7 +30,7 @@ You can use HTTP headers to control how data is ingested and processed.
 | Header | Description | Example | Possible Values |
 |--------|-------------|---------|-----------------|
 | `X-P-Stream` | Target dataset name. Creates the dataset if it doesn't exist. | `nginx-logs` | Valid dataset name |
-| `Authorization` | Basic auth credentials (base64 encoded `username:password`) | `Basic YWRtaW46YWRtaW4=` | Valid credentials |
+| `X-API-Key` | API key used to authorize the request | `px_api_key` | Valid Parseable API key |
 | `X-P-Tenant-ID` | Target tenant ID. | `tenant-123` | Valid tenant ID - only applicable for multi-tenant setups (for example Parseable Cloud) |
 | `Content-Type` | Content type of the request body | `application/json` | `application/json`,`application/protobuf` |
 

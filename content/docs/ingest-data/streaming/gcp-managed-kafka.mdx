@@ -3,7 +3,7 @@ title: Google Cloud Managed Kafka
 description: Connect Parseable to Google Cloud Managed Service for Apache Kafka with OAuth and Application Default Credentials
 ---
 
-This guide configures Parseable to consume JSON records from Google Cloud Managed Service for Apache Kafka. It covers Parseable running in Google Kubernetes Engine (GKE) or on a Compute Engine VM.
+Use this guide when your application already writes JSON records to Google Cloud Managed Service for Apache Kafka and you want Parseable to consume those records directly. The setup works with Parseable running in Google Kubernetes Engine (GKE) or on a Compute Engine VM.
 
 Authentication uses `SASL_SSL` with `OAUTHBEARER`. Google's local authentication server obtains short-lived credentials through Application Default Credentials (ADC) and exposes them to Parseable on `127.0.0.1:14293`. No service account key is required.
 
@@ -52,10 +52,7 @@ Application producers
                   Parseable querier and API
 ```
 
-The local authentication server and Parseable must share the same network namespace:
-
-- On GKE, run the server as a sidecar in each ingestor pod.
-- On Compute Engine, run the server on the same VM before starting Parseable.
+The local authentication server and Parseable must share the same network namespace. On GKE, run the server as a sidecar in each ingestor pod. On Compute Engine, run the server on the same VM before starting Parseable.
 
 Do not expose port `14293` through a Kubernetes Service, load balancer, or firewall. The endpoint returns live credentials and is intended to remain local to the workload.
 
@@ -420,7 +417,7 @@ Publish one valid JSON record with a separately authorized producer:
 The Parseable stream is created lazily after the record is consumed and its batch is flushed. Query it:
 
 ```bash
-curl --user "$PARSEABLE_USERNAME:$PARSEABLE_PASSWORD" \
+curl --header "X-API-Key: $PARSEABLE_API_KEY" \
   --header 'Content-Type: application/json' \
   --data '{"query":"SELECT * FROM \"<topic>\" LIMIT 10","startTime":"10m","endTime":"now"}' \
   "https://<parseable-host>/api/v1/query"
