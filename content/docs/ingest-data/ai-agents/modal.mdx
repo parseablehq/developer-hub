@@ -3,25 +3,24 @@ title: Modal
 description: Send Modal logs, traces, and metrics to Parseable through OpenTelemetry Collector
 ---
 
-[Modal](https://modal.com/) is a serverless compute platform for running Python workloads, including AI inference, batch jobs, web endpoints, and sandboxed code. Modal can export platform telemetry with its managed OpenTelemetry integration, while application code can emit custom OpenTelemetry logs, traces, and metrics.
+[Modal](https://modal.com/) is a serverless platform for running Python workloads such as AI inference, batch jobs, web endpoints, and sandboxed code. When those workloads move fast or scale across many containers, the useful question is usually simple: what ran, how long did it take, and what happened inside the function when something failed?
 
-Use an OpenTelemetry Collector between Modal and Parseable to route each signal into its own dataset and keep Parseable credentials out of Modal workloads.
+Parseable can receive Modal telemetry through OpenTelemetry. In this setup, Modal sends telemetry to an OpenTelemetry Collector, and the Collector forwards logs, traces, and metrics into separate Parseable datasets.
 
-## How the integration works
+## How it works
 
-There are two complementary telemetry paths:
+There are two useful telemetry paths for Modal.
 
-| Path | What it sends |
-|------|---------------|
-| Modal managed OpenTelemetry integration | Function logs, container metrics, and audit logs when available |
-| OpenTelemetry SDK in your Modal application | Custom application logs, spans, and metrics |
+The first path is Modal's managed OpenTelemetry integration. This is the easiest way to export Modal Function logs and container metrics. Audit logs can also be exported when they are available for your Modal workspace plan.
 
-Both paths send OTLP HTTP to the same Collector. The Collector authenticates incoming requests and forwards each signal to a separate Parseable dataset.
+The second path is application-level OpenTelemetry from your Modal code. Use this when you want custom spans around important work, structured application logs, or metrics that are specific to your own workload.
+
+Both paths send OTLP over HTTP to the same Collector. The Collector keeps the Parseable API key outside your Modal code, receives telemetry from Modal with a bearer token, and forwards each signal to a dedicated Parseable dataset.
 
 ```text
 Modal managed telemetry ---\
                             +--> OTLP/HTTP --> OpenTelemetry Collector
-Modal application OTel ----/                         |
+Modal app OpenTelemetry ----/                         |
                                                      +--> modal-logs
                                                      +--> modal-traces
                                                      +--> modal-metrics
@@ -29,21 +28,22 @@ Modal application OTel ----/                         |
 ```
 
 <Callout type="info">
-  OTLP means OpenTelemetry Protocol. Parseable is an analytical observability store, not an OLTP transactional database.
+OTLP means OpenTelemetry Protocol. Modal sends telemetry in OpenTelemetry format, and Parseable stores it in datasets that you can query, filter, and explore.
 </Callout>
 
 ## Prerequisites
 
-Before you start, you need:
+Before you start, keep these ready:
 
 - A Modal account and workspace
-- Python 3.10 through 3.13 and the Modal CLI
+- Python 3.10 through 3.13
+- The Modal CLI installed locally
 - A Parseable instance reachable from the Collector
-- Parseable credentials or an API key with ingest access
+- A Parseable API key with ingest access
 - An OpenTelemetry Collector reachable from Modal over HTTPS
-- Docker if you want to run the Collector with the example below
+- Docker, if you want to run the Collector with the example below
 
-Authenticate the Modal CLI:
+Authenticate the Modal CLI first:
 
 ```bash
 python3.12 -m venv .venv
@@ -53,7 +53,7 @@ modal setup
 modal app list
 ```
 
-An empty app list is expected for a new workspace. The command only needs to complete without an authentication error.
+For a new workspace, `modal app list` can return an empty list. That is fine. The important part is that the command completes without an authentication error.
 
 ## Configure the OpenTelemetry Collector
 
@@ -69,10 +69,6 @@ extensions:
 receivers:
   otlp:
     protocols:
-      grpc:
-        endpoint: 0.0.0.0:4317
-        auth:
-          authenticator: bearertokenauth/ingress
       http:
         endpoint: 0.0.0.0:4318
         auth:
@@ -92,25 +88,28 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      Authorization: Basic ${env:PARSEABLE_BASIC_AUTH}
+      X-API-Key: ${env:PARSEABLE_API_KEY}
       X-P-Stream: ${env:PARSEABLE_LOGS_STREAM}
       X-P-Log-Source: otel-logs
+      Content-Type: application/json
 
   otlphttp/parseable_traces:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      Authorization: Basic ${env:PARSEABLE_BASIC_AUTH}
+      X-API-Key: ${env:PARSEABLE_API_KEY}
       X-P-Stream: ${env:PARSEABLE_TRACES_STREAM}
       X-P-Log-Source: otel-traces
+      Content-Type: application/json
 
   otlphttp/parseable_metrics:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      Authorization: Basic ${env:PARSEABLE_BASIC_AUTH}
+      X-API-Key: ${env:PARSEABLE_API_KEY}
       X-P-Stream: ${env:PARSEABLE_METRICS_STREAM}
       X-P-Log-Source: otel-metrics
+      Content-Type: application/json
 
 service:
   extensions: [health_check, bearertokenauth/ingress]
@@ -129,17 +128,13 @@ service:
       exporters: [otlphttp/parseable_metrics]
 ```
 
-If you use a Parseable API key, replace the `Authorization` header in all three exporters with:
-
-```yaml
-X-P-API-Key: ${env:PARSEABLE_API_KEY}
-```
+This Collector accepts OTLP/HTTP on port `4318`. Modal authenticates to the Collector with `OTLP_INGEST_TOKEN`, and the Collector authenticates to Parseable with `PARSEABLE_API_KEY`.
 
 Configure the Collector environment:
 
 ```bash
 export PARSEABLE_ENDPOINT="https://parseable.example.com"
-export PARSEABLE_BASIC_AUTH="$(printf '%s' 'username:password' | base64)"
+export PARSEABLE_API_KEY="<parseable-api-key>"
 export PARSEABLE_LOGS_STREAM="modal-logs"
 export PARSEABLE_TRACES_STREAM="modal-traces"
 export PARSEABLE_METRICS_STREAM="modal-metrics"
@@ -150,10 +145,10 @@ Run the Collector:
 
 ```bash
 docker run --rm \
-  -p 127.0.0.1:4317:4317 \
   -p 127.0.0.1:4318:4318 \
+  -p 127.0.0.1:13133:13133 \
   -e PARSEABLE_ENDPOINT \
-  -e PARSEABLE_BASIC_AUTH \
+  -e PARSEABLE_API_KEY \
   -e PARSEABLE_LOGS_STREAM \
   -e PARSEABLE_TRACES_STREAM \
   -e PARSEABLE_METRICS_STREAM \
@@ -163,44 +158,44 @@ docker run --rm \
   --config=/etc/otelcol-contrib/config.yaml
 ```
 
-Expose port `4318` through a stable HTTPS hostname that Modal can reach, for example `https://otel.example.com`.
+Modal must be able to reach the Collector over HTTPS. For production, run the Collector behind a stable TLS endpoint such as `https://otel.example.com`.
 
-<Callout type="warn">
-  Do not expose an unauthenticated OTLP receiver to the internet. The example protects Collector ingress with a bearer token. Use a stable TLS endpoint and durable Collector deployment in production.
-</Callout>
-
-For a short proof of concept, you can use a temporary Cloudflare Quick Tunnel:
+For a short local proof of concept, you can put a temporary tunnel in front of the local Collector:
 
 ```bash
 cloudflared tunnel --url http://localhost:4318
 ```
 
-Quick Tunnel URLs change when the process restarts and have no uptime guarantee.
+<Callout type="warn">
+Do not expose an unauthenticated OTLP receiver to the internet. The example protects Collector ingress with a bearer token. Use a durable Collector deployment and a stable TLS hostname for production.
+</Callout>
 
 ## Create the Modal Secret
 
-In the [Modal Secrets dashboard](https://modal.com/secrets), create a Secret named `parseable-otel` with these keys:
+Create a Modal Secret named `parseable-otel`. This Secret is used in two places: Modal's managed OpenTelemetry integration and the sample Modal application later in this guide.
+
+In the [Modal Secrets dashboard](https://modal.com/secrets), add these keys:
 
 | Key | Value |
-|-----|-------|
+| --- | --- |
+| `OTEL_HEADER_Authorization` | `Bearer <collector-ingest-token>` |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Collector base URL, such as `https://otel.example.com` |
 | `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` |
-| `OTEL_EXPORTER_OTLP_HEADERS` | `Authorization=Bearer <collector-ingest-token>` |
-| `OTEL_HEADER_Authorization` | `Bearer <collector-ingest-token>` |
+| `OTEL_EXPORTER_OTLP_HEADERS` | `Authorization=Bearer%20<collector-ingest-token>` |
 
-The `OTEL_EXPORTER_*` variables configure OpenTelemetry SDKs inside Modal Functions. Modal's managed integration uses `OTEL_HEADER_Authorization` when it sends platform telemetry.
+`OTEL_HEADER_Authorization` is used by Modal's managed OpenTelemetry integration. The `OTEL_EXPORTER_*` variables are picked up by OpenTelemetry SDKs running inside your Modal functions. In `OTEL_EXPORTER_OTLP_HEADERS`, `%20` is the encoded space between `Bearer` and the token.
 
 You can also create the Secret from the CLI:
 
 ```bash
 modal secret create parseable-otel \
+  OTEL_HEADER_Authorization="Bearer ${OTLP_INGEST_TOKEN}" \
   OTEL_EXPORTER_OTLP_ENDPOINT="https://otel.example.com" \
   OTEL_EXPORTER_OTLP_PROTOCOL="http/protobuf" \
-  OTEL_EXPORTER_OTLP_HEADERS="Authorization=Bearer ${OTLP_INGEST_TOKEN}" \
-  OTEL_HEADER_Authorization="Bearer ${OTLP_INGEST_TOKEN}"
+  OTEL_EXPORTER_OTLP_HEADERS="Authorization=Bearer%20${OTLP_INGEST_TOKEN}"
 ```
 
-Only the Collector should hold Parseable credentials. Modal only needs the Collector ingress token.
+Only the Collector needs the Parseable API key. Modal only needs the Collector ingress token.
 
 ## Enable Modal managed telemetry
 
@@ -211,15 +206,17 @@ In the Modal dashboard:
 3. Do not append `/v1/logs`, `/v1/traces`, or `/v1/metrics`.
 4. Select the `parseable-otel` Secret.
 5. Save the integration.
-6. Click **Send test**.
+6. Use **Send test** to confirm the path is working.
 
-A successful test sends one log record with service name `modal.test_logs`. Check the `modal-logs` dataset in Parseable.
+A successful test sends a log record from the `modal.test_logs` service. Open the `modal-logs` dataset in Parseable and search for that service name.
 
-Modal's managed integration exports Function logs and container metrics. Audit-log export depends on your Modal plan. Platform metrics include CPU, memory, GPU, container, input latency, success, pending-input, and running-input measurements.
+Modal's managed integration exports Function logs and container metrics. Audit-log export depends on your Modal plan. Modal documents platform metrics such as CPU utilization, memory usage, GPU usage, running containers, input latency, pending inputs, running inputs, and success counts.
 
 ## Add custom application telemetry
 
-The following Modal Class emits two correlated log records, two spans, a counter, and a histogram. It force-flushes all providers during container shutdown because Modal containers can scale down or be preempted.
+Managed telemetry is useful for the platform view. Application telemetry is useful when you want to see what your own code did inside a Modal function.
+
+The following Modal class emits two log records, two spans, a counter, and a histogram. It also flushes the OpenTelemetry providers during container shutdown, which matters because Modal containers can scale down or be preempted.
 
 ```python
 import logging
@@ -315,54 +312,60 @@ def main(name="Modal"):
     print(InstrumentedWorker().run.remote(name))
 ```
 
-Run the application:
+Save the file as `modal_app.py`, then run it:
 
 ```bash
 modal run modal_app.py --name Parseable
 ```
 
+Run it a few times if you want metric charts to show visible points in Parseable.
+
 ## Validate in Parseable
 
-After the Modal test and application run, inspect:
+After you send the Modal test event and run the sample app, open the three datasets in Parseable.
 
-- `modal-logs` for Modal Function output and application messages
-- `modal-traces` for `demo.run` and `demo.simulated_work`
-- `modal-metrics` for Modal platform metrics, `demo.invocations`, and `demo.work.duration`
+**Logs**
 
-Metric names can appear before enough points exist to draw a chart. Run the workload more than once, wait for the Collector batch interval, and refresh the selected time range.
+Open `modal-logs` to check Modal Function output, the `modal.test_logs` test event, and application log messages from `modal-parseable-demo`.
 
-To validate delivery at the Collector itself, inspect its internal metrics on port `8888`:
+![Modal logs in Parseable](./static/modal-logs.png)
 
-```text
-otelcol_receiver_accepted_log_records
-otelcol_receiver_accepted_spans
-otelcol_receiver_accepted_metric_points
-otelcol_exporter_sent_log_records
-otelcol_exporter_sent_spans
-otelcol_exporter_sent_metric_points
-otelcol_exporter_send_failed_log_records
-otelcol_exporter_send_failed_spans
-otelcol_exporter_send_failed_metric_points
+**Traces**
+
+Open `modal-traces` to inspect custom spans such as `demo.run` and `demo.simulated_work`. This is where you can confirm that the application-level spans from your Modal function reached Parseable.
+
+![Modal traces in Parseable](./static/modal-traces.png)
+
+**Metrics**
+
+Open `modal-metrics` to view Modal platform metrics along with custom metrics such as `demo.invocations` and `demo.work.duration`.
+
+![Modal metrics in Parseable](./static/modal-metrics.png)
+
+Metric names can appear before there are enough points to draw a useful chart. If a metric card says `No data`, run the workload again, wait for the Collector batch interval, and refresh the selected time range.
+
+You can also check the Collector health endpoint:
+
+```bash
+curl http://localhost:13133
 ```
 
-The accepted and sent counters should increase after each run. All `send_failed` counters should remain zero.
+A healthy Collector response tells you the process is running. If Parseable is still empty, check the Collector logs for authentication errors, exporter failures, or connection errors to the Parseable endpoint.
 
 ## Troubleshooting
 
-- **Modal's test fails** - Confirm the Collector URL is public HTTPS, the tunnel or gateway is running, and the bearer token matches `OTLP_INGEST_TOKEN`.
-- **Collector returns `401`** - Check `OTEL_HEADER_Authorization` for managed telemetry and `OTEL_EXPORTER_OTLP_HEADERS` for application telemetry.
-- **Collector receives data but Parseable is empty** - Verify the Parseable endpoint, credentials, `X-P-Stream`, and signal-specific `X-P-Log-Source` headers.
-- **Logs arrive but spans or metrics do not** - Confirm the application has the matching OTLP exporters and calls `force_flush` before shutdown.
-- **Metric cards say `No data`** - Run the workload repeatedly, wait at least one batch interval, refresh the time range, and confirm `otelcol_exporter_sent_metric_points` is increasing.
-- **Telemetry stops unexpectedly** - Temporary tunnel URLs expire when the tunnel process exits. Update the Modal Secret and managed integration after creating a new URL.
-- **Duplicate telemetry** - Modal-managed Function logs and application OTel logs are separate sources. Filter by `service.name` or disable the path you do not need.
+- **The Modal test does not appear in Parseable**: Confirm the Collector URL is public HTTPS, the tunnel or gateway is running, and `OTEL_HEADER_Authorization` matches `OTLP_INGEST_TOKEN`.
+- **The Collector returns `401`**: Check the bearer token used by Modal. Managed telemetry uses `OTEL_HEADER_Authorization`; application telemetry uses `OTEL_EXPORTER_OTLP_HEADERS`.
+- **The Collector receives data but Parseable is empty**: Verify `PARSEABLE_ENDPOINT`, `PARSEABLE_API_KEY`, `X-P-Stream`, and `X-P-Log-Source` in the Collector exporter config.
+- **Logs arrive but traces or metrics do not**: Confirm the application has the matching OTLP exporters installed and that the app calls `force_flush` before shutdown.
+- **Metric charts show no visible points**: Run the workload more than once, wait at least one batch interval, and refresh the time range in Parseable.
+- **Telemetry stops after a while**: Temporary tunnel URLs stop working when the tunnel process exits. Create a new URL and update the Modal Secret and managed integration.
+- **You see duplicate logs**: Modal-managed Function logs and application OpenTelemetry logs are separate sources. Filter by `service.name` or disable one path if you only need one copy.
 
 ## Production guidance
 
-- Run the Collector on durable infrastructure with a stable TLS hostname.
-- Keep Collector ingress authenticated and rotate its token periodically.
-- Keep Parseable credentials only in the Collector environment or secret store.
-- Keep logs, traces, and metrics in separate Parseable datasets.
-- Size Collector queues and retries for expected traffic and transient Parseable outages.
-- Treat application log bodies as sensitive data and avoid recording credentials, prompts, or user identifiers unless explicitly required.
-- Do not run the shared Collector inside the same Modal workspace telemetry path. It can scale to zero and may create a telemetry feedback loop.
+For production, run the Collector on durable infrastructure with a stable TLS hostname. Keep Collector ingress authenticated, rotate the ingress token periodically, and store the Parseable API key only in the Collector environment or secret store.
+
+Keep logs, traces, and metrics in separate Parseable datasets. This makes it easier to browse each signal in Prism and keeps retention, access, and query behavior easier to reason about.
+
+Finally, treat application log bodies as sensitive data. Avoid recording credentials, prompts, user identifiers, or payloads unless your team has explicitly decided those fields are safe to collect.
