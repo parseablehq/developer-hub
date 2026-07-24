@@ -1,0 +1,286 @@
+---
+title: Kubernetes (OSS)
+description: Install Parseable OSS in standalone mode on Kubernetes with Helm.
+redirect_from:
+  - /installation/standalone/k8s
+---
+
+This guide installs Parseable OSS as a single standalone pod on Kubernetes. You can use local storage, MinIO, Amazon S3, Google Cloud Storage, or Azure Blob Storage.
+
+<Callout type="info">
+  Standalone mode supports Parseable OSS only. To install Parseable Enterprise,
+  use the [distributed Enterprise Kubernetes guide](/docs/self-hosted/installation/distributed/k8s-helm-enterprise).
+</Callout>
+
+## 1. Prerequisites
+
+Before you begin, make sure you have:
+
+- `kubectl` configured for your Kubernetes cluster
+- Helm 3 or later
+- A Kubernetes storage class
+- An existing, empty bucket or container with access credentials if you use an object store
+
+Confirm the Kubernetes context and find an available storage class:
+
+```bash
+kubectl config current-context
+kubectl get nodes
+kubectl get storageclass
+```
+
+## 2. Create the namespace
+
+```bash
+kubectl create namespace parseable
+```
+
+## 3. Choose a storage option
+
+Choose exactly one storage option below. Replace every `<...>` placeholder in the selected option before creating the Kubernetes Secret.
+
+After completing one option, continue to step 4.
+
+### Option A: Local storage
+
+Create a file named `parseable-env-secret`:
+
+```bash
+cat <<'EOF' > parseable-env-secret
+addr=0.0.0.0:8000
+username=admin
+password=<password>
+EOF
+```
+
+Use `local-store` in [`standalone-values.yaml`](#6-create-standalone-valuesyaml).
+
+### Option B: MinIO
+
+<Callout type="info">
+  This single-node MinIO setup is for testing only. Skip the installation if you
+  already have a MinIO or another S3-compatible object store.
+</Callout>
+
+Install MinIO and create a bucket named `parseable`:
+
+```bash
+helm repo add minio https://charts.min.io/
+helm install --namespace minio --create-namespace --set "buckets[0].name=parseable,buckets[0].policy=none,buckets[0].purge=false,rootUser=minioadmin,rootPassword=minioadmin,replicas=1,persistence.enabled=true,persistence.storageClass="",resources.requests.memory=128Mi,mode=standalone" minio minio/minio
+```
+
+Forward the MinIO console port:
+
+```bash
+kubectl port-forward svc/minio-console -n minio 9001:9001
+```
+
+Open `http://localhost:9001`. A bucket named `parseable` should be available.
+
+Create a file named `parseable-env-secret` using the MinIO test credentials:
+
+```bash
+cat << EOF > parseable-env-secret
+s3.url=http://minio.minio.svc.cluster.local:9000
+s3.access.key=minioadmin
+s3.secret.key=minioadmin
+s3.region=us-east-1
+s3.bucket=parseable
+addr=0.0.0.0:8000
+username=admin
+password=admin
+EOF
+```
+
+<Callout type="warning">
+  These credentials are for testing only. Replace the MinIO and Parseable
+  administrator credentials before using this setup outside a test cluster.
+</Callout>
+
+Use `s3-store` in [`standalone-values.yaml`](#6-create-standalone-valuesyaml).
+
+### Option C: Amazon S3
+
+Create a file named `parseable-env-secret` using the bucket credentials provided by your AWS administrator:
+
+```bash
+cat <<'EOF' > parseable-env-secret
+addr=0.0.0.0:8000
+username=admin
+password=<password>
+s3.url=<s3.url>
+s3.access.key=<s3.access.key>
+s3.secret.key=<s3.secret.key>
+s3.bucket=<s3.bucket>
+s3.region=<s3.region>
+EOF
+```
+
+Use `s3-store` in [`standalone-values.yaml`](#6-create-standalone-valuesyaml).
+
+### Option D: Google Cloud Storage
+
+Create a file named `parseable-env-secret` using the bucket details provided by your Google Cloud administrator:
+
+```bash
+cat <<'EOF' > parseable-env-secret
+addr=0.0.0.0:8000
+username=admin
+password=<password>
+gcs.url=<gcs.url>
+gcs.bucket=<gcs.bucket>
+EOF
+```
+
+Keep the service-account JSON file ready. You will create its Kubernetes Secret after creating the main Secret.
+
+<Callout type="warning">
+  The service-account JSON file is a credential. Store it securely and never
+  commit it to source control.
+</Callout>
+
+Use `gcs-store` in [`standalone-values.yaml`](#6-create-standalone-valuesyaml).
+
+### Option E: Azure Blob Storage
+
+Create a file named `parseable-env-secret` using the storage credentials provided by your Azure administrator:
+
+```bash
+cat <<'EOF' > parseable-env-secret
+addr=0.0.0.0:8000
+username=admin
+password=<password>
+azr.access_key=<azr.access_key>
+azr.account=<azr.account>
+azr.container=<azr.container>
+azr.url=<azr.url>
+EOF
+```
+
+Use `blob-store` in [`standalone-values.yaml`](#6-create-standalone-valuesyaml).
+
+## 4. Create the Kubernetes Secret
+
+Review the file created for your selected storage option, then create the Secret:
+
+```bash
+chmod 600 parseable-env-secret
+
+kubectl create secret generic parseable-env-secret \
+  --namespace parseable \
+  --from-env-file=parseable-env-secret
+```
+
+If you selected Google Cloud Storage, also create the service-account key Secret:
+
+```bash
+kubectl create secret generic parseable-gcs-key \
+  --namespace parseable \
+  --from-file=key.json='<path-to-service-account-json>'
+```
+
+Confirm that the required Secrets exist without displaying their values:
+
+```bash
+kubectl get secret parseable-env-secret --namespace parseable
+kubectl get secret parseable-gcs-key --namespace parseable
+```
+
+The second command is required only for Google Cloud Storage.
+
+Delete the local plaintext configuration file after creating the Secret:
+
+```bash
+rm parseable-env-secret
+```
+
+## 5. Add the Parseable Helm repository
+
+```bash
+helm repo add parseable https://charts.parseable.com
+helm repo update parseable
+```
+
+## 6. Create `standalone-values.yaml`
+
+Create a file named `standalone-values.yaml`:
+
+```yaml
+parseable:
+  deploymentMode: standalone
+
+  store:
+    # Local storage: local-store
+    # MinIO and Amazon S3: s3-store
+    # Google Cloud Storage: gcs-store
+    # Azure Blob Storage: blob-store
+    type: local-store
+    secretName: parseable-env-secret
+ # Google Cloud Storage only: uncomment this block.
+ # gcsCredentials:
+ #   secretName: parseable-gcs-key
+ #   secretKey: key.json
+ #   mountPath: /var/secrets/google
+
+  standalone:
+    unified:
+      persistence:
+        staging:
+          storageClass: <storage-class>
+          size: 5Gi
+        data:
+          # Keep enabled for local-store. Set to false for object stores.
+          enabled: true
+          storageClass: <storage-class>
+          size: 5Gi
+```
+
+Before continuing:
+
+1. Set `parseable.store.type` for the storage option selected in step 3.
+2. Keep `data.enabled: true` for `local-store`; set it to `false` for an object store.
+3. If you selected Google Cloud Storage, uncomment the `gcsCredentials` block.
+4. Replace both `<storage-class>` placeholders with a storage class returned by `kubectl get storageclass`.
+5. Adjust volume sizes for your workload.
+
+The staging volume temporarily buffers incoming data. The data volume stores permanent data only when `local-store` is selected; object-store deployments keep permanent data in the selected bucket or container.
+
+## 7. Install Parseable
+
+```bash
+helm upgrade --install parseable parseable/parseable \
+  --namespace parseable \
+  --values ./standalone-values.yaml \
+  --wait \
+  --timeout 10m
+```
+
+## 8. Verify the installation
+
+```bash
+helm status parseable --namespace parseable
+kubectl get pods,pvc,services,deployments --namespace parseable
+```
+
+The Parseable pod should be `Running`, and every enabled PVC should be `Bound`.
+
+## 9. Access Parseable
+
+```bash
+kubectl port-forward service/parseable-standalone-service 8000:80 --namespace parseable
+```
+
+Open `http://localhost:8000` and sign in with the username and password stored in `parseable-env-secret`.
+
+## 10. Troubleshooting
+
+```bash
+kubectl get events --namespace parseable --sort-by=.lastTimestamp
+kubectl describe pod --namespace parseable -l app.kubernetes.io/instance=parseable
+kubectl logs deployment/parseable-standalone --namespace parseable --tail=200
+```
+
+- `Pending` PVCs usually indicate an invalid storage class or unavailable volume provisioner.
+- `CreateContainerConfigError` usually indicates a missing Secret or Secret key.
+- Object-store authentication errors usually indicate incorrect credentials, permissions, endpoint, bucket, or container values.
+- Use an empty bucket or container for a new Parseable installation.

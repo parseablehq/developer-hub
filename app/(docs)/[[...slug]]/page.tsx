@@ -1,25 +1,26 @@
-import { source } from '@/lib/source';
+import { source } from "@/lib/source";
 import {
   DocsPage,
   DocsBody,
   DocsDescription,
   DocsTitle,
-} from 'fumadocs-ui/page';
-import { notFound, redirect } from 'next/navigation';
-import { createRelativeLink } from 'fumadocs-ui/mdx';
-import { getMDXComponents } from '@/mdx-components';
-import { CopyPageDropdown } from '@/components/CopyPageDropdown';
-import { Feedback } from '@/components/feedback/client';
-import { onPageFeedbackAction } from '@/components/feedback/actions';
+} from "fumadocs-ui/page";
+import { notFound, redirect } from "next/navigation";
+import { createRelativeLink } from "fumadocs-ui/mdx";
+import { getMDXComponents } from "@/mdx-components";
+import { CopyPageDropdown } from "@/components/CopyPageDropdown";
+import { Feedback } from "@/components/feedback/client";
+import { onPageFeedbackAction } from "@/components/feedback/actions";
+import { MdxLink } from "@/components/MdxLink";
 
 export default async function Page(props: {
   params: Promise<{ slug?: string[] }>;
 }) {
   const params = await props.params;
-  
+
   // If we're at the root path, show the index page (Get Started)
   // No redirect needed - the index page will be shown
-  
+
   // Otherwise, show the regular docs page
   const page = source.getPage(params.slug);
   if (!page) notFound();
@@ -27,27 +28,30 @@ export default async function Page(props: {
   const MDXContent = page.data.body;
 
   return (
-    <DocsPage 
-      toc={page.data.toc} 
+    <DocsPage
+      toc={page.data.toc}
       full={page.data.full}
       tableOfContent={{
-        style: 'clerk',
+        style: "clerk",
       }}
       tableOfContentPopover={{
-        style: 'clerk',
+        style: "clerk",
       }}
     >
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
       <div className="flex flex-row gap-2 items-center mb-4">
-        <CopyPageDropdown slug={params.slug ?? []} filePath={`${params.slug?.join('/') || 'index'}.mdx`} />
+        <CopyPageDropdown
+          slug={params.slug ?? []}
+          filePath={`${params.slug?.join("/") || "index"}.mdx`}
+        />
       </div>
-      <hr/>
+      <hr />
       <DocsBody>
         <MDXContent
           components={getMDXComponents({
             // this allows you to link to other pages with relative file paths
-            a: createRelativeLink(source, page),
+            a: createRelativeLink(source, page, MdxLink),
           })}
         />
       </DocsBody>
@@ -55,8 +59,6 @@ export default async function Page(props: {
     </DocsPage>
   );
 }
-
-
 
 export async function generateStaticParams() {
   return source.generateParams();
@@ -66,15 +68,15 @@ export async function generateMetadata(props: {
   params: Promise<{ slug?: string[] }>;
 }) {
   const params = await props.params;
-  
+
   // Handle root /docs path - will redirect, but provide metadata just in case
   if (!params.slug || params.slug.length === 0) {
     return {
-      title: 'Parseable Documentation',
-      description: 'Welcome to the Parseable documentation',
+      title: "Parseable Documentation",
+      description: "Welcome to the Parseable documentation",
     };
   }
-  
+
   const page = source.getPage(params.slug);
   if (!page) notFound();
 
