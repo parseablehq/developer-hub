@@ -80,17 +80,6 @@ Multi-tenancy does not mean every tenant gets a separate Parseable process. The 
 | Cluster capacity | Storage prefixes and query schemas |
 | Internal node-to-node forwarding | Tenant metadata and service suspension state |
 
-## Tenant headers
-
-Parseable uses two tenant-related headers, but they are meant for different parts of the system.
-
-| Header | Who sends it | Purpose |
-|--------|--------------|---------|
-| `x-p-tenant` | Client, SDK, collector, or Prism | Public tenant hint for tenant-aware requests |
-| `intra-cluster-tenant` | Parseable nodes | Internal tenant forwarding between nodes |
-
-Use `x-p-tenant` from clients. Do not send `intra-cluster-tenant` yourself. It is used by Parseable when one node forwards a request to another node in a distributed deployment.
-
 ## Ingestion behavior
 
 In multi-tenant mode, ingestion requests must include `x-p-tenant`.
@@ -163,18 +152,6 @@ Parseable does not infer team ownership from dataset names. The tenant is the ex
 
 At startup, Parseable loads recognized tenant metadata from storage and builds the in-memory tenant map. From that point on, request handling can quickly look up the tenant and apply the right permissions and service state.
 
-Tenant metadata can include:
-
-| Field | What it controls |
-|-------|------------------|
-| `users` | Users that belong to the tenant |
-| `roles` | Tenant-specific roles and permissions |
-| `default_role` | Default role for users in that tenant |
-| `streams` | Datasets known to that tenant |
-| `suspended_services` | Workspace, ingest, or query suspension state |
-| `global_query_auth` | Optional auth header used by internal query helpers |
-| `owner`, `customer_name`, `plan` | Workspace ownership and customer metadata |
-
 ## RBAC boundary
 
 RBAC is evaluated inside the tenant boundary. Users, roles, user groups, filters, dashboards, alerts, and saved resources are read through the resolved tenant.
@@ -185,12 +162,6 @@ This gives you two layers of protection:
 2. The user's roles are checked inside that tenant before the action is allowed.
 
 For example, a user with query access in tenant `acme` does not automatically get query access in tenant `globex`. The same username can exist in different tenants with different roles because the tenant is part of the lookup.
-
-## Distributed deployments
-
-In distributed mode, one Parseable node may need to forward work to another node. When that happens, Parseable forwards the tenant internally using `intra-cluster-tenant` along with the cluster authentication headers.
-
-This keeps internal calls tenant-aware without asking clients to know how the cluster is shaped. A request can enter through Prism or a query node, then move to an ingestor or querier while still carrying the same tenant context.
 
 ## Service suspension
 
@@ -210,7 +181,6 @@ Suspension is checked during request authorization. If a tenant's ingest service
 - Use `x-p-tenant` for ingestion and API-key based requests in multi-tenant mode.
 - Do not send `x-p-tenant` to a single-tenant deployment.
 - Do not send `intra-cluster-tenant` from clients. It is for Parseable's internal node-to-node flow.
-- Keep tenant IDs stable. They become part of storage paths and are used to scope users, roles, datasets, and metadata.
 - Avoid using `default` as an explicit tenant ID for multi-tenant ingestion.
 
 ## Troubleshooting
