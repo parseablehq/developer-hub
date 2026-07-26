@@ -1,0 +1,162 @@
+---
+title: Pydantic AI
+description: Send Pydantic AI agent, model, and tool traces to Parseable
+---
+
+Pydantic AI has native OpenTelemetry instrumentation for agent runs, model requests, and tool execution. This guide sends those traces directly to Parseable using the OpenTelemetry GenAI semantic conventions.
+
+## What you get
+
+- `invoke_agent <agent>` spans for complete agent runs
+- `chat <model>` spans with model, token, and response metadata
+- `execute_tool <tool>` spans with tool arguments and results
+- One parent-child trace across agent, model, and tool activity
+- Compatibility with Parseable Agent Observability dashboards
+
+## Prerequisites
+
+- Python 3.10 or later
+- A Parseable instance and credentials
+- An OpenAI API key, or another model provider supported by Pydantic AI
+
+## Create a trace dataset
+
+Create a dataset and mark it as an Agent Observability trace source:
+
+```bash
+curl -u "$PARSEABLE_USERNAME:$PARSEABLE_PASSWORD" \
+  -X PUT "$PARSEABLE_URL/api/v1/logstream/pydantic-ai-traces" \
+  -H 'X-P-Log-Source: otel-traces' \
+  -H 'X-P-Telemetry-Type: traces' \
+  -H 'X-P-Dataset-Tag: agent-observability'
+```
+
+`X-P-Dataset-Tag` tags the dataset itself. Do not use `X-P-Tag-*` here; those headers add fields to ingested records instead.
+
+## Install dependencies
+
+```bash
+pip install "pydantic-ai-slim[openai]" \
+  opentelemetry-sdk \
+  opentelemetry-exporter-otlp-proto-http
+```
+
+## Instrument the agent
+
+```python
+import base64
+import os
+
+from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from pydantic_ai import Agent, InstrumentationSettings, RunContext
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
+
+parseable_url = os.environ["PARSEABLE_URL"].rstrip("/")
+credentials = base64.b64encode(
+    f'{os.environ["PARSEABLE_USERNAME"]}:{os.environ["PARSEABLE_PASSWORD"]}'.encode()
+).decode()
+
+provider = TracerProvider(
+    resource=Resource.create({"service.name": "pydantic-ai-agent"})
+)
+provider.add_span_processor(
+    BatchSpanProcessor(
+        OTLPSpanExporter(
+            endpoint=f"{parseable_url}/v1/traces",
+            headers={
+                "Authorization": f"Basic {credentials}",
+                "X-P-Stream": "pydantic-ai-traces",
+                "X-P-Log-Source": "otel-traces",
+            },
+        )
+    )
+)
+trace.set_tracer_provider(provider)
+
+# Version 5 emits current GenAI semantic-convention fields. Content capture is
+# required for tool arguments and results in Agent Observability.
+Agent.instrument_all(
+    InstrumentationSettings(version=5, include_content=True)
+)
+
+model = OpenAIChatModel(
+    "gpt-4o-mini",
+    provider=OpenAIProvider(api_key=os.environ["OPENAI_API_KEY"]),
+)
+agent = Agent(model, name="weather_agent")
+
+@agent.tool
+def get_weather(ctx: RunContext[None], city: str) -> str:
+    return f"The weather in {city} is sunny and 24 C."
+
+try:
+    result = agent.run_sync("What is the weather in Bengaluru?")
+    print(result.output)
+finally:
+    provider.force_flush()
+    provider.shutdown()
+```
+
+Set the environment variables before running the application:
+
+```bash
+export PARSEABLE_URL="https://your-parseable-host:8000"
+export PARSEABLE_USERNAME="admin"
+export PARSEABLE_PASSWORD="your-password"
+export OPENAI_API_KEY="your-api-key"
+python agent.py
+```
+
+<Callout type="warn">
+  `include_content=True` can capture prompts, tool arguments, and tool results. Review this setting before using it with sensitive or regulated data. Setting it to `False` protects content, but the Agent Observability tool panels will not receive `gen_ai.tool.call.arguments` and `gen_ai.tool.call.result`.
+</Callout>
+
+## Use Pydantic AI through LiteLLM
+
+Point the OpenAI provider at the LiteLLM proxy:
+
+```python
+model = OpenAIChatModel(
+    "openai/gpt-4o-mini",
+    provider=OpenAIProvider(
+        base_url="http://localhost:4000/v1",
+        api_key=os.environ["LITELLM_API_KEY"],
+    ),
+)
+```
+
+Keep Pydantic AI instrumentation enabled for agent and tool spans. Instrument the LiteLLM gateway separately for gateway/model spans. W3C `traceparent` propagation connects both sides when HTTP client and server instrumentation are active. See [LiteLLM Gateway](/docs/ingest-data/gateways/litellm).
+
+## Required Agent Observability fields
+
+Tool spans should include:
+
+- `gen_ai.tool.name`
+- `gen_ai.tool.call.id`
+- `gen_ai.tool.call.arguments`
+- `gen_ai.tool.call.result`
+
+If the Agent Observability setup page reports missing argument or result fields, confirm that instrumentation version 5 and `include_content=True` are configured, then run an agent that actually invokes a tool.
+
+## Verify in Parseable
+
+Open the `pydantic-ai-traces` dataset and confirm one trace contains a hierarchy similar to:
+
+```text
+invoke_agent weather_agent
+├── chat gpt-4o-mini
+├── execute_tool get_weather
+└── chat gpt-4o-mini
+```
+
+New datasets and fields can take a few minutes to appear in Agent Observability.
+
+## Resources
+
+- [Pydantic AI instrumentation](https://ai.pydantic.dev/logfire/)
+- [Parseable Agent Observability](/docs/user-guide/agent-observability)

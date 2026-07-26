@@ -3,7 +3,7 @@
   "pages": [
     "openai",
     "anthropic",
-    "litellm",
+    "pydantic-ai",
     "openrouter",
     "vllm",
     "langchain",
