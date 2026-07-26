@@ -1,0 +1,142 @@
+---
+title: LiteLLM
+description: Send LiteLLM Gateway traces to Parseable using OpenTelemetry
+---
+
+LiteLLM Gateway provides an OpenAI-compatible proxy for many model providers. Its OpenTelemetry v2 callback exports GenAI spans, token usage, latency, cost, and errors to Parseable.
+
+## Prerequisites
+
+- Python 3.10 or later
+- A Parseable instance and credentials
+- A model-provider API key
+
+## Create a trace dataset
+
+```bash
+curl -u "$PARSEABLE_USERNAME:$PARSEABLE_PASSWORD" \
+  -X PUT "$PARSEABLE_URL/api/v1/logstream/litellm-traces" \
+  -H 'X-P-Log-Source: otel-traces' \
+  -H 'X-P-Telemetry-Type: traces' \
+  -H 'X-P-Dataset-Tag: agent-observability'
+```
+
+## Install LiteLLM and OpenTelemetry
+
+```bash
+pip install "litellm[proxy]" \
+  opentelemetry-api \
+  opentelemetry-sdk \
+  opentelemetry-exporter-otlp-proto-http \
+  opentelemetry-instrumentation-fastapi
+```
+
+Keep the OpenTelemetry API, SDK, exporter, and instrumentation packages on compatible release lines. Mixed versions can cause import or FastAPI instrumentation failures during proxy startup.
+
+## Configure the gateway
+
+Create `litellm-config.yaml`:
+
+```yaml
+model_list:
+  - model_name: gpt-4o-mini
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+
+litellm_settings:
+  callbacks:
+    - otel
+```
+
+The `otel` callback is required. Setting `LITELLM_OTEL_V2=true` alone does not activate trace export.
+
+Configure OTLP/HTTP and start the proxy:
+
+```bash
+export OPENAI_API_KEY="your-api-key"
+export PARSEABLE_INGEST_URL="https://your-parseable-ingest-host:8000"
+export PARSEABLE_BASIC_AUTH="$(printf '%s' 'admin:your-password' | base64)"
+
+export LITELLM_OTEL_V2="true"
+export OTEL_EXPORTER="otlp_http"
+export OTEL_ENDPOINT="$PARSEABLE_INGEST_URL"
+export OTEL_HEADERS="Authorization=Basic $PARSEABLE_BASIC_AUTH,X-P-Stream=litellm-traces,X-P-Log-Source=otel-traces"
+export OTEL_SERVICE_NAME="litellm-proxy"
+export OTEL_ENVIRONMENT_NAME="production"
+export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT="no_content"
+export LITELLM_OTEL_INTEGRATION_ENABLE_METRICS="false"
+
+litellm --config litellm-config.yaml --port 4000
+```
+
+Send a request through the gateway:
+
+```bash
+curl http://localhost:4000/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "model": "gpt-4o-mini",
+    "messages": [{"role": "user", "content": "Explain observability in one sentence."}]
+  }'
+```
+
+## Fields exported
+
+| Field | Meaning |
+| --- | --- |
+| `span_trace_id` | Trace identifier |
+| `span_span_id` | Span identifier |
+| `span_parent_span_id` | Parent span identifier |
+| `span_duration_ns` | Request duration |
+| `gen_ai.operation.name` | GenAI operation |
+| `gen_ai.provider.name` | Model provider |
+| `gen_ai.request.model` | Requested model |
+| `gen_ai.response.model` | Model returned by provider |
+| `gen_ai.usage.input_tokens` | Input tokens |
+| `gen_ai.usage.output_tokens` | Output tokens |
+| `litellm.cost.total` | Estimated request cost |
+
+## Capture message content
+
+`OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT` supports these LiteLLM modes:
+
+- `no_content` — metadata only; recommended default
+- `span_only` — content in span attributes
+- `event_only` — content in span events
+- `span_and_event` — content in both locations
+
+<Callout type="warn">
+  Message capture can store prompts and completions in Parseable. Enable it only after reviewing privacy, security, and retention requirements.
+</Callout>
+
+## Connect LiteLLM to an agent trace
+
+Instrument the calling agent and propagate the W3C `traceparent` header to LiteLLM. Parseable can then display the agent, tool, gateway, and model spans as one trace. For a tested Pydantic AI setup, see [Pydantic AI](/docs/ingest-data/ai-agents/pydantic-ai).
+
+## Metrics need separate routing
+
+The trace dataset uses `X-P-Log-Source: otel-traces`. OTLP metrics require a metrics dataset and `X-P-Log-Source: otel-metrics`, so they cannot share this direct exporter configuration. Keep `LITELLM_OTEL_INTEGRATION_ENABLE_METRICS=false`, or route traces and metrics through an OpenTelemetry Collector with separate exporters.
+
+## Troubleshooting
+
+### The dataset is not detected by Agent Observability
+
+Confirm the dataset was created with all three headers:
+
+- `X-P-Log-Source: otel-traces`
+- `X-P-Telemetry-Type: traces`
+- `X-P-Dataset-Tag: agent-observability`
+
+### No spans arrive
+
+Confirm `litellm_settings.callbacks` contains `otel`, `LITELLM_OTEL_V2` is `true`, and `OTEL_HEADERS` contains the Parseable stream and log-source headers.
+
+### Proxy fails during OpenTelemetry initialization
+
+Check installed OpenTelemetry package versions and align the API, SDK, exporter, and instrumentation packages on compatible release lines.
+
+## Resources
+
+- [LiteLLM OpenTelemetry integration](https://docs.litellm.ai/docs/proxy/logging#opentelemetry)
+- [Parseable Agent Observability](/docs/user-guide/agent-observability)
