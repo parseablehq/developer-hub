@@ -1,6 +1,6 @@
 ---
 title: Pydantic AI
-description: Send Pydantic AI agent, model, and tool traces to Parseable
+description: Send Pydantic AI agent traces and metrics to Parseable
 ---
 
 Pydantic AI has native OpenTelemetry instrumentation for agent runs, model requests, and tool execution. This guide sends those traces directly to Parseable using the OpenTelemetry GenAI semantic conventions.
@@ -12,6 +12,7 @@ Pydantic AI has native OpenTelemetry instrumentation for agent runs, model reque
 - `execute_tool <tool>` spans with tool arguments and results
 - One parent-child trace across agent, model, and tool activity
 - Compatibility with Parseable Agent Observability dashboards
+- Token, cost, and streaming time-to-first-chunk metrics
 
 ## Prerequisites
 
@@ -33,6 +34,15 @@ curl -u "$PARSEABLE_USERNAME:$PARSEABLE_PASSWORD" \
 
 `X-P-Dataset-Tag` tags the dataset itself. Do not use `X-P-Tag-*` here; those headers add fields to ingested records instead.
 
+Create a separate metrics dataset when you also want model usage and streaming metrics:
+
+```bash
+curl -u "$PARSEABLE_USERNAME:$PARSEABLE_PASSWORD" \
+  -X PUT "$PARSEABLE_URL/api/v1/logstream/pydantic-ai-metrics" \
+  -H 'X-P-Log-Source: otel-metrics' \
+  -H 'X-P-Telemetry-Type: metrics'
+```
+
 ## Install dependencies
 
 ```bash
@@ -48,7 +58,11 @@ import base64
 import os
 
 from opentelemetry import trace
+from opentelemetry import metrics
+from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
@@ -61,10 +75,10 @@ credentials = base64.b64encode(
     f'{os.environ["PARSEABLE_USERNAME"]}:{os.environ["PARSEABLE_PASSWORD"]}'.encode()
 ).decode()
 
-provider = TracerProvider(
-    resource=Resource.create({"service.name": "pydantic-ai-agent"})
-)
-provider.add_span_processor(
+resource = Resource.create({"service.name": "pydantic-ai-agent"})
+
+tracer_provider = TracerProvider(resource=resource)
+tracer_provider.add_span_processor(
     BatchSpanProcessor(
         OTLPSpanExporter(
             endpoint=f"{parseable_url}/v1/traces",
@@ -76,12 +90,30 @@ provider.add_span_processor(
         )
     )
 )
-trace.set_tracer_provider(provider)
+trace.set_tracer_provider(tracer_provider)
+
+metric_reader = PeriodicExportingMetricReader(
+    OTLPMetricExporter(
+        endpoint=f"{parseable_url}/v1/metrics",
+        headers={
+            "Authorization": f"Basic {credentials}",
+            "X-P-Stream": "pydantic-ai-metrics",
+            "X-P-Log-Source": "otel-metrics",
+        },
+    )
+)
+meter_provider = MeterProvider(metric_readers=[metric_reader], resource=resource)
+metrics.set_meter_provider(meter_provider)
 
 # Version 5 emits current GenAI semantic-convention fields. Content capture is
 # required for tool arguments and results in Agent Observability.
 Agent.instrument_all(
-    InstrumentationSettings(version=5, include_content=True)
+    InstrumentationSettings(
+        version=5,
+        include_content=True,
+        tracer_provider=tracer_provider,
+        meter_provider=meter_provider,
+    )
 )
 
 model = OpenAIChatModel(
@@ -98,8 +130,10 @@ try:
     result = agent.run_sync("What is the weather in Bengaluru?")
     print(result.output)
 finally:
-    provider.force_flush()
-    provider.shutdown()
+    tracer_provider.force_flush()
+    tracer_provider.shutdown()
+    meter_provider.force_flush()
+    meter_provider.shutdown()
 ```
 
 Set the environment variables before running the application:
@@ -116,13 +150,80 @@ python agent.py
   `include_content=True` can capture prompts, tool arguments, and tool results. Review this setting before using it with sensitive or regulated data. Setting it to `False` protects content, but the Agent Observability tool panels will not receive `gen_ai.tool.call.arguments` and `gen_ai.tool.call.result`.
 </Callout>
 
+## Instrumentation scope
+
+`Agent.instrument_all(...)` applies to every agent that does not provide its own instrumentation capability. To instrument only one agent, pass an `Instrumentation` capability:
+
+```python
+from pydantic_ai import Agent, InstrumentationSettings
+from pydantic_ai.capabilities import Instrumentation
+
+settings = InstrumentationSettings(
+    version=5,
+    include_content=False,
+    tracer_provider=tracer_provider,
+    meter_provider=meter_provider,
+)
+agent = Agent(model, capabilities=[Instrumentation(settings=settings)])
+```
+
+Use per-agent settings when agents have different privacy requirements or telemetry destinations.
+
+## Metrics exported
+
+Pydantic AI records these histograms:
+
+| Metric | Unit | When emitted |
+| --- | --- | --- |
+| `gen_ai.client.token.usage` | tokens | Model or embedding requests; split by `gen_ai.token.type` |
+| `operation.cost` | USD | When the model's price is known |
+| `gen_ai.client.operation.time_to_first_chunk` | seconds | Streaming requests only |
+
+Metric points include provider, operation, requested model, and response model attributes. Time-to-first-chunk is still an evolving GenAI convention and its name or shape can change in future releases.
+
+Pydantic AI supplies recommended histogram boundaries for token usage and streaming latency. You can override them with OpenTelemetry `View` objects on the `MeterProvider` when your workload needs different buckets.
+
+## Token aggregation
+
+Model request spans use `gen_ai.usage.input_tokens` and `gen_ai.usage.output_tokens`. Agent run spans use `gen_ai.aggregated_usage.*` by default because they contain totals from their child model calls. This prevents dashboards from double-counting the same tokens at both levels.
+
+If your backend queries already distinguish parent agent spans from model spans, you can use the standard usage names everywhere:
+
+```python
+InstrumentationSettings(
+    version=5,
+    use_aggregated_usage_attribute_names=False,
+)
+```
+
+Update dashboard queries before changing this setting.
+
+## Privacy and payload size
+
+`InstrumentationSettings` provides independent controls:
+
+```python
+InstrumentationSettings(
+    version=5,
+    include_content=False,
+    include_binary_content=False,
+    include_model_request_parameters=False,
+)
+```
+
+- `include_content=False` removes prompts, completions, tool arguments, and tool results.
+- `include_binary_content=False` prevents inline image, audio, video, and file content from entering telemetry.
+- `include_model_request_parameters=False` omits the serialized model request configuration and large tool schemas. `gen_ai.tool.definitions` remains available.
+
+Agent Observability requires tool arguments and results, so disabling content trades complete tool panels for stronger data minimization. Consider separate sanitized instrumentation for production rather than exporting secrets or regulated content.
+
 ## Use Pydantic AI through LiteLLM
 
 Point the OpenAI provider at the LiteLLM proxy:
 
 ```python
 model = OpenAIChatModel(
-    "openai/gpt-4o-mini",
+    "gpt-4o-mini",
     provider=OpenAIProvider(
         base_url="http://localhost:4000/v1",
         api_key=os.environ["LITELLM_API_KEY"],
@@ -131,6 +232,30 @@ model = OpenAIChatModel(
 ```
 
 Keep Pydantic AI instrumentation enabled for agent and tool spans. Instrument the LiteLLM gateway separately for gateway/model spans. W3C `traceparent` propagation connects both sides when HTTP client and server instrumentation are active. See [LiteLLM Gateway](/docs/ingest-data/gateways/litellm).
+
+The agent and gateway can export to the same trace dataset or separate trace datasets. They must share trace context for end-to-end correlation. Metrics always use a metrics dataset with `X-P-Log-Source: otel-metrics`.
+
+## Async, streaming, retries, and errors
+
+The same instrumentation applies to `await agent.run(...)`, streamed runs, model retries, validation retries, and tool failures. Keep the provider alive for the full application lifetime; flush and shut it down during process termination rather than after every web request.
+
+For streaming code, consume or close the stream so Pydantic AI can finish spans and record time-to-first-chunk. Exceptions are recorded on the active span and should continue to propagate to application error handling.
+
+In instrumentation version 5, `CallDeferred` and `ApprovalRequired` are treated as agent control flow rather than failures. Their spans remain unset instead of being marked as errors.
+
+## Add application metadata
+
+Use the agent `metadata` parameter for stable application context such as environment, workflow, or tenant identifiers:
+
+```python
+agent = Agent(
+    model,
+    name="weather_agent",
+    metadata={"environment": "production", "team": "support"},
+)
+```
+
+Do not attach unbounded or sensitive values unless they are required for investigation.
 
 ## Required Agent Observability fields
 
@@ -155,6 +280,20 @@ invoke_agent weather_agent
 ```
 
 New datasets and fields can take a few minutes to appear in Agent Observability.
+
+For metrics, confirm Parseable lists the expected names:
+
+```bash
+curl -u "$PARSEABLE_USERNAME:$PARSEABLE_PASSWORD" --get \
+  "$PARSEABLE_URL/prometheus/api/v1/label/__name__/values" \
+  --data-urlencode 'stream=pydantic-ai-metrics'
+```
+
+Cost appears only when Pydantic AI knows the model price. Streaming latency appears only after a streamed response is consumed.
+
+## Native instrumentation limits
+
+Pydantic AI's native integration emits spans and metrics. It does not by itself create a separate Parseable semantic-log dataset containing every message, choice, reasoning block, and tool event. If your retention or security design requires full content outside spans, add OpenTelemetry log records or a Collector pipeline and correlate them with `trace_id` and `span_id`.
 
 ## Resources
 
