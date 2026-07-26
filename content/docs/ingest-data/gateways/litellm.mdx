@@ -58,6 +58,20 @@ model_list:
 litellm_settings:
   callbacks:
     - otel
+
+# Metrics only: prevent request-specific attributes from creating a new time
+# series for almost every call. Trace attributes are not affected.
+callback_settings:
+  otel:
+    attributes:
+      exclude_list:
+        - hidden_params
+        - metadata.requester_metadata
+        - metadata.requester_ip_address
+        - metadata.spend_logs_metadata
+        - metadata.mcp_tool_call_metadata
+        - metadata.vector_store_request_metadata
+        - metadata.prompt_management_metadata
 ```
 
 The `otel` callback is required. Setting `LITELLM_OTEL_V2=true` alone does not activate trace export.
@@ -78,6 +92,8 @@ export OTEL_ENVIRONMENT_NAME="production"
 export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT="no_content"
 export LITELLM_OTEL_INTEGRATION_ENABLE_METRICS="true"
 ```
+
+The cardinality filter is important in production. Without it, attributes such as `hidden_params` and requester metadata can be close to unique per request, multiplying the number of metric series. Use an `include_list` instead when you need a strict allowlist. `include_list` and `exclude_list` are mutually exclusive, and `gen_ai.token.type` is always retained so input and output token series remain distinct.
 
 The variables above configure the trace exporter. To send metrics directly to a separate Parseable dataset, install a global metrics provider before LiteLLM initializes its callback.
 
@@ -127,6 +143,36 @@ curl http://localhost:4000/v1/chat/completions \
   }'
 ```
 
+For streaming metrics, make a real streaming request and consume the complete response:
+
+```bash
+curl -N http://localhost:4000/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "model": "gpt-4o-mini",
+    "stream": true,
+    "messages": [{"role": "user", "content": "Explain tracing briefly."}]
+  }'
+```
+
+Time-to-first-token and time-per-output-token metrics are conditional. They do not appear until LiteLLM processes a successful streaming response with the required timing and token data.
+
+## Trace structure
+
+OpenTelemetry v2 produces one distributed trace per proxy request. Depending on the route and enabled features, it can include:
+
+```text
+HTTP server request
+├── authentication and routing
+├── guardrails
+├── cache or database work
+└── LLM provider call
+```
+
+Health checks, the Prometheus scrape endpoint, UI assets, and documentation routes are excluded by default. Configure `OTEL_PYTHON_FASTAPI_EXCLUDED_URLS` if you need a different route policy.
+
+LiteLLM accepts an inbound W3C `traceparent` header and continues the caller's trace. Set `OTEL_IGNORE_CONTEXT_PROPAGATION=true` only when every gateway request must start a new root trace.
+
 ## Fields exported
 
 | Field | Meaning |
@@ -158,6 +204,12 @@ LiteLLM emits these GenAI histograms:
 
 FastAPI instrumentation also emits HTTP server request, duration, size, and active-request metrics. Parseable keeps the original OpenTelemetry metric names, including dots, and exposes histogram `_bucket`, `_sum`, and `_count` series to PromQL.
 
+The six `gen_ai.client.*` metrics are recorded for successful model calls. Failed authentication, unknown models, rate limits, and provider errors remain visible in HTTP and trace telemetry, but may not produce all GenAI usage or cost histograms because no successful model response exists.
+
+### Histogram boundaries
+
+OpenTelemetry SDK defaults may be too broad for sub-second durations or very small per-request costs. This can make a histogram quantile look much larger than the underlying observations. In production, configure OpenTelemetry `View` objects with explicit boundaries appropriate for seconds, tokens, USD, and bytes, or use an OpenTelemetry Collector/backend configuration that applies suitable histogram aggregation.
+
 ## Capture message content
 
 `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT` supports these LiteLLM modes:
@@ -170,6 +222,28 @@ FastAPI instrumentation also emits HTTP server request, duration, size, and acti
 <Callout type="warn">
   Message capture can store prompts and completions in Parseable. Enable it only after reviewing privacy, security, and retention requirements.
 </Callout>
+
+For a per-request override, pass `metadata.mask_input=true` or `metadata.mask_output=true`. The global `litellm_settings.turn_off_message_logging=true` setting is the strongest kill switch and suppresses captured request/response content even when the OpenTelemetry content mode enables it.
+
+## Semantic conventions and compatibility
+
+OpenTelemetry GenAI conventions are evolving. LiteLLM v2 emits canonical `gen_ai.*` fields and, by default, legacy-compatible fields as well. Relevant controls are:
+
+```bash
+# Opt into the latest experimental GenAI convention when your dashboards support it.
+export OTEL_SEMCONV_STABILITY_OPT_IN="gen_ai_latest_experimental"
+
+# Disable duplicate legacy-compatible attributes after migration.
+export LITELLM_OTEL_LEGACY_COMPAT="false"
+```
+
+Test dashboard queries before changing either value. Attribute names, LLM span names, and event shapes can change when opting into a newer experimental convention.
+
+## Semantic log events
+
+LiteLLM can optionally emit OpenTelemetry semantic log events when `LITELLM_OTEL_INTEGRATION_ENABLE_EVENTS=true`. Events can contain prompt or completion content depending on the capture policy. Route them to a separate Parseable logs dataset using `X-P-Log-Source: otel-logs`; never send them to the trace or metrics dataset.
+
+For production, use an OpenTelemetry Collector with independent traces, metrics, and logs pipelines. The direct `sitecustomize.py` example in this guide intentionally configures metrics only. Add a dedicated OpenTelemetry `LoggerProvider` or Collector logs pipeline before enabling events.
 
 ## Connect LiteLLM to an agent trace
 
@@ -188,6 +262,8 @@ curl -u "$PARSEABLE_USERNAME:$PARSEABLE_PASSWORD" --get \
 Histogram cards use `rate()` and `histogram_quantile()`. A short burst followed by an idle period can legitimately produce `NaN`, which the chart displays as **No data**. Generate sustained requests while validating rate-based charts.
 
 `http.server.active_requests` is normally zero between requests because requests often complete before the periodic metrics export occurs.
+
+The active-request instrument is a non-monotonic sum. Query its raw value rather than applying `rate()` when building a custom chart.
 
 For production deployments, an OpenTelemetry Collector is an alternative to `sitecustomize.py`. Configure separate Collector exporters for traces and metrics so each signal receives the correct dataset and `X-P-Log-Source` header.
 
@@ -219,7 +295,19 @@ Confirm all of the following:
 
 Check installed OpenTelemetry package versions and align the API, SDK, exporter, and instrumentation packages on compatible release lines.
 
+### Metrics have excessive cardinality
+
+Inspect labels on `gen_ai.client.*` series. If request-specific values such as `hidden_params` or requester metadata are present, configure `callback_settings.otel.attributes.exclude_list` or a strict `include_list`, then restart LiteLLM.
+
+### Streaming metrics are missing
+
+Confirm the request uses `stream: true`, the client consumes the stream to completion, and the provider response contains timing and token usage information. Mock responses and non-streaming calls do not necessarily emit time-to-first-token or time-per-output-token.
+
+### Debug exporter failures
+
+Set `OTEL_DEBUG=true` temporarily. If spans print with `OTEL_EXPORTER=console`, LiteLLM instrumentation is working and the remaining issue is normally the endpoint, protocol, headers, TLS, or network path.
+
 ## Resources
 
-- [LiteLLM OpenTelemetry integration](https://docs.litellm.ai/docs/proxy/logging#opentelemetry)
+- [LiteLLM OpenTelemetry v2](https://docs.litellm.ai/docs/observability/opentelemetry_v2)
 - [Parseable Agent Observability](/docs/user-guide/agent-observability)
