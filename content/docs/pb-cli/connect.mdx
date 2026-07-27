@@ -3,23 +3,23 @@ title: "Connecting to a Server"
 description: "Create a profile and authenticate with your Parseable instance."
 ---
 
-`pb` stores server connections as named **profiles**. A profile holds the server URL and credentials for one Parseable instance. You can have multiple profiles and switch between them, useful when working with separate staging and production deployments.
+`pb` stores server connections as named **profiles**. Each profile keeps the server URL and authentication details for one Parseable instance. If you work with more than one environment, such as staging and production, profiles let you switch between them without re-entering credentials each time.
 
 ## Interactive login (recommended)
 
-Run `pb login` to start the interactive wizard. Choose self-hosted Parseable or Parseable Cloud, then select the available authentication method.
+Run `pb login` to start the interactive setup. Choose self-hosted Parseable or Parseable Cloud, then pick the authentication method that fits that server.
 
 ```bash
 pb login
 ```
 
-For self-hosted Parseable, enter the server URL and authenticate with a username and password or an API key. For Parseable Cloud, authenticate in the browser or enter a Parseable Cloud API key. The selected Cloud workspace is saved in the profile.
+For self-hosted Parseable, enter the server URL and sign in with either a username and password or an API key. For Parseable Cloud, sign in in the browser or provide a Parseable Cloud API key. The selected Cloud workspace is then saved into the profile.
 
-Once complete, the profile is saved and set as the active default.
+When the flow finishes, that profile becomes the active default.
 
 ## Non-interactive login
 
-For scripts and CI pipelines, use `pb profile add` to create a profile without prompts:
+For scripts and CI pipelines, use `pb profile add` when you want to create a profile without prompts:
 
 ```bash
 pb profile add <name> <url> <username> <password>
@@ -49,14 +49,14 @@ pb profile add production https://logs.mycompany.com
 
 ## Managing profiles
 
-List and switch profiles:
+Once you have more than one profile, these are the commands you will use most often:
 
 ```bash
 pb profile list
 pb profile default staging
 ```
 
-Update or remove a profile:
+To update or remove a saved profile:
 
 ```bash
 pb profile update production https://new-url.mycompany.com
@@ -71,7 +71,7 @@ pb profile rm old-staging
 pb status
 ```
 
-This validates that the active profile can reach the server and shows server details when available:
+This checks whether the active profile can reach the server and shows basic server details when they are available:
 
 ```
 Profile : production
@@ -86,9 +86,9 @@ Status  : Connected  (server v1.4.2)
 pb logout
 ```
 
-Removes credentials from the active profile. To log out of a specific profile, switch to it first with `pb profile default <name>`, then run `pb logout`.
+`pb logout` removes the active profile from the local config. If you want to log out of a different profile, switch to it first with `pb profile default <name>`, then run `pb logout`.
 
-If you want to remove the saved profile completely, delete it instead:
+If you want to remove a specific saved profile directly, use:
 
 ```bash
 pb profile remove <name>
@@ -105,5 +105,5 @@ Profiles are stored in a TOML config file on disk:
 | Windows | `%AppData%\pb\config.toml` |
 
 <Callout type="info">
-All commands use the active default profile automatically. Use `pb profile default <name>` to switch between servers without specifying a profile on every command.
+All commands use the active default profile automatically. Use `pb profile default <name>` whenever you want to change which server `pb` talks to by default.
 </Callout>

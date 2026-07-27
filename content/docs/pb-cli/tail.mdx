@@ -3,7 +3,7 @@ title: "Live Tail"
 description: "Stream log events from a dataset in real time with pb tail."
 ---
 
-`pb tail` connects to a dataset and streams new events as they arrive. It is designed for real-time monitoring, watching an ingestion pipeline, debugging a running service, or confirming that data is flowing.
+`pb tail` connects to a dataset and streams new events as they arrive. It is useful when you want to watch a service in real time, confirm that ingestion is working, or keep an eye on a pipeline while it is running.
 
 ## Usage
 
@@ -16,7 +16,7 @@ pb tail <dataset-name>
 pb tail backend
 ```
 
-Events are printed as newline-delimited JSON, one event per line. Press `Ctrl+C` to stop.
+Events are printed as newline-delimited JSON, one event per line. Press `Ctrl+C` when you want to stop the stream.
 
 ```
 ● watching backend... (ctrl+c to stop)
@@ -26,7 +26,7 @@ Events are printed as newline-delimited JSON, one event per line. Press `Ctrl+C`
 
 ## Piping to jq
 
-Because output is newline-delimited JSON, you can pipe directly to `jq` for filtering and formatting:
+Because the output is newline-delimited JSON, you can pipe it straight into `jq` for filtering and formatting:
 
 ```bash
 # Pretty-print all events
@@ -62,11 +62,11 @@ pb tail backend | grep -v "health_check"
 
 **Error: `rpc error: code = Unavailable ... dial tcp <ip>:8001: i/o timeout`**
 
-This means `pb tail` connected to the server successfully over HTTP, but could not reach the server-advertised gRPC port. `8001` is the default, but deployments can configure another value.
+This means `pb tail` reached the server over HTTP, but could not reach the gRPC port advertised by that server. `8001` is the default, but a deployment can expose a different value.
 
 Possible causes:
 - The advertised gRPC port is blocked by a firewall on the server
 - The advertised gRPC port is not exposed in your Docker or Kubernetes setup
 - Your network restricts outbound gRPC connections
 
-To fix it, make sure the configured gRPC port is open and reachable from your machine. For a default Docker setup, expose it with `-p 8001:8001`. For a custom deployment, expose the value configured by the server and allow outbound TCP access to that port.
+To fix it, make sure the configured gRPC port is open and reachable from your machine. In a default Docker setup, expose it with `-p 8001:8001`. In a custom deployment, expose the port configured by the server and allow outbound TCP access to it.

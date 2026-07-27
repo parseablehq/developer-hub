@@ -3,9 +3,9 @@ title: pb CLI
 description: Query logs, explore metrics, tail live events, and manage Parseable from your terminal.
 ---
 
-`pb` is the official command line interface for self-hosted Parseable and Parseable Cloud. It gives developers and operators a fast terminal workflow for SQL log queries, PromQL metrics exploration, live event tailing, saved investigations, profiles, datasets, users, and roles.
+`pb` is the official command line interface for self-hosted Parseable and Parseable Cloud. It gives you a terminal-first way to connect to a server, run SQL and PromQL queries, tail live events, manage datasets, and work with users and roles.
 
-Use it as a regular CLI in scripts and CI, or open the full-screen interactive TUIs when you want a table-driven way to explore logs or metrics without leaving your shell.
+You can use it in scripts and CI, or open the interactive terminal views when you want to explore logs and metrics without switching to the browser.
 
 ## Quick start
 
@@ -66,11 +66,11 @@ SQL and PromQL both support an interactive full-screen TUI with `-i`. In this mo
   </Tab>
 </Tabs>
 
-Navigate between panels with `Tab` and `Shift+Tab`. Press `Ctrl+R` to run the query. Results open in a scrollable table with row navigation, column navigation, and filtering.
+Navigate between panels with `Tab` and `Shift+Tab`. Press `Ctrl+R` to run the query. Results open in a scrollable table where you can move through rows, inspect columns, and filter what you see.
 
 ## Output modes
 
-Commands that return structured data support `--output json` for automation. SQL queries without `-i` print plain terminal output; add `-i` to open the interactive table view.
+Commands that return structured data support `--output json`, which makes them easier to use in scripts and automation. SQL queries without `-i` print directly in the terminal. Add `-i` when you want the interactive table view instead.
 
 ```bash
 pb dataset list
