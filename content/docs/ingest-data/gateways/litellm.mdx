@@ -210,6 +210,72 @@ The six `gen_ai.client.*` metrics are recorded for successful model calls. Faile
 
 OpenTelemetry SDK defaults may be too broad for sub-second durations or very small per-request costs. This can make a histogram quantile look much larger than the underlying observations. In production, configure OpenTelemetry `View` objects with explicit boundaries appropriate for seconds, tokens, USD, and bytes, or use an OpenTelemetry Collector/backend configuration that applies suitable histogram aggregation.
 
+## Export LiteLLM proxy metrics
+
+The OpenTelemetry callback emits the six `gen_ai.client.*` histograms above. LiteLLM also exposes broader gateway telemetry through its Prometheus callback, including proxy requests, authentication, deployments, fallbacks, routing, token usage, spend, budgets, rate limits, queues, Redis, and PostgreSQL metrics.
+
+Install the Prometheus client and enable both callbacks:
+
+```bash
+pip install prometheus-client==0.20.0
+```
+
+```yaml
+litellm_settings:
+  callbacks:
+    - otel
+    - prometheus
+```
+
+LiteLLM exposes the metrics at `/metrics`. The endpoint requires the LiteLLM API key by default:
+
+```bash
+curl http://localhost:4000/metrics \
+  -H "Authorization: Bearer $LITELLM_MASTER_KEY"
+```
+
+Use an OpenTelemetry Collector Prometheus receiver to scrape the endpoint and send the metrics to Parseable:
+
+```yaml
+receivers:
+  prometheus/litellm:
+    config:
+      scrape_configs:
+        - job_name: litellm
+          scrape_interval: 15s
+          static_configs:
+            - targets: ["litellm:4000"]
+          authorization:
+            type: Bearer
+            credentials: "${env:LITELLM_MASTER_KEY}"
+
+processors:
+  batch: {}
+
+exporters:
+  otlphttp/parseable_metrics:
+    endpoint: "${env:PARSEABLE_INGEST_URL}"
+    headers:
+      Authorization: "Basic ${env:PARSEABLE_BASIC_AUTH}"
+      X-P-Stream: litellm-metrics
+      X-P-Log-Source: otel-metrics
+
+service:
+  pipelines:
+    metrics/litellm:
+      receivers: [prometheus/litellm]
+      processors: [batch]
+      exporters: [otlphttp/parseable_metrics]
+```
+
+This pipeline does not apply custom metric-name rewriting. LiteLLM metric names retain their underscore-based names and are not converted to Datadog-style dotted names. The Prometheus receiver does perform the standard Prometheus-to-OpenTelemetry data-model conversion:
+
+- Prometheus labels become OpenTelemetry attributes.
+- Counters may lose the conventional `_total` suffix in OTLP.
+- Prometheus histograms become OpenTelemetry histogram data points.
+
+The exact set of series is activity-dependent. For example, authentication failure metrics appear only after a failed authentication attempt. Generate representative success, error, streaming, fallback, and rate-limit traffic before validating coverage.
+
 ## Capture message content
 
 `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT` supports these LiteLLM modes:
