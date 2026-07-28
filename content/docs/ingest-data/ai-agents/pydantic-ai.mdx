@@ -217,24 +217,6 @@ InstrumentationSettings(
 
 Agent Observability requires tool arguments and results, so disabling content trades complete tool panels for stronger data minimization. Consider separate sanitized instrumentation for production rather than exporting secrets or regulated content.
 
-## Use Pydantic AI through LiteLLM
-
-Point the OpenAI provider at the LiteLLM proxy:
-
-```python
-model = OpenAIChatModel(
-    "gpt-4o-mini",
-    provider=OpenAIProvider(
-        base_url="http://localhost:4000/v1",
-        api_key=os.environ["LITELLM_API_KEY"],
-    ),
-)
-```
-
-Keep Pydantic AI instrumentation enabled for agent and tool spans. Instrument the LiteLLM gateway separately for gateway/model spans. W3C `traceparent` propagation connects both sides when HTTP client and server instrumentation are active. See [LiteLLM Gateway](/docs/ingest-data/gateways/litellm).
-
-The agent and gateway can export to the same trace dataset or separate trace datasets. They must share trace context for end-to-end correlation. Metrics always use a metrics dataset with `X-P-Log-Source: otel-metrics`.
-
 ## Async, streaming, retries, and errors
 
 The same instrumentation applies to `await agent.run(...)`, streamed runs, model retries, validation retries, and tool failures. Keep the provider alive for the full application lifetime; flush and shut it down during process termination rather than after every web request.
