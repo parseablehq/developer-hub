@@ -3,7 +3,7 @@ title: "Aliases and Reference"
 description: "Short command aliases and the current pb command surface."
 ---
 
-`pb` includes Linux-style aliases for common commands, so they are easy to remember if you already use shell commands like `ls`, `rm`, `stat`, and `ps`. Use the long form in scripts when readability matters, and the short form for day-to-day terminal work.
+`pb` includes Linux-style aliases for common commands. If you already use commands like `ls`, `rm`, `stat`, and `ps` in the shell, the short forms will feel familiar. The long form is still the better choice in scripts when readability matters more.
 
 | Linux-style alias | Meaning in `pb` |
 |---|---|
@@ -37,13 +37,13 @@ description: "Short command aliases and the current pb command surface."
 | Query metrics | `pb promql` | Run PromQL, inspect labels and series, analyze cardinality, view TSDB stats |
 | Stream events | `pb tail` | Watch new events from a dataset |
 | Datasets | `pb dataset` | List, inspect, create, and remove datasets |
-| Profiles | `pb login`, `pb profile`, `pb logout` | Manage Parseable server connections |
+| Profiles | `pb login`, `pb cloud profile`, `pb profile`, `pb logout` | Manage self-hosted and Parseable Cloud connections |
 | Access control | `pb user`, `pb role` | Manage users and roles |
 | System | `pb status`, `pb version` | Check connectivity and print CLI version details |
 
 ## Help
 
-Use built-in help to inspect flags and examples for any command:
+Use built-in help whenever you want to inspect flags and examples for a command:
 
 ```bash
 pb --help

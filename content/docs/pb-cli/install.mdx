@@ -44,7 +44,7 @@ Use the full tap name. `brew install pb` installs an unrelated Homebrew cask.
 
 ## Release archive
 
-Download the latest archive for your operating system and architecture from the [GitHub releases page](https://github.com/parseablehq/pb/releases/latest), extract it, and move the binary to a directory in your `PATH`.
+If you prefer to install manually, download the latest archive for your operating system and architecture from the [GitHub releases page](https://github.com/parseablehq/pb/releases/latest), extract it, and move the binary to a directory in your `PATH`.
 
 ```bash
 tar xzf pb_*.tar.gz
@@ -69,19 +69,9 @@ On macOS, a manually downloaded binary may be blocked on first run. Allow it onc
 xattr -d com.apple.quarantine /usr/local/bin/pb
 ```
 
-## Using Go
-
-If you have Go installed, you can build and install `pb` from source:
-
-```bash
-go install github.com/parseablehq/pb@latest
-```
-
-This builds `pb` from source and places it in your `$GOPATH/bin`. Make sure `$GOPATH/bin` is in your `PATH`.
-
 ## Verify installation
 
-After installing, confirm that `pb` is on your `PATH`:
+After installation, confirm that `pb` is available on your `PATH`:
 
 ```bash
 pb --help
