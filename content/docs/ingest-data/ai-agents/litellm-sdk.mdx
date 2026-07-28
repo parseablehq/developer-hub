@@ -1,0 +1,244 @@
+---
+title: LiteLLM SDK
+description: Send LiteLLM Python SDK traces, logs, and metrics to Parseable using OpenTelemetry
+---
+
+The LiteLLM Python SDK provides one interface for calling OpenAI, Anthropic, Gemini,
+Bedrock, and other model providers directly from a Python application. This guide
+exports the SDK's OpenTelemetry traces, semantic logs, and GenAI metrics to
+Parseable. It does not require the LiteLLM Proxy.
+
+For the standalone gateway, see [LiteLLM Gateway](/docs/ingest-data/gateways/litellm).
+
+## What you collect
+
+- GenAI client spans with provider, model, token usage, cost, duration, and errors
+- Correlated semantic inference logs and application logs
+- Histograms for request duration, token usage, cost, streaming latency, and response duration
+- Custom metadata such as application, environment, and scenario identifiers
+
+## Prerequisites
+
+- Python 3.9 or newer
+- A model-provider API key
+- A Parseable instance and credentials
+
+## Install dependencies
+
+```bash
+pip install litellm \
+  opentelemetry-api \
+  opentelemetry-sdk \
+  opentelemetry-exporter-otlp
+```
+
+## Configure the application
+
+Parseable uses signal-specific `X-P-Log-Source` headers. Configure one
+OpenTelemetry provider per signal so traces, logs, and metrics enter separate
+datasets.
+
+```python
+import logging
+import os
+
+import litellm
+from opentelemetry import metrics, trace
+from opentelemetry._logs import set_logger_provider
+from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
+from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+PARSEABLE_OTLP_ENDPOINT = os.environ["PARSEABLE_OTLP_ENDPOINT"].rstrip("/")
+PARSEABLE_AUTHORIZATION = os.environ["PARSEABLE_AUTHORIZATION"]
+
+
+def headers(dataset: str, source: str) -> dict[str, str]:
+    return {
+        "Authorization": PARSEABLE_AUTHORIZATION,
+        "X-P-Stream": dataset,
+        "X-P-Log-Source": source,
+    }
+
+
+resource = Resource.create(
+    {
+        "service.name": "litellm-sdk-app",
+        "deployment.environment": "production",
+    }
+)
+
+# Traces
+tracer_provider = TracerProvider(resource=resource)
+tracer_provider.add_span_processor(
+    BatchSpanProcessor(
+        OTLPSpanExporter(
+            endpoint=f"{PARSEABLE_OTLP_ENDPOINT}/v1/traces",
+            headers=headers("litellm-sdk-traces", "otel-traces"),
+        )
+    )
+)
+trace.set_tracer_provider(tracer_provider)
+
+# Metrics
+metric_reader = PeriodicExportingMetricReader(
+    OTLPMetricExporter(
+        endpoint=f"{PARSEABLE_OTLP_ENDPOINT}/v1/metrics",
+        headers=headers("litellm-sdk-metrics", "otel-metrics"),
+    ),
+    export_interval_millis=5000,
+)
+meter_provider = MeterProvider(resource=resource, metric_readers=[metric_reader])
+metrics.set_meter_provider(meter_provider)
+
+# Logs
+logger_provider = LoggerProvider(resource=resource)
+logger_provider.add_log_record_processor(
+    BatchLogRecordProcessor(
+        OTLPLogExporter(
+            endpoint=f"{PARSEABLE_OTLP_ENDPOINT}/v1/logs",
+            headers=headers("litellm-sdk-logs", "otel-logs"),
+        )
+    )
+)
+set_logger_provider(logger_provider)
+
+os.environ["LITELLM_OTEL_INTEGRATION_ENABLE_METRICS"] = "true"
+os.environ["LITELLM_OTEL_INTEGRATION_ENABLE_EVENTS"] = "true"
+os.environ["OTEL_SEMCONV_STABILITY_OPT_IN"] = "gen_ai_latest_experimental"
+os.environ["OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT"] = "NO_CONTENT"
+os.environ["USE_OTEL_LITELLM_REQUEST_SPAN"] = "true"
+
+litellm.callbacks = ["otel"]
+litellm.turn_off_message_logging = True
+
+logger = logging.getLogger("llm-app")
+logger.setLevel(logging.INFO)
+logger.addHandler(LoggingHandler(logger_provider=logger_provider))
+tracer = trace.get_tracer("llm-app")
+
+with tracer.start_as_current_span("answer-question"):
+    logger.info("Sending model request")
+    response = litellm.completion(
+        model="openai/gpt-4o-mini",
+        messages=[{"role": "user", "content": "Explain distributed tracing."}],
+        metadata={"feature": "documentation-example"},
+    )
+    logger.info("Model request completed")
+
+# Flush during application shutdown, not after every request.
+tracer_provider.force_flush()
+meter_provider.force_flush()
+logger_provider.force_flush()
+```
+
+Set credentials and run the application:
+
+```bash
+export OPENAI_API_KEY="<openai-api-key>"
+export PARSEABLE_OTLP_ENDPOINT="https://<parseable-host>:8000"
+export PARSEABLE_AUTHORIZATION="Basic <base64-credentials>"
+python app.py
+```
+
+`USE_OTEL_LITELLM_REQUEST_SPAN=true` creates a dedicated child span for each SDK
+call. This preserves the application parent span and avoids delayed callback writes
+to a parent span that has already ended.
+
+## Native metrics
+
+LiteLLM SDK emits these OpenTelemetry histograms:
+
+| Metric | Description |
+| --- | --- |
+| `gen_ai.client.operation.duration` | End-to-end SDK operation duration |
+| `gen_ai.client.token.usage` | Input and output token usage |
+| `gen_ai.client.token.cost` | Estimated request cost in USD |
+| `gen_ai.client.response.time_to_first_token` | Streaming time to first token |
+| `gen_ai.client.response.time_per_output_token` | Average generation time per output token |
+| `gen_ai.client.response.duration` | Provider response-generation duration |
+
+These are OTLP histogram records, not Prometheus gauge values. Use
+`data_point_sum` for totals, `data_point_count` for sample counts, and
+`SUM(data_point_sum) / NULLIF(SUM(data_point_count), 0)` for averages.
+
+Example total-cost query:
+
+```sql
+SELECT SUM(data_point_sum) AS total_cost
+FROM "litellm-sdk-metrics"
+WHERE metric_name = 'gen_ai.client.token.cost';
+```
+
+Example average-latency query:
+
+```sql
+SELECT
+  SUM(data_point_sum) / NULLIF(SUM(data_point_count), 0) AS avg_latency_seconds
+FROM "litellm-sdk-metrics"
+WHERE metric_name = 'gen_ai.client.operation.duration';
+```
+
+Time-to-first-token and time-per-output-token appear only after the application
+fully consumes a streamed response.
+
+## SDK versus Gateway telemetry
+
+The SDK runs inside your Python application and exports LLM-call telemetry. It does
+not expose the LiteLLM Proxy `/metrics` endpoint or proxy metrics for authentication,
+routing, budgets, rate limits, Redis, and PostgreSQL.
+
+Use [LiteLLM Gateway](/docs/ingest-data/gateways/litellm) when you need centralized
+gateway telemetry and Prometheus scraping. Use this SDK integration when Python code
+calls model providers through `litellm.completion()` or related SDK methods.
+
+## Protect prompt and response content
+
+The example uses `NO_CONTENT` and `turn_off_message_logging=True`, so prompts and
+responses are not exported. Model, token, cost, latency, and error metadata remain
+available.
+
+For sanitized development data only, set:
+
+```bash
+export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT="SPAN_AND_EVENT"
+```
+
+Never export API keys, authorization headers, personal data, or regulated content.
+
+## Troubleshooting
+
+### Traces appear, but metrics or logs do not
+
+Confirm each exporter uses the correct endpoint and source header:
+
+- `/v1/traces` with `X-P-Log-Source: otel-traces`
+- `/v1/logs` with `X-P-Log-Source: otel-logs`
+- `/v1/metrics` with `X-P-Log-Source: otel-metrics`
+
+Also confirm `LITELLM_OTEL_INTEGRATION_ENABLE_METRICS` and
+`LITELLM_OTEL_INTEGRATION_ENABLE_EVENTS` are set before the first SDK call.
+
+### Query reports `No field named data_point_value`
+
+LiteLLM metrics are histograms. Replace `data_point_value` with
+`data_point_sum`, or calculate an average from `data_point_sum` and
+`data_point_count`.
+
+### Streaming metrics are missing
+
+Consume the entire stream. LiteLLM records streaming latency after the final chunk.
+
+## See also
+
+- [LiteLLM Gateway](/docs/ingest-data/gateways/litellm)
+- [Pydantic AI](/docs/ingest-data/ai-agents/pydantic-ai)
+- [Traces](/docs/user-guide/traces)
+- [Metrics](/docs/user-guide/metrics)
