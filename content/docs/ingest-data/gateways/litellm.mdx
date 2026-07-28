@@ -2,49 +2,87 @@
 title: LiteLLM
 description: Send LiteLLM Gateway traces and metrics to Parseable using OpenTelemetry
 ---
+import { Step, Steps } from 'fumadocs-ui/components/steps';
 
-LiteLLM Gateway provides an OpenAI-compatible proxy for many model providers. Its OpenTelemetry v2 callback exports GenAI spans, token usage, latency, cost, and errors to Parseable.
+LiteLLM is an OpenAI-compatible gateway for routing model requests across providers such as OpenAI, Anthropic, Azure OpenAI, Vertex AI, Bedrock, and local model endpoints. Teams usually place it in front of applications when they want one place to manage model routing, keys, retries, budgets, fallbacks, and policy.
+
+Parseable helps you see what is happening inside that gateway. With OpenTelemetry enabled, LiteLLM can emit traces for model requests. With the Prometheus callback enabled, LiteLLM exposes gateway metrics at `/metrics`. This guide sends both signals to Parseable so you can inspect request paths, model latency, token usage, errors, and proxy-level behavior from one place.
+
+## How it works
+
+The cleanest production setup is to keep Parseable credentials in an OpenTelemetry Collector. LiteLLM sends OpenTelemetry traces to the Collector, the Collector scrapes LiteLLM's Prometheus metrics endpoint, and both signals are forwarded into Parseable datasets.
+
+```text
+Application
+  |
+  | OpenAI-compatible request
+  v
+LiteLLM Gateway
+  |                                 |
+  | OTLP traces                     | Prometheus scrape
+  v                                 v
+OpenTelemetry Collector
+  |
+  +--> litellm-traces   traces dataset in Parseable
+  +--> litellm-metrics  metrics dataset in Parseable
+```
+
+Use separate datasets for traces and metrics. They use different telemetry sources and different `X-P-Log-Source` values.
 
 ## Prerequisites
 
+Before you start, keep these ready:
+
+- A running Parseable instance
+- A Parseable API key with ingest access
 - Python 3.10 or later
-- A Parseable instance and credentials
-- A model-provider API key
+- A model-provider API key, such as `OPENAI_API_KEY`
+- LiteLLM Proxy or Gateway
+- An OpenTelemetry Collector that LiteLLM can reach
 
-## Create a trace dataset
+## Set up LiteLLM with Parseable
 
-```bash
-curl -u "$PARSEABLE_USERNAME:$PARSEABLE_PASSWORD" \
-  -X PUT "$PARSEABLE_URL/api/v1/logstream/litellm-traces" \
-  -H 'X-P-Log-Source: otel-traces' \
-  -H 'X-P-Telemetry-Type: traces' \
-  -H 'X-P-Dataset-Tag: agent-observability'
-```
+<Steps>
+<Step>
 
-Create a separate dataset for metrics:
+### Create Parseable datasets
+
+Create a trace dataset for LiteLLM spans:
 
 ```bash
-curl -u "$PARSEABLE_USERNAME:$PARSEABLE_PASSWORD" \
-  -X PUT "$PARSEABLE_URL/api/v1/logstream/litellm-metrics" \
-  -H 'X-P-Log-Source: otel-metrics' \
-  -H 'X-P-Telemetry-Type: metrics'
+curl -X PUT "$PARSEABLE_URL/api/v1/logstream/litellm-traces" \
+  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
+  -H "X-P-Log-Source: otel-traces" \
+  -H "X-P-Telemetry-Type: traces" \
+  -H "X-P-Dataset-Tag: agent-observability"
 ```
 
-Traces and metrics require different `X-P-Log-Source` values and therefore cannot share one direct exporter configuration.
+Create a metrics dataset for LiteLLM gateway and GenAI metrics:
 
-## Install LiteLLM and OpenTelemetry
+```bash
+curl -X PUT "$PARSEABLE_URL/api/v1/logstream/litellm-metrics" \
+  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
+  -H "X-P-Log-Source: otel-metrics" \
+  -H "X-P-Telemetry-Type: metrics"
+```
+
+The trace dataset appears under traces and agent observability views. The metrics dataset appears in the Metrics page.
+
+</Step>
+<Step>
+
+### Configure LiteLLM
+
+Install LiteLLM Proxy and the OpenTelemetry packages:
 
 ```bash
 pip install "litellm[proxy]" \
   opentelemetry-api \
   opentelemetry-sdk \
   opentelemetry-exporter-otlp-proto-http \
-  opentelemetry-instrumentation-fastapi
+  opentelemetry-instrumentation-fastapi \
+  prometheus-client==0.20.0
 ```
-
-Keep the OpenTelemetry API, SDK, exporter, and instrumentation packages on compatible release lines. Mixed versions can cause import or FastAPI instrumentation failures during proxy startup.
-
-## Configure the gateway
 
 Create `litellm-config.yaml`:
 
@@ -58,9 +96,8 @@ model_list:
 litellm_settings:
   callbacks:
     - otel
+    - prometheus
 
-# Metrics only: prevent request-specific attributes from creating a new time
-# series for almost every call. Trace attributes are not affected.
 callback_settings:
   otel:
     attributes:
@@ -74,170 +111,24 @@ callback_settings:
         - metadata.prompt_management_metadata
 ```
 
-The `otel` callback is required. Setting `LITELLM_OTEL_V2=true` alone does not activate trace export.
+The `otel` callback enables LiteLLM OpenTelemetry export. `LITELLM_OTEL_V2=true` turns on the newer trace shape, but the callback still needs to be present. The `prometheus` callback exposes gateway metrics at `/metrics`.
 
-Configure OTLP/HTTP and start the proxy:
+The attribute filter matters in production. Some metadata fields are close to unique for every request. If those fields are attached to metrics, they can create too many time series. The example keeps traces useful while keeping metric cardinality more controlled.
 
-```bash
-export OPENAI_API_KEY="your-api-key"
-export PARSEABLE_INGEST_URL="https://your-parseable-ingest-host:8000"
-export PARSEABLE_BASIC_AUTH="$(printf '%s' 'admin:your-password' | base64)"
+</Step>
+<Step>
 
-export LITELLM_OTEL_V2="true"
-export OTEL_EXPORTER="otlp_http"
-export OTEL_ENDPOINT="$PARSEABLE_INGEST_URL"
-export OTEL_HEADERS="Authorization=Basic $PARSEABLE_BASIC_AUTH,X-P-Stream=litellm-traces,X-P-Log-Source=otel-traces"
-export OTEL_SERVICE_NAME="litellm-proxy"
-export OTEL_ENVIRONMENT_NAME="production"
-export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT="no_content"
-export LITELLM_OTEL_INTEGRATION_ENABLE_METRICS="true"
-```
+### Configure the OpenTelemetry Collector
 
-The cardinality filter is important in production. Without it, attributes such as `hidden_params` and requester metadata can be close to unique per request, multiplying the number of metric series. Use an `include_list` instead when you need a strict allowlist. `include_list` and `exclude_list` are mutually exclusive, and `gen_ai.token.type` is always retained so input and output token series remain distinct.
-
-The variables above configure the trace exporter. To send metrics directly to a separate Parseable dataset, install a global metrics provider before LiteLLM initializes its callback.
-
-Create `sitecustomize.py` in the directory from which you start LiteLLM:
-
-```python
-import os
-
-if os.getenv("LITELLM_OTEL_INTEGRATION_ENABLE_METRICS", "false").lower() == "true":
-    from opentelemetry import metrics
-    from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
-    from opentelemetry.sdk.metrics import MeterProvider
-    from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
-    from opentelemetry.sdk.resources import Resource
-
-    reader = PeriodicExportingMetricReader(OTLPMetricExporter())
-    provider = MeterProvider(
-        metric_readers=[reader],
-        resource=Resource.create(
-            {"service.name": os.getenv("OTEL_SERVICE_NAME", "litellm")}
-        ),
-    )
-    metrics.set_meter_provider(provider)
-```
-
-Then add the metrics exporter settings and put that directory on `PYTHONPATH`:
-
-```bash
-export OTEL_EXPORTER_OTLP_METRICS_ENDPOINT="$PARSEABLE_INGEST_URL/v1/metrics"
-export OTEL_EXPORTER_OTLP_METRICS_HEADERS="Authorization=Basic $PARSEABLE_BASIC_AUTH,X-P-Stream=litellm-metrics,X-P-Log-Source=otel-metrics"
-export OTEL_METRIC_EXPORT_INTERVAL="5000"
-export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
-
-litellm --config litellm-config.yaml --port 4000
-```
-
-LiteLLM may start its proxy server in a child process. Loading the provider through `sitecustomize.py` ensures the child installs the metrics pipeline before the OpenTelemetry callback is created.
-
-Send a request through the gateway:
-
-```bash
-curl http://localhost:4000/v1/chat/completions \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "model": "gpt-4o-mini",
-    "messages": [{"role": "user", "content": "Explain observability in one sentence."}]
-  }'
-```
-
-For streaming metrics, make a real streaming request and consume the complete response:
-
-```bash
-curl -N http://localhost:4000/v1/chat/completions \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "model": "gpt-4o-mini",
-    "stream": true,
-    "messages": [{"role": "user", "content": "Explain tracing briefly."}]
-  }'
-```
-
-Time-to-first-token and time-per-output-token metrics are conditional. They do not appear until LiteLLM processes a successful streaming response with the required timing and token data.
-
-## Trace structure
-
-OpenTelemetry v2 produces one distributed trace per proxy request. Depending on the route and enabled features, it can include:
-
-```text
-HTTP server request
-├── authentication and routing
-├── guardrails
-├── cache or database work
-└── LLM provider call
-```
-
-Health checks, the Prometheus scrape endpoint, UI assets, and documentation routes are excluded by default. Configure `OTEL_PYTHON_FASTAPI_EXCLUDED_URLS` if you need a different route policy.
-
-LiteLLM accepts an inbound W3C `traceparent` header and continues the caller's trace. Set `OTEL_IGNORE_CONTEXT_PROPAGATION=true` only when every gateway request must start a new root trace.
-
-## Fields exported
-
-| Field | Meaning |
-| --- | --- |
-| `span_trace_id` | Trace identifier |
-| `span_span_id` | Span identifier |
-| `span_parent_span_id` | Parent span identifier |
-| `span_duration_ns` | Request duration |
-| `gen_ai.operation.name` | GenAI operation |
-| `gen_ai.provider.name` | Model provider |
-| `gen_ai.request.model` | Requested model |
-| `gen_ai.response.model` | Model returned by provider |
-| `gen_ai.usage.input_tokens` | Input tokens |
-| `gen_ai.usage.output_tokens` | Output tokens |
-| `litellm.cost.total` | Estimated request cost |
-
-## Metrics exported
-
-LiteLLM emits these GenAI histograms:
-
-| Metric | Meaning |
-| --- | --- |
-| `gen_ai.client.operation.duration` | End-to-end LiteLLM operation duration |
-| `gen_ai.client.response.duration` | Model response duration |
-| `gen_ai.client.response.time_to_first_token` | Time to first streamed token |
-| `gen_ai.client.response.time_per_output_token` | Average generation time per output token |
-| `gen_ai.client.token.usage` | Input and output token usage |
-| `gen_ai.client.token.cost` | Estimated request cost |
-
-FastAPI instrumentation also emits HTTP server request, duration, size, and active-request metrics. Parseable keeps the original OpenTelemetry metric names, including dots, and exposes histogram `_bucket`, `_sum`, and `_count` series to PromQL.
-
-The six `gen_ai.client.*` metrics are recorded for successful model calls. Failed authentication, unknown models, rate limits, and provider errors remain visible in HTTP and trace telemetry, but may not produce all GenAI usage or cost histograms because no successful model response exists.
-
-### Histogram boundaries
-
-OpenTelemetry SDK defaults may be too broad for sub-second durations or very small per-request costs. This can make a histogram quantile look much larger than the underlying observations. In production, configure OpenTelemetry `View` objects with explicit boundaries appropriate for seconds, tokens, USD, and bytes, or use an OpenTelemetry Collector/backend configuration that applies suitable histogram aggregation.
-
-## Export LiteLLM proxy metrics
-
-The OpenTelemetry callback emits the six `gen_ai.client.*` histograms above. LiteLLM also exposes broader gateway telemetry through its Prometheus callback, including proxy requests, authentication, deployments, fallbacks, routing, token usage, spend, budgets, rate limits, queues, Redis, and PostgreSQL metrics.
-
-Install the Prometheus client and enable both callbacks:
-
-```bash
-pip install prometheus-client==0.20.0
-```
-
-```yaml
-litellm_settings:
-  callbacks:
-    - otel
-    - prometheus
-```
-
-LiteLLM exposes the metrics at `/metrics`. The endpoint requires the LiteLLM API key by default:
-
-```bash
-curl http://localhost:4000/metrics \
-  -H "Authorization: Bearer $LITELLM_MASTER_KEY"
-```
-
-Use an OpenTelemetry Collector Prometheus receiver to scrape the endpoint and send the metrics to Parseable:
+Create `otel-collector-config.yaml`:
 
 ```yaml
 receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+
   prometheus/litellm:
     config:
       scrape_configs:
@@ -253,127 +144,170 @@ processors:
   batch: {}
 
 exporters:
-  otlphttp/parseable_metrics:
-    endpoint: "${env:PARSEABLE_INGEST_URL}"
+  otlphttp/parseable_traces:
+    endpoint: "${env:PARSEABLE_URL}"
+    encoding: json
     headers:
-      Authorization: "Basic ${env:PARSEABLE_BASIC_AUTH}"
+      X-API-Key: "${env:PARSEABLE_API_KEY}"
+      X-P-Stream: litellm-traces
+      X-P-Log-Source: otel-traces
+
+  otlphttp/parseable_metrics:
+    endpoint: "${env:PARSEABLE_URL}"
+    encoding: json
+    headers:
+      X-API-Key: "${env:PARSEABLE_API_KEY}"
       X-P-Stream: litellm-metrics
       X-P-Log-Source: otel-metrics
 
 service:
   pipelines:
-    metrics/litellm:
-      receivers: [prometheus/litellm]
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp/parseable_traces]
+
+    metrics:
+      receivers: [otlp, prometheus/litellm]
       processors: [batch]
       exporters: [otlphttp/parseable_metrics]
 ```
 
-This pipeline does not apply custom metric-name rewriting. LiteLLM metric names retain their underscore-based names and are not converted to Datadog-style dotted names. The Prometheus receiver does perform the standard Prometheus-to-OpenTelemetry data-model conversion:
+This Collector receives OpenTelemetry traces and optional GenAI metrics from LiteLLM. It also scrapes the LiteLLM `/metrics` endpoint, which gives you broader gateway metrics such as proxy requests, failures, routing behavior, spend, token usage, rate limits, queues, Redis, and PostgreSQL metrics.
 
-- Prometheus labels become OpenTelemetry attributes.
-- Counters may lose the conventional `_total` suffix in OTLP.
-- Prometheus histograms become OpenTelemetry histogram data points.
+For local testing, if LiteLLM is running on your host instead of inside the same Docker network as the Collector, replace `litellm:4000` with `host.docker.internal:4000`.
 
-The exact set of series is activity-dependent. For example, authentication failure metrics appear only after a failed authentication attempt. Generate representative success, error, streaming, fallback, and rate-limit traffic before validating coverage.
+</Step>
+<Step>
 
-## Capture message content
+### Start LiteLLM
 
-`OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT` supports these LiteLLM modes:
-
-- `no_content` — metadata only; recommended default
-- `span_only` — content in span attributes
-- `event_only` — content in span events
-- `span_and_event` — content in both locations
-
-<Callout type="warn">
-  Message capture can store prompts and completions in Parseable. Enable it only after reviewing privacy, security, and retention requirements.
-</Callout>
-
-For a per-request override, pass `metadata.mask_input=true` or `metadata.mask_output=true`. The global `litellm_settings.turn_off_message_logging=true` setting is the strongest kill switch and suppresses captured request/response content even when the OpenTelemetry content mode enables it.
-
-## Semantic conventions and compatibility
-
-OpenTelemetry GenAI conventions are evolving. LiteLLM v2 emits canonical `gen_ai.*` fields and, by default, legacy-compatible fields as well. Relevant controls are:
+Set the LiteLLM and OpenTelemetry environment variables:
 
 ```bash
-# Opt into the latest experimental GenAI convention when your dashboards support it.
-export OTEL_SEMCONV_STABILITY_OPT_IN="gen_ai_latest_experimental"
+export OPENAI_API_KEY="<openai-api-key>"
+export LITELLM_MASTER_KEY="<litellm-master-key>"
 
-# Disable duplicate legacy-compatible attributes after migration.
-export LITELLM_OTEL_LEGACY_COMPAT="false"
+export LITELLM_OTEL_V2="true"
+export LITELLM_OTEL_INTEGRATION_ENABLE_METRICS="true"
+export OTEL_EXPORTER="otlp_http"
+export OTEL_ENDPOINT="http://localhost:4318"
+export OTEL_SERVICE_NAME="litellm-gateway"
+export OTEL_ENVIRONMENT_NAME="production"
+export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT="no_content"
 ```
 
-Test dashboard queries before changing either value. Attribute names, LLM span names, and event shapes can change when opting into a newer experimental convention.
-
-## Semantic log events
-
-LiteLLM can optionally emit OpenTelemetry semantic log events when `LITELLM_OTEL_INTEGRATION_ENABLE_EVENTS=true`. Events can contain prompt or completion content depending on the capture policy. Route them to a separate Parseable logs dataset using `X-P-Log-Source: otel-logs`; never send them to the trace or metrics dataset.
-
-For production, use an OpenTelemetry Collector with independent traces, metrics, and logs pipelines. The direct `sitecustomize.py` example in this guide intentionally configures metrics only. Add a dedicated OpenTelemetry `LoggerProvider` or Collector logs pipeline before enabling events.
-
-## Connect LiteLLM to an agent trace
-
-Instrument the calling agent and propagate the W3C `traceparent` header to LiteLLM. Parseable can then display the agent, tool, gateway, and model spans as one trace. For a tested Pydantic AI setup, see [Pydantic AI](/docs/ingest-data/ai-agents/pydantic-ai).
-
-## Verify metrics
-
-Open the `litellm-metrics` dataset in the Metrics page. For API verification, list its metric names:
+Then start the gateway:
 
 ```bash
-curl -u "$PARSEABLE_USERNAME:$PARSEABLE_PASSWORD" --get \
-  "$PARSEABLE_URL/prometheus/api/v1/label/__name__/values" \
-  --data-urlencode 'stream=litellm-metrics'
+litellm --config litellm-config.yaml --port 4000
 ```
 
-Histogram cards use `rate()` and `histogram_quantile()`. A short burst followed by an idle period can legitimately produce `NaN`, which the chart displays as **No data**. Generate sustained requests while validating rate-based charts.
+Send a request through LiteLLM:
 
-`http.server.active_requests` is normally zero between requests because requests often complete before the periodic metrics export occurs.
+```bash
+curl http://localhost:4000/v1/chat/completions \
+  -H "Authorization: Bearer ${LITELLM_MASTER_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-4o-mini",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Explain observability in one sentence."
+      }
+    ]
+  }'
+```
 
-The active-request instrument is a non-monotonic sum. Query its raw value rather than applying `rate()` when building a custom chart.
+For streaming latency metrics, send a streaming request and consume the full response:
 
-For production deployments, an OpenTelemetry Collector is an alternative to `sitecustomize.py`. Configure separate Collector exporters for traces and metrics so each signal receives the correct dataset and `X-P-Log-Source` header.
+```bash
+curl -N http://localhost:4000/v1/chat/completions \
+  -H "Authorization: Bearer ${LITELLM_MASTER_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-4o-mini",
+    "stream": true,
+    "messages": [
+      {
+        "role": "user",
+        "content": "Explain tracing briefly."
+      }
+    ]
+  }'
+```
+
+Time-to-first-token and time-per-output-token metrics appear only after successful streaming responses with the required timing data.
+
+</Step>
+</Steps>
+
+## What you get in Parseable
+
+Open `litellm-traces` from the Traces page. A request can include the incoming HTTP call, routing work, guardrails, cache or database calls, and the LLM provider call. When an upstream application propagates W3C trace context, LiteLLM can continue that trace so the agent, gateway, and model call are connected.
+
+![LiteLLM traces in Parseable](./static/litellm-traces.png)
+
+Open `litellm-metrics` from the Metrics page. You should see LiteLLM proxy metrics from the Prometheus endpoint along with any GenAI metrics emitted by the OpenTelemetry callback.
+
+![LiteLLM metrics in Parseable](./static/litellm-metrics.png)
+
+Common GenAI fields on traces include:
+
+| Field | Meaning |
+| --- | --- |
+| `gen_ai.operation.name` | GenAI operation name |
+| `gen_ai.provider.name` | Model provider |
+| `gen_ai.request.model` | Requested model |
+| `gen_ai.response.model` | Model returned by the provider |
+| `gen_ai.usage.input_tokens` | Input token count |
+| `gen_ai.usage.output_tokens` | Output token count |
+| `litellm.cost.total` | Estimated request cost when available |
+
+Common GenAI metrics include:
+
+| Metric | Meaning |
+| --- | --- |
+| `gen_ai.client.operation.duration` | End-to-end model call duration |
+| `gen_ai.client.response.duration` | Provider response duration |
+| `gen_ai.client.response.time_to_first_token` | Time to first streamed token |
+| `gen_ai.client.response.time_per_output_token` | Average generation time per output token |
+| `gen_ai.client.token.usage` | Input and output token usage |
+| `gen_ai.client.token.cost` | Estimated request cost when available |
+
+LiteLLM Prometheus metrics keep their Prometheus-style names, such as `litellm_proxy_total_requests_metric` and `litellm_deployment_failure_responses`. Prometheus labels become OpenTelemetry attributes after the Collector receives them.
+
+## Message content and privacy
+
+Keep `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT="no_content"` unless you have reviewed the privacy and retention impact. Message capture can store prompts and completions in traces or events.
+
+LiteLLM also supports request-level masking with `metadata.mask_input=true` and `metadata.mask_output=true`. For a stronger global setting, use `litellm_settings.turn_off_message_logging=true` in the LiteLLM config.
+
+## Connect LiteLLM to agent traces
+
+If your application already creates agent spans, propagate the W3C `traceparent` header when it calls LiteLLM. Parseable can then show the agent run, tool work, LiteLLM gateway span, and model provider call in the same trace.
+
+For a Pydantic AI example, see [Pydantic AI](/docs/ingest-data/ai-agents/pydantic-ai).
 
 ## Troubleshooting
 
-### The dataset is not detected by Agent Observability
+- **No traces arrive**
 
-Confirm the dataset was created with all three headers:
+  Check that `litellm_settings.callbacks` includes `otel`, `LITELLM_OTEL_V2` is set to `true`, and `OTEL_ENDPOINT` points to the Collector OTLP HTTP receiver.
 
-- `X-P-Log-Source: otel-traces`
-- `X-P-Telemetry-Type: traces`
-- `X-P-Dataset-Tag: agent-observability`
+- **No metrics arrive**
 
-### No spans arrive
+  Check that `litellm_settings.callbacks` includes `prometheus`, the `prometheus-client` package is installed, and the Collector can scrape `http://<litellm-host>:4000/metrics` with the LiteLLM bearer token.
 
-Confirm `litellm_settings.callbacks` contains `otel`, `LITELLM_OTEL_V2` is `true`, and `OTEL_HEADERS` contains the Parseable stream and log-source headers.
+- **Metrics show too many series**
 
-### No metrics arrive
+  Review the `callback_settings.otel.attributes.exclude_list` in the LiteLLM config. For Prometheus metrics, avoid adding high-cardinality custom labels such as raw user identifiers, request IDs, or unique metadata values.
 
-Confirm all of the following:
+- **Streaming metrics are missing**
 
-- `LITELLM_OTEL_INTEGRATION_ENABLE_METRICS` is `true`
-- The metrics provider loads before LiteLLM's `otel` callback
-- `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` ends in `/v1/metrics`
-- Metrics headers use `X-P-Stream=litellm-metrics` and `X-P-Log-Source=otel-metrics`
-- The trace and metrics datasets are different
+  Confirm the request uses `"stream": true`, the client consumes the response to completion, and the provider returns timing and token usage information.
 
-### Proxy fails during OpenTelemetry initialization
+- **The `/metrics` scrape returns unauthorized**
 
-Check installed OpenTelemetry package versions and align the API, SDK, exporter, and instrumentation packages on compatible release lines.
-
-### Metrics have excessive cardinality
-
-Inspect labels on `gen_ai.client.*` series. If request-specific values such as `hidden_params` or requester metadata are present, configure `callback_settings.otel.attributes.exclude_list` or a strict `include_list`, then restart LiteLLM.
-
-### Streaming metrics are missing
-
-Confirm the request uses `stream: true`, the client consumes the stream to completion, and the provider response contains timing and token usage information. Mock responses and non-streaming calls do not necessarily emit time-to-first-token or time-per-output-token.
-
-### Debug exporter failures
-
-Set `OTEL_DEBUG=true` temporarily. If spans print with `OTEL_EXPORTER=console`, LiteLLM instrumentation is working and the remaining issue is normally the endpoint, protocol, headers, TLS, or network path.
-
-## Resources
-
-- [LiteLLM OpenTelemetry v2](https://docs.litellm.ai/docs/observability/opentelemetry_v2)
-- [Parseable Agent Observability](/docs/user-guide/agent-observability)
+  LiteLLM requires bearer authentication for `/metrics` by default. Make sure the Collector Prometheus receiver uses the same `LITELLM_MASTER_KEY` that LiteLLM expects.
