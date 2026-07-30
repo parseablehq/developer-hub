@@ -1,7 +1,7 @@
 ---
 title: Agent Observability
 ---
-import { IconDatabase, IconCode, IconTerminal2 } from '@tabler/icons-react';
+import { IconDatabase, IconCode } from '@tabler/icons-react';
 
 <OfferingPills cloud enterprise className="mb-4" />
 
@@ -13,7 +13,7 @@ That is usually where debugging gets hard. When the final answer is wrong, slow,
 
 Parseable Agent Observability gives you that view inside Prism. You can begin with a high-level view of agent activity, look at model and tool behavior separately, and then move into a single agent run when you need the full execution path.
 
-It is built on the [OpenTelemetry GenAI semantic conventions](https://github.com/open-telemetry/semantic-conventions-genai), so the telemetry follows a standard shape for model calls, token usage, inputs, outputs, tool calls, and agent spans. For message content, Parseable follows the native GenAI model: use `gen_ai.input.messages`, `gen_ai.output.messages`, `gen_ai.system_instructions`, and the `gen_ai.client.inference.operation.details` event when you capture full request and response details.
+It is built on the [OpenTelemetry GenAI semantic conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/), so the telemetry follows a standard shape for model calls, token usage, inputs, outputs, tool calls, and agent spans. For message content, Parseable follows the native GenAI model: use `gen_ai.input.messages`, `gen_ai.output.messages`, `gen_ai.system_instructions`, and the `gen_ai.client.inference.operation.details` event when you capture full request and response details.
 
 Once your agent is instrumented, the Agents page becomes the place where you understand how that agent behaves in production. You can see how often it runs, which models it uses, how many tokens it consumes, where it spends time, which tools it calls, and where a run needs review.
 
@@ -65,30 +65,68 @@ Use Add filter to narrow the table when you already know what kind of run you ar
 
 When you open a run, Parseable shows the trace behind it. User-facing input appears as user messages in the UI. Model or agent output appears as agent messages. Under the hood, keep this telemetry native to OpenTelemetry by recording message content with `gen_ai.input.messages`, `gen_ai.output.messages`, and `gen_ai.client.inference.operation.details` rather than relying on custom message event names.
 
-## Manual instrumentation using the OpenTelemetry SDK
+## Instrument agents with Pydantic AI
 
-If you want to instrument your own agent, you can do that directly with the OpenTelemetry SDK. This works well when you have a custom agent, a provider-specific client, or a framework setup where you want full control over what gets captured.
+Parseable now supports Agent Observability through Pydantic AI. If your agent is built with Pydantic AI, enable its OpenTelemetry instrumentation and send the traces to Parseable through an OpenTelemetry Collector. Parseable then uses those spans to build the Overview, Models, Tools, and Agent Runs views.
 
-At minimum, instrument these parts of the agent workflow:
+This is the recommended path because Pydantic AI already understands the agent structure. It emits spans for the agent run, model requests, and tool execution, while Parseable turns that telemetry into a UI that is easier to navigate than raw traces alone.
 
-1. **Agent-level spans:** `invoke_agent` spans that wrap the full agent loop
-2. **Chat spans:** one `chat {model}` span for every LLM request
-3. **Tool execution spans:** one `execute_tool {tool.name}` span for every tool or command execution
-4. **GenAI events and message attributes:** `gen_ai.client.inference.operation.details`, `gen_ai.input.messages`, `gen_ai.output.messages`, `gen_ai.system_instructions`, tool calls, tool outputs, reasoning blocks, and evaluation results attached to the active span
+At a high level, the flow looks like this:
 
-The [manual instrumentation guide](/docs/user-guide/agent-observability/manual-instrumentation) shows how to structure those spans and what to capture so the data shows up cleanly in Parseable.
+```text
+Pydantic AI agent
+  |
+  | OpenTelemetry traces
+  v
+OpenTelemetry Collector
+  |
+  v
+Parseable traces dataset
+  |
+  v
+Agents page in Prism
+```
+
+In your Pydantic AI application, configure OpenTelemetry before the agent runs and enable Pydantic AI instrumentation:
+
+```python
+import os
+
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.trace import set_tracer_provider
+from pydantic_ai import Agent, InstrumentationSettings
+
+
+provider = TracerProvider(
+    resource=Resource.create(
+        {"service.name": os.getenv("OTEL_SERVICE_NAME", "pydantic-ai-agent")}
+    )
+)
+provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+set_tracer_provider(provider)
+
+Agent.instrument_all(
+    InstrumentationSettings(
+        version=5,
+        include_content=True,
+    )
+)
+```
+
+`version=5` uses Pydantic AI's current OpenTelemetry instrumentation format. `include_content=True` captures prompts, completions, and tool payloads in telemetry, so use it only when that content is safe to store.
 
 ## Language support matrix
 
-Any language that can emit OpenTelemetry traces over OTLP can send agent observability data to Parseable. The manual guide currently uses Python examples, but the schema is language-agnostic.
+Pydantic AI is a Python framework, so the supported setup in this guide is Python first. The telemetry still travels through OpenTelemetry, which means the data path stays open and standards-based.
 
-| Language   | Manual OpenTelemetry SDK |
-|------------|-----------------|
-| Python     | Yes             |
-| TypeScript | Yes             |
-| Java       | Yes             |
-| Go         | Yes             |
-| .NET       | Yes             |
+| Path | Status |
+| --- | --- |
+| Pydantic AI with OpenTelemetry | Recommended |
+| OpenTelemetry Collector export | Recommended for production |
+| Direct OTLP export to Parseable | Useful for small or local setups |
 
 ---
 
@@ -119,7 +157,7 @@ exporters:
     endpoint: ${PARSEABLE_URL}
     encoding: json
     headers:
-      Authorization: "Basic ${PARSEABLE_AUTH}"
+      X-API-Key: "${PARSEABLE_API_KEY}"
       X-P-Stream: "${STREAM_NAME}"
       X-P-Log-Source: "otel-traces"
       X-P-Dataset-Tag: "agent-observability"
@@ -136,7 +174,7 @@ Run the collector:
 
 ```bash
 export PARSEABLE_URL=${PARSEABLE_URL}          # e.g. https://ingest.parseable.com
-export PARSEABLE_AUTH=${PARSEABLE_AUTH}          # base64(username:password)
+export PARSEABLE_API_KEY=${PARSEABLE_API_KEY}
 export STREAM_NAME=${PARSEABLE_DATASET_NAME}
 
 otelcol-contrib --config parseable-genai-collector.yaml
@@ -148,7 +186,7 @@ For smaller setups, you can send traces directly from the application to Parseab
 
 ```bash
 export OTEL_EXPORTER_OTLP_ENDPOINT=${PARSEABLE_URL}
-export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Basic ${PARSEABLE_AUTH},X-P-Stream=${PARSEABLE_DATASET_NAME},X-P-Log-Source=otel-traces,X-P-Dataset-Tag=agent-observability"
+export OTEL_EXPORTER_OTLP_HEADERS="X-API-Key=${PARSEABLE_API_KEY},X-P-Stream=${PARSEABLE_DATASET_NAME},X-P-Log-Source=otel-traces,X-P-Dataset-Tag=agent-observability"
 export OTEL_SERVICE_NAME=my-agent
 export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
 ```
@@ -156,10 +194,6 @@ export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
 ## Next steps
 
 <Cards>
-
-<Card href="/docs/user-guide/agent-observability/manual-instrumentation" icon={<IconTerminal2 className="text-purple-600" />} title='Manual instrumentation guide'>
-Complete reference for instrumenting any GenAI agent with OpenTelemetry traces, spans, and events.
-</Card>
 
 <Card href="/docs/user-guide/agent-observability/schema-reference" icon={<IconDatabase className="text-purple-600" />} title='Schema Reference'>
 Complete column reference for the flattened GenAI trace.
