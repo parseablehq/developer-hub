@@ -1,7 +1,6 @@
 ---
 title: Agent Observability
 ---
-import { IconDatabase, IconCode } from '@tabler/icons-react';
 
 <OfferingPills cloud enterprise className="mb-4" />
 
@@ -23,7 +22,7 @@ The Agents page is organized around four tabs: Overview, Models, Tools, and Agen
 
 ### Overview
 
-![Agents overview showing invocations, errors, token usage, and duration charts](./static/agent-overview.png)
+![Agents overview showing invocations, errors, token usage, and duration charts](./agent-observability/static/agent-overview.png)
 
 Start with the Overview tab when you want to understand the shape of agent activity before going deeper. It gives you the main health and usage signals in one place.
 
@@ -35,7 +34,7 @@ Use the time range picker in the top-right corner when you want to move from a b
 
 ### Models
 
-![Models tab showing cost, token usage, model usage, and model latency charts](./static/agent-models.png)
+![Models tab showing cost, token usage, model usage, and model latency charts](./agent-observability/static/agent-models.png)
 
 The Models tab is for understanding model behavior. Use it when you want to answer questions like: which model is used most, which model is the most expensive, where are tokens being spent, and whether a model is getting slower over time.
 
@@ -45,7 +44,7 @@ The charts let you compare total cost by model, cost over time by model, tokens 
 
 ### Tools
 
-![Tools tab showing tool calls, latency, usage, failures, and failed tool traces](./static/agent-tools.png)
+![Tools tab showing tool calls, latency, usage, failures, and failed tool traces](./agent-observability/static/agent-tools.png)
 
 The Tools tab helps you understand how the agent interacts with the outside world. This matters because many agent failures are not model failures. They happen when a tool is slow, returns unexpected output, fails repeatedly, or gets called too often.
 
@@ -55,7 +54,7 @@ The tool failures table gives you a path back to the run that failed. It include
 
 ### Agent Runs
 
-![Agent Runs tab showing run timeline, filters, run table, token usage, cost, duration, and operations](./static/agent-run.gif)
+![Agent Runs tab showing run timeline, filters, run table, token usage, cost, duration, and operations](./agent-observability/static/agent-run.gif)
 
 The Agent Runs tab is where you move from charts to individual runs. Use it when you need to inspect a specific prompt, a failed run, an expensive run, or a run that called too many tools.
 
@@ -191,16 +190,126 @@ export OTEL_SERVICE_NAME=my-agent
 export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
 ```
 
-## Next steps
+## SQL query templates
 
-<Cards>
+The Agents page should be the first place you inspect agent behavior. When you need to go deeper, you can query the same traces dataset directly with SQL. The examples below assume a dataset named `genai-traces`. Replace it with your dataset name if you use something different.
 
-<Card href="/docs/user-guide/agent-observability/schema-reference" icon={<IconDatabase className="text-purple-600" />} title='Schema Reference'>
-Complete column reference for the flattened GenAI trace.
-</Card>
+Span rows have `event_name IS NULL`. Most analytics queries should include this filter so span data is not mixed with event rows that carry prompt, completion, or other event-level content.
 
-<Card href="/docs/user-guide/agent-observability/sql-queries" icon={<IconCode className="text-purple-600" />} title='SQL Query Templates'>
-Sample SQL queries for common agent observability tasks like.
-</Card>
+### LLM call summary
 
-</Cards>
+Use this when you want a quick per-model view of call volume, token usage, latency, and errors over the last 24 hours.
+
+```sql
+SELECT
+    "gen_ai.request.model" AS model,
+    COUNT(*) AS call_count,
+    SUM("gen_ai.usage.input_tokens") AS total_input_tokens,
+    SUM("gen_ai.usage.output_tokens") AS total_output_tokens,
+    SUM(p_genai_tokens_total) AS total_tokens,
+    ROUND(AVG(p_genai_duration_ms), 2) AS avg_latency_ms,
+    ROUND(100.0 * SUM(CASE WHEN span_status_code = 2 THEN 1 ELSE 0 END) / COUNT(*), 2) AS error_rate_pct
+FROM "genai-traces"
+WHERE p_timestamp > NOW() - INTERVAL '24 hours'
+    AND event_name IS NULL
+    AND "gen_ai.operation.name" = 'chat'
+GROUP BY "gen_ai.request.model"
+ORDER BY total_tokens DESC;
+```
+
+### Reconstruct an agent run
+
+Use this after you find a trace ID in the Agent Runs table. It lists the spans in that run in the order they happened.
+
+```sql
+SELECT
+    span_name,
+    "gen_ai.operation.name" AS operation,
+    ROUND(p_genai_duration_ms, 2) AS duration_ms,
+    "gen_ai.usage.input_tokens" AS input_tokens,
+    "gen_ai.usage.output_tokens" AS output_tokens,
+    span_status_description AS status,
+    span_parent_span_id
+FROM "genai-traces"
+WHERE span_trace_id = '<TRACE_ID>'
+    AND event_name IS NULL
+ORDER BY span_start_time_unix_nano;
+```
+
+### Token usage over time
+
+Use this to see hourly token consumption by model over the last 7 days.
+
+```sql
+SELECT
+    DATE_TRUNC('hour', p_timestamp) AS hour,
+    "gen_ai.request.model" AS model,
+    SUM("gen_ai.usage.input_tokens") AS input_tokens,
+    SUM("gen_ai.usage.output_tokens") AS output_tokens,
+    SUM(p_genai_tokens_total) AS total_tokens
+FROM "genai-traces"
+WHERE p_timestamp > NOW() - INTERVAL '7 days'
+    AND event_name IS NULL
+    AND "gen_ai.usage.input_tokens" IS NOT NULL
+GROUP BY hour, "gen_ai.request.model"
+ORDER BY hour DESC, total_tokens DESC;
+```
+
+### Tool usage
+
+Use this to understand which tools are called most often, how long they take, and how often they fail.
+
+```sql
+SELECT
+    "gen_ai.tool.name" AS tool,
+    COUNT(*) AS invocations,
+    ROUND(AVG(p_genai_duration_ms), 2) AS avg_duration_ms,
+    ROUND(100.0 * SUM(CASE WHEN span_status_code = 2 THEN 1 ELSE 0 END) / COUNT(*), 2) AS failure_rate_pct
+FROM "genai-traces"
+WHERE "gen_ai.operation.name" = 'execute_tool'
+    AND p_timestamp > NOW() - INTERVAL '24 hours'
+    AND event_name IS NULL
+GROUP BY "gen_ai.tool.name"
+ORDER BY invocations DESC;
+```
+
+### Recent errors
+
+Use this when you want the latest failing model calls, tool calls, or agent spans.
+
+```sql
+SELECT
+    p_timestamp,
+    "gen_ai.request.model" AS model,
+    "gen_ai.operation.name" AS operation,
+    span_status_message AS error_message,
+    span_trace_id,
+    span_span_id,
+    "gen_ai.agent.name" AS agent
+FROM "genai-traces"
+WHERE span_status_code = 2
+    AND event_name IS NULL
+    AND p_timestamp > NOW() - INTERVAL '24 hours'
+ORDER BY p_timestamp DESC
+LIMIT 50;
+```
+
+### Model comparison
+
+Use this to compare models by latency, throughput, and token usage over the last 7 days.
+
+```sql
+SELECT
+    "gen_ai.request.model" AS model,
+    COUNT(*) AS calls,
+    ROUND(AVG(p_genai_duration_ms), 2) AS avg_latency_ms,
+    ROUND(PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY p_genai_duration_ms), 2) AS p95_latency_ms,
+    ROUND(AVG(p_genai_tokens_per_sec), 2) AS avg_tokens_per_sec,
+    SUM(p_genai_tokens_total) AS total_tokens
+FROM "genai-traces"
+WHERE event_name IS NULL
+    AND "gen_ai.operation.name" = 'chat'
+    AND p_timestamp > NOW() - INTERVAL '7 days'
+GROUP BY "gen_ai.request.model"
+ORDER BY total_tokens DESC;
+```
