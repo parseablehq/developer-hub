@@ -104,6 +104,12 @@ s3.region=<s3.region>
 EOF
 ```
 
+<Callout type="info">
+  Using Amazon EKS IRSA with Helm chart `3.0.1` or later? Omit `s3.access.key`
+  and `s3.secret.key` and configure the Parseable ServiceAccount instead. Follow the
+  [S3 IRSA guide](/docs/self-hosted/storage-targets/aws-s3#kubernetes-with-irsa).
+</Callout>
+
 Use `s3-store` in [`oss-values.yaml`](#6-create-oss-valuesyaml).
 
 ### Option C: Google Cloud Storage
@@ -234,6 +240,9 @@ parseable:
           accessMode: ReadWriteOnce
           size: 100Gi
 ```
+
+To enable OIDC, add the variables under
+`parseable.distributed.querier.env`. See the [OIDC guide](/docs/user-guide/openid).
 
 Before continuing:
 
