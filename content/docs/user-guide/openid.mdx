@@ -34,6 +34,70 @@ To use OIDC authentication with Parseable, you need to set the following environ
 | P_OIDC_ISSUER | Yes | The OIDC issuer URL, typically provided by your identity provider. It points to the OIDC authorization server. Should support discovery protocol | "" | "https://accounts.google.com" |
 | P_ORIGIN_URI | Yes | The URI where Parseable is hosted or accessible. This should be the base URL of your Parseable instance. | "" | "https://demo.parseable.com/" |
 
+## Kubernetes with Helm chart 3.0.0 and later
+
+Helm chart `3.0.0` and later configures environment variables per Parseable
+node. Add the OIDC variables to the node that serves the Console and login
+endpoints. The global `parseable.env` value used by chart `2.x` is no longer
+supported.
+
+Keep the values file containing `P_OIDC_CLIENT_SECRET` secure and do not commit
+it to source control.
+
+### Standalone OSS
+
+```yaml
+parseable:
+  standalone:
+    unified:
+      env:
+        P_OIDC_CLIENT_ID: "<client-id>"
+        P_OIDC_CLIENT_SECRET: "<client-secret>"
+        P_OIDC_ISSUER: "https://identity-provider.example.com"
+        P_ORIGIN_URI: "https://logs.example.com/"
+```
+
+### Distributed OSS
+
+The querier serves the Console and login endpoints:
+
+```yaml
+parseable:
+  distributed:
+    querier:
+      env:
+        P_OIDC_CLIENT_ID: "<client-id>"
+        P_OIDC_CLIENT_SECRET: "<client-secret>"
+        P_OIDC_ISSUER: "https://identity-provider.example.com"
+        P_ORIGIN_URI: "https://logs.example.com/"
+```
+
+### Distributed Enterprise
+
+Prism is the public entry point in an Enterprise deployment:
+
+```yaml
+parseable:
+  distributed:
+    prism:
+      env:
+        P_OIDC_CLIENT_ID: "<client-id>"
+        P_OIDC_CLIENT_SECRET: "<client-secret>"
+        P_OIDC_ISSUER: "https://identity-provider.example.com"
+        P_ORIGIN_URI: "https://logs.example.com/"
+```
+
+<Callout type="warning">
+  When upgrading from chart `2.x`, move the variables from `parseable.env` to
+  `parseable.standalone.unified.env`, `parseable.distributed.querier.env`, or
+  `parseable.distributed.prism.env`, depending on the deployment mode. Helm
+  does not migrate the old values automatically.
+</Callout>
+
+If a reverse proxy terminates TLS, configure it to preserve the original host
+and protocol headers. `P_ORIGIN_URI` must be the public HTTPS URL registered
+with the identity provider.
+
 ## Privilege Management with OIDC
 
 You can either setup a default OIDC role on Parseable instance or map a user group from your identity provider to a role on Parseable instance.
