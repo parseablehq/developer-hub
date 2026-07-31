@@ -3,47 +3,74 @@ title: Pydantic AI
 description: Send Pydantic AI agent traces and metrics to Parseable
 ---
 
-Pydantic AI has native OpenTelemetry instrumentation for agent runs, model requests, and tool execution. This guide sends those traces directly to Parseable using the OpenTelemetry GenAI semantic conventions.
+import { Step, Steps } from 'fumadocs-ui/components/steps';
 
-## What you get
+Pydantic AI is a Python framework from the Pydantic team for building typed agents. It is useful when you want agent code to feel like normal Python, with tools, structured outputs, retries, validation, and model calls kept close to your application logic.
 
-- `invoke_agent <agent>` spans for complete agent runs
-- `chat <model>` spans with model, token, and response metadata
-- `execute_tool <tool>` spans with tool arguments and results
-- One parent-child trace across agent, model, and tool activity
-- Compatibility with Parseable Agent Observability dashboards
-- Token, cost, and streaming time-to-first-chunk metrics
+When an agent runs in production, the final answer is usually the least interesting part of the story. You also need to know which model was called, which tools ran, how long each step took, how many tokens were used, and where a retry or failure happened. Pydantic AI has built-in OpenTelemetry instrumentation for that path, and Parseable can receive the emitted telemetry directly.
+
+This guide shows how to send Pydantic AI traces and metrics to Parseable. The traces power Parseable Agent Observability, while the metrics help you track usage and latency over time.
+
+## How it works
+
+Pydantic AI emits OpenTelemetry spans for agent runs, model requests, and tool execution after instrumentation is enabled. A single agent run usually becomes one trace with the agent span at the top, model-call spans below it, and tool spans where the agent calls Python functions.
+
+```text
+Pydantic AI application
+  |
+  | OpenTelemetry traces and metrics
+  v
+Parseable
+  |
+  +--> pydantic-ai-traces   traces dataset and Agent Observability
+  +--> pydantic-ai-metrics  metrics dataset
+```
+
+You can send telemetry through an OpenTelemetry Collector if that is already part of your deployment. For a small application or first test, sending directly to Parseable is also fine.
 
 ## Prerequisites
 
+Before you start, keep these ready:
+
 - Python 3.10 or later
-- A Parseable instance and credentials
-- An OpenAI API key, or another model provider supported by Pydantic AI
+- A running Parseable instance
+- A Parseable API key with ingest access
+- An OpenAI API key, or another model-provider key supported by Pydantic AI
 
-## Create a trace dataset
+## Set up Pydantic AI with Parseable
 
-Create a dataset and mark it as an Agent Observability trace source:
+<Steps>
+<Step>
 
-```bash
-curl -u "$PARSEABLE_USERNAME:$PARSEABLE_PASSWORD" \
-  -X PUT "$PARSEABLE_URL/api/v1/logstream/pydantic-ai-traces" \
-  -H 'X-P-Log-Source: otel-traces' \
-  -H 'X-P-Telemetry-Type: traces' \
-  -H 'X-P-Dataset-Tag: agent-observability'
-```
+### Create Parseable datasets
 
-`X-P-Dataset-Tag` tags the dataset itself. Do not use `X-P-Tag-*` here; those headers add fields to ingested records instead.
-
-Create a separate metrics dataset when you also want model usage and streaming metrics:
+Create a trace dataset and tag it for Agent Observability:
 
 ```bash
-curl -u "$PARSEABLE_USERNAME:$PARSEABLE_PASSWORD" \
-  -X PUT "$PARSEABLE_URL/api/v1/logstream/pydantic-ai-metrics" \
-  -H 'X-P-Log-Source: otel-metrics' \
-  -H 'X-P-Telemetry-Type: metrics'
+curl -X PUT "$PARSEABLE_URL/api/v1/logstream/pydantic-ai-traces" \
+  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
+  -H "X-P-Log-Source: otel-traces" \
+  -H "X-P-Telemetry-Type: traces" \
+  -H "X-P-Dataset-Tag: agent-observability"
 ```
 
-## Install dependencies
+Create a metrics dataset when you also want token usage, latency, and streaming metrics:
+
+```bash
+curl -X PUT "$PARSEABLE_URL/api/v1/logstream/pydantic-ai-metrics" \
+  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
+  -H "X-P-Log-Source: otel-metrics" \
+  -H "X-P-Telemetry-Type: metrics"
+```
+
+`X-P-Dataset-Tag` tags the dataset itself. Do not use `X-P-Tag-*` for this step, because those headers add fields to ingested records instead.
+
+</Step>
+<Step>
+
+### Install dependencies
+
+Install Pydantic AI with OpenAI support and the OpenTelemetry OTLP HTTP exporter:
 
 ```bash
 pip install "pydantic-ai-slim[openai]" \
@@ -51,14 +78,17 @@ pip install "pydantic-ai-slim[openai]" \
   opentelemetry-exporter-otlp-proto-http
 ```
 
-## Instrument the agent
+</Step>
+<Step>
+
+### Configure OpenTelemetry
+
+Create `agent.py`:
 
 ```python
-import base64
 import os
 
-from opentelemetry import trace
-from opentelemetry import metrics
+from opentelemetry import metrics, trace
 from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.metrics import MeterProvider
@@ -71,11 +101,14 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 parseable_url = os.environ["PARSEABLE_URL"].rstrip("/")
-credentials = base64.b64encode(
-    f'{os.environ["PARSEABLE_USERNAME"]}:{os.environ["PARSEABLE_PASSWORD"]}'.encode()
-).decode()
+parseable_api_key = os.environ["PARSEABLE_API_KEY"]
 
-resource = Resource.create({"service.name": "pydantic-ai-agent"})
+resource = Resource.create(
+    {
+        "service.name": "pydantic-ai-agent",
+        "deployment.environment.name": "production",
+    }
+)
 
 tracer_provider = TracerProvider(resource=resource)
 tracer_provider.add_span_processor(
@@ -83,7 +116,7 @@ tracer_provider.add_span_processor(
         OTLPSpanExporter(
             endpoint=f"{parseable_url}/v1/traces",
             headers={
-                "Authorization": f"Basic {credentials}",
+                "X-API-Key": parseable_api_key,
                 "X-P-Stream": "pydantic-ai-traces",
                 "X-P-Log-Source": "otel-traces",
             },
@@ -96,17 +129,16 @@ metric_reader = PeriodicExportingMetricReader(
     OTLPMetricExporter(
         endpoint=f"{parseable_url}/v1/metrics",
         headers={
-            "Authorization": f"Basic {credentials}",
+            "X-API-Key": parseable_api_key,
             "X-P-Stream": "pydantic-ai-metrics",
             "X-P-Log-Source": "otel-metrics",
         },
-    )
+    ),
+    export_interval_millis=5000,
 )
-meter_provider = MeterProvider(metric_readers=[metric_reader], resource=resource)
+meter_provider = MeterProvider(resource=resource, metric_readers=[metric_reader])
 metrics.set_meter_provider(meter_provider)
 
-# Version 5 emits current GenAI semantic-convention fields. Content capture is
-# required for tool arguments and results in Agent Observability.
 Agent.instrument_all(
     InstrumentationSettings(
         version=5,
@@ -122,9 +154,11 @@ model = OpenAIChatModel(
 )
 agent = Agent(model, name="weather_agent")
 
+
 @agent.tool
 def get_weather(ctx: RunContext[None], city: str) -> str:
     return f"The weather in {city} is sunny and 24 C."
+
 
 try:
     result = agent.run_sync("What is the weather in Bengaluru?")
@@ -136,23 +170,103 @@ finally:
     meter_provider.shutdown()
 ```
 
-Set the environment variables before running the application:
+Run the application:
 
 ```bash
-export PARSEABLE_URL="https://your-parseable-host:8000"
-export PARSEABLE_USERNAME="admin"
-export PARSEABLE_PASSWORD="your-password"
-export OPENAI_API_KEY="your-api-key"
+export PARSEABLE_URL="https://<parseable-host>:8000"
+export PARSEABLE_API_KEY="<parseable-api-key>"
+export OPENAI_API_KEY="<openai-api-key>"
+
 python agent.py
 ```
 
-<Callout type="warn">
-  `include_content=True` can capture prompts, tool arguments, and tool results. Review this setting before using it with sensitive or regulated data. Setting it to `False` protects content, but the Agent Observability tool panels will not receive `gen_ai.tool.call.arguments` and `gen_ai.tool.call.result`.
-</Callout>
+</Step>
+</Steps>
 
-## Instrumentation scope
+## What the instrumentation captures
 
-`Agent.instrument_all(...)` applies to every agent that does not provide its own instrumentation capability. To instrument only one agent, pass an `Instrumentation` capability:
+With `InstrumentationSettings(version=5)`, Pydantic AI emits the current instrumentation format. In Parseable, a normal tool-using run should look like this:
+
+```text
+invoke_agent weather_agent
+├── chat gpt-4o-mini
+├── execute_tool get_weather
+└── chat gpt-4o-mini
+```
+
+The agent span represents the full run. Model spans show the provider, requested model, response model, token usage, latency, and errors. Tool spans show the tool name, tool call ID, arguments, result, and duration. This is the structure that makes it possible to move from a high-level agent run into the exact model or tool step that changed the outcome.
+
+For Agent Observability, the most important tool fields are:
+
+| Field | Meaning |
+| --- | --- |
+| `gen_ai.tool.name` | Tool function name |
+| `gen_ai.tool.call.id` | Tool call identifier |
+| `gen_ai.tool.call.arguments` | Arguments passed to the tool |
+| `gen_ai.tool.call.result` | Tool result returned to the agent |
+
+If the Agent Observability setup page reports missing tool arguments or results, confirm that you are using instrumentation `version=5`, `include_content=True`, and that the run actually invoked a tool.
+
+## Metrics
+
+Pydantic AI records OpenTelemetry histograms for model usage and streaming behavior:
+
+| Metric | Unit | When emitted |
+| --- | --- | --- |
+| `gen_ai.client.token.usage` | tokens | Model or embedding requests, split by `gen_ai.token.type` |
+| `operation.cost` | USD | When the model price is known |
+| `gen_ai.client.operation.time_to_first_chunk` | seconds | Streaming requests only |
+
+Each metric point carries model and provider attributes such as `gen_ai.provider.name`, `gen_ai.operation.name`, `gen_ai.request.model`, and `gen_ai.response.model`. Streaming latency appears only when your code consumes the stream far enough for Pydantic AI to observe the first chunk.
+
+Since these are histogram metrics, query `data_point_sum` and `data_point_count` rather than `data_point_value`.
+
+Example token usage query:
+
+```sql
+SELECT
+  attributes->>'gen_ai.token.type' AS token_type,
+  SUM(data_point_sum) AS tokens
+FROM "pydantic-ai-metrics"
+WHERE metric_name = 'gen_ai.client.token.usage'
+GROUP BY token_type;
+```
+
+Example average time to first chunk:
+
+```sql
+SELECT
+  SUM(data_point_sum) / NULLIF(SUM(data_point_count), 0) AS avg_ttf_chunk_seconds
+FROM "pydantic-ai-metrics"
+WHERE metric_name = 'gen_ai.client.operation.time_to_first_chunk';
+```
+
+## Content and privacy
+
+`include_content=True` captures prompts, completions, tool arguments, and tool results. This is useful for understanding agent behavior, and it gives Agent Observability enough detail to show tool input and output. It can also capture sensitive data, so review this setting before using it in production.
+
+If your production policy is to avoid content capture, use:
+
+```python
+Agent.instrument_all(
+    InstrumentationSettings(
+        version=5,
+        include_content=False,
+        include_binary_content=False,
+        include_model_request_parameters=False,
+        tracer_provider=tracer_provider,
+        meter_provider=meter_provider,
+    )
+)
+```
+
+With `include_content=False`, you still get span structure, model metadata, usage, latency, and errors. The tradeoff is that prompt content, tool arguments, and tool results will not be available in Parseable.
+
+## Instrument all agents or one agent
+
+`Agent.instrument_all(...)` applies to every agent that does not provide its own instrumentation capability. This is the simplest setup for most applications.
+
+If different agents need different privacy settings or telemetry destinations, configure instrumentation per agent:
 
 ```python
 from pydantic_ai import Agent, InstrumentationSettings
@@ -164,30 +278,15 @@ settings = InstrumentationSettings(
     tracer_provider=tracer_provider,
     meter_provider=meter_provider,
 )
+
 agent = Agent(model, capabilities=[Instrumentation(settings=settings)])
 ```
 
-Use per-agent settings when agents have different privacy requirements or telemetry destinations.
-
-## Metrics exported
-
-Pydantic AI records these histograms:
-
-| Metric | Unit | When emitted |
-| --- | --- | --- |
-| `gen_ai.client.token.usage` | tokens | Model or embedding requests; split by `gen_ai.token.type` |
-| `operation.cost` | USD | When the model's price is known |
-| `gen_ai.client.operation.time_to_first_chunk` | seconds | Streaming requests only |
-
-Metric points include provider, operation, requested model, and response model attributes. Time-to-first-chunk is still an evolving GenAI convention and its name or shape can change in future releases.
-
-Pydantic AI supplies recommended histogram boundaries for token usage and streaming latency. You can override them with OpenTelemetry `View` objects on the `MeterProvider` when your workload needs different buckets.
-
 ## Token aggregation
 
-Model request spans use `gen_ai.usage.input_tokens` and `gen_ai.usage.output_tokens`. Agent run spans use `gen_ai.aggregated_usage.*` by default because they contain totals from their child model calls. This prevents dashboards from double-counting the same tokens at both levels.
+Model request spans use standard token attributes such as `gen_ai.usage.input_tokens` and `gen_ai.usage.output_tokens`. Agent run spans use `gen_ai.aggregated_usage.*` by default, because they contain totals from their child model calls. This avoids double-counting when dashboards aggregate token usage across parent and child spans.
 
-If your backend queries already distinguish parent agent spans from model spans, you can use the standard usage names everywhere:
+If your own queries already separate agent spans from model spans, you can disable the aggregated names:
 
 ```python
 InstrumentationSettings(
@@ -196,88 +295,39 @@ InstrumentationSettings(
 )
 ```
 
-Update dashboard queries before changing this setting.
-
-## Privacy and payload size
-
-`InstrumentationSettings` provides independent controls:
-
-```python
-InstrumentationSettings(
-    version=5,
-    include_content=False,
-    include_binary_content=False,
-    include_model_request_parameters=False,
-)
-```
-
-- `include_content=False` removes prompts, completions, tool arguments, and tool results.
-- `include_binary_content=False` prevents inline image, audio, video, and file content from entering telemetry.
-- `include_model_request_parameters=False` omits the serialized model request configuration and large tool schemas. `gen_ai.tool.definitions` remains available.
-
-Agent Observability requires tool arguments and results, so disabling content trades complete tool panels for stronger data minimization. Consider separate sanitized instrumentation for production rather than exporting secrets or regulated content.
-
-## Async, streaming, retries, and errors
-
-The same instrumentation applies to `await agent.run(...)`, streamed runs, model retries, validation retries, and tool failures. Keep the provider alive for the full application lifetime; flush and shut it down during process termination rather than after every web request.
-
-For streaming code, consume or close the stream so Pydantic AI can finish spans and record time-to-first-chunk. Exceptions are recorded on the active span and should continue to propagate to application error handling.
-
-In instrumentation version 5, `CallDeferred` and `ApprovalRequired` are treated as agent control flow rather than failures. Their spans remain unset instead of being marked as errors.
-
-## Add application metadata
-
-Use the agent `metadata` parameter for stable application context such as environment, workflow, or tenant identifiers:
-
-```python
-agent = Agent(
-    model,
-    name="weather_agent",
-    metadata={"environment": "production", "team": "support"},
-)
-```
-
-Do not attach unbounded or sensitive values unless they are required for investigation.
-
-## Required Agent Observability fields
-
-Tool spans should include:
-
-- `gen_ai.tool.name`
-- `gen_ai.tool.call.id`
-- `gen_ai.tool.call.arguments`
-- `gen_ai.tool.call.result`
-
-If the Agent Observability setup page reports missing argument or result fields, confirm that instrumentation version 5 and `include_content=True` are configured, then run an agent that actually invokes a tool.
+Change this only if you know how your dashboards count usage, since it can affect totals.
 
 ## Verify in Parseable
 
-Open the `pydantic-ai-traces` dataset and confirm one trace contains a hierarchy similar to:
+Open the `pydantic-ai-traces` dataset from the Traces page. You should see agent, model, and tool spans in one trace. If the dataset is tagged with `agent-observability`, it will also appear in the Agent Observability flow.
 
-```text
-invoke_agent weather_agent
-├── chat gpt-4o-mini
-├── execute_tool get_weather
-└── chat gpt-4o-mini
-```
+Open the `pydantic-ai-metrics` dataset from the Metrics page. You should see metrics such as `gen_ai.client.token.usage`, `operation.cost`, and `gen_ai.client.operation.time_to_first_chunk` after the application has emitted enough model calls.
 
-New datasets and fields can take a few minutes to appear in Agent Observability.
+## Troubleshooting
 
-For metrics, confirm Parseable lists the expected names:
+- **No traces appear**
 
-```bash
-curl -u "$PARSEABLE_USERNAME:$PARSEABLE_PASSWORD" --get \
-  "$PARSEABLE_URL/prometheus/api/v1/label/__name__/values" \
-  --data-urlencode 'stream=pydantic-ai-metrics'
-```
+  Confirm `Agent.instrument_all(...)` runs before the agent call, and check that the trace exporter points to `${PARSEABLE_URL}/v1/traces` with `X-P-Stream: pydantic-ai-traces` and `X-P-Log-Source: otel-traces`.
 
-Cost appears only when Pydantic AI knows the model price. Streaming latency appears only after a streamed response is consumed.
+- **Metrics are missing**
 
-## Native instrumentation limits
+  Confirm the `MeterProvider` is passed to `InstrumentationSettings`, and check that the metric exporter points to `${PARSEABLE_URL}/v1/metrics` with `X-P-Stream: pydantic-ai-metrics` and `X-P-Log-Source: otel-metrics`.
 
-Pydantic AI's native integration emits spans and metrics. It does not by itself create a separate Parseable semantic-log dataset containing every message, choice, reasoning block, and tool event. If your retention or security design requires full content outside spans, add OpenTelemetry log records or a Collector pipeline and correlate them with `trace_id` and `span_id`.
+- **Tool arguments or results are missing**
 
-## Resources
+  Confirm `include_content=True` and run an agent path that actually calls a tool. If `include_content=False`, Pydantic AI intentionally removes prompts, completions, tool arguments, and tool results from telemetry.
 
-- [Pydantic AI instrumentation](https://ai.pydantic.dev/logfire/)
+- **Streaming latency is missing**
+
+  Use a streaming run and consume or close the stream. Pydantic AI records time-to-first-chunk only after the streaming path produces the required timing data.
+
+- **Cost is missing**
+
+  Cost is recorded only when Pydantic AI can resolve pricing for the model. Token usage and latency should still be available.
+
+## See also
+
 - [Parseable Agent Observability](/docs/user-guide/agent-observability)
+- [LiteLLM SDK](/docs/ingest-data/ai-agents/litellm-sdk)
+- [Traces](/docs/user-guide/traces)
+- [Metrics](/docs/user-guide/metrics)
