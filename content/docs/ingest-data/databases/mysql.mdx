@@ -1,211 +1,355 @@
 ---
 title: MySQL
-description: Monitor MySQL metrics and logs with Parseable using OpenTelemetry
+description: Send MySQL logs, metrics, and traces to Parseable with OpenTelemetry
 ---
 
-Monitor your MySQL databases by collecting metrics and logs using the OpenTelemetry Collector and sending them to Parseable.
+MySQL problems are easier to diagnose when server health, query activity, slow logs, and application spans are available together. This guide sends all three signals to Parseable with the OpenTelemetry Collector Contrib MySQL, filelog, and OTLP receivers.
 
-## Overview
+## What the integration collects
 
-The OpenTelemetry Collector's MySQL receiver collects metrics from MySQL and MariaDB databases including:
+| Signal | Source | Parseable dataset |
+|---|---|---|
+| Logs | MySQL error and slow-query files, plus MySQL receiver query-sample and top-query events | `mysql-logs` |
+| Metrics | OpenTelemetry MySQL receiver | `mysql-metrics` |
+| Traces | Instrumented database client spans received over OTLP | `mysql-traces` |
 
-- **Server Statistics** - Connections, queries, threads
-- **InnoDB Metrics** - Buffer pool, row operations, locks
-- **Query Performance** - Statement events, query samples
-- **Replication Status** - Slave lag and replication metrics
+The MySQL receiver queries global status, InnoDB, `information_schema`, and `performance_schema`. Optional metric and event families must be enabled explicitly.
+
+<Callout type="info">
+The MySQL receiver produces metrics and query-event logs, not application traces. Instrument the application or workload that executes SQL and send its spans to the Collector's OTLP receiver.
+</Callout>
 
 ## Prerequisites
 
-- MySQL 8.0+ or MariaDB 10.11+
-- OpenTelemetry Collector with `mysql` receiver
-- Parseable instance running and accessible
+- A MySQL or MariaDB version supported by the [OpenTelemetry MySQL receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/mysqlreceiver#supported-database-versions)
+- OpenTelemetry Collector Contrib
+- A Parseable ingestor endpoint and API key
+- Read access to the MySQL error and slow-query log files if file logs are required
 
-### Database User Setup
+## Configure MySQL
 
-Create a monitoring user with the required permissions:
+Enable the Performance Schema consumers used for statement summaries, active-query samples, and wait timing. The exact option-file location depends on the MySQL distribution.
+
+```ini
+[mysqld]
+performance_schema=ON
+performance-schema-consumer-events-statements-current=ON
+performance-schema-consumer-events-statements-history=ON
+performance-schema-consumer-events-statements-history-long=ON
+performance-schema-consumer-events-waits-current=ON
+max_digest_length=4096
+performance_schema_max_digest_length=4096
+performance_schema_max_sql_text_length=4096
+
+slow_query_log=ON
+slow_query_log_file=/var/lib/mysql/slow.log
+long_query_time=0.05
+
+log_error=/var/lib/mysql/error.log
+log_error_verbosity=3
+```
+
+Restart MySQL after changing startup options. File paths and supported log options can differ between MySQL and MariaDB packages.
+
+Create a least-privilege monitoring user:
 
 ```sql
--- Create monitoring user
-CREATE USER 'otel'@'%' IDENTIFIED BY 'your-secure-password';
+CREATE USER IF NOT EXISTS 'otel'@'%' IDENTIFIED BY 'replace-me';
 
--- Grant required permissions
 GRANT PROCESS, REPLICATION CLIENT ON *.* TO 'otel'@'%';
 GRANT SELECT ON performance_schema.* TO 'otel'@'%';
+GRANT SELECT ON telemetry.* TO 'otel'@'%';
+GRANT UPDATE ON performance_schema.setup_consumers TO 'otel'@'%';
 
--- Flush privileges
 FLUSH PRIVILEGES;
 ```
 
-## OpenTelemetry Collector Configuration
+Replace `telemetry` with every application schema that the receiver should inspect. The `UPDATE` privilege lets the receiver restore the `events_waits_current` consumer after reconnects. If this is not acceptable, enable that consumer through server configuration instead.
 
-### Basic Configuration
-
-Create an `otel-collector-config.yaml` file:
-
-```yaml
-receivers:
-  mysql:
-    endpoint: localhost:3306
-    username: otel
-    password: ${env:MYSQL_PASSWORD}
-    database: mydb
-    collection_interval: 10s
-
-exporters:
-  otlphttp/parseable:
-    endpoint: "http://parseable:8000"
-    headers:
-      Authorization: "Basic YWRtaW46YWRtaW4="
-      X-P-Stream: "mysql-metrics"
-      X-P-Log-Source: "otel-metrics"
-    tls:
-      insecure: true
-
-service:
-  pipelines:
-    metrics:
-      receivers: [mysql]
-      exporters: [otlphttp/parseable]
-```
-
-### Advanced Configuration with Statement Events
-
-For detailed query performance monitoring:
-
-```yaml
-receivers:
-  mysql:
-    endpoint: localhost:3306
-    username: otel
-    password: ${env:MYSQL_PASSWORD}
-    database: mydb
-    collection_interval: 10s
-    initial_delay: 1s
-    statement_events:
-      digest_text_limit: 120
-      time_limit: 24h
-      limit: 250
-    tls:
-      insecure: false
-      insecure_skip_verify: false
-
-exporters:
-  otlphttp/parseable:
-    endpoint: "http://parseable:8000"
-    headers:
-      Authorization: "Basic YWRtaW46YWRtaW4="
-      X-P-Stream: "mysql-metrics"
-      X-P-Log-Source: "otel-metrics"
-    tls:
-      insecure: true
-
-service:
-  pipelines:
-    metrics:
-      receivers: [mysql]
-      exporters: [otlphttp/parseable]
-```
-
-## Configuration Options
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `endpoint` | `localhost:3306` | MySQL server endpoint |
-| `username` | `root` | Database username |
-| `password` | - | Database password |
-| `database` | - | Database name (empty = all databases) |
-| `collection_interval` | `10s` | Metrics collection interval |
-| `allow_native_passwords` | `true` | Allow native password authentication |
-| `tls.insecure` | `false` | Disable TLS |
-| `statement_events.limit` | `250` | Max statement events to collect |
-
-## Collected Metrics
-
-The MySQL receiver collects the following metrics:
-
-| Metric | Description |
-|--------|-------------|
-| `mysql.buffer_pool.pages` | Buffer pool page counts |
-| `mysql.buffer_pool.data_pages` | Buffer pool data pages |
-| `mysql.buffer_pool.operations` | Buffer pool operations |
-| `mysql.commands` | Command execution counts |
-| `mysql.handlers` | Handler operation counts |
-| `mysql.locks` | Lock wait counts |
-| `mysql.sorts` | Sort operation counts |
-| `mysql.threads` | Thread counts by state |
-| `mysql.connections` | Connection counts |
-| `mysql.queries` | Query execution counts |
-| `mysql.statement_events.count` | Statement event counts |
-| `mysql.statement_events.wait.time` | Statement wait times |
-
-## Running the Collector
-
-### Docker
-
-```bash
-docker run -d \
-  --name otel-collector \
-  -v $(pwd)/otel-collector-config.yaml:/etc/otelcol/config.yaml \
-  -e MYSQL_PASSWORD=your-password \
-  otel/opentelemetry-collector-contrib:latest
-```
-
-### Docker Compose
-
-```yaml
-version: '3.8'
-services:
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:latest
-    volumes:
-      - ./otel-collector-config.yaml:/etc/otelcol/config.yaml
-    environment:
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
-    depends_on:
-      - mysql
-      - parseable
-```
-
-## Querying MySQL Metrics in Parseable
-
-Once data is flowing, query your MySQL metrics:
+You can also enable the required consumers at runtime:
 
 ```sql
--- Get thread counts over time
-SELECT p_timestamp, threads_running, threads_connected 
-FROM "mysql-metrics" 
-ORDER BY p_timestamp DESC 
-LIMIT 100
-
--- Find slow queries
-SELECT digest_text, total_latency, exec_count
-FROM "mysql-metrics"
-WHERE p_timestamp > NOW() - INTERVAL '1 hour'
-ORDER BY total_latency DESC
-LIMIT 10
+UPDATE performance_schema.setup_consumers
+SET ENABLED = 'YES'
+WHERE NAME IN (
+  'events_statements_current',
+  'events_statements_history',
+  'events_statements_history_long',
+  'events_waits_current'
+);
 ```
+
+<Callout type="warning">
+Query samples, top-query events, slow logs, and traces may contain SQL text. Apply application-side redaction and Parseable access controls appropriate for your data. Avoid enabling the MySQL general log continuously; it is extremely verbose and also records the Collector's monitoring queries.
+</Callout>
+
+## Collector configuration
+
+Mount the MySQL log directory read-only into the Collector and create `otel-collector.yaml`. The configuration below expects `MYSQL_PASSWORD`, `PARSEABLE_ENDPOINT`, and `PARSEABLE_API_KEY` in the Collector environment.
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+  mysql:
+    endpoint: mysql:3306
+    username: otel
+    password: ${env:MYSQL_PASSWORD}
+    database: telemetry
+    collection_interval: 10s
+    initial_delay: 2s
+    tls:
+      insecure: true
+
+    statement_events:
+      digest_text_limit: 240
+      time_limit: 24h
+      limit: 250
+
+    query_sample_collection:
+      max_rows_per_query: 100
+
+    top_query_collection:
+      lookback_time: 120
+      max_query_sample_count: 5000
+      top_query_count: 100
+      collection_interval: 15s
+
+    metrics:
+      mysql.client.network.io:
+        enabled: true
+      mysql.commands:
+        enabled: true
+      mysql.connection.count:
+        enabled: true
+      mysql.connection.errors:
+        enabled: true
+      mysql.joins:
+        enabled: true
+      mysql.max_used_connections:
+        enabled: true
+      mysql.query.client.count:
+        enabled: true
+      mysql.query.count:
+        enabled: true
+      mysql.query.slow.count:
+        enabled: true
+      mysql.replica.sql_delay:
+        enabled: true
+      mysql.replica.time_behind_source:
+        enabled: true
+      mysql.statement_event.count:
+        enabled: true
+      mysql.statement_event.wait.time:
+        enabled: true
+      mysql.table.average_row_length:
+        enabled: true
+      mysql.table.lock_wait.read.count:
+        enabled: true
+      mysql.table.lock_wait.read.time:
+        enabled: true
+      mysql.table.lock_wait.write.count:
+        enabled: true
+      mysql.table.lock_wait.write.time:
+        enabled: true
+      mysql.table.rows:
+        enabled: true
+      mysql.table.size:
+        enabled: true
+      mysql.table_open_cache:
+        enabled: true
+
+    events:
+      db.server.query_sample:
+        enabled: true
+      db.server.top_query:
+        enabled: true
+
+    resource_attributes:
+      db.system.name:
+        enabled: true
+      db.system.version:
+        enabled: true
+      mysql.instance.endpoint:
+        enabled: true
+
+  filelog/mysql:
+    include:
+      - /var/lib/mysql/error.log
+      - /var/lib/mysql/slow.log
+    start_at: end
+    include_file_name: true
+    include_file_path: true
+    operators:
+      - type: add
+        field: attributes["db.system.name"]
+        value: mysql
+      - type: add
+        field: attributes["mysql.instance.endpoint"]
+        value: mysql:3306
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+  resource/mysql:
+    attributes:
+      - key: service.name
+        value: mysql-server
+        action: upsert
+      - key: deployment.environment
+        value: production
+        action: upsert
+  batch:
+    timeout: 1s
+
+exporters:
+  otlphttp/parseable_logs:
+    endpoint: ${env:PARSEABLE_ENDPOINT}
+    encoding: json
+    headers:
+      X-API-Key: "${env:PARSEABLE_API_KEY}"
+      X-P-Stream: mysql-logs
+      X-P-Log-Source: otel-logs
+      Content-Type: application/json
+    retry_on_failure:
+      enabled: true
+      max_elapsed_time: 0s
+
+  otlphttp/parseable_metrics:
+    endpoint: ${env:PARSEABLE_ENDPOINT}
+    encoding: json
+    headers:
+      X-API-Key: "${env:PARSEABLE_API_KEY}"
+      X-P-Stream: mysql-metrics
+      X-P-Log-Source: otel-metrics
+      Content-Type: application/json
+    retry_on_failure:
+      enabled: true
+      max_elapsed_time: 0s
+
+  otlphttp/parseable_traces:
+    endpoint: ${env:PARSEABLE_ENDPOINT}
+    encoding: json
+    headers:
+      X-API-Key: "${env:PARSEABLE_API_KEY}"
+      X-P-Stream: mysql-traces
+      X-P-Log-Source: otel-traces
+      Content-Type: application/json
+    retry_on_failure:
+      enabled: true
+      max_elapsed_time: 0s
+
+service:
+  pipelines:
+    logs/mysql:
+      receivers: [mysql, filelog/mysql]
+      processors: [memory_limiter, resource/mysql, batch]
+      exporters: [otlphttp/parseable_logs]
+    metrics/mysql:
+      receivers: [mysql]
+      processors: [memory_limiter, resource/mysql, batch]
+      exporters: [otlphttp/parseable_metrics]
+    traces/mysql:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/parseable_traces]
+```
+
+`tls.insecure: true` disables TLS between the Collector and MySQL and is suitable only for a trusted local or container network. Configure a CA and certificate verification for production connections.
+
+Some optional metrics remain absent until their MySQL feature is active. Replica metrics, for example, require replication. Query plans also depend on the database version, captured SQL text, and monitoring-user privileges.
+
+## Instrument the database client
+
+Use the OpenTelemetry instrumentation for your application's MySQL driver and export spans to the Collector:
+
+```bash
+OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+OTEL_SERVICE_NAME=orders-api
+OTEL_RESOURCE_ATTRIBUTES=deployment.environment=production,db.system.name=mysql
+```
+
+Database spans should include attributes such as `db.system.name=mysql`, `db.namespace`, `db.operation.name`, `server.address`, and `server.port`. Attribute availability depends on the language and instrumentation version.
+
+To correlate a MySQL receiver query-sample event with the current application trace, set the session variable to a W3C Trace Context value before executing the query:
+
+```sql
+SET @traceparent = '00-<32-hex-trace-id>-<16-hex-span-id>-01';
+```
+
+The receiver copies that trace ID and span ID into the query-sample log. Client instrumentation does not necessarily set this MySQL session variable automatically.
+
+## Collected metrics and events
+
+Important metric families include:
+
+| Area | Metric examples |
+|---|---|
+| Availability and connections | `mysql.uptime`, `mysql.connection.count`, `mysql.connection.errors`, `mysql.max_used_connections`, `mysql.threads` |
+| Query activity | `mysql.query.count`, `mysql.query.client.count`, `mysql.commands`, `mysql.handlers`, `mysql.joins`, `mysql.sorts` |
+| InnoDB | `mysql.buffer_pool.usage`, `mysql.buffer_pool.limit`, `mysql.buffer_pool.pages`, `mysql.row_operations`, `mysql.row_locks` |
+| Table and index I/O | `mysql.table.io.wait.count`, `mysql.table.io.wait.time`, `mysql.index.io.wait.count`, `mysql.index.io.wait.time` |
+| Statement summaries | `mysql.statement_event.count`, `mysql.statement_event.wait.time` |
+| Table inventory | `mysql.table.rows`, `mysql.table.size`, `mysql.table_open_cache` |
+| Replication | `mysql.replica.sql_delay`, `mysql.replica.time_behind_source` |
+
+The optional `db.server.query_sample` and `db.server.top_query` events enter the logs pipeline. Their attributes include active query text, statement digests, execution counts, wait time, query plans when available, and session information.
+
+See the receiver's [generated metric and event documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/mysqlreceiver/documentation.md) for the complete list and version-specific behavior.
+
+## Verify ingestion
+
+Check all three datasets:
+
+```sql
+SELECT count(*) FROM "mysql-logs"
+WHERE p_timestamp > NOW() - INTERVAL '10 minutes';
+```
+
+```sql
+SELECT metric_name, metric_type, metric_unit, count(*) AS points
+FROM "mysql-metrics"
+WHERE p_timestamp > NOW() - INTERVAL '10 minutes'
+GROUP BY metric_name, metric_type, metric_unit
+ORDER BY metric_name;
+```
+
+```sql
+SELECT span_name, count(*) AS spans,
+       round(avg(span_duration_ns) / 1000000.0, 3) AS avg_ms
+FROM "mysql-traces"
+WHERE p_timestamp > NOW() - INTERVAL '10 minutes'
+GROUP BY span_name
+ORDER BY spans DESC;
+```
+
+Metrics can also be queried with Parseable PromQL:
+
+```promql
+sum(rate(mysql.query.count{"mysql.instance.endpoint"=~".*"}[5m]))
+```
+
+## Dashboards
+
+The reusable [MySQL Monitoring dashboard](https://github.com/parseablehq/dashboards/tree/main/mysql-monitoring) is available in the [parseablehq/dashboards](https://github.com/parseablehq/dashboards) repository. It uses PromQL for metrics and SQL for logs and traces.
+
+After importing the template, set the metrics, logs, and traces dataset variables to the names used by your deployment. The instance, environment, and database variables are populated from metric labels.
 
 ## Troubleshooting
 
-### Connection Issues
-
-If the collector can't connect to MySQL:
-
-1. Verify MySQL is accepting connections on the configured port
-2. Check the user has proper permissions
-3. Verify `skip-networking` is not enabled in MySQL config
-4. Check firewall rules allow the connection
-
-### Missing Metrics
-
-If some metrics are not appearing:
-
-1. Ensure `performance_schema` is enabled
-2. Verify the monitoring user has SELECT on `performance_schema`
-3. Check InnoDB is the storage engine for InnoDB-specific metrics
-
-## Next Steps
-
-- Set up [alerts](/docs/user-guide/alerting) for database performance thresholds
-- Create [dashboards](/docs/user-guide/dashboards) for MySQL monitoring
-- Explore [SQL queries](/docs/user-guide/sql-editor) for custom analysis
+- Confirm the Collector uses the Contrib distribution; the core distribution does not include the MySQL or filelog receivers.
+- Confirm the monitoring user can run `SHOW GLOBAL STATUS` and read `performance_schema`.
+- Confirm `events_statements_current`, `events_statements_history_long`, and `events_waits_current` are enabled.
+- Confirm the Collector can read the configured error and slow-query log paths.
+- Check Collector logs for authentication errors, query-plan permission errors, and OTLP export failures.
+- Use the exact metric names in `metric_name`; names such as `mysql.connections`, `mysql.queries`, and `mysql.statement_events.count` are not emitted by the current receiver.
+- An HTTP `405` from Parseable normally means the Collector is using the query/UI endpoint instead of the ingestor.
+- Keep MySQL, Collector OTLP, and log-volume access private; only the Collector needs outbound access to Parseable.
