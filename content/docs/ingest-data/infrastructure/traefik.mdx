@@ -1,0 +1,248 @@
+---
+title: Traefik
+description: Collect Traefik access logs, metrics, and traces in Parseable
+---
+
+Traefik exposes four observability signals: system logs, access logs, metrics, and traces. This guide uses the standard OpenTelemetry Collector to send them to Parseable. Parseable Auto Instrumentation (PAI) is an optional shortcut, not a requirement.
+
+## Architecture
+
+```text
+Traefik system and access logs -> stdout -> Kubernetes log collector -> Parseable
+Traefik Prometheus metrics -> :9100/metrics -> OTel Collector -> Parseable
+Traefik traces -> OTLP HTTP -> OTel Collector -> Parseable
+```
+
+Keep the Collector between Traefik and Parseable. It provides batching, retries, memory protection, Kubernetes metadata, and one place to manage credentials.
+
+## What the integration collects
+
+| Signal | Source | Recommended dataset |
+| --- | --- | --- |
+| System and access logs | Traefik container stdout | `traefik-logs` |
+| Metrics | Prometheus endpoint on port `9100` | `traefik-metrics` |
+| Traces | Traefik OTLP exporter | `traefik-traces` |
+
+## Prerequisites
+
+- A Kubernetes cluster with Traefik installed through its Helm chart
+- A reachable Parseable instance
+- An OpenTelemetry Collector with the Prometheus receiver
+- A Kubernetes log collector such as OpenTelemetry Collector, Fluent Bit, or Vector
+
+## Configure Traefik
+
+Add these values to the Traefik Helm release:
+
+```yaml
+logs:
+  general:
+    format: json
+    level: INFO
+  access:
+    enabled: true
+    format: json
+    bufferingSize: 100
+    fields:
+      headers:
+        defaultMode: drop
+      queryParameters:
+        defaultMode: drop
+
+metrics:
+  prometheus:
+    entryPoint: metrics
+    addEntryPointsLabels: true
+    addRoutersLabels: true
+    addServicesLabels: true
+
+ports:
+  metrics:
+    port: 9100
+    expose:
+      default: false
+```
+
+JSON keeps access-log fields queryable. Header and query-parameter defaults reduce the chance of collecting credentials or personal data. The metrics port remains cluster-internal.
+
+Apply the values:
+
+```bash
+helm upgrade --install traefik traefik/traefik \
+  --namespace traefik \
+  --create-namespace \
+  --values traefik-values.yaml
+```
+
+## Collect logs
+
+Traefik writes its JSON system and access logs to container stdout. Use your existing Kubernetes log agent to collect the Traefik container logs and send them to `traefik-logs`.
+
+For an OpenTelemetry Collector `filelog` setup, follow the [Kubernetes collection guide](/docs/ingest-data/containers/kubernetes). Select pods carrying the `app.kubernetes.io/name=traefik` label when the collector supports label-based filtering.
+
+## Collect metrics and traces
+
+Configure a standard OpenTelemetry Collector. The Prometheus receiver discovers Traefik pods, while the OTLP receiver accepts traces sent by Traefik:
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+  prometheus/traefik:
+    config:
+      scrape_configs:
+        - job_name: traefik
+          scrape_interval: 15s
+          kubernetes_sd_configs:
+            - role: pod
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+              regex: traefik
+              action: keep
+            - source_labels: [__meta_kubernetes_pod_ip]
+              target_label: __address__
+              replacement: $1:9100
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 256
+  batch: {}
+
+exporters:
+  otlphttp/parseable_metrics:
+    endpoint: ${env:PARSEABLE_ENDPOINT}
+    encoding: proto
+    headers:
+      X-API-Key: ${env:PARSEABLE_API_KEY}
+      X-P-Stream: traefik-metrics
+      X-P-Log-Source: otel-metrics
+    retry_on_failure:
+      enabled: true
+      max_elapsed_time: 0s
+
+  otlphttp/parseable_traces:
+    endpoint: ${env:PARSEABLE_ENDPOINT}
+    encoding: proto
+    headers:
+      X-API-Key: ${env:PARSEABLE_API_KEY}
+      X-P-Stream: traefik-traces
+      X-P-Log-Source: otel-traces
+    retry_on_failure:
+      enabled: true
+      max_elapsed_time: 0s
+
+service:
+  pipelines:
+    metrics:
+      receivers: [prometheus/traefik]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/parseable_metrics]
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/parseable_traces]
+```
+
+Run the Collector with a Kubernetes ServiceAccount allowed to list and watch pods. Keep its OTLP receiver cluster-internal. Point Traefik at its Service:
+
+```yaml
+tracing:
+  serviceName: traefik
+  sampleRate: 0.1
+  otlp:
+    enabled: true
+    http:
+      enabled: true
+      endpoint: http://otel-collector.observability.svc.cluster.local:4318
+```
+
+Start with a `0.1` sample rate in production, then adjust it for traffic volume and debugging needs. Incoming sampled traces retain their parent sampling decision.
+
+## Optional: use PAI
+
+[PAI](/docs/ingest-data/auto-instrumentation) is Parseable's Kubernetes operator. It generates and manages OpenTelemetry Collector resources from a `ParseableConfig` custom resource. Use it when you want Parseable-managed discovery and collector lifecycle; skip it when your platform already manages collectors.
+
+PAI has a built-in, opt-in integration for Traefik metrics. Logs use PAI's generic Kubernetes pod-log collector; PAI does not currently provide a Traefik-specific log selector. PAI also does not configure Traefik traces.
+
+```yaml
+apiVersion: observability.parseable.com/v1alpha1
+kind: ParseableConfig
+metadata:
+  name: traefik
+  namespace: pai-system
+spec:
+  logs:
+    podLogs:
+      enabled: true
+      targetDataset: traefik-logs
+      namespaceSelector:
+        mode: include
+        namespaces:
+          - traefik
+  metrics:
+    traefik:
+      enabled: true
+      targetDataset: traefik-metrics
+  target:
+    endpoint: https://<YOUR_PARSEABLE_ENDPOINT>
+    encoding: proto
+    credentialsSecret:
+      name: parseable-creds
+      namespace: pai-system
+```
+
+The metrics integration defaults to pods labeled `app.kubernetes.io/name=traefik`, port `9100`, and path `/metrics`. Set `port`, `uri`, or `namespaceSelector` under `metrics.traefik` when your deployment differs.
+
+The `logs.podLogs` block above collects every pod in the `traefik` namespace, not only pods carrying the Traefik label. This produces a Traefik-only dataset only when that namespace contains no unrelated workloads. Use Collector routing when label-level isolation is required. To collect traces, configure Traefik's OTLP exporter and a Collector trace pipeline separately as described earlier.
+
+## Verify the integration
+
+Confirm that Traefik exposes metrics:
+
+```bash
+kubectl port-forward -n traefik deployment/traefik 9100:9100
+curl http://127.0.0.1:9100/metrics
+```
+
+Check Collector health and logs:
+
+```bash
+kubectl get pods -n observability
+kubectl logs -n observability deployment/otel-collector
+```
+
+When using PAI, also inspect `kubectl get parseableconfig traefik -n pai-system -o yaml`.
+
+Send requests through Traefik, then verify that the three datasets receive recent records in Parseable.
+
+## Recommended dashboards and alerts
+
+Import the [Traefik Monitoring dashboard](https://github.com/parseablehq/dashboards/tree/main/traefik-monitoring) from the public [`parseablehq/dashboards`](https://github.com/parseablehq/dashboards) repository. The template combines PromQL metrics with SQL access-log panels for traffic, entry points, services, latency, TLS certificates, runtime health, and errors.
+
+Download [`traefik-monitoring-mixed.json`](https://github.com/parseablehq/dashboards/blob/main/traefik-monitoring/traefik-monitoring-mixed.json), import it into Parseable, then map its Metrics Dataset and Logs Dataset variables to `traefik-metrics` and `traefik-logs`. If you use shared PAI datasets, select those dataset names instead.
+
+Track:
+
+- Request rate by entry point, router, and service
+- HTTP 4xx and 5xx ratios
+- p50, p95, and p99 request duration
+- Backend connection and retry failures
+- TLS and certificate errors
+- Traefik unavailable replicas and container restarts
+- Collector refused data and export failures
+
+Alert on symptoms rather than every individual error. Good starting points are sustained 5xx ratio, p99 latency above the service objective, unavailable Traefik replicas, and Collector export failures.
+
+## Production guidance
+
+- Send logs to stdout instead of a file so Kubernetes log collection handles rotation.
+- Never retain `Authorization`, `Cookie`, or arbitrary query parameters in access logs.
+- Keep the Prometheus and OTLP receiver ports private to the cluster.
+- Use TLS and API-key or secret-based authentication between the Collector and Parseable.
+- Keep logs, metrics, and traces in separate datasets for independent retention and access policies.
+- Use `DEBUG` system logging only during investigations; return to `INFO` afterward.
+
+See the Traefik documentation for [logs and access logs](https://doc.traefik.io/traefik/reference/install-configuration/observability/logs-and-accesslogs/), [metrics](https://doc.traefik.io/traefik/reference/install-configuration/observability/metrics/), and [tracing](https://doc.traefik.io/traefik/reference/install-configuration/observability/tracing/).
