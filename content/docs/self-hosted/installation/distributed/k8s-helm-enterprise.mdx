@@ -103,6 +103,12 @@ s3.region=<s3.region>
 EOF
 ```
 
+<Callout type="info">
+  Using Amazon EKS IRSA with Helm chart `3.0.1` or later? Omit `s3.access.key`
+  and `s3.secret.key` and configure the Parseable ServiceAccount instead. Follow the
+  [S3 IRSA guide](/docs/self-hosted/storage-targets/aws-s3#kubernetes-with-irsa).
+</Callout>
+
 Use `s3-store` in [`enterprise-values.yaml`](#7-create-enterprise-valuesyaml).
 
 ### Option C: Google Cloud Storage
@@ -213,11 +219,11 @@ parseable:
     # Azure Blob Storage: blob-store
     type: s3-store
     secretName: parseable-env-secret
- # Google Cloud Storage only: uncomment this block.
- # gcsCredentials:
- #   secretName: parseable-gcs-key
- #   secretKey: key.json
- #   mountPath: /var/secrets/google
+    # Google Cloud Storage only: uncomment this block.
+    # gcsCredentials:
+    #   secretName: parseable-gcs-key
+    #   secretKey: key.json
+    #   mountPath: /var/secrets/google
 
   clusterSecret:
     enabled: true
@@ -226,6 +232,10 @@ parseable:
 
   enterprise:
     enabled: true
+    image:
+      repository: quay.io/parseablehq/parseable-enterprise
+      tag: "" # Defaults to the Helm chart appVersion
+      pullPolicy: IfNotPresent
     license:
       secretName: parseable-license
       mountPath: /tmp/license
@@ -234,6 +244,8 @@ parseable:
   distributed:
     ingestor:
       replicas: 3
+      env:
+        RUST_LOG: warn
       resources:
         requests:
           cpu: 250m
@@ -250,6 +262,8 @@ parseable:
 
     querier:
       replicas: 1
+      env:
+        RUST_LOG: warn
       resources:
         requests:
           cpu: 250m
@@ -266,6 +280,8 @@ parseable:
 
     prism:
       replicas: 1
+      env:
+        RUST_LOG: warn
       resources:
         requests:
           cpu: 500m
@@ -274,6 +290,9 @@ parseable:
           cpu: "1"
           memory: 2Gi
 ```
+
+To enable OIDC, add the variables under `parseable.distributed.prism.env`. See
+the [OIDC guide](/docs/user-guide/openid).
 
 Before continuing:
 

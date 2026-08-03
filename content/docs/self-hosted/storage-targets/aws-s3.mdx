@@ -132,6 +132,18 @@ spec:
           args: ["parseable", "s3-store"]
 ```
 
+Before installing the Helm chart, follow the
+[AWS EKS guide](/docs/self-hosted/installation/standalone/aws-eks) to configure
+the IAM OIDC provider, IAM role, and Kubernetes ServiceAccount.
+
+With Helm chart `3.0.1` and later, omit `s3.access.key` and `s3.secret.key` from
+`parseable-env-secret`. Keep `s3.url`, `s3.bucket`, and `s3.region`.
+
+Earlier chart versions require both `s3.access.key` and `s3.secret.key`. Upgrade
+to chart `3.0.1` or later before using IRSA without static credentials. If you
+remain on an earlier chart version, keep both static credential keys in
+`parseable-env-secret`.
+
 ## S3 Bucket Configuration
 
 ### Bucket Policy (Optional)
