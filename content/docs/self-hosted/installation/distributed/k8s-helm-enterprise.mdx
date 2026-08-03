@@ -219,11 +219,11 @@ parseable:
     # Azure Blob Storage: blob-store
     type: s3-store
     secretName: parseable-env-secret
- # Google Cloud Storage only: uncomment this block.
- # gcsCredentials:
- #   secretName: parseable-gcs-key
- #   secretKey: key.json
- #   mountPath: /var/secrets/google
+    # Google Cloud Storage only: uncomment this block.
+    # gcsCredentials:
+    #   secretName: parseable-gcs-key
+    #   secretKey: key.json
+    #   mountPath: /var/secrets/google
 
   clusterSecret:
     enabled: true
@@ -232,6 +232,10 @@ parseable:
 
   enterprise:
     enabled: true
+    image:
+      repository: quay.io/parseablehq/parseable-enterprise
+      tag: "" # Defaults to the Helm chart appVersion
+      pullPolicy: IfNotPresent
     license:
       secretName: parseable-license
       mountPath: /tmp/license
@@ -240,6 +244,8 @@ parseable:
   distributed:
     ingestor:
       replicas: 3
+      env:
+        RUST_LOG: warn
       resources:
         requests:
           cpu: 250m
@@ -256,6 +262,8 @@ parseable:
 
     querier:
       replicas: 1
+      env:
+        RUST_LOG: warn
       resources:
         requests:
           cpu: 250m
@@ -272,6 +280,8 @@ parseable:
 
     prism:
       replicas: 1
+      env:
+        RUST_LOG: warn
       resources:
         requests:
           cpu: 500m
