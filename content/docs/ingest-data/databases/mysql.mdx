@@ -3,32 +3,35 @@ title: MySQL
 description: Send MySQL logs, metrics, and traces to Parseable with OpenTelemetry
 ---
 
-MySQL problems are easier to diagnose when server health, query activity, slow logs, and application spans are available together. This guide sends all three signals to Parseable with the OpenTelemetry Collector Contrib MySQL, filelog, and OTLP receivers.
+MySQL is usually not the only thing you debug. A slow checkout, a failed job, or a sudden spike in database load usually sits somewhere between the application, the database client, and the MySQL server itself. Parseable helps you bring those signals together so you can move from server logs to metrics to application traces without changing tools.
+
+This guide uses the OpenTelemetry Collector Contrib distribution. The MySQL receiver collects database metrics and optional query events, the `filelog` receiver tails MySQL log files, and the OTLP receiver accepts traces from the application that talks to MySQL.
 
 ## What the integration collects
 
 | Signal | Source | Parseable dataset |
 |---|---|---|
-| Logs | MySQL error and slow-query files, plus MySQL receiver query-sample and top-query events | `mysql-logs` |
+| Logs | MySQL error and slow query logs, plus optional query sample and top query events from the MySQL receiver | `mysql-logs` |
 | Metrics | OpenTelemetry MySQL receiver | `mysql-metrics` |
-| Traces | Instrumented database client spans received over OTLP | `mysql-traces` |
+| Traces | Application-side OpenTelemetry spans from the service or workload that calls MySQL | `mysql-traces` |
 
-The MySQL receiver queries global status, InnoDB, `information_schema`, and `performance_schema`. Optional metric and event families must be enabled explicitly.
+The MySQL receiver queries `SHOW GLOBAL STATUS`, InnoDB tables, `information_schema`, and `performance_schema`. Some metric families only appear when the matching MySQL feature is active. For example, replica metrics need replication, and statement level metrics need Performance Schema consumers to be enabled.
 
 <Callout type="info">
-The MySQL receiver produces metrics and query-event logs, not application traces. Instrument the application or workload that executes SQL and send its spans to the Collector's OTLP receiver.
+The MySQL server does not produce distributed traces by itself. Use OpenTelemetry instrumentation in the application or workload that executes SQL queries, then send those spans to the Collector.
 </Callout>
 
 ## Prerequisites
 
-- A MySQL or MariaDB version supported by the [OpenTelemetry MySQL receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/mysqlreceiver#supported-database-versions)
+- MySQL or MariaDB version supported by the [OpenTelemetry MySQL receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/mysqlreceiver#supported-database-versions)
 - OpenTelemetry Collector Contrib
 - A Parseable ingestor endpoint and API key
-- Read access to the MySQL error and slow-query log files if file logs are required
+- Read access to the MySQL error and slow query log files if you want file logs
+- Application instrumentation if you want traces in `mysql-traces`
 
 ## Configure MySQL
 
-Enable the Performance Schema consumers used for statement summaries, active-query samples, and wait timing. The exact option-file location depends on the MySQL distribution.
+Start by enabling the Performance Schema settings used by the receiver for statement summaries, query samples, and wait timing. The exact file location depends on how MySQL is installed, but the settings usually live under the `[mysqld]` section of your MySQL configuration.
 
 ```ini
 [mysqld]
@@ -49,24 +52,7 @@ log_error=/var/lib/mysql/error.log
 log_error_verbosity=3
 ```
 
-Restart MySQL after changing startup options. File paths and supported log options can differ between MySQL and MariaDB packages.
-
-Create a least-privilege monitoring user:
-
-```sql
-CREATE USER IF NOT EXISTS 'otel'@'%' IDENTIFIED BY 'replace-me';
-
-GRANT PROCESS, REPLICATION CLIENT ON *.* TO 'otel'@'%';
-GRANT SELECT ON performance_schema.* TO 'otel'@'%';
-GRANT SELECT ON telemetry.* TO 'otel'@'%';
-GRANT UPDATE ON performance_schema.setup_consumers TO 'otel'@'%';
-
-FLUSH PRIVILEGES;
-```
-
-Replace `telemetry` with every application schema that the receiver should inspect. The `UPDATE` privilege lets the receiver restore the `events_waits_current` consumer after reconnects. If this is not acceptable, enable that consumer through server configuration instead.
-
-You can also enable the required consumers at runtime:
+Restart MySQL after changing startup options. If you cannot change the server configuration, you can still enable the required consumers at runtime:
 
 ```sql
 UPDATE performance_schema.setup_consumers
@@ -79,13 +65,28 @@ WHERE NAME IN (
 );
 ```
 
+Next, create a monitoring user for the Collector. Replace `telemetry` with the application schema that the receiver should inspect.
+
+```sql
+CREATE USER IF NOT EXISTS 'otel'@'%' IDENTIFIED BY 'replace-me';
+
+GRANT PROCESS, REPLICATION CLIENT ON *.* TO 'otel'@'%';
+GRANT SELECT ON performance_schema.* TO 'otel'@'%';
+GRANT SELECT ON telemetry.* TO 'otel'@'%';
+GRANT UPDATE ON performance_schema.setup_consumers TO 'otel'@'%';
+
+FLUSH PRIVILEGES;
+```
+
+The `SELECT` grant on `performance_schema` is required for query samples. The `UPDATE` grant lets the receiver re-enable `events_waits_current` after reconnects. If your database team does not want the Collector to have that permission, enable the consumer through server configuration instead.
+
 <Callout type="warning">
-Query samples, top-query events, slow logs, and traces may contain SQL text. Apply application-side redaction and Parseable access controls appropriate for your data. Avoid enabling the MySQL general log continuously; it is extremely verbose and also records the Collector's monitoring queries.
+Slow query logs, query samples, top query events, and traces can contain SQL text. Redact sensitive values in the application when needed, and keep Parseable access scoped to the teams that should inspect this data.
 </Callout>
 
-## Collector configuration
+## Configure the Collector
 
-Mount the MySQL log directory read-only into the Collector and create `otel-collector.yaml`. The configuration below expects `MYSQL_PASSWORD`, `PARSEABLE_ENDPOINT`, and `PARSEABLE_API_KEY` in the Collector environment.
+Mount the MySQL log directory read-only into the Collector and create `otel-collector.yaml`. The example below expects `MYSQL_PASSWORD`, `PARSEABLE_ENDPOINT`, and `PARSEABLE_API_KEY` in the Collector environment.
 
 ```yaml
 receivers:
@@ -203,7 +204,7 @@ processors:
       - key: service.name
         value: mysql-server
         action: upsert
-      - key: deployment.environment
+      - key: deployment.environment.name
         value: production
         action: upsert
   batch:
@@ -218,9 +219,6 @@ exporters:
       X-P-Stream: mysql-logs
       X-P-Log-Source: otel-logs
       Content-Type: application/json
-    retry_on_failure:
-      enabled: true
-      max_elapsed_time: 0s
 
   otlphttp/parseable_metrics:
     endpoint: ${env:PARSEABLE_ENDPOINT}
@@ -230,9 +228,6 @@ exporters:
       X-P-Stream: mysql-metrics
       X-P-Log-Source: otel-metrics
       Content-Type: application/json
-    retry_on_failure:
-      enabled: true
-      max_elapsed_time: 0s
 
   otlphttp/parseable_traces:
     endpoint: ${env:PARSEABLE_ENDPOINT}
@@ -242,9 +237,6 @@ exporters:
       X-P-Stream: mysql-traces
       X-P-Log-Source: otel-traces
       Content-Type: application/json
-    retry_on_failure:
-      enabled: true
-      max_elapsed_time: 0s
 
 service:
   pipelines:
@@ -262,52 +254,34 @@ service:
       exporters: [otlphttp/parseable_traces]
 ```
 
-`tls.insecure: true` disables TLS between the Collector and MySQL and is suitable only for a trusted local or container network. Configure a CA and certificate verification for production connections.
+`tls.insecure: true` disables TLS between the Collector and MySQL. This is fine for a trusted local or container network, but production deployments should configure certificate verification.
 
-Some optional metrics remain absent until their MySQL feature is active. Replica metrics, for example, require replication. Query plans also depend on the database version, captured SQL text, and monitoring-user privileges.
+The logs pipeline receives data from both `filelog/mysql` and `mysql`. That means `mysql-logs` can contain server log lines as well as optional query sample and top query events emitted by the receiver.
 
-## Instrument the database client
+## Send application traces
 
-Use the OpenTelemetry instrumentation for your application's MySQL driver and export spans to the Collector:
+Traces come from the application that calls MySQL. Configure your OpenTelemetry SDK or auto instrumentation to export spans to the Collector:
 
 ```bash
 OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
 OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
 OTEL_SERVICE_NAME=orders-api
-OTEL_RESOURCE_ATTRIBUTES=deployment.environment=production,db.system.name=mysql
+OTEL_RESOURCE_ATTRIBUTES=deployment.environment.name=production,db.system.name=mysql
 ```
 
-Database spans should include attributes such as `db.system.name=mysql`, `db.namespace`, `db.operation.name`, `server.address`, and `server.port`. Attribute availability depends on the language and instrumentation version.
+Database spans should include attributes such as `db.system.name=mysql`, `db.namespace`, `db.operation.name`, `server.address`, and `server.port`. The exact attributes depend on the language SDK and database instrumentation you use.
 
-To correlate a MySQL receiver query-sample event with the current application trace, set the session variable to a W3C Trace Context value before executing the query:
+If you want receiver query sample events to carry the same trace ID as an application span, set the MySQL session variable `@traceparent` before executing the query:
 
 ```sql
 SET @traceparent = '00-<32-hex-trace-id>-<16-hex-span-id>-01';
 ```
 
-The receiver copies that trace ID and span ID into the query-sample log. Client instrumentation does not necessarily set this MySQL session variable automatically.
-
-## Collected metrics and events
-
-Important metric families include:
-
-| Area | Metric examples |
-|---|---|
-| Availability and connections | `mysql.uptime`, `mysql.connection.count`, `mysql.connection.errors`, `mysql.max_used_connections`, `mysql.threads` |
-| Query activity | `mysql.query.count`, `mysql.query.client.count`, `mysql.commands`, `mysql.handlers`, `mysql.joins`, `mysql.sorts` |
-| InnoDB | `mysql.buffer_pool.usage`, `mysql.buffer_pool.limit`, `mysql.buffer_pool.pages`, `mysql.row_operations`, `mysql.row_locks` |
-| Table and index I/O | `mysql.table.io.wait.count`, `mysql.table.io.wait.time`, `mysql.index.io.wait.count`, `mysql.index.io.wait.time` |
-| Statement summaries | `mysql.statement_event.count`, `mysql.statement_event.wait.time` |
-| Table inventory | `mysql.table.rows`, `mysql.table.size`, `mysql.table_open_cache` |
-| Replication | `mysql.replica.sql_delay`, `mysql.replica.time_behind_source` |
-
-The optional `db.server.query_sample` and `db.server.top_query` events enter the logs pipeline. Their attributes include active query text, statement digests, execution counts, wait time, query plans when available, and session information.
-
-See the receiver's [generated metric and event documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/mysqlreceiver/documentation.md) for the complete list and version-specific behavior.
+The MySQL receiver reads this value from `performance_schema` and attaches the trace ID and span ID to the query sample log record when available.
 
 ## Verify ingestion
 
-Check all three datasets:
+Once the Collector starts, check the three datasets in Parseable.
 
 ```sql
 SELECT count(*) FROM "mysql-logs"
@@ -333,23 +307,35 @@ ORDER BY spans DESC;
 
 Metrics can also be queried with Parseable PromQL:
 
-```promql
+```text
 sum(rate(mysql.query.count{"mysql.instance.endpoint"=~".*"}[5m]))
 ```
 
+## View in Parseable
+
+The logs view is useful when you want to inspect MySQL server messages, slow query records, and query sample events around a problem window.
+
+![MySQL logs in Parseable](./static/mysql-logs.png)
+
+The metrics view helps you follow query activity, connection count, slow query count, InnoDB behavior, table size, and replication signals.
+
+![MySQL metrics in Parseable](./static/mysql-metrics.png)
+
+The traces view shows how the application reached MySQL, which operation ran, and how long that part of the request took.
+
+![MySQL traces in Parseable](./static/mysql-traces.png)
+
 ## Dashboards
 
-The reusable [MySQL Monitoring dashboard](https://github.com/parseablehq/dashboards/tree/main/mysql-monitoring) is available in the [parseablehq/dashboards](https://github.com/parseablehq/dashboards) repository. It uses PromQL for metrics and SQL for logs and traces.
+The reusable [MySQL Monitoring dashboard](https://github.com/parseablehq/dashboards/tree/main/mysql-monitoring) is available in the [parseablehq/dashboards](https://github.com/parseablehq/dashboards) repository. After importing the template, set the metrics, logs, and traces dataset variables to the names used by your deployment.
 
-After importing the template, set the metrics, logs, and traces dataset variables to the names used by your deployment. The instance, environment, and database variables are populated from metric labels.
+Exporter and receiver versions can change metric availability. If a panel is empty, first check which `metric_name` values are present in `mysql-metrics`, then update the query in the dashboard.
 
 ## Troubleshooting
 
-- Confirm the Collector uses the Contrib distribution; the core distribution does not include the MySQL or filelog receivers.
-- Confirm the monitoring user can run `SHOW GLOBAL STATUS` and read `performance_schema`.
-- Confirm `events_statements_current`, `events_statements_history_long`, and `events_waits_current` are enabled.
-- Confirm the Collector can read the configured error and slow-query log paths.
-- Check Collector logs for authentication errors, query-plan permission errors, and OTLP export failures.
-- Use the exact metric names in `metric_name`; names such as `mysql.connections`, `mysql.queries`, and `mysql.statement_events.count` are not emitted by the current receiver.
-- An HTTP `405` from Parseable normally means the Collector is using the query/UI endpoint instead of the ingestor.
-- Keep MySQL, Collector OTLP, and log-volume access private; only the Collector needs outbound access to Parseable.
+- If metrics do not arrive, confirm the Collector is running the Contrib distribution and that the monitoring user can run `SHOW GLOBAL STATUS`.
+- If query sample events are missing, confirm `performance_schema` is enabled and the required statement consumers are turned on.
+- If file logs are missing, confirm the Collector can read `/var/lib/mysql/error.log` and `/var/lib/mysql/slow.log`.
+- If traces are missing, confirm the application sends OTLP data to the Collector and that the traces pipeline exports to `mysql-traces`.
+- If Parseable returns `405`, the Collector is usually pointed at the query or UI endpoint instead of the ingestor endpoint.
+- If a metric is not present, check whether the matching MySQL feature is active. Some optional receiver metrics only appear when the feature exists in the database.
