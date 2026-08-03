@@ -1,4 +1,4 @@
 {
   "title": "Gateways",
-  "pages": ["index", "litellm"]
+  "pages": ["index", "litellm", "cloudflare-ai-gateway"]
 }
