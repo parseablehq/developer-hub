@@ -1,0 +1,61 @@
+---
+title: "AI Agent Access"
+description: "Use pb safely from AI coding agents and automation tools."
+---
+
+AI coding agents can use the installed `pb` binary through shell commands. The safest setup is to have a human create and verify the profile first, then let the agent use that saved connection.
+
+```bash
+pb login
+pb status --output json
+```
+
+Once the profile is ready, the agent can use it directly. It does not need the API key in its prompt and should not read `~/.config/pb/config.toml`.
+
+## Non-interactive profile setup
+
+For automation, load the API key from a secret store or environment variable. The profile name is up to you.
+
+<Tabs items={['Self-hosted', 'Parseable Cloud']}>
+  <Tab value="Self-hosted">
+
+  ```bash
+  pb profile add automation-readonly https://parseable.example.com \
+    --api-key "$PARSEABLE_API_KEY" --output json
+  ```
+
+  </Tab>
+  <Tab value="Parseable Cloud">
+
+  ```bash
+  pb cloud profile add --name automation-readonly \
+    --api-key "$PARSEABLE_CLOUD_API_KEY" --output json
+  ```
+
+  </Tab>
+</Tabs>
+
+If more than one profile exists, select the intended one before starting the agent:
+
+```bash
+pb profile default automation-readonly --output json
+pb status --output json
+```
+
+## Prefer read operations and JSON
+
+When an agent needs to read results programmatically, prefer JSON output:
+
+```bash
+pb status --output json
+pb dataset list --output json
+pb dataset info <dataset> --output json
+pb sql run "SELECT * FROM <dataset> LIMIT 10" --output json
+pb promql run "up" --dataset <metrics-dataset> --instant --output json
+```
+
+<Callout type="warn">
+Create a dedicated read-only API key or role with only the query and metadata permissions the agent needs. Never give an agent an administrator key or a shared human credential. Read-only access must be enforced by Parseable on the server; CLI instructions alone cannot prevent create, update, or delete attempts.
+</Callout>
+
+Keep API keys out of prompts, source control, logs, and agent instruction files.

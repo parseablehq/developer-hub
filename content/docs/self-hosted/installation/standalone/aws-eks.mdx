@@ -65,6 +65,6 @@ eksctl create iamserviceaccount --name my-service-account --namespace default --
 
 You can now refer to the standard Kubernetes documentation for Parseable installation, with Helm Chart or the Kubernetes Operator. Just ensure to use the service account you created above.
 
-If you're using Parseable Helm Chart, set `serviceAccount.create` to `false` and `serviceAccount.name` to the name of the service account you created above. For example `my-service-account`.
+If you're using Parseable Helm Chart `3.0.1` or later, set `parseable.serviceAccount.create` to `false` and `parseable.serviceAccount.name` to the name of the service account you created above. For example `my-service-account`. Omit `s3.access.key` and `s3.secret.key` from `parseable-env-secret`; see [Kubernetes with IRSA](/docs/self-hosted/storage-targets/aws-s3#kubernetes-with-irsa) for details.
 
 If you're using the Parseable Operator, set `serviceAccountName` under the `k8sConfig` section. Refer to a sample CR example [here](https://github.com/parseablehq/operator/blob/main/config/samples/parseable-persistent.yaml).

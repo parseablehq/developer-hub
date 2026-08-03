@@ -7,7 +7,7 @@ description: "Manage users and role-based access control with pb user and pb rol
 These commands require admin privileges on the Parseable server.
 </Callout>
 
-Parseable uses role-based access control (RBAC). Roles define what a user can do on which datasets. You create roles first, then assign them to users.
+Parseable uses role-based access control. In practice, that means you define roles first, then assign those roles to users.
 
 ## Roles
 
@@ -17,16 +17,18 @@ Parseable uses role-based access control (RBAC). Roles define what a user can do
 pb role add <name>
 ```
 
-This starts an interactive prompt where you choose a privilege level and the dataset it applies to.
+This opens an interactive prompt where you choose the privilege level and the dataset scope.
 
 **Privilege levels:**
 
 | Privilege | Access |
 |---|---|
+| `none` | No server privileges |
+| `admin` | Full system-wide access |
+| `editor` | Read and write access across datasets |
 | `reader` | Read-only access to a specific dataset |
 | `writer` | Read and write access to a specific dataset |
 | `ingestor` | Write-only (ingest) access to a specific dataset |
-| `admin` | Full system-wide access |
 
 ```bash
 pb role add log-readers
@@ -66,7 +68,7 @@ pb role rm <name>
 pb user add <username>
 ```
 
-The server generates a password and prints it. Save it because it cannot be retrieved later.
+The server generates a password and prints it once. Keep it somewhere safe because it cannot be retrieved later.
 
 Assign roles at creation time:
 
