@@ -315,21 +315,29 @@ sum(rate(mysql.query.count{"mysql.instance.endpoint"=~".*"}[5m]))
 
 The logs view is useful when you want to inspect MySQL server messages, slow query records, and query sample events around a problem window.
 
-![MySQL logs in Parseable](./static/mysql-logs.png)
+![MySQL logs in Parseable](./static/mysql_logs.png)
 
 The metrics view helps you follow query activity, connection count, slow query count, InnoDB behavior, table size, and replication signals.
 
-![MySQL metrics in Parseable](./static/mysql-metrics.png)
+![MySQL metrics in Parseable](./static/mysql_metrics.png)
 
 The traces view shows how the application reached MySQL, which operation ran, and how long that part of the request took.
 
-![MySQL traces in Parseable](./static/mysql-traces.png)
+![MySQL traces in Parseable](./static/mysql_traces.png)
 
 ## Dashboards
 
 The reusable [MySQL Monitoring dashboard](https://github.com/parseablehq/dashboards/tree/main/mysql-monitoring) is available in the [parseablehq/dashboards](https://github.com/parseablehq/dashboards) repository. After importing the template, set the metrics, logs, and traces dataset variables to the names used by your deployment.
 
 Exporter and receiver versions can change metric availability. If a panel is empty, first check which `metric_name` values are present in `mysql-metrics`, then update the query in the dashboard.
+
+The dashboard gives you a ready-made view for MySQL logs, metrics, and traces once the datasets are populated.
+
+![MySQL logs dashboard in Parseable](./static/mysql-logs.png)
+
+![MySQL metrics dashboard in Parseable](./static/mysql-metrics.png)
+
+![MySQL traces dashboard in Parseable](./static/mysql-traces.png)
 
 ## Troubleshooting
 
