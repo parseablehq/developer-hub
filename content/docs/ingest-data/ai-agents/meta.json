@@ -11,6 +11,7 @@
     "llamaindex",
     "autogen",
     "crewai",
+    "mastra",
     "dspy",
     "n8n",
     "daytona",
