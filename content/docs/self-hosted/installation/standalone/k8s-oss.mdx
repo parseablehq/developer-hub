@@ -269,10 +269,12 @@ Before continuing:
 
 ### Storage behavior
 
-- `staging.enabled: true` creates a staging PVC. `false` uses temporary `emptyDir` storage.
-- With `local-store`, `data.enabled: true` creates a data PVC. `false` uses temporary `emptyDir` storage.
+- `staging.enabled: true` creates a staging PVC. `false` uses `emptyDir`, so pending staged data is lost if the Pod is replaced.
+- With `local-store`, `data.enabled: true` creates a data PVC. `false` uses `emptyDir`, so stored data is lost if the Pod is replaced.
 - If local-store data is disabled, staging must also be disabled. The chart rejects persistent staging with temporary local data.
 - With S3, GCS, or Azure Blob Storage, permanent data is stored in the object store. The chart does not create or mount a data volume.
+- Choose between PVC and `emptyDir` during installation. Changing that choice later requires recreating the StatefulSet.
+- Kubernetes rejects changing a volume claim template's `size` on an existing StatefulSet. If the StorageClass supports volume expansion, resize the generated PVC directly.
 
 <Callout type="warn">
   **Upgrading to chart 3.1.0**
