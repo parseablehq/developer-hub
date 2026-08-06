@@ -1,13 +1,17 @@
 ---
 title: Overview
-description: Ship Temporal workflow and activity execution events to Parseable as OpenTelemetry logs and traces
+description: Ship Temporal workflow and activity execution events to Parseable as OpenTelemetry logs, traces, and SDK metrics
 ---
 
-Parseable provides middleware plugins for [Temporal](https://temporal.io/) that ship workflow and activity execution events to a Parseable instance as OpenTelemetry **logs** and **traces**. Drop the plugin into a worker and every workflow run produces:
+Parseable provides middleware plugins for [Temporal](https://temporal.io/) that ship workflow and activity execution events to a Parseable instance as OpenTelemetry **logs** and **traces**. Temporal SDKs can also expose worker and client level **metrics**, which can be scraped by Prometheus and forwarded to Parseable through Prometheus Remote Write.
+
+Drop the Parseable plugin into a worker and every workflow run produces:
 
 - A flame-graph trace of the run, including child workflows and activity calls.
 - A flat, queryable log schema with `workflow_id`, `activity_name`, `attempt`, `duration_ms`, `status`, `error`, etc.
 - Custom domain events via a replay-safe `workflowEvent()` / `workflow_event()` helper - useful for AI agents and multi-step orchestrators that want to emit "tool called", "plan chosen", "step started" alongside Temporal's built-in lifecycle events.
+
+For metrics, enable Temporal SDK telemetry on the worker or client process and expose the Prometheus endpoint from that process. Prometheus can then scrape those metrics and remote write them into a metrics dataset in Parseable.
 
 ## Pick your SDK
 
@@ -34,12 +38,65 @@ All workflow-side emission is **replay-safe**: every plugin guards emission so w
 
 Logs are POSTed to `${endpoint}/v1/logs`; traces to `${endpoint}/v1/traces`. The two pipelines are independently configurable - disable either layer per-SDK (`logs: false`, `traces: false`, `logs=None`, etc.).
 
-Streams default to `temporal-logs` and `temporal-traces`. Pre-create them once before first run:
+Streams default to `temporal-logs` and `temporal-traces`. Let the OTLP ingest path create these datasets on first write, or make sure any existing dataset matches the signal type. `temporal-logs` should be a logs dataset and `temporal-traces` should be a traces dataset.
 
-```bash
-curl -u admin:admin -X PUT https://<parseable-host>/api/v1/logstream/temporal-logs
-curl -u admin:admin -X PUT https://<parseable-host>/api/v1/logstream/temporal-traces
+<Callout type="warn">
+Do not create `temporal-traces` as a plain log dataset through the logstream API. Trace records should arrive through `/v1/traces` so Parseable stores them as traces.
+</Callout>
+
+Metrics follow a separate Prometheus path. Temporal exposes SDK metrics from the worker or client process, Prometheus scrapes that endpoint, and Parseable receives the samples through `POST /v1/prometheus/write`.
+
+```text
+Temporal Worker or Client
+  |
+  | Prometheus scrape
+  v
+Prometheus
+  |
+  | remote_write
+  v
+Parseable /v1/prometheus/write
+  |
+  +--> temporal-metrics
 ```
+
+Example Prometheus remote write configuration:
+
+```yaml
+scrape_configs:
+  - job_name: temporal-worker
+    static_configs:
+      - targets: ['temporal-worker:9464']
+
+remote_write:
+  - url: "https://<parseable-host>:8000/v1/prometheus/write"
+    headers:
+      X-API-Key: <parseable-api-key>
+      X-P-Stream: temporal-metrics
+      X-P-Log-Source: otel-metrics
+```
+
+Temporal SDK metrics include worker activity, workflow task execution, activity execution, task queue polling, schedule-to-start latency, and end-to-end workflow execution latency. The exact metric names depend on the SDK and the Temporal runtime path being used, so use Temporal's official [SDK metrics reference](https://docs.temporal.io/references/sdk-metrics) when deciding what to dashboard.
+
+To validate the setup, run a workflow and check three places in Parseable:
+
+- `temporal-logs` should show workflow, activity, signal, query, update, and custom event records.
+- `temporal-traces` should show workflow and activity spans for the run.
+- `temporal-metrics` should show SDK metrics after Prometheus scrapes the worker or client process and remote writes to Parseable.
+
+## View in Parseable
+
+Once the worker starts exporting data, each signal lands in its own dataset. Start with the Logs page when you want a flat event view of workflow and activity lifecycle records. This is useful for filtering by `workflow_id`, `activity_name`, `status`, or `error`.
+
+![Temporal workflow logs in Parseable](./static/temporal-logs.png)
+
+Use the Traces page when you want to follow a workflow run as spans. This gives you the execution shape of the run, including workflow spans, activity spans, child workflow calls, and timing.
+
+![Temporal workflow traces in Parseable](./static/temporal-traces.png)
+
+Use the Metrics page for Temporal SDK metrics collected through Prometheus. This is where worker, workflow task, activity, polling, and latency metrics show up after Prometheus remote writes them into Parseable.
+
+![Temporal SDK metrics in Parseable](./static/temporal-metrics.png)
 
 ## Log schema
 
@@ -67,7 +124,7 @@ All three SDKs write to one log stream (default `temporal-logs`). Records share 
 
 All logs and traces carry a `parseable.plugin.version` resource attribute so consumers can correlate behaviour with plugin releases.
 
-Trace spans are emitted by Temporal's official OTel instrumentation - see the [Temporal observability docs](https://docs.temporal.io/develop/typescript/observability) for the span schema.
+Trace spans are emitted by Temporal's official OTel instrumentation - see the [Temporal observability docs](https://docs.temporal.io/develop/typescript/platform/observability) for the span schema.
 
 ## Example queries
 
@@ -105,6 +162,18 @@ FROM "temporal-logs"
 WHERE workflow_id = '<workflow_id>'
 ORDER BY timestamp;
 ```
+
+## Dashboards
+
+After logs, traces, and metrics are flowing, you can use dashboards to keep the main workflow signals in one place. Parseable provides a Temporal workflow observability dashboard in [parseablehq/dashboards](https://github.com/parseablehq/dashboards/tree/main/temporal-workflow-observability). Use it as a starting point, then update dataset names and queries for your Temporal deployment.
+
+The spans dashboard helps you look at workflow and activity execution across runs without opening each trace manually.
+
+![Temporal spans dashboard in Parseable](./static/temporal-span-dashboard.png)
+
+The metrics dashboard gives you a quick way to watch SDK level worker and workflow metrics after Prometheus starts forwarding them to Parseable.
+
+![Temporal metrics dashboard in Parseable](./static/temporal-metrics-dashboard.png)
 
 ## Caveats (apply to all SDKs)
 
