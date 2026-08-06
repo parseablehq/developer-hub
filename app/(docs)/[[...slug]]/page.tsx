@@ -12,6 +12,7 @@ import { CopyPageDropdown } from "@/components/CopyPageDropdown";
 import { Feedback } from "@/components/feedback/client";
 import { onPageFeedbackAction } from "@/components/feedback/actions";
 import { MdxLink } from "@/components/MdxLink";
+import { getPageDescription } from "@/lib/page-metadata";
 
 export default async function Page(props: {
   params: Promise<{ slug?: string[] }>;
@@ -26,6 +27,10 @@ export default async function Page(props: {
   if (!page) notFound();
 
   const MDXContent = page.data.body;
+  const description = getPageDescription(
+    page.data.title,
+    page.data.description,
+  );
 
   return (
     <DocsPage
@@ -39,7 +44,7 @@ export default async function Page(props: {
       }}
     >
       <DocsTitle>{page.data.title}</DocsTitle>
-      <DocsDescription>{page.data.description}</DocsDescription>
+      <DocsDescription>{description}</DocsDescription>
       <div className="flex flex-row gap-2 items-center mb-4">
         <CopyPageDropdown
           slug={params.slug ?? []}
@@ -73,15 +78,29 @@ export async function generateMetadata(props: {
   if (!params.slug || params.slug.length === 0) {
     return {
       title: "Parseable Documentation",
-      description: "Welcome to the Parseable documentation",
+      description:
+        "Explore Parseable documentation for installation, telemetry ingestion, querying, integrations, and operating an observability data lake.",
     };
   }
 
   const page = source.getPage(params.slug);
   if (!page) notFound();
 
+  const description = getPageDescription(
+    page.data.title,
+    page.data.description,
+  );
+
   return {
     title: page.data.title,
-    description: page.data.description,
+    description,
+    openGraph: {
+      title: page.data.title,
+      description,
+    },
+    twitter: {
+      title: page.data.title,
+      description,
+    },
   };
 }
