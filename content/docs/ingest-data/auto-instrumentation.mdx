@@ -19,63 +19,44 @@ PAI fills that gap for Parseable users specifically:
 | Namespace filtering | You manage glob patterns per collector | Declarative `namespaceSelector` per signal |
 | Lifecycle management | You create/update/delete each OTel CR manually | PAI reconciles everything when the CR changes |
 | Cleanup | Manual teardown of each resource | Delete the `ParseableConfig` CR — PAI cleans up everything |
-| Parseable-specific headers | You wire `X-P-Stream`, `Authorization`, etc. by hand | Built in automatically |
+| Parseable-specific headers | You wire `X-P-Stream`, authentication headers, etc. by hand | Built in automatically |
 
 In short: the OTel Operator runs the machinery. PAI drives it on your behalf, tuned for Parseable.
 
 ## Architecture
 
 ```text
-┌──────────────────────────────────────────────────────────────────────┐
-│  Kubernetes Cluster                                                  │
-│                                                                      │
-│   You                                                                │
-│    │  kubectl apply parseableconfig.yaml                             │
-│    ▼                                                                 │
-│  ┌──────────────────┐                                                │
-│  │   PAI Operator   │  watches ParseableConfig CR                    │
-│  └────────┬─────────┘                                                │
-│           │ creates & manages                                        │
-│    ┌──────┴───────────────────────────────────────────┐              │
-│    │                   │                   │          │              │
-│    ▼                   ▼                   ▼          ▼              │
-│  ┌────────────┐  ┌────────────┐  ┌───────────────┐  ┌──────────┐     │
-│  │ OTel Coll. │  │ OTel Coll. │  │Instrumentation│  │PAI Agent │     │
-│  │ (DaemonSet)│  │(Deployment)│  │     CR        │  │(DaemonSet│     │
-│  │            │  │            │  │               │  │language  │     │
-│  │ • Logs     │  │• Pod       │  │ Auto-injects  │  │detection)│     │
-│  │ • Node     │  │  metrics   │  │ OTel SDK into │  │          │     │
-│  │   metrics  │  │• Events    │  │ app pods      │  └──────────┘     │
-│  └─────┬──────┘  └─────┬──────┘  └───────┬───────┘                   │
-│        │               │                 │                           │
-│        │         ┌─────┴──────────┐      │                           │
-│        │         │  App pods with │◄─────┘                           │
-│        │         │  OTel SDK      │                                  │
-│        │         │  (traces)      │                                  │
-│        │         └───────┬────────┘                                  │
-│        │                 │                                           │
-└────────┼─────────────────┼───────────────────────────────────────────┘
-         │                 │
-         │   OTLP / HTTP   │
-         └────────┬────────┘
-                  ▼
-         ┌─────────────────┐
-         │    Parseable    │
-         │                 │
-         │  datasets:      │
-         │  • pai-logs     │
-         │  • pai-traces   │
-         │  • pai-*metrics │
-         │  • pai-events   │
-         └─────────────────┘
+ParseableConfig
+      │
+      ▼
+PAI Operator
+      │ creates and manages
+      ├── pai-log-collector (DaemonSet)
+      │     ├── pod and host-file logs
+      │     └── kubelet resource metrics
+      │
+      ├── pai-metrics-events-collector (Deployment)
+      │     ├── cluster and Prometheus metrics
+      │     └── Kubernetes events
+      │
+      ├── pai-instrumentation-collector-v1
+      │     └── injects OTel SDKs into application pods
+      │
+      ├── pai-traces (Deployment)
+      │     ▲
+      │     └── traces from instrumented application pods
+      │
+      └── pai-agent (DaemonSet) for language detection
+
+Collectors ── OTLP/HTTP ──► Parseable datasets
 ```
 
 **Data flow summary:**
 
 1. You apply a single `ParseableConfig` CR describing what to collect and where to send it.
 2. PAI generates and manages all OTel Collector configurations and the Instrumentation CR.
-3. The log/metrics/events collectors push data to Parseable over OTLP/HTTP.
-4. Instrumented application pods send traces directly to Parseable using the injected OTel SDK.
+3. The log, metrics, events, and trace collectors push data to Parseable over OTLP/HTTP.
+4. Instrumented application pods send traces to the stable in-cluster `pai-traces-collector` Service.
 
 ## How it works
 
@@ -110,7 +91,7 @@ helm install opentelemetry-operator open-telemetry/opentelemetry-operator \
 ### Install the PAI operator
 
 ```bash
-helm repo add parseable https://charts.parseable.com/helm-releases
+helm repo add parseable https://charts.parseable.com
 helm repo update
 helm install pai parseable/pai -n pai-system --create-namespace
 ```
@@ -123,7 +104,7 @@ kubectl get pods -n pai-system
 
 ### Create a credentials secret
 
-PAI needs your Parseable credentials to authenticate when forwarding telemetry data:
+PAI needs your Parseable credentials to authenticate when forwarding telemetry data. For basic authentication, create a secret with `username` and `password`:
 
 ```bash
 kubectl create secret generic parseable-creds \
@@ -132,9 +113,17 @@ kubectl create secret generic parseable-creds \
   -n pai-system
 ```
 
+For API-key authentication, create a secret with an `apiKey` key instead:
+
+```bash
+kubectl create secret generic parseable-creds \
+  --from-literal=apiKey=<YOUR_PARSEABLE_API_KEY> \
+  -n pai-system
+```
+
 ### Apply a ParseableConfig resource
 
-Create a `ParseableConfig` CR to start collecting data. Below is a complete example — remove sections for signal types you don't need.
+Create a `ParseableConfig` CR to start collecting data. The example below uses API-key authentication. If you created a basic-auth secret, set `authType: basic` or omit `authType` to use the default. Remove sections for signal types you don't need.
 
 ```yaml
 # parseableconfig.yaml
@@ -146,26 +135,32 @@ metadata:
 spec:
   target:
     endpoint: https://<YOUR_PARSEABLE_ENDPOINT>
+    authType: apiKey
+    encoding: json
     credentialsSecret:
       name: parseable-creds
       namespace: pai-system
 
   logs:
-    targetDataset: pai-logs
-    namespaceSelector:
-      mode: include
-      namespaces:
-        - my-app-namespace
-
-  metrics:
-    podMetrics:
-      targetDataset: pai-pod-metrics
+    podLogs:
+      enabled: true
+      targetDataset: pai-logs
       namespaceSelector:
         mode: include
         namespaces:
           - my-app-namespace
-    nodeMetrics:
-      targetDataset: pai-node-metrics
+
+  metrics:
+    clusterMetrics:
+      targetDataset: pai-cluster-metrics
+      namespaceSelector:
+        mode: include
+        namespaces:
+          - my-app-namespace
+      k8sCluster:
+        enabled: true
+      kubelet:
+        enabled: true
 
   events:
     enabled: true
@@ -200,9 +195,10 @@ Once the CR is applied, PAI automatically provisions the following resources in 
 
 | Resource | Type | What it does |
 |---|---|---|
-| `pai-log-collector` | OTel Collector (DaemonSet) | Reads container logs from every node via the `filelog` receiver |
-| `pai-metrics-events-collector` | OTel Collector (Deployment) | Collects pod metrics via `k8s_cluster` receiver and cluster events via `k8sobjects` |
-| `pai-instrumentation` | Instrumentation CR | Auto-injects OTel SDKs into application pods for distributed tracing |
+| `pai-log-collector` | OTel Collector (DaemonSet) | Reads pod and host-file logs and collects kubelet resource metrics from every node |
+| `pai-metrics-events-collector` | OTel Collector (Deployment) | Collects cluster and Prometheus metrics and Kubernetes events |
+| `pai-traces` | OTel Collector (Deployment) | Receives traces from instrumented workloads and exports them to Parseable |
+| `pai-instrumentation-collector-v1` | Instrumentation CR | Auto-injects OTel SDKs into application pods and routes traces through the trace collector |
 | `pai-agent` | DaemonSet | Detects application runtime languages, including distroless containers |
 
 You do not need to configure any of these manually — PAI manages their full lifecycle.
@@ -211,16 +207,18 @@ You do not need to configure any of these manually — PAI manages their full li
 
 ### Logs
 
-Container stdout/stderr logs collected from every node. Each log record is enriched with Kubernetes metadata: pod name, namespace, container name, and node name.
+Container stdout/stderr logs collected from every node. Each log record is enriched with Kubernetes metadata: pod name, namespace, container name, and node name. PAI can also tail arbitrary host log directories through `spec.logs.files`.
 
 ### Metrics
 
-- **Pod metrics** — container CPU, memory, and network utilization
-- **Node metrics** — node-level CPU, memory, disk, and network utilization
+- **Kubernetes object state** through the `k8s_cluster` receiver
+- **Pod, container, and node resource metrics** through the `kubeletstats` receiver
+- **Kube-state-metrics** scraping when enabled and available in the cluster
+- **Application Prometheus metrics** through `spec.metrics.scrapeConfigs`
 
 ### Traces
 
-Distributed traces from auto-instrumented applications. PAI injects the OpenTelemetry SDK as an init container — no code changes required. Supported runtimes: Java, Python, Node.js, .NET.
+Distributed traces from auto-instrumented applications. PAI injects the OpenTelemetry SDK as an init container — no code changes required. Instrumented applications send traces to the in-cluster trace collector, which exports them to Parseable. Supported runtimes: Java, Python, Node.js, .NET.
 
 ### Events
 
@@ -228,7 +226,7 @@ Kubernetes cluster events (pod scheduling, restarts, failures, etc.) streamed in
 
 ## Filtering by namespace
 
-Each signal type supports a `namespaceSelector` to control which namespaces to collect from:
+Kubernetes-aware signal configurations support a `namespaceSelector` to control which namespaces to collect from:
 
 ```yaml
 namespaceSelector:
@@ -242,6 +240,7 @@ namespaceSelector:
 - `exclude` — collect from all namespaces except the listed ones
 - Omit `namespaceSelector` entirely — collect from all namespaces
 
+For `clusterMetrics`, namespace filtering applies to pod-scoped metrics. Node-scoped metrics are not filtered.
 
 ### Verify the setup
 
@@ -257,23 +256,110 @@ Check the status of your `ParseableConfig`, including which workloads were instr
 kubectl get parseableconfig production -n pai-system -o yaml
 ```
 
-The `status.workloads` field lists instrumented workloads and their detected language.
+The `status.conditions` field reports reconciliation errors. The `status.workloads` field lists instrumented workloads and their detected language.
 
-Once data is flowing, open your Parseable console and look for the datasets you specified (`pai-logs`, `pai-pod-metrics`, `pai-traces`, etc.).
+Once data is flowing, open your Parseable console and look for the datasets you specified (`pai-logs`, `pai-cluster-metrics`, `pai-traces`, etc.).
+
+### Troubleshoot collector logs
+
+If data is not reaching Parseable, list the collector pods and inspect the relevant pod for configuration, authentication, or export errors:
+
+```bash
+kubectl get pods -n pai-system
+kubectl logs -n pai-system <COLLECTOR_POD_NAME> --all-containers --tail=200
+```
+
+Metrics and events share one collector, while traces use a dedicated collector:
+
+```bash
+# Metrics and events
+kubectl logs -n pai-system deployment/pai-metrics-events-collector-collector --all-containers --tail=200
+
+# Traces
+kubectl logs -n pai-system deployment/pai-traces-collector --all-containers --tail=200
+```
+
+The log collector runs as a DaemonSet. Select the `pai-log-collector` pod on the affected node from the pod list. Add `-f` to any log command to stream logs continuously.
 
 ## Optional configuration
+
+### Target authentication and encoding
+
+`spec.target.authType` supports `basic` (the default) and `apiKey`. A basic-auth secret must contain `username` and `password`; an API-key secret must contain `apiKey`.
+
+`spec.target.encoding` supports `json` (the default and most widely compatible option) and `proto`.
+
+### Host file logs
+
+Use `spec.logs.files` to tail every log file under a directory on each node:
+
+```yaml
+spec:
+  logs:
+    files:
+      - name: audit-logs
+        hostPath: /var/log/app/audit
+        targetDataset: pai-audit-logs
+```
+
+### Prometheus scrape configurations
+
+Use `spec.metrics.scrapeConfigs` to discover pods and scrape application metrics:
+
+```yaml
+spec:
+  metrics:
+    scrapeConfigs:
+      - name: application-metrics
+        uri: /metrics
+        port: 8080
+        targetDataset: pai-application-metrics
+        podSelector:
+          app.kubernetes.io/name: my-app
+```
+
+To scrape an existing kube-state-metrics service, enable it under the built-in cluster metrics configuration:
+
+```yaml
+spec:
+  metrics:
+    clusterMetrics:
+      targetDataset: pai-cluster-metrics
+      kubeState:
+        enabled: true
+        namespaces:
+          - kube-system
+          - kube-state-metrics
+```
+
+### Trace workload selection
+
+Use `spec.traces.workloadSelector` to include or exclude workloads by Kubernetes labels:
+
+```yaml
+spec:
+  traces:
+    targetDataset: pai-traces
+    workloadSelector:
+      mode: include
+      matchLabels:
+        observability: enabled
+```
 
 ### HTTP headers reference
 
 Custom headers can be set at two scopes in the `ParseableConfig` CR:
 
+PAI-generated authentication, dataset, log-source, and tenant headers always take precedence over custom headers.
+
 | Scope | CR field | Applies to |
 | --- | --- | --- |
 | Global | `spec.target.headers` | All signals (logs, metrics, traces, events) |
 | Traces only | `spec.traces.headers` | Traces exporter |
-| Logs only | `spec.logs.headers` | Logs exporter |
-| Pod metrics only | `spec.metrics.podMetrics.headers` | Pod metrics exporter |
-| Node metrics only | `spec.metrics.nodeMetrics.headers` | Node metrics exporter |
+| Pod logs | `spec.logs.podLogs.headers` | Pod-log exporter |
+| Host file logs | `spec.logs.files[].headers` | The selected file-log exporter |
+| Cluster metrics | `spec.metrics.clusterMetrics.headers` | Built-in cluster metric receivers |
+| Prometheus scrape | `spec.metrics.scrapeConfigs[].headers` | The selected scrape exporter |
 | Events only | `spec.events.headers` | Events exporter |
 
 ```yaml
@@ -285,9 +371,11 @@ spec:
       X-P-Team: "platform"
 
   logs:
-    targetDataset: pai-logs
-    headers:
-      X-P-Environment: "production-logs"  # overrides the global value for logs only
+    podLogs:
+      enabled: true
+      targetDataset: pai-logs
+      headers:
+        X-P-Environment: "production-logs"  # overrides the global value for pod logs
 
   traces:
     targetDataset: pai-traces
