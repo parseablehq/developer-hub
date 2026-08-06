@@ -84,6 +84,20 @@ To validate the setup, run a workflow and check three places in Parseable:
 - `temporal-traces` should show workflow and activity spans for the run.
 - `temporal-metrics` should show SDK metrics after Prometheus scrapes the worker or client process and remote writes to Parseable.
 
+## View in Parseable
+
+Once the worker starts exporting data, each signal lands in its own dataset. Start with the Logs page when you want a flat event view of workflow and activity lifecycle records. This is useful for filtering by `workflow_id`, `activity_name`, `status`, or `error`.
+
+![Temporal workflow logs in Parseable](./static/temporal-logs.png)
+
+Use the Traces page when you want to follow a workflow run as spans. This gives you the execution shape of the run, including workflow spans, activity spans, child workflow calls, and timing.
+
+![Temporal workflow traces in Parseable](./static/temporal-traces.png)
+
+Use the Metrics page for Temporal SDK metrics collected through Prometheus. This is where worker, workflow task, activity, polling, and latency metrics show up after Prometheus remote writes them into Parseable.
+
+![Temporal SDK metrics in Parseable](./static/temporal-metrics.png)
+
 ## Log schema
 
 All three SDKs write to one log stream (default `temporal-logs`). Records share a common envelope with fields specialized by `type`:
@@ -148,6 +162,18 @@ FROM "temporal-logs"
 WHERE workflow_id = '<workflow_id>'
 ORDER BY timestamp;
 ```
+
+## Dashboards
+
+After logs, traces, and metrics are flowing, you can use dashboards to keep the main workflow signals in one place. Parseable provides a Temporal workflow observability dashboard in [parseablehq/dashboards](https://github.com/parseablehq/dashboards/tree/main/temporal-workflow-observability). Use it as a starting point, then update dataset names and queries for your Temporal deployment.
+
+The spans dashboard helps you look at workflow and activity execution across runs without opening each trace manually.
+
+![Temporal spans dashboard in Parseable](./static/temporal-span-dashboard.png)
+
+The metrics dashboard gives you a quick way to watch SDK level worker and workflow metrics after Prometheus starts forwarding them to Parseable.
+
+![Temporal metrics dashboard in Parseable](./static/temporal-metrics-dashboard.png)
 
 ## Caveats (apply to all SDKs)
 
