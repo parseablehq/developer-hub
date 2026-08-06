@@ -219,11 +219,11 @@ parseable:
     # Azure Blob Storage: blob-store
     type: s3-store
     secretName: parseable-env-secret
- # Google Cloud Storage only: uncomment this block.
- # gcsCredentials:
- #   secretName: parseable-gcs-key
- #   secretKey: key.json
- #   mountPath: /var/secrets/google
+    # Google Cloud Storage only: uncomment this block.
+    # gcsCredentials:
+    #   secretName: parseable-gcs-key
+    #   secretKey: key.json
+    #   mountPath: /var/secrets/google
 
   clusterSecret:
     enabled: true
@@ -232,6 +232,10 @@ parseable:
 
   enterprise:
     enabled: true
+    image:
+      repository: quay.io/parseablehq/parseable-enterprise
+      tag: "" # Defaults to the Helm chart appVersion
+      pullPolicy: IfNotPresent
     license:
       secretName: parseable-license
       mountPath: /tmp/license
@@ -240,6 +244,8 @@ parseable:
   distributed:
     ingestor:
       replicas: 3
+      env:
+        RUST_LOG: warn
       resources:
         requests:
           cpu: 250m
@@ -256,6 +262,8 @@ parseable:
 
     querier:
       replicas: 1
+      env:
+        RUST_LOG: warn
       resources:
         requests:
           cpu: 250m
@@ -268,10 +276,12 @@ parseable:
           enabled: true
           storageClass: <storage-class>
           accessMode: ReadWriteOnce
-          size: 100Gi
+          size: 50Gi
 
     prism:
       replicas: 1
+      env:
+        RUST_LOG: warn
       resources:
         requests:
           cpu: 500m
@@ -290,6 +300,13 @@ Before continuing:
 2. If you selected Google Cloud Storage, uncomment the `gcsCredentials` block.
 3. Replace both `<storage-class>` placeholders with a storage class returned by `kubectl get storageclass`.
 4. Adjust replicas, CPU, memory, and volume sizes for your workload.
+
+### Storage behavior
+
+- Enterprise distributed mode requires S3, GCS, or Azure Blob Storage. It does not support `local-store`.
+- Ingestor `staging.enabled: true` creates one staging PVC per ingestor. `false` uses `emptyDir`, so pending staged data is lost if the Pod is replaced.
+- Querier `hotTier.enabled: true` creates one hot-tier PVC per querier. `false` uses `emptyDir`. Hot tier is a cache and can rebuild from the object store.
+- Choose both settings during installation. To change one later, recreate the affected StatefulSet.
 
 ## 8. Install Parseable Enterprise
 

@@ -195,21 +195,28 @@ Create a file named `oss-values.yaml`:
 parseable:
   deploymentMode: distributed
 
+  image:
+    repository: quay.io/parseablehq/parseable
+    tag: "" # Defaults to the Helm chart appVersion
+    pullPolicy: IfNotPresent
+
   store:
     # MinIO and Amazon S3: s3-store
     # Google Cloud Storage: gcs-store
     # Azure Blob Storage: blob-store
     type: s3-store
     secretName: parseable-env-secret
- # Google Cloud Storage only: uncomment this block.
- # gcsCredentials:
- #   secretName: parseable-gcs-key
- #   secretKey: key.json
- #   mountPath: /var/secrets/google
+    # Google Cloud Storage only: uncomment this block.
+    # gcsCredentials:
+    #   secretName: parseable-gcs-key
+    #   secretKey: key.json
+    #   mountPath: /var/secrets/google
 
   distributed:
     ingestor:
       replicas: 3
+      env:
+        RUST_LOG: warn
       resources:
         requests:
           cpu: 250m
@@ -226,6 +233,8 @@ parseable:
 
     querier:
       replicas: 1
+      env:
+        RUST_LOG: warn
       resources:
         requests:
           cpu: 250m
@@ -233,12 +242,6 @@ parseable:
         limits:
           cpu: 500m
           memory: 4Gi
-      persistence:
-        hotTier:
-          enabled: true
-          storageClass: <storage-class>
-          accessMode: ReadWriteOnce
-          size: 100Gi
 ```
 
 To enable OIDC, add the variables under
@@ -248,8 +251,15 @@ Before continuing:
 
 1. Set `parseable.store.type` for the object store selected in step 3.
 2. If you selected Google Cloud Storage, uncomment the `gcsCredentials` block.
-3. Replace both `<storage-class>` placeholders with a storage class returned by `kubectl get storageclass`.
-4. Adjust replicas, CPU, memory, and volume sizes for your workload.
+3. Replace `<storage-class>` with a storage class returned by `kubectl get storageclass`.
+4. Adjust replicas, CPU, memory, and the staging volume size for your workload.
+
+### Storage behavior
+
+- Distributed mode requires S3, GCS, or Azure Blob Storage. It does not support `local-store`.
+- `staging.enabled: true` creates one staging PVC for each ingestor.
+- `staging.enabled: false` uses `emptyDir`. Pending staged data is lost if the ingestor Pod is replaced.
+- Choose the staging setting during installation. To change it later, recreate the ingestor StatefulSet.
 
 ## 7. Install Parseable
 
