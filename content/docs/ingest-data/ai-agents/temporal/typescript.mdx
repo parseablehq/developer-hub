@@ -19,9 +19,21 @@ npm install @parseable/temporal
 
 ## Configuration
 
+Install Temporal runtime telemetry once, before you create the Worker or Client. The Parseable plugin configuration stays inside `Worker.create`.
+
 ```ts
-import { Worker } from '@temporalio/worker';
+import { Runtime, Worker } from '@temporalio/worker';
 import { ParseablePlugin } from '@parseable/temporal';
+
+Runtime.install({
+  telemetryOptions: {
+    metrics: {
+      prometheus: {
+        bindAddress: '0.0.0.0:9464',
+      },
+    },
+  },
+});
 
 const worker = await Worker.create({
   taskQueue: 'hello-world',
@@ -47,6 +59,8 @@ const worker = await Worker.create({
 await worker.run();
 ```
 
+`ParseablePlugin` sends workflow logs and traces to Parseable. The `Runtime.install()` block enables Temporal SDK metrics on the worker process and exposes them in Prometheus format at `:9464/metrics`. Scrape that endpoint with Prometheus and forward it to Parseable using Prometheus Remote Write.
+
 ### Options
 
 | Option        | Type                                       | Default                          | Notes |
@@ -56,6 +70,34 @@ await worker.run();
 | `auth`        | `{ username, password }`                   | required if logs/traces enabled  | HTTP basic auth. |
 | `logs`        | `false` &#124; `{ stream?: string }`       | `{ stream: 'temporal-logs' }`    | Set to `false` to disable log emission. |
 | `traces`      | `false` &#124; `{ stream?: string }`       | `{ stream: 'temporal-traces' }`  | Set to `false` to disable trace emission. |
+
+## Metrics
+
+Temporal TypeScript workers can expose SDK metrics from the worker runtime. These metrics are separate from the Parseable plugin logs and traces. They help you see worker level behavior such as activity execution, workflow task execution, polling, latency, and other SDK runtime signals.
+
+The `bindAddress` in the example above exposes a Prometheus scrape endpoint on the worker host:
+
+```text
+http://<worker-host>:9464/metrics
+```
+
+Prometheus can scrape this endpoint and remote write the samples to Parseable:
+
+```yaml
+scrape_configs:
+  - job_name: temporal-typescript-worker
+    static_configs:
+      - targets: ['temporal-worker:9464']
+
+remote_write:
+  - url: "https://<parseable-host>:8000/v1/prometheus/write"
+    headers:
+      X-API-Key: <parseable-api-key>
+      X-P-Stream: temporal-metrics
+      X-P-Log-Source: otel-metrics
+```
+
+After Prometheus starts writing to Parseable, open the `temporal-metrics` dataset in the Metrics page. Temporal keeps the full SDK metrics reference in its [SDK metrics documentation](https://docs.temporal.io/references/sdk-metrics), which is useful when deciding which worker and workflow metrics to dashboard.
 
 ## Custom domain events from workflow code
 
@@ -91,4 +133,4 @@ Events flow through the same sink as the built-in workflow lifecycle events, so 
 
 - npm package: [npmjs.com/package/@parseable/temporal](https://www.npmjs.com/package/@parseable/temporal)
 - Plugin source: [github.com/parseablehq/temporal-plugin](http://github.com/parseablehq/temporal-plugin)
-- Temporal TypeScript observability docs: [docs.temporal.io/develop/typescript/observability](https://docs.temporal.io/develop/typescript/observability)
+- Temporal TypeScript observability docs: [docs.temporal.io/develop/typescript/platform/observability](https://docs.temporal.io/develop/typescript/platform/observability)

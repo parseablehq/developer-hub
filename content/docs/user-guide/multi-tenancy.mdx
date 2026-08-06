@@ -1,10 +1,10 @@
 ---
-title: Multi-tenancy
+title: Multi tenancy
 ---
 
 <OfferingPills enterprise className="mb-4" />
 
-Multi-tenancy lets one Parseable deployment serve multiple teams, customers, or internal workspaces while keeping their data, users, roles, and queries scoped to the right tenant. This matters when you want a shared observability platform without asking every team to run and operate its own Parseable cluster.
+Multi tenancy lets one Parseable deployment serve multiple teams, customers, or internal workspaces while keeping their data, users, roles, and queries scoped to the right tenant. This matters when you want a shared observability platform without asking every team to run and operate its own Parseable cluster.
 
 It is also useful when a cluster has more capacity than one team needs right now. Instead of running separate low-utilization clusters for every workspace, teams can share the same Parseable deployment and still keep tenant data and access separate.
 
@@ -12,15 +12,15 @@ In Parseable, a tenant is the boundary used to decide where telemetry is written
 
 ## When to use it
 
-Use multi-tenancy when you want one Parseable deployment for multiple isolated workspaces. Typical examples are internal platform teams serving several engineering groups, managed environments where every customer needs a separate workspace, or shared clusters where teams should not see each other's datasets.
+Use multi tenancy when you want one Parseable deployment for multiple isolated workspaces. Typical examples are internal platform teams serving several engineering groups, managed environments where every customer needs a separate workspace, or shared clusters where teams should not see each other's datasets.
 
-A common reason is capacity utilization. If a Parseable cluster is sized for production growth but currently runs below that capacity, multi-tenancy lets more teams use the same cluster while tenant isolation keeps their telemetry, users, and permissions separate.
+A common reason is capacity utilization. If a Parseable cluster is sized for production growth but currently runs below that capacity, multi tenancy lets more teams use the same cluster while tenant isolation keeps their telemetry, users, and permissions separate.
 
 If you only run Parseable for one team, keep the default single-tenant mode. In single-tenant mode, requests do not need a tenant header and Parseable uses the default tenant internally.
 
-## Enable multi-tenancy
+## Enable multi tenancy
 
-Multi-tenancy is controlled by `P_MULTI_TENANCY`.
+Multi tenancy is controlled by `P_MULTI_TENANCY`.
 
 ```bash
 export P_MULTI_TENANCY=true
@@ -70,7 +70,7 @@ This is what keeps the shared cluster model safe to use. The infrastructure can 
 
 ## What is shared and what is isolated
 
-Multi-tenancy does not mean every tenant gets a separate Parseable process. The cluster is shared, and the tenant boundary decides which resources are scoped.
+Multi tenancy does not mean every tenant gets a separate Parseable process. The cluster is shared, and the tenant boundary decides which resources are scoped.
 
 | Shared at the cluster level | Scoped to each tenant |
 |-----------------------------|-----------------------|
@@ -82,7 +82,7 @@ Multi-tenancy does not mean every tenant gets a separate Parseable process. The 
 
 ## Ingestion behavior
 
-In multi-tenant mode, ingestion requests must include `x-p-tenant`.
+In multi tenant mode, ingestion requests must include `x-p-tenant`.
 
 ```bash
 curl -X POST "https://parseable.example.com/api/v1/ingest" \
@@ -93,15 +93,15 @@ curl -X POST "https://parseable.example.com/api/v1/ingest" \
   -d '[{"level":"info","message":"checkout started"}]'
 ```
 
-The tenant header tells Parseable which workspace should receive the payload. Parseable does not allow the default tenant to be used as the explicit ingestion tenant in multi-tenant mode. This avoids accidentally writing multi-tenant data into the single-tenant compatibility path.
+The tenant header tells Parseable which workspace should receive the payload. Parseable does not allow the default tenant to be used as the explicit ingestion tenant in multi tenant mode. This avoids accidentally writing multi tenant data into the single-tenant compatibility path.
 
 If a request uses Basic Auth, Parseable also checks that the authenticated user belongs to the tenant in the header. This prevents a user from one tenant from writing data into another tenant by changing only the request header.
 
 ## API keys
 
-API keys are tenant-scoped in multi-tenant mode. When a request carries `x-api-key`, Parseable uses the incoming `x-p-tenant` value as the tenant hint and looks for the API key user inside that tenant.
+API keys are tenant-scoped in multi tenant mode. When a request carries `x-api-key`, Parseable uses the incoming `x-p-tenant` value as the tenant hint and looks for the API key user inside that tenant.
 
-That means a multi-tenant API key request needs both headers:
+That means a multi tenant API key request needs both headers:
 
 ```bash
 x-p-tenant: acme
@@ -132,7 +132,7 @@ single-tenant mode
     parseable.json
     app-logs/
 
-multi-tenant mode
+multi tenant mode
   staging/
     acme/
       parseable.json
@@ -178,10 +178,9 @@ Suspension is checked during request authorization. If a tenant's ingest service
 ## Operational notes
 
 - Enable `P_MULTI_TENANCY=true` only when the deployment is meant to run with tenant-aware metadata and storage.
-- Use `x-p-tenant` for ingestion and API-key based requests in multi-tenant mode.
+- Use `x-p-tenant` for ingestion and API-key based requests in multi tenant mode.
 - Do not send `x-p-tenant` to a single-tenant deployment.
-- Do not send `intra-cluster-tenant` from clients. It is for Parseable's internal node-to-node flow.
-- Avoid using `default` as an explicit tenant ID for multi-tenant ingestion.
+- Avoid using `default` as an explicit tenant ID for multi tenant ingestion.
 
 ## Troubleshooting
 
@@ -189,4 +188,3 @@ Suspension is checked during request authorization. If a tenant's ingest service
 - If an API key request fails, check that both `x-api-key` and `x-p-tenant` are present. API keys are resolved inside the tenant named by `x-p-tenant`.
 - If `x-p-tenant` is rejected, check whether the deployment is running in single-tenant mode. Single-tenant deployments do not expect tenant headers from clients.
 - If a user can log in but cannot see expected datasets, check the user's tenant and role assignment.
-- If a distributed query loses tenant context, check cluster configuration and internal auth. Parseable forwards tenant context between nodes with `intra-cluster-tenant`.

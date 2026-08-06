@@ -85,7 +85,7 @@ Errors on this page are linked to logs via OpenTelemetry trace and span IDs. Two
 - **Trace to logs**: from an error trace, jump to every log line that shares the same `trace.id` to see what the services in the request were logging around the failure
 - **Span to logs**: from a specific error span, jump to log lines that share the same `span.id` for the narrow slice of logs tied to that one operation
 
-Reach for the trace-level pivot when you want the full story of a request and the span-level pivot when you already know which operation broke and want the logs that service emitted right around it. Both only work when your logs and traces are ingested with matching IDs. See [Manual Instrumentation](/docs/user-guide/agent-observability/manual-instrumentation) for the required attributes if you are instrumenting by hand.
+Reach for the trace-level pivot when you want the full story of a request and the span-level pivot when you already know which operation broke and want the logs that service emitted right around it. Both only work when your logs and traces are ingested with matching IDs. See the [instrumentation guide](/docs/cookbook/instrumentation) for the required attributes if you are instrumenting by hand.
 
 ### Escalate to Keystone when the surface info is not enough
 
