@@ -7,7 +7,7 @@ description: Install Parseable Enterprise in distributed mode on Kubernetes with
 
 This guide installs Parseable Enterprise in distributed mode on Kubernetes. The installation creates ingestor, querier, and Prism nodes.
 
-To install Parseable OSS, use the [distributed OSS Kubernetes guide](/docs/self-hosted/installation/distributed/k8s-helm-oss).
+To install Parseable OSS, use the [distributed OSS Kubernetes guide](/self-hosted/installation/distributed/k8s-helm-oss).
 
 ## 1. Prerequisites
 
@@ -106,7 +106,7 @@ EOF
 <Callout type="info">
   Using Amazon EKS IRSA with Helm chart `3.0.1` or later? Omit `s3.access.key`
   and `s3.secret.key` and configure the Parseable ServiceAccount instead. Follow the
-  [S3 IRSA guide](/docs/self-hosted/storage-targets/aws-s3#kubernetes-with-irsa).
+  [S3 IRSA guide](/self-hosted/storage-targets/aws-s3#kubernetes-with-irsa).
 </Callout>
 
 Use `s3-store` in [`enterprise-values.yaml`](#7-create-enterprise-valuesyaml).
@@ -171,7 +171,7 @@ kubectl create secret generic parseable-gcs-key \
   --from-file=key.json='<path-to-service-account-json>'
 ```
 
-You can add supported environment variables to `parseable-env-secret` as needed. See the [environment variables documentation](/docs/self-hosted/configuration).
+You can add supported environment variables to `parseable-env-secret` as needed. See the [environment variables documentation](/self-hosted/configuration).
 
 After confirming that the Kubernetes Secret exists, delete the local plaintext file:
 
@@ -292,7 +292,7 @@ parseable:
 ```
 
 To enable OIDC, add the variables under `parseable.distributed.prism.env`. See
-the [OIDC guide](/docs/user-guide/openid).
+the [OIDC guide](/user-guide/openid).
 
 Before continuing:
 

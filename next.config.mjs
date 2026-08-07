@@ -10,7 +10,7 @@ const withMDX = createMDX();
 const config = {
   reactStrictMode: true,
   trailingSlash: false,
-  assetPrefix: "/docs",
+  basePath: "/docs",
   turbopack: {
     root: __dirname,
   },

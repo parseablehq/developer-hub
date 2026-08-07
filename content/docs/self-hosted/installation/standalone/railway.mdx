@@ -55,7 +55,7 @@ P_S3_REGION=<bucket-region>
 PORT=8080
 ```
 
-You can add additional environment variables from the Railway dashboard as needed. You can find the details of all the environment variables in the [Environment Variables](/docs/self-hosted/configuration) section.
+You can add additional environment variables from the Railway dashboard as needed. You can find the details of all the environment variables in the [Environment Variables](/self-hosted/configuration) section.
 
 <Callout type="warn">
 `P_ADDR` must be a host:port value (for example `0.0.0.0:8080`), not a full URL. Railway routes external traffic to port `8080`. Changing the port without also updating `PORT` and the healthcheck path will break the deployment.
