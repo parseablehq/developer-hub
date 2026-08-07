@@ -9,7 +9,7 @@ This guide installs Parseable OSS as a single standalone pod on Kubernetes. You 
 
 <Callout type="info">
   Standalone mode supports Parseable OSS only. To install Parseable Enterprise,
-  use the [distributed Enterprise Kubernetes guide](/docs/self-hosted/installation/distributed/k8s-helm-enterprise).
+  use the [distributed Enterprise Kubernetes guide](/self-hosted/installation/distributed/k8s-helm-enterprise).
 </Callout>
 
 ## 1. Prerequisites
@@ -119,7 +119,7 @@ EOF
 <Callout type="info">
   Using Amazon EKS IRSA with Helm chart `3.0.1` or later? Omit `s3.access.key`
   and `s3.secret.key` and configure the Parseable ServiceAccount instead. Follow the
-  [S3 IRSA guide](/docs/self-hosted/storage-targets/aws-s3#kubernetes-with-irsa).
+  [S3 IRSA guide](/self-hosted/storage-targets/aws-s3#kubernetes-with-irsa).
 </Callout>
 
 Use `s3-store` in [`standalone-values.yaml`](#6-create-standalone-valuesyaml).
@@ -259,7 +259,7 @@ parseable:
 ```
 
 To enable OIDC, add the variables under `parseable.standalone.unified.env`. See
-the [OIDC guide](/docs/user-guide/openid).
+the [OIDC guide](/user-guide/openid).
 
 Before continuing:
 

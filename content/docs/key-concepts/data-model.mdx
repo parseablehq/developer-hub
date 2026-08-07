@@ -52,7 +52,7 @@ Beyond 800 columns in a dataset, consider splitting the dataset into multiple da
 
 ### Identify the data source
 
-Refer the ingestion guides for various data sources in the [Ingestion](/docs/ingestion) section.
+Refer the ingestion guides for various data sources in the [Ingestion](/ingestion) section.
 
 ### Create or use an existing dataset
 
@@ -60,7 +60,7 @@ You can create a dataset using the "Create Dataset" button on Datasets page. You
 
 You can set the schema type to be [static](#static) (schema has to be explicitly provided at the time of creation of dataset) or [dynamic](#dynamic) (let server infer the schema from the incoming data). Once set, the schema type cannot be changed. Read more about schema types in the [Dataset Schema](#dataset-schema) section.
 
-Partition column is an optional field. If you want to partition the dataset based on a specific field, you can specify that field here. If you don't specify a partition field, Parseable will use the internal `p_timestamp` field as the partition field. Read more about partitioning in the [Partitioning](/docs/key-concepts/partitioning) section.
+Partition column is an optional field. If you want to partition the dataset based on a specific field, you can specify that field here. If you don't specify a partition field, Parseable will use the internal `p_timestamp` field as the partition field. Read more about partitioning in the [Partitioning](/key-concepts/partitioning) section.
 
 ## Dataset vs index
 
@@ -106,7 +106,7 @@ Some of common questions related to datasets are answered below. If you have any
     </Accordion>
 
     <Accordion id='when-to-use-partitions' title="When should I use partitioning?">
-    Partitioning is useful when you want to optimize query performance for specific fields. If you frequently query on a specific field, you can partition the dataset based on that field. This allows Parseable to store the data in a way that makes it faster to retrieve the data for that field. Refer to the [Partitioning](/docs/key-concepts/partitioning) section for more details.
+    Partitioning is useful when you want to optimize query performance for specific fields. If you frequently query on a specific field, you can partition the dataset based on that field. This allows Parseable to store the data in a way that makes it faster to retrieve the data for that field. Refer to the [Partitioning](/key-concepts/partitioning) section for more details.
     </Accordion>
 
     <Accordion id='how-many-columns' title="How many columns are too many in datasets?">

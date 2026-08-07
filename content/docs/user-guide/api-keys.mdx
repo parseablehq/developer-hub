@@ -9,7 +9,7 @@ redirect_from:
 
 You can use API Keys to authenticate API calls to Parseable. They are best suited for log forwarders, CLI tools, automation scripts, AI agents, and any other client where Basic Auth or OIDC is impractical.
 
-A Parseable instance has three types of identities — **Native** (Basic Auth), **OAuth** (OIDC), and **API Key**. API keys behave like users, i.e. they are assigned roles, and each role is a set of [RBAC](/docs/user-guide/rbac) privileges. The key inherits exactly the access its roles grant.
+A Parseable instance has three types of identities — **Native** (Basic Auth), **OAuth** (OIDC), and **API Key**. API keys behave like users, i.e. they are assigned roles, and each role is a set of [RBAC](/user-guide/rbac) privileges. The key inherits exactly the access its roles grant.
 
 You can create and manage API keys via the Parseable Prism UI or the REST API. This section covers the API operations. For UI, click on your profile on top right corner and then select **Access management > API Keys**.
 
@@ -36,7 +36,7 @@ When a request arrives with an `X-API-Key` header, Parseable looks up the key, r
 
 ### Create an API key
 
-Roles must already exist in the tenant/organization. See [RBAC](/docs/user-guide/rbac) for how to create roles.
+Roles must already exist in the tenant/organization. See [RBAC](/user-guide/rbac) for how to create roles.
 
 ```sh
 curl -X POST https://<parseable-prism-host>/api/prism/v1/apikeys \
@@ -154,7 +154,7 @@ In multi-tenant deployments, also send the tenant header:
 
 ### Scoping access via roles
 
-Because API keys reuse the role system, you can pick any role supported by Parseable RBAC. The role JSON is identical to what you would assign to a Native user — see [RBAC](/docs/user-guide/rbac) for the full schema.
+Because API keys reuse the role system, you can pick any role supported by Parseable RBAC. The role JSON is identical to what you would assign to a Native user — see [RBAC](/user-guide/rbac) for the full schema.
 
 #### Global ingestion key
 

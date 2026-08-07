@@ -52,7 +52,7 @@ df.to_sql('parseable_logs', engine, if_exists='replace', index=False)
 
 ### Option 3: Use Apache Superset
 
-For real-time connectivity to Parseable, we recommend using [Apache Superset](/docs/integrations/visualization/apache-superset) which has native Parseable support via the `sqlalchemy-parseable` driver and offers similar functionality to Redash.
+For real-time connectivity to Parseable, we recommend using [Apache Superset](/integrations/visualization/apache-superset) which has native Parseable support via the `sqlalchemy-parseable` driver and offers similar functionality to Redash.
 
 ## Example Parseable Queries
 
@@ -88,10 +88,10 @@ LIMIT 10;
 1. **Schedule Data Syncs** - Automate exports from Parseable to your analytics database
 2. **Use Incremental Loads** - Only export new data since the last sync
 3. **Filter at Source** - Apply time range filters in Parseable queries to reduce data volume
-4. **Consider Native Options** - For real-time dashboards, use [Apache Superset](/docs/integrations/visualization/apache-superset) or Parseable's built-in [dashboards](/docs/user-guide/dashboards)
+4. **Consider Native Options** - For real-time dashboards, use [Apache Superset](/integrations/visualization/apache-superset) or Parseable's built-in [dashboards](/user-guide/dashboards)
 
 ## Next Steps
 
-- Create [dashboards](/docs/user-guide/dashboards) in Parseable's built-in UI
-- Set up [alerts](/docs/user-guide/alerting) for monitoring
-- Explore [Apache Superset](/docs/integrations/visualization/apache-superset) for native integration
+- Create [dashboards](/user-guide/dashboards) in Parseable's built-in UI
+- Set up [alerts](/user-guide/alerting) for monitoring
+- Explore [Apache Superset](/integrations/visualization/apache-superset) for native integration

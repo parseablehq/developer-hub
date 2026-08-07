@@ -36,31 +36,31 @@ If you are deciding where to start, the simplest rule is this:
 
 <Cards>
   <Card 
-    href="/docs/api/v1/ingestLogsWithHeaders"
+    href="/api/v1/ingestLogsWithHeaders"
     title="Ingest JSON events with headers"
   >
     Send JSON events and route them with the `X-P-Stream` header.
   </Card>
   <Card 
-    href="/docs/api/v1/ingestOtlpLogs"
+    href="/api/v1/ingestOtlpLogs"
     title="Ingest OTLP logs"
   >
     Send OpenTelemetry logs to Parseable using the native `/v1/logs` endpoint.
   </Card>
   <Card 
-    href="/docs/api/v1/ingestOtlpTraces"
+    href="/api/v1/ingestOtlpTraces"
     title="Ingest OTLP traces"
   >
     Send OpenTelemetry traces to Parseable using the native `/v1/traces` endpoint.
   </Card>
   <Card 
-    href="/docs/api/v1/ingestOtlpMetrics"
+    href="/api/v1/ingestOtlpMetrics"
     title="Ingest OTLP metrics"
   >
     Send OpenTelemetry metrics to Parseable using the native `/v1/metrics` endpoint.
   </Card>
   <Card
-    href="/docs/api/v1/prometheusRemoteWrite"
+    href="/api/v1/prometheusRemoteWrite"
     title="Prometheus Remote Write"
   >
     Send snappy-compressed Prometheus Remote Write payloads to `/v1/prometheus/write`.
@@ -71,25 +71,25 @@ If you are deciding where to start, the simplest rule is this:
 
 <Cards>
   <Card 
-    href="/docs/api/v1/queryLogStream"
+    href="/api/v1/queryLogStream"
     title="Query a dataset with SQL"
   >
     Run SQL queries across datasets. The dataset is selected inside the `FROM` clause.
   </Card>
   <Card 
-    href="/docs/api/v1/sendLogsToStream"
+    href="/api/v1/sendLogsToStream"
     title="Send JSON events to a dataset"
   >
     Send JSON events directly to an existing dataset by path.
   </Card>
   <Card 
-    href="/docs/api/v1/createLogStream"
+    href="/api/v1/createLogStream"
     title="Create a dataset"
   >
     Create a dataset before writing events directly to `/api/v1/logstream/{stream_name}`.
   </Card>
   <Card 
-    href="/docs/api/v1/deleteLogStream"
+    href="/api/v1/deleteLogStream"
     title="Delete a dataset"
   >
     Delete a dataset and its associated data.
@@ -104,7 +104,7 @@ These endpoints require authentication. This reference uses API keys so new inte
 X-API-Key: <api-key>
 ```
 
-You can find the setup flow in the [API Keys](/docs/user-guide/api-keys) guide.
+You can find the setup flow in the [API Keys](/user-guide/api-keys) guide.
 
 For ingestion endpoints, the other header to pay attention to is usually `X-P-Stream`. That header tells Parseable which dataset should receive the payload. OTLP routes also use `X-P-Log-Source` to identify whether the payload is logs, traces, or metrics.
 

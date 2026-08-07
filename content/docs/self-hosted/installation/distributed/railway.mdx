@@ -11,7 +11,7 @@ This page explains the steps to deploy Parseable in distributed mode on [Railway
   <img src="https://railway.com/button.svg" alt="Deploy on Railway" width="160" style={{ display: "inline-block", margin: '0px' }} />
 </a>
 
-For the simpler single-node deployment, see the [standalone Railway template](/docs/self-hosted/installation/standalone/railway).
+For the simpler single-node deployment, see the [standalone Railway template](/self-hosted/installation/standalone/railway).
 
 ## Prerequisites
 
@@ -99,7 +99,7 @@ P_USERNAME=${{parseable-query.P_USERNAME}}
 P_PASSWORD=${{parseable-query.P_PASSWORD}}
 ```
 
-You can add additional environment variables from the Railway dashboard as needed. You can find the details of all the environment variables in the [Environment Variables](/docs/self-hosted/configuration) section.
+You can add additional environment variables from the Railway dashboard as needed. You can find the details of all the environment variables in the [Environment Variables](/self-hosted/configuration) section.
 
 <Callout type="warn">
 `P_USERNAME` and `P_PASSWORD` must match on both services. The template uses Railway variable references on the ingest service so the credentials stay in sync automatically. Setting either as a literal value on the ingest node will break cluster authentication.
@@ -158,7 +158,7 @@ The template provisions one query node and one ingest node. To add more ingestor
 2. Keep all variables the same except update `P_INGESTOR_ENDPOINT` so it points at the new replica's private domain.
 3. Each ingestor registers itself in the Bucket on startup, and the query node picks it up automatically.
 
-For autoscaled ingestion or larger clusters, run Parseable on Kubernetes with the [OSS Helm chart](/docs/self-hosted/installation/distributed/k8s-helm-oss) instead.
+For autoscaled ingestion or larger clusters, run Parseable on Kubernetes with the [OSS Helm chart](/self-hosted/installation/distributed/k8s-helm-oss) instead.
 
 ## Troubleshoot
 
