@@ -19,11 +19,10 @@ export default async function Page(props: {
 }) {
   const params = await props.params;
 
-  // If we're at the root path, show the index page (Get Started)
-  // No redirect needed - the index page will be shown
-
-  // Otherwise, show the regular docs page
-  const page = source.getPage(params.slug);
+  // Fumadocs represents the index page with an empty slug array. Optional
+  // catch-all routes provide `undefined` for the root request, so normalize it
+  // before looking up the page.
+  const page = source.getPage(params.slug ?? []);
   if (!page) notFound();
 
   const MDXContent = page.data.body;
