@@ -254,6 +254,14 @@ Before continuing:
 3. Replace `<storage-class>` with a storage class returned by `kubectl get storageclass`.
 4. Adjust replicas, CPU, memory, and the staging volume size for your workload.
 
+### Storage behavior
+
+- Distributed mode requires S3, GCS, or Azure Blob Storage. It does not support `local-store`.
+- `staging.enabled: true` creates one staging PVC for each ingestor.
+- `staging.enabled: false` uses `emptyDir`. Pending staged data is lost if the ingestor Pod is replaced.
+- Choose the staging setting during installation. To change it later, recreate the ingestor StatefulSet.
+- Kubernetes rejects changing the staging volume claim template's `size` on an existing StatefulSet. If the StorageClass supports volume expansion, resize each generated PVC directly.
+
 ## 7. Install Parseable
 
 ```bash

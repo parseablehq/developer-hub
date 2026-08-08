@@ -251,7 +251,6 @@ parseable:
           accessMode: ReadWriteOnce
           size: 5Gi
         data:
-          # Keep enabled for local-store. Set to false for object stores.
           enabled: true
           storageClass: <storage-class>
           accessMode: ReadWriteOnce
@@ -264,12 +263,27 @@ the [OIDC guide](/user-guide/openid).
 Before continuing:
 
 1. Set `parseable.store.type` for the storage option selected in step 3.
-2. Keep `data.enabled: true` for `local-store`; set it to `false` for an object store.
-3. If you selected Google Cloud Storage, uncomment the `gcsCredentials` block.
-4. Replace both `<storage-class>` placeholders with a storage class returned by `kubectl get storageclass`.
-5. Adjust volume sizes for your workload.
+2. If you selected Google Cloud Storage, uncomment the `gcsCredentials` block.
+3. Replace each enabled volume's `<storage-class>` with a storage class returned by `kubectl get storageclass`.
+4. Adjust volume sizes for your workload.
 
-The staging volume temporarily buffers incoming data. The data volume stores permanent data only when `local-store` is selected; object-store deployments keep permanent data in the selected bucket or container.
+### Storage behavior
+
+- `staging.enabled: true` creates a staging PVC. `false` uses `emptyDir`, so pending staged data is lost if the Pod is replaced.
+- With `local-store`, `data.enabled: true` creates a data PVC. `false` uses `emptyDir`, so stored data is lost if the Pod is replaced.
+- If local-store data is disabled, staging must also be disabled. The chart rejects persistent staging with temporary local data.
+- With S3, GCS, or Azure Blob Storage, permanent data is stored in the object store. The chart does not create or mount a data volume.
+- Choose between PVC and `emptyDir` during installation. Changing that choice later requires recreating the StatefulSet.
+- Kubernetes rejects changing a volume claim template's `size` on an existing StatefulSet. If the StorageClass supports volume expansion, resize the generated PVC directly.
+
+<Callout type="warn">
+  **Upgrading to chart 3.1.0**
+
+  New installations are not affected. If standalone Parseable was installed
+  with chart 3.0.2 or earlier, do not upgrade it directly. Create a separate
+  installation with chart 3.1.0, migrate and verify the data, and then switch
+  traffic to the new installation.
+</Callout>
 
 ## 7. Install Parseable
 
@@ -285,10 +299,10 @@ helm upgrade --install parseable parseable/parseable \
 
 ```bash
 helm status parseable --namespace parseable
-kubectl get pods,pvc,services,deployments --namespace parseable
+kubectl get pods,pvc,services,statefulsets --namespace parseable
 ```
 
-The Parseable pod should be `Running`, and every enabled PVC should be `Bound`.
+The Parseable pod should be `Running`, and every created PVC should be `Bound`.
 
 ## 9. Access Parseable
 
@@ -303,7 +317,7 @@ Open `http://localhost:8000` and sign in with the username and password stored i
 ```bash
 kubectl get events --namespace parseable --sort-by=.lastTimestamp
 kubectl describe pod --namespace parseable -l app.kubernetes.io/instance=parseable
-kubectl logs deployment/parseable-standalone --namespace parseable --tail=200
+kubectl logs statefulset/parseable-standalone --namespace parseable --tail=200
 ```
 
 - `Pending` PVCs usually indicate an invalid storage class or unavailable volume provisioner.

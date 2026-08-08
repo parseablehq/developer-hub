@@ -276,7 +276,7 @@ parseable:
           enabled: true
           storageClass: <storage-class>
           accessMode: ReadWriteOnce
-          size: 100Gi
+          size: 50Gi
 
     prism:
       replicas: 1
@@ -300,6 +300,14 @@ Before continuing:
 2. If you selected Google Cloud Storage, uncomment the `gcsCredentials` block.
 3. Replace both `<storage-class>` placeholders with a storage class returned by `kubectl get storageclass`.
 4. Adjust replicas, CPU, memory, and volume sizes for your workload.
+
+### Storage behavior
+
+- Enterprise distributed mode requires S3, GCS, or Azure Blob Storage. It does not support `local-store`.
+- Ingestor `staging.enabled: true` creates one staging PVC per ingestor. `false` uses `emptyDir`, so pending staged data is lost if the Pod is replaced.
+- Querier `hotTier.enabled: true` creates one hot-tier PVC per querier. `false` uses `emptyDir`. Hot tier is a cache and can rebuild from the object store.
+- Choose both settings during installation. To change one later, recreate the affected StatefulSet.
+- Kubernetes rejects changing a volume claim template's `size` on an existing StatefulSet. If the StorageClass supports volume expansion, resize each generated PVC directly.
 
 ## 8. Install Parseable Enterprise
 
