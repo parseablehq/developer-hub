@@ -1,26 +1,126 @@
 ---
 title: Docker
-description: Collect logs from Docker containers
+description: Collect logs and metrics from Docker containers
 redirect_from:
   - /containers/docker
 ---
 
-Collect and forward logs from Docker containers to Parseable.
+Collect Docker container logs and cAdvisor metrics in Parseable.
 
 ## Overview
 
 Integrate Docker with Parseable to:
 
 - **Container Logs** - Collect stdout/stderr from containers
+- **Container Metrics** - Monitor CPU, memory, network, storage, and container state with cAdvisor
 - **Centralized Logging** - Aggregate logs from all containers
 - **Real-time Streaming** - Stream logs as they're generated
 - **Rich Metadata** - Include container and image information
+- **Ready-made Dashboard** - Import the Docker Monitoring dashboard for operational views
 
 ## Prerequisites
 
 - Docker installed
 - Parseable instance accessible
-- Fluent Bit or logging driver configured
+- Prometheus and cAdvisor for metrics
+- Fluent Bit or a logging driver for logs
+
+## Collect Docker metrics
+
+cAdvisor exports container and machine metrics in Prometheus format. Prometheus scrapes cAdvisor and forwards the samples to Parseable through Prometheus Remote Write.
+
+```text
+Docker Engine -> cAdvisor :8080 -> Prometheus -> Parseable /v1/prometheus/write
+                                               (docker-metrics dataset)
+```
+
+### Configure Prometheus
+
+Create `prometheus.yml`:
+
+```yaml
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: cadvisor
+    static_configs:
+      - targets: ["cadvisor:8080"]
+        labels:
+          node: docker-host
+    metric_relabel_configs:
+      - source_labels: [name]
+        target_label: container
+      - source_labels: [container_label_com_docker_compose_project]
+        target_label: project
+      - source_labels: [container_label_com_docker_compose_service]
+        target_label: service
+
+remote_write:
+  - url: "https://<parseable-ingestor>/v1/prometheus/write"
+    basic_auth:
+      username: <parseable-username>
+      password: <parseable-password>
+    headers:
+      X-P-Stream: docker-metrics
+      X-P-Log-Source: otel-metrics
+```
+
+`X-P-Stream` selects the Parseable dataset. Keep `X-P-Log-Source` set to `otel-metrics`. Change the `node` label when monitoring more than one Docker host.
+
+The metric relabel rules expose the cAdvisor `name` label as `container` and shorten Docker Compose's project and service label names. These names match the dashboard variables and queries.
+
+### Run cAdvisor and Prometheus
+
+Create `docker-compose.yml` beside `prometheus.yml`:
+
+```yaml
+services:
+  cadvisor:
+    image: ghcr.io/google/cadvisor:v0.60.5
+    container_name: cadvisor
+    privileged: true
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /sys:/sys:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - cadvisor
+    restart: unless-stopped
+```
+
+Start both services:
+
+```bash
+docker compose up -d
+```
+
+Open `http://localhost:9090/targets` and confirm that the `cadvisor` target is **UP**. You can also check cAdvisor directly:
+
+```bash
+curl http://localhost:8080/metrics
+```
+
+In Parseable, select the `docker-metrics` dataset and run a PromQL query such as:
+
+```text
+up{job="cadvisor"}
+```
+
+Common cAdvisor families include `container_cpu_usage_seconds_total`, `container_memory_working_set_bytes`, `container_network_receive_bytes_total`, `container_fs_usage_bytes`, and `container_last_seen`.
 
 ## Method 1: Fluent Bit Sidecar
 
@@ -304,13 +404,22 @@ ORDER BY timestamp DESC
 LIMIT 50
 ```
 
+## Docker Monitoring dashboard
+
+The reusable [Docker Monitoring dashboard](https://github.com/parseablehq/dashboards/tree/main/docker-monitoring) is available in the [parseablehq/dashboards](https://github.com/parseablehq/dashboards) repository.
+
+Import `docker-monitoring-mixed.json`, then set **Docker Metrics Dataset** to the dataset configured in `X-P-Stream`. The default is `docker-metrics`. The dashboard includes container CPU, memory, network, storage, task state, health, inventory, cAdvisor scrape health, and metric inventory.
+
+The Project and Service filters are populated from Docker Compose labels. Containers started outside Compose can still be filtered by Node and Container.
+
 ## Best Practices
 
 1. **Use Labels** - Add metadata for filtering
-2. **Buffer Logs** - Batch logs for efficiency
-3. **Handle Backpressure** - Configure memory limits
-4. **Monitor Collector** - Watch Fluent Bit health
-5. **Rotate Logs** - Configure Docker log rotation
+2. **Identify Hosts** - Assign a stable `node` label to each cAdvisor scrape target
+3. **Buffer Logs** - Batch logs for efficiency
+4. **Handle Backpressure** - Configure memory limits
+5. **Monitor Collectors** - Watch Prometheus, cAdvisor, and Fluent Bit health
+6. **Rotate Logs** - Configure Docker log rotation
 
 ## Troubleshooting
 
@@ -320,6 +429,16 @@ LIMIT 50
 2. Check Fluent Bit is running
 3. Verify Parseable endpoint is accessible
 4. Check container permissions
+
+### Missing Metrics
+
+1. Open the Prometheus Targets page and confirm that cAdvisor is **UP**
+2. Check `docker compose logs cadvisor prometheus` for scrape or remote-write errors
+3. Verify that Prometheus can reach `/v1/prometheus/write` on the Parseable ingestor
+4. Confirm the `X-P-Stream: docker-metrics` and `X-P-Log-Source: otel-metrics` headers
+5. Confirm that the cAdvisor container can read the Docker runtime paths mounted in the Compose file
+
+Some metric families are conditional. Health-state metrics require Docker health checks, project and service labels require Docker Compose, and resource-limit metrics require limits on the container.
 
 ### High Memory Usage
 
@@ -331,4 +450,4 @@ LIMIT 50
 
 - Configure [Kubernetes](/ingest-data/containers/kubernetes) for orchestration
 - Set up [alerts](/user-guide/alerting) for container events
-- Create [dashboards](/user-guide/dashboards) for monitoring
+- Import the [Docker Monitoring dashboard](https://github.com/parseablehq/dashboards/tree/main/docker-monitoring)
