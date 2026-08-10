@@ -7,16 +7,17 @@ redirect_from:
   - /installation/kubernetes-helm
   - /installation/setup-parseable-on-kubernetes-via-helm
 ---
+import { Step, Steps } from 'fumadocs-ui/components/steps';
 
-This guide installs Parseable OSS in distributed mode on Kubernetes. The installation creates separate ingestor and querier nodes.
+This guide installs Parseable OSS in distributed mode on Kubernetes. The installation creates separate ingestor and querier pods.
 
 To install Parseable Enterprise, use the [distributed Enterprise Kubernetes guide](/self-hosted/installation/distributed/k8s-helm-enterprise).
 
-## 1. Prerequisites
+## Prerequisites
 
 Before you begin, make sure you have:
 
-- `kubectl` configured for your Kubernetes cluster
+- `kubectl` installed and configured for the Kubernetes cluster where you want to install Parseable
 - Helm 3 or later
 - A Kubernetes storage class
 - An existing, empty object-store bucket or container
@@ -30,13 +31,26 @@ kubectl get nodes
 kubectl get storageclass
 ```
 
-## 2. Create the namespace
+The `kubectl config current-context` output should point to the cluster where
+you want to install Parseable. Use one of the storage class names returned by
+`kubectl get storageclass` in the values file below.
+
+<Steps>
+<Step>
+
+## 1. Create the namespace
 
 ```bash
 kubectl create namespace parseable
 ```
 
-## 3. Choose an object store
+If you are testing in a shared cluster, use a separate namespace for your test
+installation and replace `parseable` in the commands below with that namespace.
+
+</Step>
+<Step>
+
+## 2. Choose an object store
 
 Choose exactly one object store below. Replace every `<...>` placeholder in the selected option before running the command.
 
@@ -85,7 +99,7 @@ EOF
   that match your MinIO deployment.
 </Callout>
 
-Use `s3-store` in [`oss-values.yaml`](#6-create-oss-valuesyaml).
+Use `s3-store` in [`oss-values.yaml`](#5-create-oss-valuesyaml).
 
 ### Option B: Amazon S3
 
@@ -110,7 +124,7 @@ EOF
   [S3 IRSA guide](/self-hosted/storage-targets/aws-s3#kubernetes-with-irsa).
 </Callout>
 
-Use `s3-store` in [`oss-values.yaml`](#6-create-oss-valuesyaml).
+Use `s3-store` in [`oss-values.yaml`](#5-create-oss-valuesyaml).
 
 ### Option C: Google Cloud Storage
 
@@ -132,7 +146,7 @@ Keep the service-account JSON file ready. You will create its Kubernetes Secret 
 The service-account JSON file is a credential. Store it securely and never commit it to source control.
 </Callout>
 
-Use `gcs-store` in [`oss-values.yaml`](#6-create-oss-valuesyaml).
+Use `gcs-store` in [`oss-values.yaml`](#5-create-oss-valuesyaml).
 
 ### Option D: Azure Blob Storage
 
@@ -150,9 +164,12 @@ azr.url=<azr.url>
 EOF
 ```
 
-Use `blob-store` in [`oss-values.yaml`](#6-create-oss-valuesyaml).
+Use `blob-store` in [`oss-values.yaml`](#5-create-oss-valuesyaml).
 
-## 4. Create the Kubernetes Secret
+</Step>
+<Step>
+
+## 3. Create the Kubernetes Secret
 
 After creating the file for your selected object store, review it and create the Kubernetes Secret:
 
@@ -180,14 +197,20 @@ After confirming that the Kubernetes Secret exists, delete the local plaintext f
 rm parseable-env-secret
 ```
 
-## 5. Add the Parseable Helm repository
+</Step>
+<Step>
+
+## 4. Add the Parseable Helm repository
 
 ```bash
 helm repo add parseable https://charts.parseable.com
 helm repo update parseable
 ```
 
-## 6. Create `oss-values.yaml`
+</Step>
+<Step>
+
+## 5. Create `oss-values.yaml`
 
 Create a file named `oss-values.yaml`:
 
@@ -254,7 +277,29 @@ Before continuing:
 3. Replace `<storage-class>` with a storage class returned by `kubectl get storageclass`.
 4. Adjust replicas, CPU, memory, and the staging volume size for your workload.
 
-## 7. Install Parseable
+You can render the chart before installing it:
+
+```bash
+helm template parseable parseable/parseable \
+  --namespace parseable \
+  --values ./oss-values.yaml
+```
+
+This catches invalid storage combinations before anything is created in the
+cluster.
+
+### Storage behavior
+
+- Distributed mode requires S3, GCS, or Azure Blob Storage. It does not support `local-store`.
+- `staging.enabled: true` creates one staging PVC for each ingestor.
+- `staging.enabled: false` uses `emptyDir`. Pending staged data is lost if the ingestor Pod is replaced.
+- Choose the staging setting during installation. To change it later, recreate the ingestor StatefulSet.
+- Kubernetes rejects changing the staging volume claim template's `size` on an existing StatefulSet. If the StorageClass supports volume expansion, resize each generated PVC directly.
+
+</Step>
+<Step>
+
+## 6. Install Parseable
 
 ```bash
 helm upgrade --install parseable parseable/parseable \
@@ -264,16 +309,24 @@ helm upgrade --install parseable parseable/parseable \
   --timeout 10m
 ```
 
-## 8. Verify the installation
+</Step>
+<Step>
+
+## 7. Verify the installation
 
 ```bash
 helm status parseable --namespace parseable
 kubectl get pods,pvc,services,statefulsets --namespace parseable
 ```
 
-All ingestor and querier pods should be `Running`, and all PVCs should be `Bound`.
+All ingestor and querier pods should be `Running`, and all PVCs should be
+`Bound`. With the sample values above, one staging PVC is created for each
+ingestor replica.
 
-## 9. Access Parseable
+</Step>
+<Step>
+
+## 8. Access Parseable
 
 Forward the querier service:
 
@@ -291,7 +344,10 @@ Send ingestion traffic inside the cluster to:
 http://parseable-ingestor-service.parseable.svc.cluster.local
 ```
 
-## 10. Troubleshooting
+</Step>
+<Step>
+
+## 9. Troubleshooting
 
 ```bash
 kubectl get events --namespace parseable --sort-by=.lastTimestamp
@@ -303,3 +359,6 @@ kubectl logs statefulset/parseable-ingestor --namespace parseable
 - `CreateContainerConfigError` usually indicates a missing Secret or Secret key.
 - Object-store authentication errors usually indicate incorrect credentials, permissions, endpoint, bucket, or container values.
 - Use an empty bucket or container for a new Parseable cluster. Metadata from another Parseable cluster can cause credential or deployment identity conflicts.
+
+</Step>
+</Steps>
