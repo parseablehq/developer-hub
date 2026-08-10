@@ -4,6 +4,7 @@ description: Install Parseable OSS in standalone mode on Kubernetes with Helm.
 redirect_from:
   - /installation/standalone/k8s
 ---
+import { Step, Steps } from 'fumadocs-ui/components/steps';
 
 This guide installs Parseable OSS as a single standalone pod on Kubernetes. You can use local storage, MinIO, Amazon S3, Google Cloud Storage, or Azure Blob Storage.
 
@@ -12,11 +13,11 @@ This guide installs Parseable OSS as a single standalone pod on Kubernetes. You 
   use the [distributed Enterprise Kubernetes guide](/docs/self-hosted/installation/distributed/k8s-helm-enterprise).
 </Callout>
 
-## 1. Prerequisites
+## Prerequisites
 
 Before you begin, make sure you have:
 
-- `kubectl` configured for your Kubernetes cluster
+- `kubectl` installed and configured for the Kubernetes cluster where you want to install Parseable
 - Helm 3 or later
 - A Kubernetes storage class
 - An existing, empty bucket or container with access credentials if you use an object store
@@ -29,13 +30,26 @@ kubectl get nodes
 kubectl get storageclass
 ```
 
-## 2. Create the namespace
+The `kubectl config current-context` output should point to the cluster where
+you want to install Parseable. Use one of the storage class names returned by
+`kubectl get storageclass` in the values file below.
+
+<Steps>
+<Step>
+
+## 1. Create the namespace
 
 ```bash
 kubectl create namespace parseable
 ```
 
-## 3. Choose a storage option
+If you are testing in a shared cluster, use a separate namespace for your test
+installation and replace `parseable` in the commands below with that namespace.
+
+</Step>
+<Step>
+
+## 2. Choose a storage option
 
 Choose exactly one storage option below. Replace every `<...>` placeholder in the selected option before creating the Kubernetes Secret.
 
@@ -53,7 +67,7 @@ password=<password>
 EOF
 ```
 
-Use `local-store` in [`standalone-values.yaml`](#6-create-standalone-valuesyaml).
+Use `local-store` in [`standalone-values.yaml`](#5-create-standalone-valuesyaml).
 
 ### Option B: MinIO
 
@@ -97,7 +111,7 @@ EOF
   administrator credentials before using this setup outside a test cluster.
 </Callout>
 
-Use `s3-store` in [`standalone-values.yaml`](#6-create-standalone-valuesyaml).
+Use `s3-store` in [`standalone-values.yaml`](#5-create-standalone-valuesyaml).
 
 ### Option C: Amazon S3
 
@@ -122,7 +136,7 @@ EOF
   [S3 IRSA guide](/docs/self-hosted/storage-targets/aws-s3#kubernetes-with-irsa).
 </Callout>
 
-Use `s3-store` in [`standalone-values.yaml`](#6-create-standalone-valuesyaml).
+Use `s3-store` in [`standalone-values.yaml`](#5-create-standalone-valuesyaml).
 
 ### Option D: Google Cloud Storage
 
@@ -145,7 +159,7 @@ Keep the service-account JSON file ready. You will create its Kubernetes Secret 
   commit it to source control.
 </Callout>
 
-Use `gcs-store` in [`standalone-values.yaml`](#6-create-standalone-valuesyaml).
+Use `gcs-store` in [`standalone-values.yaml`](#5-create-standalone-valuesyaml).
 
 ### Option E: Azure Blob Storage
 
@@ -163,9 +177,12 @@ azr.url=<azr.url>
 EOF
 ```
 
-Use `blob-store` in [`standalone-values.yaml`](#6-create-standalone-valuesyaml).
+Use `blob-store` in [`standalone-values.yaml`](#5-create-standalone-valuesyaml).
 
-## 4. Create the Kubernetes Secret
+</Step>
+<Step>
+
+## 3. Create the Kubernetes Secret
 
 Review the file created for your selected storage option, then create the Secret:
 
@@ -200,14 +217,20 @@ Delete the local plaintext configuration file after creating the Secret:
 rm parseable-env-secret
 ```
 
-## 5. Add the Parseable Helm repository
+</Step>
+<Step>
+
+## 4. Add the Parseable Helm repository
 
 ```bash
 helm repo add parseable https://charts.parseable.com
 helm repo update parseable
 ```
 
-## 6. Create `standalone-values.yaml`
+</Step>
+<Step>
+
+## 5. Create `standalone-values.yaml`
 
 Create a file named `standalone-values.yaml`:
 
@@ -267,6 +290,17 @@ Before continuing:
 3. Replace each enabled volume's `<storage-class>` with a storage class returned by `kubectl get storageclass`.
 4. Adjust volume sizes for your workload.
 
+You can render the chart before installing it:
+
+```bash
+helm template parseable parseable/parseable \
+  --namespace parseable \
+  --values ./standalone-values.yaml
+```
+
+This catches invalid storage combinations before anything is created in the
+cluster.
+
 ### Storage behavior
 
 - `staging.enabled: true` creates a staging PVC. `false` uses `emptyDir`, so pending staged data is lost if the Pod is replaced.
@@ -285,7 +319,10 @@ Before continuing:
   traffic to the new installation.
 </Callout>
 
-## 7. Install Parseable
+</Step>
+<Step>
+
+## 6. Install Parseable
 
 ```bash
 helm upgrade --install parseable parseable/parseable \
@@ -295,7 +332,10 @@ helm upgrade --install parseable parseable/parseable \
   --timeout 10m
 ```
 
-## 8. Verify the installation
+</Step>
+<Step>
+
+## 7. Verify the installation
 
 ```bash
 helm status parseable --namespace parseable
@@ -303,8 +343,16 @@ kubectl get pods,pvc,services,statefulsets --namespace parseable
 ```
 
 The Parseable pod should be `Running`, and every created PVC should be `Bound`.
+With the release name `parseable`, a standalone `local-store` install with both
+staging and data persistence enabled creates two PVCs:
 
-## 9. Access Parseable
+- `stage-volume-parseable-standalone-0`
+- `data-volume-parseable-standalone-0`
+
+</Step>
+<Step>
+
+## 8. Access Parseable
 
 ```bash
 kubectl port-forward service/parseable-standalone-service 8000:80 --namespace parseable
@@ -312,7 +360,10 @@ kubectl port-forward service/parseable-standalone-service 8000:80 --namespace pa
 
 Open `http://localhost:8000` and sign in with the username and password stored in `parseable-env-secret`.
 
-## 10. Troubleshooting
+</Step>
+<Step>
+
+## 9. Troubleshooting
 
 ```bash
 kubectl get events --namespace parseable --sort-by=.lastTimestamp
@@ -324,3 +375,6 @@ kubectl logs statefulset/parseable-standalone --namespace parseable --tail=200
 - `CreateContainerConfigError` usually indicates a missing Secret or Secret key.
 - Object-store authentication errors usually indicate incorrect credentials, permissions, endpoint, bucket, or container values.
 - Use an empty bucket or container for a new Parseable installation.
+
+</Step>
+</Steps>
