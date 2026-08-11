@@ -1,38 +1,82 @@
 ---
-title: OpenLIT
-description: Send OpenLIT AI application traces and metrics to Parseable through the OpenTelemetry Collector
+title: OpenLIT Agent Observability
+description: Send agent, workflow, tool, and model telemetry from OpenLIT to Parseable
 ---
 
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 
-[OpenLIT](https://openlit.io/) is an OpenTelemetry-native observability SDK for AI applications. It automatically instruments model-provider SDKs and AI frameworks, then emits GenAI traces and metrics with model, token, cost, latency, streaming, and error attributes.
+[OpenLIT](https://openlit.io/) is an OpenTelemetry-native observability SDK for
+LLM applications and AI agents. It can instrument supported agent frameworks,
+model providers, and tools so one trace shows the complete path from an agent
+invocation to its workflow steps, tool executions, and model calls.
 
-This guide routes OpenLIT telemetry through the OpenTelemetry Collector. The Collector keeps the Parseable API key out of application code, batches telemetry, and sends each signal to its own Parseable dataset.
+This integration is framework-neutral. Use the same Parseable and OpenTelemetry
+Collector configuration with CrewAI, OpenAI Agents SDK, LangChain or LangGraph,
+Agno, LlamaIndex, and other frameworks supported by OpenLIT.
 
 ```text
-AI application using OpenLIT
+Agent application
   |
-  | OTLP/HTTP traces and metrics
+  | OpenLIT instrumentation
+  v
+Agent invocation -> workflow -> tool calls -> model calls
+  |
+  | OTLP/HTTP
   v
 OpenTelemetry Collector
   |
-  +--> openlit-traces   traces dataset in Parseable
-  +--> openlit-metrics  metrics dataset in Parseable
+  +--> openlit-agent-traces   Agent Observability and trace dataset
+  +--> openlit-agent-metrics  Metrics dataset
 ```
 
 ## Prerequisites
 
-Before you start, keep these ready:
-
 - A running Parseable instance
-- A Parseable API key with ingest access
+- A Parseable API key with dataset creation and ingest access
 - Python 3.9 or newer
 - An OpenTelemetry Collector Contrib binary or container
-- A model-provider API key, such as `OPENAI_API_KEY`
+- A supported agent framework and its model-provider API key
 
-## Set up OpenLIT with Parseable
+## Set up OpenLIT Agent Observability
 
 <Steps>
+<Step>
+
+### Create the Parseable datasets
+
+Set the connection values:
+
+```bash
+export PARSEABLE_URL="https://<parseable-host>:8000"
+export PARSEABLE_API_KEY="<parseable-api-key>"
+export OPENLIT_TRACE_STREAM="openlit-agent-traces"
+export OPENLIT_METRIC_STREAM="openlit-agent-metrics"
+```
+
+Create the trace dataset and tag it for Agent Observability:
+
+```bash
+curl -X PUT "$PARSEABLE_URL/api/v1/logstream/$OPENLIT_TRACE_STREAM" \
+  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
+  -H "X-P-Log-Source: otel-traces" \
+  -H "X-P-Telemetry-Type: traces" \
+  -H "X-P-Dataset-Tag: agent-observability"
+```
+
+Create the metrics dataset:
+
+```bash
+curl -X PUT "$PARSEABLE_URL/api/v1/logstream/$OPENLIT_METRIC_STREAM" \
+  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
+  -H "X-P-Log-Source: otel-metrics" \
+  -H "X-P-Telemetry-Type: metrics"
+```
+
+`X-P-Dataset-Tag: agent-observability` makes the trace dataset available from
+Parseable's Agents page. Create the dataset explicitly because an automatically
+created OTLP trace dataset does not receive this tag.
+
+</Step>
 <Step>
 
 ### Configure the OpenTelemetry Collector
@@ -56,7 +100,7 @@ exporters:
     encoding: json
     headers:
       X-API-Key: "${env:PARSEABLE_API_KEY}"
-      X-P-Stream: openlit-traces
+      X-P-Stream: "${env:OPENLIT_TRACE_STREAM}"
       X-P-Log-Source: otel-traces
 
   otlphttp/parseable_metrics:
@@ -64,7 +108,7 @@ exporters:
     encoding: json
     headers:
       X-API-Key: "${env:PARSEABLE_API_KEY}"
-      X-P-Stream: openlit-metrics
+      X-P-Stream: "${env:OPENLIT_METRIC_STREAM}"
       X-P-Log-Source: otel-metrics
 
 service:
@@ -80,204 +124,190 @@ service:
       exporters: [otlphttp/parseable_metrics]
 ```
 
-Set the Parseable endpoint and API key, then start the Collector:
+Start the Collector in the shell containing the exported variables:
 
 ```bash
-export PARSEABLE_URL="https://<parseable-host>:8000"
-export PARSEABLE_API_KEY="<parseable-api-key>"
-
 otelcol-contrib --config otel-collector-config.yaml
 ```
 
-Use the Parseable base URL for `PARSEABLE_URL`. The `otlphttp` exporter appends `/v1/traces` or `/v1/metrics` for the corresponding pipeline.
-
-<Callout type="info">
-You do not need to create the datasets manually. Parseable creates `openlit-traces` and `openlit-metrics` when the Collector sends the first OTLP payload with the configured `X-P-Stream` and `X-P-Log-Source` headers.
-</Callout>
+Use the Parseable base URL. The `otlphttp` exporter appends `/v1/traces` and
+`/v1/metrics` for the corresponding pipelines.
 
 </Step>
 <Step>
 
-### Instrument the application
+### Instrument the agent application
 
-Install OpenLIT and your model-provider SDK. This example uses OpenAI directly with your own provider key:
+Install OpenLIT and the packages required by your chosen agent framework:
 
 ```bash
-pip install openlit openai
+pip install openlit
 ```
 
-Initialize OpenLIT before importing the provider SDK:
+Initialize OpenLIT before importing the framework or provider SDK:
 
 ```python
-import os
-
 import openlit
 
 openlit.init(
     otlp_endpoint="http://localhost:4318",
-    service_name="customer-support-agent",
+    service_name="support-agent",
     environment="production",
     capture_message_content=False,
 )
 
-# Import after openlit.init() so OpenLIT can instrument the client.
-from openai import OpenAI
-
-client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-
-response = client.responses.create(
-    model="gpt-4o-mini",
-    input="Explain AI observability in one short sentence.",
-    max_output_tokens=50,
-)
-
-print(response.output_text)
+# Import and run your supported agent framework only after initialization.
 ```
 
-`capture_message_content=False` keeps prompts and model responses out of telemetry while retaining operational attributes such as model, tokens, cost, duration, status, and errors.
+No Parseable-specific instrumentation belongs in the agent implementation. The
+Collector determines which trace and metric datasets receive the OTLP signals.
 
-OpenLIT can also instrument supported frameworks and provider SDKs without changing the Collector configuration. See the [OpenLIT integrations documentation](https://docs.openlit.io/latest/sdk/integrations/overview) for the current list.
+Choose the OpenLIT integration matching your framework:
+
+- [OpenAI Agents SDK](https://docs.openlit.io/latest/sdk/integrations/openai-agents)
+- [CrewAI](https://docs.openlit.io/latest/sdk/integrations/crewai)
+- [LangChain and LangGraph](https://docs.openlit.io/latest/sdk/integrations/langchain)
+- [All OpenLIT integrations](https://docs.openlit.io/latest/sdk/integrations/overview)
+
+The application must execute an agent framework operation. A direct model SDK
+call produces model-operation spans such as `chat`, but it does not create an
+agent invocation, workflow, or tool-execution hierarchy.
 
 </Step>
 <Step>
 
-### Generate and verify telemetry
+### Run and verify an agent
 
-Run the application and allow a few seconds for the SDK and Collector batch processors to flush.
+Run an agent workflow that makes at least one model call and, when possible,
+executes a tool. Allow the SDK and Collector batch processors to flush.
 
-In Parseable, verify that:
+In Parseable, verify:
 
-1. `openlit-traces` appears in the Traces view.
-2. `openlit-metrics` appears in the Metrics view.
-3. A trace contains `service.name`, `gen_ai.request.model`, token usage, duration, and status fields.
+1. `openlit-agent-traces` appears in both Traces and Agents.
+2. One trace contains the complete agent run and its child spans.
+3. Agent or workflow operations appear alongside model operations such as `chat`.
+4. Tool spans represent actual executions, not only tool-call requests returned by a model.
+5. All related spans share a trace ID and have coherent parent span IDs.
+6. `openlit-agent-metrics` appears in Metrics.
 
-For a short-lived smoke test, reduce the metric export interval so metrics flush before the process exits:
+For a short-lived smoke test, reduce the metric export interval:
 
 ```bash
 export OTEL_METRIC_EXPORT_INTERVAL=1000
-python app.py
+python agent.py
 ```
-
-The interval is in milliseconds. Use the default or a longer interval for normal production workloads.
 
 </Step>
 </Steps>
 
 ## What you get in Parseable
 
-The trace dataset contains one or more spans for each instrumented model operation. Common fields include:
+Exact span names and attributes depend on the framework, provider, and OpenLIT
+version. A complete agent trace can contain:
+
+| Telemetry | What it represents |
+| --- | --- |
+| Agent invocation | Top-level agent execution |
+| Workflow or task | Chain, graph, crew, task, or handoff operation |
+| Tool execution | Tool name, arguments, result, duration, and status |
+| Model operation | Provider request, model, tokens, cost, latency, and response status |
+| Error event | Framework, tool, or provider exception with trace context |
+
+Common fields include:
 
 | Field | Meaning |
 | --- | --- |
-| `service.name` | Application or service configured in `openlit.init()` |
+| `service.name` | Service configured in `openlit.init()` |
 | `deployment.environment` | Deployment environment |
-| `gen_ai.operation.name` | GenAI operation, such as `chat` |
-| `gen_ai.provider.name` | Model provider |
-| `gen_ai.request.model` | Model requested by the application |
-| `gen_ai.response.model` | Model returned by the provider |
+| `gen_ai.operation.name` | Operation such as `invoke_agent`, `invoke_workflow`, or `chat` |
+| `gen_ai.agent.name` | Agent name when supplied by the framework |
+| `gen_ai.workflow.name` | Workflow name when supplied by the framework |
+| `gen_ai.tool.name` | Tool name on supported tool spans or model tool-call data |
+| `gen_ai.request.model` | Requested model |
 | `gen_ai.usage.input_tokens` | Input token count |
 | `gen_ai.usage.output_tokens` | Output token count |
-| `gen_ai.usage.cost` | Computed request cost |
-| `gen_ai.server.time_to_first_token` | Streaming time to first token |
-| `span_duration_ns` | End-to-end span duration |
+| `gen_ai.usage.cost` | Computed model-request cost |
+| `span_trace_id` | Identifier joining all spans in one run |
+| `span_parent_span_id` | Parent relationship used by the waterfall |
 | `span_status_code` | Operation status |
 
-OpenLIT emits OpenTelemetry histogram metrics including:
+OpenLIT also emits metrics such as `gen_ai.client.operation.duration`,
+`gen_ai.client.token.usage`, `gen_ai.usage.cost`,
+`gen_ai.server.time_to_first_token`, and
+`gen_ai.server.time_per_output_token`.
 
-| Metric | Description |
-| --- | --- |
-| `gen_ai.client.operation.duration` | Client operation duration |
-| `gen_ai.server.request.duration` | Provider request duration |
-| `gen_ai.client.token.usage` | Input and output token usage |
-| `gen_ai.usage.cost` | Request cost |
-| `gen_ai.server.time_to_first_token` | Streaming time to first token |
-| `gen_ai.server.time_per_output_token` | Average time per streamed output token |
+## Query agent telemetry
 
-## Query OpenLIT telemetry
-
-Requests and token usage by model:
+Agent and workflow operations:
 
 ```sql
 SELECT
-  "gen_ai.request.model" AS model,
+  "gen_ai.operation.name" AS operation,
   COUNT(*) AS spans,
-  SUM(CAST("gen_ai.usage.input_tokens" AS BIGINT)) AS input_tokens,
-  SUM(CAST("gen_ai.usage.output_tokens" AS BIGINT)) AS output_tokens
-FROM "openlit-traces"
+  COUNT(DISTINCT "span_trace_id") AS runs
+FROM "openlit-agent-traces"
 WHERE p_timestamp > NOW() - INTERVAL '24 hours'
-GROUP BY model
+GROUP BY operation
 ORDER BY spans DESC;
 ```
 
-Available metric instruments and observation counts:
-
-```sql
-SELECT
-  metric_name,
-  metric_type,
-  COUNT(*) AS records,
-  SUM(data_point_count) AS observations
-FROM "openlit-metrics"
-WHERE p_timestamp > NOW() - INTERVAL '24 hours'
-GROUP BY metric_name, metric_type
-ORDER BY metric_name;
-```
-
-Average operation duration from histogram totals:
+Model usage caused by agent runs:
 
 ```sql
 SELECT
   "gen_ai.request.model" AS model,
-  SUM(data_point_sum) / NULLIF(SUM(data_point_count), 0) AS average_seconds
-FROM "openlit-metrics"
-WHERE metric_name = 'gen_ai.client.operation.duration'
+  COUNT(*) AS calls,
+  SUM(CAST("gen_ai.usage.input_tokens" AS BIGINT)) AS input_tokens,
+  SUM(CAST("gen_ai.usage.output_tokens" AS BIGINT)) AS output_tokens
+FROM "openlit-agent-traces"
+WHERE "gen_ai.operation.name" = 'chat'
   AND p_timestamp > NOW() - INTERVAL '24 hours'
 GROUP BY model
-ORDER BY average_seconds DESC;
+ORDER BY calls DESC;
 ```
-
-## Work with histogram metrics
-
-Parseable stores OTLP histograms as flattened records. Use these fields:
-
-| Field | Meaning |
-| --- | --- |
-| `data_point_count` | Number of observations |
-| `data_point_sum` | Sum of observed values |
-| `data_point_min` | Minimum observed value |
-| `data_point_max` | Maximum observed value |
-| `data_point_bucket_counts` | Observation counts for each histogram bucket |
-| `data_point_explicit_bounds` | Upper bounds corresponding to the buckets |
-
-If a histogram card shows **No data** while `bucket` is selected, choose `count`, `sum`, `min`, or `max`, or query the fields above with SQL. Bucket counts and bounds are stored as paired arrays rather than a single scalar `bucket` field.
 
 ## Troubleshoot
 
-### Datasets do not appear
+### Dataset appears in Traces but not Agents
 
-Check the Collector logs for authentication, endpoint, or export errors:
+The dataset was probably auto-created without the Agent Observability tag.
+Recreate an empty dataset with `X-P-Log-Source: otel-traces`,
+`X-P-Telemetry-Type: traces`, and
+`X-P-Dataset-Tag: agent-observability` before ingesting data.
 
-```bash
-otelcol-contrib --config otel-collector-config.yaml
-```
+### Traces contain only `chat` operations
 
-Confirm that the application sends OTLP/HTTP to the Collector's port `4318` and that `PARSEABLE_URL` is the Parseable base URL.
+OpenLIT is observing direct model calls, not an agent-framework execution.
+Confirm that the installed framework is supported, initialize OpenLIT before
+importing it, and execute the framework's agent runner rather than only its
+underlying model client.
+
+### Tool calls appear without tool execution spans
+
+A model can request a tool without the application executing it. Confirm that
+the agent framework dispatches the tool and that OpenLIT supports instrumenting
+that framework's tool runtime.
+
+### No traces appear
+
+Check Collector logs, confirm the application exports OTLP/HTTP to port `4318`,
+and verify the Parseable exporter includes `X-P-Stream` and
+`X-P-Log-Source: otel-traces`.
 
 ### Traces appear but metrics are empty
 
-Metrics use a periodic exporter. Keep the application running long enough for the first export, or temporarily set `OTEL_METRIC_EXPORT_INTERVAL=1000` during a smoke test.
+Metrics use a periodic exporter. Keep the application alive until the first
+export or temporarily set `OTEL_METRIC_EXPORT_INTERVAL=1000`.
 
-### Prompt or response content appears in traces
+### Prompts or responses appear in traces
 
-Set `capture_message_content=False` in `openlit.init()`. Review existing records separately because changing this setting only affects newly generated telemetry.
-
-### Collector receives `404` responses
-
-Use separate exporters with the correct `X-P-Log-Source` values. Do not append `/v1/traces` or `/v1/metrics` when using the base `endpoint` setting shown in this guide; the `otlphttp` exporter adds the signal path.
+Set `capture_message_content=False`. This affects only newly generated
+telemetry; review or remove older records separately.
 
 ## Related documentation
 
-- [OpenLIT SDK documentation](https://docs.openlit.io/latest/sdk/quickstart-ai-observability)
+- [OpenLIT SDK](https://docs.openlit.io/latest/sdk/quickstart-ai-observability)
+- [Parseable Agent Observability](/docs/user-guide/agent-observability)
 - [Parseable OpenTelemetry traces](/docs/ingest-data/otel/traces)
 - [Parseable OpenTelemetry metrics](/docs/ingest-data/otel/metrics)
 - [OpenTelemetry Collector](https://opentelemetry.io/docs/collector/)
