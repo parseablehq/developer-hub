@@ -11,12 +11,16 @@ This guide sends each OpenTelemetry signal directly to a dedicated Parseable dat
 
 ```text
 Mastra agent
-    |
-    +-- traces --> OTLP/HTTP --> mastra-traces
-    +-- logs ----> OTLP/HTTP --> mastra-logs
-    +-- metrics -> OTLP/HTTP --> mastra-metrics
-                                  Parseable
+  |
+  |  traces   ->  OTLP/HTTP  ->  mastra-traces
+  |  logs     ->  OTLP/HTTP  ->  mastra-logs
+  |  metrics  ->  OTLP/HTTP  ->  mastra-metrics
+  |
+  v
+Parseable datasets
 ```
+
+Traces and logs are sent through Mastra's OpenTelemetry exporter. Metrics come from Mastra observability events and are sent to the metrics dataset using OpenTelemetry metrics.
 
 Keeping the signals in separate datasets makes retention, access control, and dashboard queries easier to manage.
 
@@ -47,14 +51,12 @@ From the Mastra project, install the observability and OpenTelemetry metric pack
 npm install \
   @mastra/observability \
   @mastra/otel-exporter \
-  @opentelemetry/exporter-logs-otlp-http \
   @opentelemetry/exporter-metrics-otlp-http \
-  @opentelemetry/exporter-trace-otlp-http \
   @opentelemetry/resources \
   @opentelemetry/sdk-metrics
 ```
 
-Mastra loads the trace and log OTLP exporters dynamically. Keep both HTTP exporter packages installed; otherwise the corresponding signal is disabled and Mastra reports a missing exporter package at runtime.
+The Mastra OpenTelemetry exporter handles traces and logs. The OpenTelemetry metrics packages are used to send Mastra metric events to Parseable.
 
 The example agent below uses OpenAI. Install the provider package if it is not already present:
 
@@ -76,7 +78,7 @@ export OPENAI_API_KEY="<openai-api-key>"
 export OPENAI_MODEL="gpt-5-mini"
 ```
 
-Do not commit API keys to source control. For deployments that use Basic authentication instead of an API key, replace the `X-API-Key` header in the next example with an `Authorization` header containing `Basic <base64-encoded-username-and-password>`.
+Do not commit API keys to source control.
 
 </Step>
 <Step>
@@ -307,6 +309,18 @@ Run the application and invoke the agent a few times. In Parseable, confirm that
 | `mastra-logs` | Structured Mastra logs with severity, service, and trace correlation |
 | `mastra-metrics` | Duration histograms and model token counters |
 
+The traces view should show agent, model, and tool spans for each run.
+
+![Mastra traces in Parseable](./static/mastra-traces.png)
+
+The logs view should show structured agent logs with the same service and trace context.
+
+![Mastra logs in Parseable](./static/mastra-logs.png)
+
+The metrics view should show duration and token metrics emitted from Mastra's observability events.
+
+![Mastra metrics in Parseable](./static/mastra-metrics.png)
+
 Useful PromQL checks for the metrics dataset include:
 
 ```text
@@ -327,7 +341,7 @@ If a dataset remains empty, check the application logs for OTLP errors and verif
 
 ## Import the dashboard
 
-The [Mastra Agent Observability dashboard](https://github.com/parseablehq/dashboards/tree/main/mastra-agent-observability) provides 39 panels across eight sections:
+The [Mastra Agent Observability dashboard](https://github.com/parseablehq/dashboards/tree/main/mastra-agent-observability) includes panels for:
 
 - Overview
 - Agent Activity & Reliability
@@ -342,23 +356,23 @@ Download the [Mastra dashboard JSON](https://github.com/parseablehq/dashboards/b
 
 Cost panels use Parseable's `agent_cost()` function with the provider and model recorded on model spans. Unsupported provider/model combinations do not produce an estimate, so keep the model identifier and provider attributes intact during ingestion.
 
+The dashboard gives a ready-made view for token usage, latency, and error investigation once the three datasets are mapped.
+
+![Mastra tokens dashboard in Parseable](./static/mastra-tokens.png)
+
+![Mastra latency dashboard in Parseable](./static/mastra-latency.png)
+
+![Mastra error logs dashboard in Parseable](./static/mastra-errorlogs.png)
+
 ## Troubleshooting
 
-### OTLP requests return 404 or 405
+- **OTLP requests return 404 or 405**: The application is probably sending telemetry to a query/UI node instead of an ingestor. Change `PARSEABLE_OTLP_ENDPOINT` to the Parseable ingestor base URL.
 
-The application is probably sending telemetry to a query/UI node instead of an ingestor. Change `PARSEABLE_OTLP_ENDPOINT` to the Parseable ingestor base URL.
+- **Traces arrive but logs do not**: Keep `logging.enabled` set to `true`, include the log exporter, and verify that its signal configuration is `traces: false, logs: true`.
 
-### Traces arrive but logs do not
+- **Metrics do not arrive**: Register the metric exporter in the same observability configuration as the trace and log exporters. Keep the metric export interval greater than its export timeout, and flush telemetry before a short-lived process exits.
 
-Keep `logging.enabled` set to `true`, include the log exporter, and verify that its signal configuration is `traces: false, logs: true`.
-
-### Metrics do not arrive
-
-Register the metric exporter in the same observability configuration as the trace and log exporters. Keep the metric export interval greater than its export timeout, and flush telemetry before a short-lived process exits.
-
-### Metric series are too numerous
-
-Do not add trace IDs, request IDs, user IDs, session IDs, or other unbounded values as metric labels. Keep those values on logs and traces, where they can still be used for correlation.
+- **Metric series are too numerous**: Do not add trace IDs, request IDs, user IDs, session IDs, or other unbounded values as metric labels. Keep those values on logs and traces, where they can still be used for correlation.
 
 ## Related resources
 
