@@ -30,17 +30,17 @@ Logs are the generally highest-volume signals. They range from unstructured text
 
 Parseable can ingest logs with dynamic or fixed schema. For dynamic schema, new fields are picked up automatically, and sparse or wide events stay cheap because columnar storage only reads the columns a query touches.
 
-For verbose, unstructured log strings, Parseable offers [LogIQ](/docs/user-guide/log-iq), a mechanism to split the log data into separate columns automatically, allowing better compression and performance.
+For verbose, unstructured log strings, Parseable offers [LogIQ](/user-guide/log-iq), a mechanism to split the log data into separate columns automatically, allowing better compression and performance.
 
 ### Metrics
 Metrics are numeric time series identified by a name and a set of labels. The hard problem is cardinality: every new combination of label values is another series, and traditional TSDBs slow down or fall over as that count climbs.
 
-Parseable stores metrics in the columnar data lake and exposes them through native PromQL. With additional metadata like series hash and frequency, label values are stored as column data rather than expanded into a per-series index, so high-cardinality labels don't carry any penalty. Metrics can be ingested over [OpenTelemetry](/docs/ingest-data/otel/metrics) or [Prometheus remote write](docs/ingest-data/prometheus).
+Parseable stores metrics in the columnar data lake and exposes them through native PromQL. With additional metadata like series hash and frequency, label values are stored as column data rather than expanded into a per-series index, so high-cardinality labels don't carry any penalty. Metrics can be ingested over [OpenTelemetry](/ingest-data/otel/metrics) or [Prometheus remote write](/ingest-data/prometheus).
 
 ### Traces
 A trace is a tree of spans tied together by a trace ID, where each span is a structured event with its own timing and attributes. Trace workloads mix two access patterns: fetch a single trace by ID, and aggregate across many spans for service-level views — latency percentiles, error rates, dependency maps.
 
-Parseable stores spans as columnar events, so both patterns run on the same data — trace lookup by ID, and the aggregations behind its APM features. Traces are [ingested over OTLP](/docs/ingest-data/otel/traces).
+Parseable stores spans as columnar events, so both patterns run on the same data — trace lookup by ID, and the aggregations behind its APM features. Traces are [ingested over OTLP](/ingest-data/otel/traces).
 
 ## Use cases
 
@@ -101,4 +101,3 @@ PromQL, alerting, dashboards, anomaly detection
 <a href="/docs/integrations" title='Integrations'>
 Integrate with your existing tools and workflows
 </a>
-

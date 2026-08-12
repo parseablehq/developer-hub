@@ -16,7 +16,7 @@ The error page collapses thousands of exception spans into a short list of disti
 
 - Error view requires events with `event_exception.type`, `event_exception.message`, and `service.name` fields.
 
-If you are chasing log-level errors instead, start from the [Logs explorer](/docs/user-guide/logs) with a filter on your log level field. Log based error grouping is not available here yet.
+If you are chasing log-level errors instead, start from the [Logs explorer](/user-guide/logs) with a filter on your log level field. Log based error grouping is not available here yet.
 
 ## When to use this page
 
@@ -25,7 +25,7 @@ If you are chasing log-level errors instead, start from the [Logs explorer](/doc
 - You need to tell a new error apart from a long-running one: "has this been failing for hours, or did it start five minutes ago?"
 - You want an LLM-generated first guess at the root cause and a remediation checklist before diving into stack traces
 
-If you already have a trace ID, skip this page and jump straight to the [Traces explorer](/docs/user-guide/traces). If you know the log line you are after, use the [Logs explorer](/docs/user-guide/logs).
+If you already have a trace ID, skip this page and jump straight to the [Traces explorer](/user-guide/traces). If you know the log line you are after, use the [Logs explorer](/user-guide/logs).
 
 ## The debugging workflow
 
@@ -76,7 +76,7 @@ This view exists to answer the "what was the request doing when it failed" quest
 - **The stack trace** shows exactly where in your code the exception was raised. Copy it into your issue tracker or a chat thread with one click.
 - **The events timeline** lists every span event in the trace in chronological order, with errors highlighted in red. Read it to see what else was happening in the same request: retries, upstream calls, and the normal span events that surrounded the failure.
 
-Click **View trace** in the header to jump to the full waterfall in the [Traces explorer](/docs/user-guide/traces) with the failing span highlighted. Do that when you need the end-to-end request tree, for example to verify that a timeout in an upstream service is the real cause rather than the local service itself.
+Click **View trace** in the header to jump to the full waterfall in the [Traces explorer](/user-guide/traces) with the failing span highlighted. Do that when you need the end-to-end request tree, for example to verify that a timeout in an upstream service is the real cause rather than the local service itself.
 
 ### Correlate with logs
 
@@ -85,11 +85,11 @@ Errors on this page are linked to logs via OpenTelemetry trace and span IDs. Two
 - **Trace to logs**: from an error trace, jump to every log line that shares the same `trace.id` to see what the services in the request were logging around the failure
 - **Span to logs**: from a specific error span, jump to log lines that share the same `span.id` for the narrow slice of logs tied to that one operation
 
-Reach for the trace-level pivot when you want the full story of a request and the span-level pivot when you already know which operation broke and want the logs that service emitted right around it. Both only work when your logs and traces are ingested with matching IDs. See [Manual Instrumentation](/docs/user-guide/agent-observability/manual-instrumentation) for the required attributes if you are instrumenting by hand.
+Reach for the trace-level pivot when you want the full story of a request and the span-level pivot when you already know which operation broke and want the logs that service emitted right around it. Both only work when your logs and traces are ingested with matching IDs. See the [instrumentation guide](/cookbook/instrumentation) for the required attributes if you are instrumenting by hand.
 
 ### Escalate to Keystone when the surface info is not enough
 
-Click **Analyze** on the error detail or trace view to hand the full error context to [Keystone](/docs/user-guide/ai-native/keystone), Parseable's agentic debugging assistant. Keystone receives the exception type, message, stack trace, the full span tree for the trace, and service and operation metadata, and gives you a natural-language debugging session on top of that data.
+Click **Analyze** on the error detail or trace view to hand the full error context to [Keystone](/user-guide/ai-native/keystone), Parseable's agentic debugging assistant. Keystone receives the exception type, message, stack trace, the full span tree for the trace, and service and operation metadata, and gives you a natural-language debugging session on top of that data.
 
 Use Keystone when:
 
@@ -102,7 +102,7 @@ If all you need is a quick explanation of the exception in front of you, the AI 
 
 ### Monitor if it happens again
 
-Before closing the detail view, use **Create alert** in the header to create an [alert](/docs/user-guide/alerting) scoped to this error group. This is especially valuable for silent failures (ones you only found out about because a customer complained), so the next occurrence pages an on-call engineer instead of quietly piling up.
+Before closing the detail view, use **Create alert** in the header to create an [alert](/user-guide/alerting) scoped to this error group. This is especially valuable for silent failures (ones you only found out about because a customer complained), so the next occurrence pages an on-call engineer instead of quietly piling up.
 
 ## Debugging tips
 

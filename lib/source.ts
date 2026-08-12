@@ -6,7 +6,8 @@ import { createElement } from 'react';
 
 // See https://fumadocs.vercel.app/docs/headless/source-api for more info
 export const source = loader({
-  baseUrl: '/docs',
+  // Next.js adds the public `/docs` base path to generated links.
+  baseUrl: '/',
   source: docs.toFumadocsSource(),
   plugins: [openapiPlugin()],
   icon(icon) {

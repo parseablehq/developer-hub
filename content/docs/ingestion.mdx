@@ -9,7 +9,7 @@ Ingestion is the process of sending Telemetry signals (Metrics, Events, Logs, Tr
 
 You can ingest data to Parseable in JSON format over HTTP(s). This means that any log agent, metric collector, or tracing library that can send data over HTTP in JSON format can be used to ingest data into Parseable.
 
-For log data you can use the HTTP output plugins of all the logging agents/shippers. You can also directly integrate Parseable with your application via [REST API](/docs/api/v1/ingest).
+For log data you can use the HTTP output plugins of all the logging agents/shippers. You can also directly integrate Parseable with your application via the [ingestion API](/api/v1/ingestLogsWithHeaders).
 
 Parseable also supports the OTel native data ingestion via the Protobuf over HTTP. This allows you to use any OpenTelemetry compatible log agent or library to send logs to Parseable.
 
@@ -50,247 +50,247 @@ In case of otel-metrics, there may be key collision in the attributes key, as th
 
 <Cards>
 
-<Card href="/docs/ingest-data/otel/traces" icon={<IconTimeline className="text-purple-600" />} title='OTel Traces'>
+<Card href="/ingest-data/otel/traces" icon={<IconTimeline className="text-purple-600" />} title='OTel Traces'>
 Ingest distributed traces using OpenTelemetry Protocol (OTLP).
 </Card>
 
-<Card href="/docs/ingest-data/otel/logs" icon={<IconTimeline className="text-purple-600" />} title='OTel Logs'>
+<Card href="/ingest-data/otel/logs" icon={<IconTimeline className="text-purple-600" />} title='OTel Logs'>
 Ingest structured logs using OpenTelemetry Protocol (OTLP).
 </Card>
 
-<Card href="/docs/ingest-data/otel/metrics" icon={<IconChartDots className="text-purple-600" />} title='OTel Metrics'>
+<Card href="/ingest-data/otel/metrics" icon={<IconChartDots className="text-purple-600" />} title='OTel Metrics'>
 Ingest metrics using OpenTelemetry Protocol (OTLP).
 </Card>
 
-<Card href="/docs/ingest-data/zero-instrumentation" icon={<IconWand className="text-purple-600" />} title='eBPF Agents'>
+<Card href="/ingest-data/zero-instrumentation" icon={<IconWand className="text-purple-600" />} title='eBPF Agents'>
 Collect logs without modifying your application code.
 </Card>
 
-<Card href="/docs/ingest-data/ai-agents/openai" icon={<IconCode className="text-purple-600" />} title='OpenAI'>
+<Card href="/ingest-data/ai-agents/openai" icon={<IconCode className="text-purple-600" />} title='OpenAI'>
 Track and log OpenAI API calls and responses.
 </Card>
 
-<Card href="/docs/ingest-data/ai-agents/anthropic" icon={<IconCode className="text-purple-600" />} title='Anthropic'>
+<Card href="/ingest-data/ai-agents/anthropic" icon={<IconCode className="text-purple-600" />} title='Anthropic'>
 Monitor and log Anthropic Claude API interactions.
 </Card>
 
-<Card href="/docs/ingest-data/ai-agents/langchain" icon={<IconCode className="text-purple-600" />} title='LangChain'>
+<Card href="/ingest-data/ai-agents/langchain" icon={<IconCode className="text-purple-600" />} title='LangChain'>
 Ingest traces and logs from LangChain applications.
 </Card>
 
-<Card href="/docs/ingest-data/ai-agents/llamaindex" icon={<IconCode className="text-purple-600" />} title='LlamaIndex'>
+<Card href="/ingest-data/ai-agents/llamaindex" icon={<IconCode className="text-purple-600" />} title='LlamaIndex'>
 Collect observability data from LlamaIndex applications.
 </Card>
 
-<Card href="/docs/ingest-data/ai-agents/autogen" icon={<IconCode className="text-purple-600" />} title='AutoGen'>
+<Card href="/ingest-data/ai-agents/autogen" icon={<IconCode className="text-purple-600" />} title='AutoGen'>
 Track multi-agent conversations and AutoGen workflows.
 </Card>
 
-<Card href="/docs/ingest-data/ai-agents/crewai" icon={<IconCode className="text-purple-600" />} title='CrewAI'>
+<Card href="/ingest-data/ai-agents/crewai" icon={<IconCode className="text-purple-600" />} title='CrewAI'>
 Ingest logs from CrewAI agent orchestration.
 </Card>
 
-<Card href="/docs/ingest-data/ai-agents/dspy" icon={<IconCode className="text-purple-600" />} title='DSPy'>
+<Card href="/ingest-data/ai-agents/dspy" icon={<IconCode className="text-purple-600" />} title='DSPy'>
 Monitor DSPy framework executions and outputs.
 </Card>
 
-<Card href="/docs/ingest-data/ai-agents/n8n" icon={<IconCode className="text-purple-600" />} title='n8n'>
+<Card href="/ingest-data/ai-agents/n8n" icon={<IconCode className="text-purple-600" />} title='n8n'>
 Collect workflow execution logs from n8n automation platform.
 </Card>
 
-<Card href="/docs/ingest-data/logging-agents/fluent-bit" icon={<IconPlug className="text-blue-600" />} title='Fluent Bit'>
+<Card href="/ingest-data/logging-agents/fluent-bit" icon={<IconPlug className="text-blue-600" />} title='Fluent Bit'>
 Lightweight and scalable logging processor. Perfect for Kubernetes and Docker environments.
 </Card>
 
-<Card href="/docs/ingest-data/logging-agents/vector" icon={<IconPlug className="text-blue-600" />} title='Vector'>
+<Card href="/ingest-data/logging-agents/vector" icon={<IconPlug className="text-blue-600" />} title='Vector'>
 High-performance observability data pipeline for logs, metrics, and traces.
 </Card>
 
-<Card href="/docs/ingest-data/logging-agents/fluentd" icon={<IconPlug className="text-blue-600" />} title='Fluentd'>
+<Card href="/ingest-data/logging-agents/fluentd" icon={<IconPlug className="text-blue-600" />} title='Fluentd'>
 Unified logging layer that collects data from multiple sources and routes to destinations.
 </Card>
 
-<Card href="/docs/ingest-data/logging-agents/otel-collector" icon={<IconPlug className="text-blue-600" />} title='OpenTelemetry Collector'>
+<Card href="/ingest-data/logging-agents/otel-collector" icon={<IconPlug className="text-blue-600" />} title='OpenTelemetry Collector'>
 Vendor-agnostic way to receive, process, and export telemetry data.
 </Card>
 
-<Card href="/docs/ingest-data/logging-agents/apache-log-4j" icon={<IconPlug className="text-blue-600" />} title='Apache Log4j'>
+<Card href="/ingest-data/logging-agents/apache-log-4j" icon={<IconPlug className="text-blue-600" />} title='Apache Log4j'>
 Send logs directly from Log4j applications to Parseable.
 </Card>
 
-<Card href="/docs/ingest-data/logging-agents/logstash" icon={<IconPlug className="text-blue-600" />} title='Logstash'>
+<Card href="/ingest-data/logging-agents/logstash" icon={<IconPlug className="text-blue-600" />} title='Logstash'>
 Server-side data processing pipeline that ingests data from multiple sources.
 </Card>
 
-<Card href="/docs/ingest-data/logging-agents/syslog" icon={<IconPlug className="text-blue-600" />} title='Syslog'>
+<Card href="/ingest-data/logging-agents/syslog" icon={<IconPlug className="text-blue-600" />} title='Syslog'>
 Standard protocol for message logging across network devices and servers.
 </Card>
 
-<Card href="/docs/ingest-data/logging-agents/filebeat" icon={<IconPlug className="text-blue-600" />} title='Filebeat'>
+<Card href="/ingest-data/logging-agents/filebeat" icon={<IconPlug className="text-blue-600" />} title='Filebeat'>
 Lightweight shipper for forwarding and centralizing log data from files.
 </Card>
 
-<Card href="/docs/ingest-data/logging-agents/promtail" icon={<IconPlug className="text-blue-600" />} title='Promtail'>
+<Card href="/ingest-data/logging-agents/promtail" icon={<IconPlug className="text-blue-600" />} title='Promtail'>
 Agent that ships the contents of local logs to a centralized store.
 </Card>
 
-<Card href="/docs/ingest-data/logging-agents/prometheus" icon={<IconChartDots className="text-blue-600" />} title='Prometheus'>
+<Card href="/ingest-data/logging-agents/prometheus" icon={<IconChartDots className="text-blue-600" />} title='Prometheus'>
 Monitoring system and time series database for metrics collection.
 </Card>
 
-<Card href="/docs/ingest-data/databases/postgresql" icon={<IconDatabase className="text-gray-600" />} title='PostgreSQL'>
+<Card href="/ingest-data/databases/postgresql" icon={<IconDatabase className="text-gray-600" />} title='PostgreSQL'>
 Ingest logs and metrics from PostgreSQL databases.
 </Card>
 
-<Card href="/docs/ingest-data/databases/mysql" icon={<IconDatabase className="text-gray-600" />} title='MySQL'>
-Collect logs and metrics from MySQL databases.
+<Card href="/ingest-data/databases/mysql" icon={<IconDatabase className="text-gray-600" />} title='MySQL'>
+Collect logs, metrics, and client traces from MySQL databases.
 </Card>
 
-<Card href="/docs/ingest-data/databases/mongodb" icon={<IconDatabase className="text-gray-600" />} title='MongoDB'>
+<Card href="/ingest-data/databases/mongodb" icon={<IconDatabase className="text-gray-600" />} title='MongoDB'>
 Ingest logs and metrics from MongoDB databases.
 </Card>
 
-<Card href="/docs/ingest-data/databases/redis" icon={<IconDatabase className="text-gray-600" />} title='Redis'>
+<Card href="/ingest-data/databases/redis" icon={<IconDatabase className="text-gray-600" />} title='Redis'>
 Collect logs and metrics from Redis databases.
 </Card>
 
-<Card href="/docs/ingest-data/databases/sql-server" icon={<IconDatabase className="text-gray-600" />} title='Microsoft SQL Server'>
+<Card href="/ingest-data/databases/sql-server" icon={<IconDatabase className="text-gray-600" />} title='Microsoft SQL Server'>
 Collect SQL Server logs, metrics, query events, and client traces.
 </Card>
 
-<Card href="/docs/ingest-data/databases/elasticsearch" icon={<IconDatabase className="text-gray-600" />} title='Elasticsearch'>
+<Card href="/ingest-data/databases/elasticsearch" icon={<IconDatabase className="text-gray-600" />} title='Elasticsearch'>
 Migrate or sync data from Elasticsearch to Parseable.
 </Card>
 
-<Card href="/docs/ingest-data/infrastructure/windows-server" icon={<IconServer className="text-blue-600" />} title='Windows Server'>
+<Card href="/ingest-data/infrastructure/windows-server" icon={<IconServer className="text-blue-600" />} title='Windows Server'>
 Collect Windows Event Logs, windows_exporter metrics, and application traces.
 </Card>
 
-<Card href="/docs/ingest-data/containers/docker" icon={<IconDatabase className="text-orange-600" />} title='Docker'>
+<Card href="/ingest-data/containers/docker" icon={<IconDatabase className="text-orange-600" />} title='Docker'>
 Collect logs from Docker containers using logging drivers.
 </Card>
 
-<Card href="/docs/ingest-data/containers/kubernetes" icon={<IconDatabase className="text-orange-600" />} title='Kubernetes'>
+<Card href="/ingest-data/containers/kubernetes" icon={<IconDatabase className="text-orange-600" />} title='Kubernetes'>
 Ingest logs from Kubernetes clusters using DaemonSets and sidecars.
 </Card>
 
-<Card href="/docs/ingest-data/containers/amazon-ecs" icon={<IconDatabase className="text-orange-600" />} title='Amazon ECS'>
+<Card href="/ingest-data/containers/amazon-ecs" icon={<IconDatabase className="text-orange-600" />} title='Amazon ECS'>
 Collect logs from Amazon Elastic Container Service tasks.
 </Card>
 
-<Card href="/docs/ingest-data/containers/amazon-eks" icon={<IconDatabase className="text-orange-600" />} title='Amazon EKS'>
+<Card href="/ingest-data/containers/amazon-eks" icon={<IconDatabase className="text-orange-600" />} title='Amazon EKS'>
 Ingest logs from Amazon Elastic Kubernetes Service clusters.
 </Card>
 
-<Card href="/docs/ingest-data/containers/google-gke" icon={<IconDatabase className="text-orange-600" />} title='Google GKE'>
+<Card href="/ingest-data/containers/google-gke" icon={<IconDatabase className="text-orange-600" />} title='Google GKE'>
 Ingest logs from Google Kubernetes Engine clusters.
 </Card>
 
-<Card href="/docs/ingest-data/containers/azure-aks" icon={<IconDatabase className="text-orange-600" />} title='Azure AKS'>
+<Card href="/ingest-data/containers/azure-aks" icon={<IconDatabase className="text-orange-600" />} title='Azure AKS'>
 Collect logs from Azure Kubernetes Service clusters.
 </Card>
 
-<Card href="/docs/ingest-data/streaming/kafka" icon={<IconTimeline className="text-purple-600" />} title='Kafka'>
+<Card href="/ingest-data/streaming/kafka" icon={<IconTimeline className="text-purple-600" />} title='Kafka'>
 Ingest real-time streaming data from Apache Kafka topics.
 </Card>
 
-<Card href="/docs/ingest-data/streaming/redpanda" icon={<IconTimeline className="text-purple-600" />} title='Redpanda'>
+<Card href="/ingest-data/streaming/redpanda" icon={<IconTimeline className="text-purple-600" />} title='Redpanda'>
 Stream data from Redpanda, a Kafka-compatible streaming platform.
 </Card>
 
-<Card href="/docs/ingest-data/streaming/rabbitmq" icon={<IconTimeline className="text-purple-600" />} title='RabbitMQ'>
+<Card href="/ingest-data/streaming/rabbitmq" icon={<IconTimeline className="text-purple-600" />} title='RabbitMQ'>
 Collect messages from RabbitMQ message broker.
 </Card>
 
-<Card href="/docs/ingest-data/streaming/nats" icon={<IconTimeline className="text-purple-600" />} title='NATS'>
+<Card href="/ingest-data/streaming/nats" icon={<IconTimeline className="text-purple-600" />} title='NATS'>
 Ingest messages from NATS messaging system.
 </Card>
 
-<Card href="/docs/ingest-data/cicd/github-actions" icon={<IconSettings className="text-green-600" />} title='GitHub Actions'>
+<Card href="/ingest-data/cicd/github-actions" icon={<IconSettings className="text-green-600" />} title='GitHub Actions'>
 Collect logs and metrics from GitHub Actions workflows.
 </Card>
 
-<Card href="/docs/ingest-data/cicd/jenkins" icon={<IconSettings className="text-green-600" />} title='Jenkins'>
+<Card href="/ingest-data/cicd/jenkins" icon={<IconSettings className="text-green-600" />} title='Jenkins'>
 Collect build and deployment logs from Jenkins.
 </Card>
 
-<Card href="/docs/ingest-data/cicd/gitlab-ci" icon={<IconSettings className="text-green-600" />} title='GitLab CI'>
+<Card href="/ingest-data/cicd/gitlab-ci" icon={<IconSettings className="text-green-600" />} title='GitLab CI'>
 Ingest logs from GitLab CI/CD pipelines.
 </Card>
 
-<Card href="/docs/ingest-data/cicd/circleci" icon={<IconSettings className="text-green-600" />} title='CircleCI'>
+<Card href="/ingest-data/cicd/circleci" icon={<IconSettings className="text-green-600" />} title='CircleCI'>
 Ingest logs from CircleCI build pipelines.
 </Card>
 
-<Card href="/docs/ingest-data/cicd/argocd" icon={<IconSettings className="text-green-600" />} title='ArgoCD'>
+<Card href="/ingest-data/cicd/argocd" icon={<IconSettings className="text-green-600" />} title='ArgoCD'>
 Collect logs from ArgoCD GitOps deployments.
 </Card>
 
-<Card href="/docs/ingest-data/cicd/terraform" icon={<IconSettings className="text-green-600" />} title='Terraform'>
+<Card href="/ingest-data/cicd/terraform" icon={<IconSettings className="text-green-600" />} title='Terraform'>
 Ingest infrastructure deployment logs from Terraform.
 </Card>
 
-<Card href="/docs/ingest-data/cloud/aws-cloudwatch" icon={<IconBrandAws className="text-blue-600" />} title='AWS CloudWatch'>
+<Card href="/ingest-data/cloud/aws-cloudwatch" icon={<IconBrandAws className="text-blue-600" />} title='AWS CloudWatch'>
 Ingest logs and metrics from AWS CloudWatch service.
 </Card>
 
-<Card href="/docs/ingest-data/cloud/aws-kinesis" icon={<IconBrandAws className="text-blue-600" />} title='AWS Kinesis'>
+<Card href="/ingest-data/cloud/aws-kinesis" icon={<IconBrandAws className="text-blue-600" />} title='AWS Kinesis'>
 Stream data from AWS Kinesis Data Streams to Parseable.
 </Card>
 
-<Card href="/docs/ingest-data/cloud/azure-event-hubs" icon={<IconBrandAzure className="text-blue-600" />} title='Azure Event Hubs'>
+<Card href="/ingest-data/cloud/azure-event-hubs" icon={<IconBrandAzure className="text-blue-600" />} title='Azure Event Hubs'>
 Ingest streaming data from Azure Event Hubs.
 </Card>
 
-<Card href="/docs/ingest-data/cloud/gcp-pubsub" icon={<IconBrandGoogle className="text-blue-600" />} title='GCP Pub/Sub'>
+<Card href="/ingest-data/cloud/gcp-pubsub" icon={<IconBrandGoogle className="text-blue-600" />} title='GCP Pub/Sub'>
 Stream data from Google Cloud Pub/Sub messaging service.
 </Card>
 
-<Card href="/docs/ingest-data/security/falco" icon={<IconSettings className="text-red-600" />} title='Falco'>
+<Card href="/ingest-data/security/falco" icon={<IconSettings className="text-red-600" />} title='Falco'>
 Ingest runtime security events from Falco.
 </Card>
 
-<Card href="/docs/ingest-data/security/trivy" icon={<IconSettings className="text-red-600" />} title='Trivy'>
+<Card href="/ingest-data/security/trivy" icon={<IconSettings className="text-red-600" />} title='Trivy'>
 Collect vulnerability scan results from Trivy.
 </Card>
 
-<Card href="/docs/ingest-data/security/siem-export" icon={<IconSettings className="text-red-600" />} title='SIEM Export'>
+<Card href="/ingest-data/security/siem-export" icon={<IconSettings className="text-red-600" />} title='SIEM Export'>
 Export security events to SIEM platforms.
 </Card>
 
-<Card href="/docs/ingest-data/programming-languages/python" icon={<IconCode className="text-green-600" />} title='Python'>
+<Card href="/ingest-data/programming-languages/python" icon={<IconCode className="text-green-600" />} title='Python'>
 Integrate Parseable with Python applications using standard logging libraries.
 </Card>
 
-<Card href="/docs/ingest-data/programming-languages/javascript" icon={<IconCode className="text-green-600" />} title='JavaScript/Node.js'>
+<Card href="/ingest-data/programming-languages/javascript" icon={<IconCode className="text-green-600" />} title='JavaScript/Node.js'>
 Integrate Parseable with Node.js applications and browser-based logging.
 </Card>
 
-<Card href="/docs/ingest-data/programming-languages/go" icon={<IconCode className="text-green-600" />} title='Go'>
+<Card href="/ingest-data/programming-languages/go" icon={<IconCode className="text-green-600" />} title='Go'>
 Send logs from Go applications using HTTP client or OpenTelemetry SDK.
 </Card>
 
-<Card href="/docs/ingest-data/programming-languages/java" icon={<IconCode className="text-green-600" />} title='Java'>
+<Card href="/ingest-data/programming-languages/java" icon={<IconCode className="text-green-600" />} title='Java'>
 Send logs from Java applications using Log4j, Logback, or OpenTelemetry.
 </Card>
 
-<Card href="/docs/ingest-data/programming-languages/rust" icon={<IconCode className="text-green-600" />} title='Rust'>
+<Card href="/ingest-data/programming-languages/rust" icon={<IconCode className="text-green-600" />} title='Rust'>
 Send logs from Rust applications using tracing or log crates.
 </Card>
 
-<Card href="/docs/ingest-data/programming-languages/csharp" icon={<IconCode className="text-green-600" />} title='C#'>
+<Card href="/ingest-data/programming-languages/csharp" icon={<IconCode className="text-green-600" />} title='C#'>
 Integrate Parseable with C# applications using Serilog or NLog.
 </Card>
 
-<Card href="/docs/ingest-data/programming-languages/dotnet" icon={<IconCode className="text-green-600" />} title='.NET'>
+<Card href="/ingest-data/programming-languages/dotnet" icon={<IconCode className="text-green-600" />} title='.NET'>
 Integrate Parseable with .NET applications using structured logging.
 </Card>
 
-<Card href="/docs/ingest-data/programming-languages/php" icon={<IconCode className="text-green-600" />} title='PHP'>
+<Card href="/ingest-data/programming-languages/php" icon={<IconCode className="text-green-600" />} title='PHP'>
 Send logs from PHP applications using Monolog or custom implementations.
 </Card>
 
-<Card href="/docs/ingest-data/programming-languages/ruby" icon={<IconCode className="text-green-600" />} title='Ruby'>
+<Card href="/ingest-data/programming-languages/ruby" icon={<IconCode className="text-green-600" />} title='Ruby'>
 Integrate Parseable with Ruby applications using standard logging frameworks.
 </Card>
 

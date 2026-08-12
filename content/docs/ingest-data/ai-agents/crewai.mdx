@@ -1,312 +1,265 @@
 ---
 title: CrewAI
+description: Send CrewAI agent traces to Parseable with OpenInference and OpenTelemetry
 ---
 
-Log CrewAI crews, agents, tasks, and tool usage to Parseable for multi-agent observability.
+import { Step, Steps } from 'fumadocs-ui/components/steps';
 
-## Overview
+[CrewAI](https://www.crewai.com/) is a Python framework for building agentic workflows where agents take roles, receive tasks, call tools, and work together as a crew. That is useful, but it also makes debugging harder than a normal request-response application. A single run can include multiple agents, task handoffs, model calls, tool calls, retries, and failures before the final output is returned.
 
-Integrate CrewAI with Parseable to:
+Parseable receives CrewAI telemetry as OpenTelemetry traces. In this guide, the CrewAI application is instrumented with [OpenInference](https://github.com/Arize-ai/openinference), exported over OTLP/HTTP, and stored in a Parseable traces dataset. Once the data is in Parseable, you can inspect the full crew run, follow the agent and task spans, review model calls, and debug failed runs from the same trace view.
 
-- **Crew Monitoring** - Track crew executions
-- **Agent Logging** - Monitor individual agent work
-- **Task Tracking** - Log task assignments and completions
-- **Tool Usage** - Track tool calls and results
-- **Performance Analysis** - Measure crew efficiency
+## How it works
+
+The integration has two layers of instrumentation.
+
+CrewAI instrumentation captures the application workflow. This is where you see the crew, agents, tasks, tool calls, and execution flow. Provider instrumentation captures the underlying model calls. In this example we use OpenAI, so the setup includes `openinference-instrumentation-openai` to capture LLM spans and model attributes.
+
+```text
+CrewAI application
+  |
+  | OpenInference CrewAI instrumentation
+  | OpenInference OpenAI instrumentation
+  v
+OpenTelemetry SDK
+  |
+  | OTLP/HTTP traces
+  v
+Parseable /v1/traces
+  |
+  +--> crewai-traces
+       Parseable traces dataset
+```
+
+<Callout type="info">
+Use the LLM instrumentor that matches the provider your CrewAI app calls. This guide uses OpenAI. If your crew uses Anthropic, LiteLLM, or another provider, pair `openinference-instrumentation-crewai` with that provider's OpenInference instrumentor.
+</Callout>
 
 ## Prerequisites
 
-- CrewAI installed (`pip install crewai`)
-- Parseable instance accessible
-- Python application
+Before you start, keep these ready:
 
-## Custom Logger
+- A running Parseable instance
+- A Parseable API key with ingest access
+- Python 3.10 or later
+- A CrewAI 1.0 or later application
+- An OpenAI API key for the example in this guide
+
+## Set up CrewAI with Parseable
+
+<Steps>
+<Step>
+
+### Create a traces dataset
+
+Set the Parseable connection values:
+
+```bash
+export PARSEABLE_URL="https://<your-parseable-host>"
+export PARSEABLE_API_KEY="<your-parseable-api-key>"
+export PARSEABLE_STREAM="crewai-traces"
+```
+
+Create a dataset for CrewAI spans and tag it for Agent Observability:
+
+```bash
+curl -X PUT "$PARSEABLE_URL/api/v1/logstream/$PARSEABLE_STREAM" \
+  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
+  -H "X-P-Log-Source: otel-traces" \
+  -H "X-P-Telemetry-Type: traces" \
+  -H "X-P-Dataset-Tag: agent-observability"
+```
+
+The dataset will be available in the Traces view. Because it is tagged for Agent Observability, it can also be used from the Agents page.
+
+</Step>
+<Step>
+
+### Install the packages
+
+Install CrewAI, OpenInference instrumentation, and the OpenTelemetry OTLP HTTP exporter:
+
+```bash
+pip install \
+  crewai \
+  openinference-instrumentation-crewai \
+  openinference-instrumentation-openai \
+  opentelemetry-sdk \
+  opentelemetry-exporter-otlp-proto-http
+```
+
+If your crew uses a different model provider, install the matching OpenInference package for that provider as well.
+
+</Step>
+<Step>
+
+### Configure the environment
+
+Set the OpenAI API key used by the sample crew:
+
+```bash
+export OPENAI_API_KEY="<your-openai-api-key>"
+```
+
+Keep `PARSEABLE_URL`, `PARSEABLE_API_KEY`, and `PARSEABLE_STREAM` in the same shell. The Python code below appends `/v1/traces` to `PARSEABLE_URL`.
+
+</Step>
+<Step>
+
+### Instrument and run the crew
+
+Set up the OpenTelemetry tracer provider first, then instrument CrewAI and the model provider before creating the crew. This order matters because the instrumentors patch the libraries they observe.
 
 ```python
-from crewai import Agent, Task, Crew, Process
-import requests
-from datetime import datetime
-from typing import Dict, Any, List, Optional
-import uuid
-import time
-from functools import wraps
+import os
 
-class ParseableCrewLogger:
-    def __init__(self, parseable_url: str, dataset: str, username: str, password: str):
-        self.parseable_url = parseable_url
-        self.dataset = dataset
-        self.auth = (username, password)
-        self.crew_id = str(uuid.uuid4())
-    
-    def _log(self, entry: Dict[str, Any]):
-        entry["timestamp"] = datetime.utcnow().isoformat() + "Z"
-        entry["crew_id"] = self.crew_id
-        try:
-            requests.post(
-                f"{self.parseable_url}/api/v1/ingest",
-                json=[entry],
-                auth=self.auth,
-                headers={"X-P-Stream": self.dataset},
-                timeout=5
-            )
-        except Exception as e:
-            print(f"Logging failed: {e}")
-    
-    def log_crew_start(self, crew_name: str, agents: List[str], tasks: List[str]):
-        self._log({
-            "event": "crew_start",
-            "crew_name": crew_name,
-            "agents": agents,
-            "tasks": tasks,
-            "agent_count": len(agents),
-            "task_count": len(tasks)
-        })
-    
-    def log_crew_end(self, crew_name: str, result: str, duration_ms: float):
-        self._log({
-            "event": "crew_end",
-            "crew_name": crew_name,
-            "result_preview": str(result)[:500],
-            "duration_ms": duration_ms
-        })
-    
-    def log_task_start(self, task_description: str, agent_name: str):
-        self._log({
-            "event": "task_start",
-            "task_description": task_description[:200],
-            "assigned_agent": agent_name
-        })
-    
-    def log_task_end(self, task_description: str, agent_name: str, output: str, duration_ms: float):
-        self._log({
-            "event": "task_end",
-            "task_description": task_description[:200],
-            "agent": agent_name,
-            "output_preview": str(output)[:500],
-            "duration_ms": duration_ms
-        })
-    
-    def log_agent_action(self, agent_name: str, action: str, thought: str = None):
-        self._log({
-            "event": "agent_action",
-            "agent": agent_name,
-            "action": action[:200],
-            "thought": thought[:200] if thought else None
-        })
-    
-    def log_tool_use(self, agent_name: str, tool_name: str, input_data: str, output: str, duration_ms: float):
-        self._log({
-            "event": "tool_use",
-            "agent": agent_name,
-            "tool": tool_name,
-            "input": str(input_data)[:200],
-            "output": str(output)[:200],
-            "duration_ms": duration_ms
-        })
-    
-    def log_llm_call(self, agent_name: str, model: str, tokens: Dict[str, int] = None):
-        entry = {
-            "event": "llm_call",
-            "agent": agent_name,
-            "model": model
+from openinference.instrumentation.crewai import CrewAIInstrumentor
+from openinference.instrumentation.openai import OpenAIInstrumentor
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+
+parseable_url = os.environ["PARSEABLE_URL"].rstrip("/")
+parseable_stream = os.getenv("PARSEABLE_STREAM", "crewai-traces")
+
+provider = TracerProvider(
+    resource=Resource.create(
+        {
+            "service.name": "crewai-research-crew",
+            "deployment.environment.name": "development",
         }
-        if tokens:
-            entry.update(tokens)
-        self._log(entry)
-    
-    def new_crew(self):
-        self.crew_id = str(uuid.uuid4())
-```
-
-### Wrapped Crew
-
-```python
-class LoggedCrew:
-    def __init__(self, crew: Crew, logger: ParseableCrewLogger):
-        self.crew = crew
-        self.logger = logger
-    
-    def kickoff(self, inputs: Dict = None):
-        self.logger.new_crew()
-        
-        # Log crew start
-        agent_names = [a.role for a in self.crew.agents]
-        task_descriptions = [t.description[:100] for t in self.crew.tasks]
-        
-        self.logger.log_crew_start(
-            crew_name=getattr(self.crew, 'name', 'unnamed_crew'),
-            agents=agent_names,
-            tasks=task_descriptions
-        )
-        
-        start_time = time.time()
-        
-        try:
-            result = self.crew.kickoff(inputs=inputs)
-            
-            duration_ms = (time.time() - start_time) * 1000
-            self.logger.log_crew_end(
-                crew_name=getattr(self.crew, 'name', 'unnamed_crew'),
-                result=str(result),
-                duration_ms=duration_ms
-            )
-            
-            return result
-            
-        except Exception as e:
-            self.logger._log({
-                "event": "crew_error",
-                "error": str(e),
-                "error_type": type(e).__name__
-            })
-            raise
-```
-
-### Usage
-
-```python
-from crewai import Agent, Task, Crew, Process
-from crewai_tools import SerperDevTool
-
-# Create logger
-logger = ParseableCrewLogger(
-    parseable_url="http://parseable:8000",
-    dataset="crewai-logs",
-    username="admin",
-    password="admin"
+    )
 )
 
-# Define agents
+provider.add_span_processor(
+    BatchSpanProcessor(
+        OTLPSpanExporter(
+            endpoint=f"{parseable_url}/v1/traces",
+            headers={
+                "X-API-Key": os.environ["PARSEABLE_API_KEY"],
+                "X-P-Stream": parseable_stream,
+                "X-P-Log-Source": "otel-traces",
+            },
+        )
+    )
+)
+
+CrewAIInstrumentor().instrument(tracer_provider=provider)
+OpenAIInstrumentor().instrument(tracer_provider=provider)
+
+from crewai import Agent, Crew, Process, Task
+
+
 researcher = Agent(
-    role='Senior Research Analyst',
-    goal='Uncover cutting-edge developments in AI',
-    backstory='You are an expert researcher...',
-    tools=[SerperDevTool()],
-    verbose=True
+    role="Researcher",
+    goal="Find accurate facts about {topic}",
+    backstory="You verify claims and summarize the strongest evidence.",
+    llm="openai/gpt-4o-mini",
+    verbose=True,
 )
 
 writer = Agent(
-    role='Tech Content Strategist',
-    goal='Craft compelling content on tech advancements',
-    backstory='You are a renowned content strategist...',
-    verbose=True
+    role="Writer",
+    goal="Turn research about {topic} into a concise briefing",
+    backstory="You write clear technical summaries for engineering teams.",
+    llm="openai/gpt-4o-mini",
+    verbose=True,
 )
 
-# Define tasks
 research_task = Task(
-    description='Research the latest AI trends',
-    expected_output='A comprehensive report on AI trends',
-    agent=researcher
+    description="Research three important facts about {topic}.",
+    expected_output="Three verified facts with short explanations.",
+    agent=researcher,
 )
 
-write_task = Task(
-    description='Write a blog post about AI trends',
-    expected_output='A 500-word blog post',
-    agent=writer
+writing_task = Task(
+    description="Use the research to write a five-paragraph briefing about {topic}.",
+    expected_output="A concise five-paragraph technical briefing.",
+    agent=writer,
+    context=[research_task],
 )
 
-# Create crew
 crew = Crew(
     agents=[researcher, writer],
-    tasks=[research_task, write_task],
-    process=Process.sequential
+    tasks=[research_task, writing_task],
+    process=Process.sequential,
+    verbose=True,
 )
 
-# Wrap with logger
-logged_crew = LoggedCrew(crew, logger)
-
-# Execute
-result = logged_crew.kickoff(inputs={'topic': 'AI in 2024'})
+try:
+    result = crew.kickoff(inputs={"topic": "OpenTelemetry for AI agents"})
+    print(result.raw)
+finally:
+    provider.shutdown()
 ```
 
-## Callback-Based Logging
+`provider.shutdown()` is useful for scripts and short-running jobs. It flushes buffered spans before the process exits, so the final crew run is not left behind in memory.
 
-```python
-from crewai.utilities.callbacks import CrewCallbackHandler
+Pass the tracer provider directly to the CrewAI and OpenAI instrumentors as shown above. Avoid calling `set_tracer_provider()` in this setup because the OpenTelemetry global provider can only be set once in a process.
 
-class ParseableCrewCallback(CrewCallbackHandler):
-    def __init__(self, logger: ParseableCrewLogger):
-        self.logger = logger
-    
-    def on_task_start(self, task):
-        self.logger.log_task_start(
-            task_description=task.description,
-            agent_name=task.agent.role
-        )
-    
-    def on_task_end(self, task, output):
-        self.logger.log_task_end(
-            task_description=task.description,
-            agent_name=task.agent.role,
-            output=str(output),
-            duration_ms=0  # Calculate if needed
-        )
-    
-    def on_tool_use(self, agent, tool, input_data, output):
-        self.logger.log_tool_use(
-            agent_name=agent.role,
-            tool_name=tool.name,
-            input_data=str(input_data),
-            output=str(output),
-            duration_ms=0
-        )
+</Step>
+</Steps>
+
+## What you should see
+
+One `crew.kickoff()` usually becomes one trace. Inside that trace, you should see spans for the crew run, agent execution, task execution, and the underlying LLM calls.
+
+```text
+Crew kickoff
+├── Agent and task execution
+│   └── OpenAI LLM call
+└── Agent and task execution
+    └── OpenAI LLM call
 ```
 
-## Querying CrewAI Logs
+Crews that use tools, delegation, retries, or additional model calls will have more child spans. Depending on what runs, OpenInference records attributes such as span kind, model name, token usage, inputs, outputs, agent role, task description, and error details.
 
-```sql
--- Crew execution summary
-SELECT 
-  crew_id,
-  crew_name,
-  agent_count,
-  task_count,
-  duration_ms / 1000 as duration_seconds
-FROM "crewai-logs"
-WHERE event = 'crew_end'
-ORDER BY timestamp DESC
+## View in Parseable
 
--- Task performance by agent
-SELECT 
-  agent,
-  COUNT(*) as tasks_completed,
-  AVG(duration_ms) as avg_duration_ms
-FROM "crewai-logs"
-WHERE event = 'task_end'
-GROUP BY agent
-ORDER BY tasks_completed DESC
+Open the Parseable console and go to **Traces**. Select `crewai-traces`, filter by the service name `crewai-research-crew`, and open a trace to inspect the waterfall and span attributes.
 
--- Tool usage analysis
-SELECT 
-  tool,
-  agent,
-  COUNT(*) as usage_count,
-  AVG(duration_ms) as avg_duration
-FROM "crewai-logs"
-WHERE event = 'tool_use'
-GROUP BY tool, agent
-ORDER BY usage_count DESC
+![CrewAI trace overview in Parseable](./static/crewai-overview.png)
 
--- Error tracking
-SELECT 
-  timestamp,
-  crew_id,
-  error_type,
-  error
-FROM "crewai-logs"
-WHERE event = 'crew_error'
-ORDER BY timestamp DESC
-```
+The trace overview helps you follow the crew run from start to finish. This is usually the first place to check when a run is slow, when a task took longer than expected, or when you want to see how many model and tool calls were made during the run.
 
-## Best Practices
+![CrewAI LLM span in Parseable](./static/crewai-llm.png)
 
-1. **Track Crew IDs** - Correlate all events in a crew run
-2. **Log All Tasks** - Monitor task assignments and completions
-3. **Monitor Tools** - Track tool usage and performance
-4. **Measure Duration** - Track time spent on each task
+The LLM span shows the model call made under the crew workflow. This is where model name, provider attributes, prompt or response metadata, token usage, and latency become easier to inspect without separating the model call from the agent run that caused it.
 
-## Next Steps
+![CrewAI error span in Parseable](./static/crewai-error.png)
 
-- Configure [AutoGen](/docs/ingest-data/ai-agents/autogen) logging
-- Set up [LangChain](/docs/ingest-data/ai-agents/langchain) tracing
-- Create [dashboards](/docs/user-guide/dashboards) for crew metrics
+When something fails, open the error span and inspect its attributes. This helps you see whether the failure came from a task, tool, model provider, or application code.
+
+## Use with Agent Observability
+
+If the dataset is tagged with `X-P-Dataset-Tag: agent-observability`, you can use the Agents page to explore CrewAI runs from an agent-focused view. This is useful when you want to compare runs, look at model usage, inspect tool behavior, or move from a high-level run into the trace details.
+
+## Production notes
+
+Direct export from the Python process is a good way to get started. For production workloads, send OTLP from the application to an OpenTelemetry Collector and let the Collector forward traces to Parseable. A Collector gives you central batching, retries, filtering, sampling, and redaction without changing the CrewAI code again.
+
+Do not enable multiple instrumentation paths for the same library. For example, avoid using the explicit OpenInference instrumentor in this guide and OpenTelemetry no-code auto-instrumentation for CrewAI at the same time. That can create duplicate spans.
+
+## Protect sensitive data
+
+Agent goals, backstories, task descriptions, prompts, completions, and tool inputs or outputs can contain sensitive data. Review what your spans contain before enabling this in production. If required, use OpenTelemetry processors or OpenInference configuration to redact or suppress content before it reaches Parseable.
+
+## Troubleshooting
+
+- **No traces appear:** Confirm that `PARSEABLE_URL` is reachable from the application, the API key has ingest access, the endpoint is `/v1/traces`, and `X-P-Log-Source` is set to `otel-traces`.
+
+- **Only CrewAI spans appear:** CrewAI instrumentation captures the workflow, but provider-level instrumentation captures the detailed model call. Make sure the matching provider instrumentor runs before the crew executes.
+
+- **LLM spans are missing:** Check that your CrewAI `llm` value matches the provider instrumentor you installed. The example uses OpenAI, so it uses `openinference-instrumentation-openai`.
+
+- **Spans are duplicated:** Use only one instrumentation path per library. Disable no-code auto-instrumentation when using the explicit instrumentor calls shown here.
+
+- **CrewAI says tracing is disabled:** That message refers to CrewAI's own tracing product. It does not mean OpenInference has stopped exporting OpenTelemetry spans to Parseable.
+
+## Next steps
+
+- Explore traces with the [Parseable Traces UI](/user-guide/traces)
+- Learn how Parseable presents [Agent Observability](/user-guide/agent-observability)
+- Build or customize [dashboards](/user-guide/dashboards)

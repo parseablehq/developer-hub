@@ -22,13 +22,13 @@ export default function Layout({ children }: { children: ReactNode }) {
           {
             title: 'Parseable',
             description: 'Docs & Guides',
-            url: '/docs',
+            url: '/',
             icon: <BookOpen className="size-4" />,
           },
           {
             title: 'pb CLI',
             description: 'Command-line interface',
-            url: '/docs/pb-cli',
+            url: '/pb-cli',
             icon: <Terminal className="size-4" />,
           },
         ],
