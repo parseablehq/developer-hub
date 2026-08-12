@@ -4,7 +4,15 @@ import { source } from "@/lib/source";
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://www.parseable.com";
   const docsBaseUrl = `${baseUrl}/docs`;
-  const legacyRoutes = new Set(["/query", "/overview/key-concepts"]);
+  const legacyRoutes = new Set([
+    "/query",
+    "/overview/key-concepts",
+    "/overview/key-concepts/data-model",
+    "/overview/key-concepts/ingestion",
+    "/overview/key-concepts/partitioning",
+    "/overview/key-concepts/query",
+    "/overview/key-concepts/storage",
+  ]);
 
   // Get all documentation pages
   const pages = source.getPages();
