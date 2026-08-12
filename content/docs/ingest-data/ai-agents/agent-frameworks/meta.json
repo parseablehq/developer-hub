@@ -1,0 +1,13 @@
+{
+  "title": "Agent frameworks",
+  "pages": [
+    "[Pydantic AI](/ingest-data/ai-agents/pydantic-ai)",
+    "[CrewAI](/ingest-data/ai-agents/crewai)",
+    "[n8n](/ingest-data/ai-agents/n8n)",
+    "[Mastra](/ingest-data/ai-agents/mastra)",
+    "[LangChain](/ingest-data/ai-agents/langchain)",
+    "[LlamaIndex](/ingest-data/ai-agents/llamaindex)",
+    "[AutoGen](/ingest-data/ai-agents/autogen)",
+    "[DSPy](/ingest-data/ai-agents/dspy)"
+  ]
+}

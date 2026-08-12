@@ -21,7 +21,6 @@
     "ingest-data/otel",
     "ingest-data/zero-instrumentation",
     "ingest-data/ai-agents",
-    "ingest-data/gateways",
     "ingest-data/logging-agents",
     "ingest-data/databases",
     "ingest-data/infrastructure",
