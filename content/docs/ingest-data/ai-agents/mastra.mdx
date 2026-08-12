@@ -3,6 +3,8 @@ title: Mastra
 description: Send Mastra agent logs, traces, and metrics to Parseable
 ---
 
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+
 [Mastra](https://mastra.ai/) is a TypeScript framework for building AI agents and workflows. Its observability event bus captures agent, model, and tool activity, including latency, token usage, errors, and correlated logs.
 
 This guide sends each OpenTelemetry signal directly to a dedicated Parseable dataset:
@@ -32,7 +34,12 @@ Use the Parseable ingestor base URL, for example `https://parseable.example.com`
 In a distributed Parseable deployment, the query/UI endpoint might not accept ingestion. Use the ingestor URL returned by the Parseable About API or the URL configured for your ingestor.
 </Callout>
 
-## Install the packages
+## Set up Mastra with Parseable
+
+<Steps>
+<Step>
+
+### Install the packages
 
 From the Mastra project, install the observability and OpenTelemetry metric packages:
 
@@ -40,10 +47,14 @@ From the Mastra project, install the observability and OpenTelemetry metric pack
 npm install \
   @mastra/observability \
   @mastra/otel-exporter \
+  @opentelemetry/exporter-logs-otlp-http \
   @opentelemetry/exporter-metrics-otlp-http \
+  @opentelemetry/exporter-trace-otlp-http \
   @opentelemetry/resources \
   @opentelemetry/sdk-metrics
 ```
+
+Mastra loads the trace and log OTLP exporters dynamically. Keep both HTTP exporter packages installed; otherwise the corresponding signal is disabled and Mastra reports a missing exporter package at runtime.
 
 The example agent below uses OpenAI. Install the provider package if it is not already present:
 
@@ -51,7 +62,10 @@ The example agent below uses OpenAI. Install the provider package if it is not a
 npm install @ai-sdk/openai
 ```
 
-## Configure the environment
+</Step>
+<Step>
+
+### Configure the environment
 
 Add these variables to the application environment:
 
@@ -64,7 +78,10 @@ export OPENAI_MODEL="gpt-5-mini"
 
 Do not commit API keys to source control. For deployments that use Basic authentication instead of an API key, replace the `X-API-Key` header in the next example with an `Authorization` header containing `Basic <base64-encoded-username-and-password>`.
 
-## Configure Mastra observability
+</Step>
+<Step>
+
+### Configure Mastra observability
 
 Create `src/mastra/observability.ts`:
 
@@ -237,7 +254,10 @@ Typical native metric names include:
 - `mastra_model_total_output_tokens`
 - `mastra_model_output_reasoning_tokens`
 
-## Register the agent
+</Step>
+<Step>
+
+### Register the agent
 
 Use the observability instance when creating Mastra. For example, in `src/mastra/index.ts`:
 
@@ -274,7 +294,10 @@ Agent runs, model calls, tool calls, token use, failures, and duration events ar
 For a short-lived process or serverless function, call `await observability.flush()` before the process exits. Call `await observability.shutdown()` during final application shutdown so buffered telemetry is delivered.
 </Callout>
 
-## Verify ingestion
+</Step>
+<Step>
+
+### Verify ingestion
 
 Run the application and invoke the agent a few times. In Parseable, confirm that all three datasets receive recent events:
 
@@ -299,6 +322,9 @@ histogram_quantile(
 
 If a dataset remains empty, check the application logs for OTLP errors and verify the endpoint, API key, `X-P-Stream`, and `X-P-Log-Source` headers.
 
+</Step>
+</Steps>
+
 ## Import the dashboard
 
 The [Mastra Agent Observability dashboard](https://github.com/parseablehq/dashboards/tree/main/mastra-agent-observability) provides 39 panels across eight sections:
@@ -312,7 +338,7 @@ The [Mastra Agent Observability dashboard](https://github.com/parseablehq/dashbo
 - Trace Explorer
 - Metrics & Telemetry
 
-Download `mastra-agent-observability-mixed.json` from the dashboard repository and import it into Parseable. The template has three dataset variables only. Map them to `mastra-traces`, `mastra-logs`, and `mastra-metrics`, or to your chosen dataset names.
+Download the [Mastra dashboard JSON](https://github.com/parseablehq/dashboards/blob/main/mastra-agent-observability/mastra-agent-observability-mixed.json) and import it into Parseable. The template has three dataset variables only. Map them to `mastra-traces`, `mastra-logs`, and `mastra-metrics`, or to your chosen dataset names.
 
 Cost panels use Parseable's `agent_cost()` function with the provider and model recorded on model spans. Unsupported provider/model combinations do not produce an estimate, so keep the model identifier and provider attributes intact during ingestion.
 
@@ -337,6 +363,7 @@ Do not add trace IDs, request IDs, user IDs, session IDs, or other unbounded val
 ## Related resources
 
 - [Mastra observability](https://mastra.ai/ai-agent-observability)
+- [Mastra OpenTelemetry exporter](https://mastra.ai/docs/observability/integrations/exporters/otel)
 - [Send OpenTelemetry traces to Parseable](/docs/ingest-data/otel/traces)
 - [Send OpenTelemetry logs to Parseable](/docs/ingest-data/otel/logs)
 - [Send OpenTelemetry metrics to Parseable](/docs/ingest-data/otel/metrics)
