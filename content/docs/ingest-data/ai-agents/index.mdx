@@ -1,202 +1,182 @@
 ---
-title: LLM Observability
-description: Monitor and debug LLM applications with Parseable
+title: AI Infrastructure
+description: Send telemetry from agent frameworks, sandboxes, LLM runtimes, and gateways to Parseable
 ---
 
-import { IconBrandOpenai, IconRobot, IconLink, IconBook, IconUsers, IconBrain, IconCode, IconSettingsAutomation, IconServer, IconRoute, IconTimeline } from '@tabler/icons-react';
+import {
+  IconBrandOpenai,
+  IconBrain,
+  IconCode,
+  IconLink,
+  IconRobot,
+  IconRoute,
+  IconServer,
+  IconSettingsAutomation,
+  IconTimeline,
+  IconUsers,
+} from '@tabler/icons-react';
 
-Monitor, debug, and optimize your LLM applications with Parseable. Track API calls, token usage, latency, and errors across all major LLM providers and frameworks.
+AI systems are usually made of more than one model call. A request can move through an agent framework, a gateway, a sandbox, a workflow runtime, a hosted model API, or a self-hosted inference server before the user sees the final answer.
 
-## Why LLM Observability?
+This section groups Parseable integrations by the part of the AI stack they observe. Use the framework guides when you want agent, model, and tool-call traces. Use the sandbox and runtime guides when you need visibility into execution environments and long-running workflows. Use the LLM and gateway guides when the main question is about model traffic, token usage, latency, and errors.
 
-LLM applications present unique observability challenges:
+## Agent frameworks
 
-- **Non-deterministic outputs** - Same input can produce different results
-- **High costs** - Token usage directly impacts costs
-- **Latency sensitivity** - Response times affect user experience
-- **Complex chains** - Multi-step workflows are hard to debug
-- **Prompt engineering** - Need visibility into prompt effectiveness
-
-## Supported Integrations
+Agent frameworks usually carry the highest-level application context. They can show which agent ran, which prompt or task started the run, which model was called, which tool was used, and where the run failed or slowed down.
 
 <Cards>
-  <Card 
-    title="OpenAI" 
-    href="/ingest-data/ai-agents/openai"
-    icon={<IconBrandOpenai />}
-  >
-    GPT-4, GPT-3.5, and other OpenAI models
-  </Card>
-  <Card 
-    title="Anthropic" 
-    href="/ingest-data/ai-agents/anthropic"
-    icon={<IconRobot />}
-  >
-    Claude and Claude Instant models
-  </Card>
-  <Card
-    title="LiteLLM SDK"
-    href="/ingest-data/ai-agents/litellm-sdk"
-    icon={<IconCode />}
-  >
-    Multi-provider LLM traces, logs, and metrics using OpenTelemetry
-  </Card>
   <Card
     title="Pydantic AI"
     href="/ingest-data/ai-agents/pydantic-ai"
     icon={<IconRobot />}
   >
-    Agent, model, and tool-call traces using OpenTelemetry
+    Capture agent, model, and tool-call telemetry from Pydantic AI applications.
   </Card>
-  <Card 
-    title="OpenRouter" 
-    href="/ingest-data/ai-agents/openrouter"
-    icon={<IconRoute />}
-  >
-    Zero-code LLM observability via Broadcast
-  </Card>
-  <Card 
-    title="vLLM" 
-    href="/ingest-data/ai-agents/vllm"
-    icon={<IconServer />}
-  >
-    High-performance LLM inference serving
-  </Card>
-  <Card 
-    title="LangChain" 
-    href="/ingest-data/ai-agents/langchain"
-    icon={<IconLink />}
-  >
-    LangChain framework integration
-  </Card>
-  <Card 
-    title="LlamaIndex" 
-    href="/ingest-data/ai-agents/llamaindex"
-    icon={<IconBook />}
-  >
-    LlamaIndex RAG applications
-  </Card>
-  <Card 
-    title="AutoGen" 
-    href="/ingest-data/ai-agents/autogen"
+  <Card
+    title="CrewAI"
+    href="/ingest-data/ai-agents/crewai"
     icon={<IconUsers />}
   >
-    Microsoft AutoGen multi-agent systems
+    Observe CrewAI crews, agents, tasks, LLM calls, and errors.
   </Card>
-  <Card 
-    title="CrewAI" 
-    href="/ingest-data/ai-agents/crewai"
-    icon={<IconBrain />}
-  >
-    CrewAI agent orchestration
-  </Card>
-  <Card 
-    title="DSPy" 
-    href="/ingest-data/ai-agents/dspy"
-    icon={<IconCode />}
-  >
-    DSPy programmatic prompting
-  </Card>
-  <Card 
-    title="n8n" 
+  <Card
+    title="n8n"
     href="/ingest-data/ai-agents/n8n"
     icon={<IconSettingsAutomation />}
   >
-    n8n workflow automation
+    Observe n8n workflow automation through traces and related telemetry.
+  </Card>
+  <Card
+    title="Mastra"
+    href="/ingest-data/ai-agents/mastra"
+    icon={<IconBrain />}
+  >
+    Send Mastra agent logs, traces, and metrics to Parseable.
+  </Card>
+  <Card
+    title="LangChain"
+    href="/ingest-data/ai-agents/langchain"
+    icon={<IconLink />}
+  >
+    Send LangChain application telemetry to Parseable.
+  </Card>
+  <Card
+    title="LlamaIndex"
+    href="/ingest-data/ai-agents/llamaindex"
+    icon={<IconBrain />}
+  >
+    Observe LlamaIndex retrieval and generation workflows.
+  </Card>
+  <Card
+    title="AutoGen"
+    href="/ingest-data/ai-agents/autogen"
+    icon={<IconUsers />}
+  >
+    Track multi-agent AutoGen activity and failures.
+  </Card>
+  <Card
+    title="DSPy"
+    href="/ingest-data/ai-agents/dspy"
+    icon={<IconCode />}
+  >
+    Monitor DSPy programs and prompt optimization workflows.
+  </Card>
+</Cards>
+
+## Sandboxes and runtimes
+
+Sandboxes and execution runtimes are where agent work becomes real system activity. These guides focus on telemetry from code execution, durable workflows, serverless jobs, and workflow orchestration layers.
+
+<Cards>
+  <Card
+    title="Temporal"
+    href="/ingest-data/ai-agents/temporal"
+    icon={<IconTimeline />}
+  >
+    Observe Temporal workflows, activities, SDK telemetry, and metrics.
   </Card>
   <Card
     title="Daytona"
     href="/ingest-data/ai-agents/daytona"
     icon={<IconServer />}
   >
-    SDK traces, sandbox logs, traces, and metrics
-  </Card>
-  <Card
-    title="DBOS"
-    href="/ingest-data/ai-agents/dbos"
-    icon={<IconServer />}
-  >
-    DBOS workflows, logs, traces, and Conductor metrics
-  </Card>
-  <Card
-    title="Temporal"
-    href="/ingest-data/ai-agents/temporal"
-    icon={<IconTimeline />}
-  >
-    Temporal workflows, activities, and agent orchestration
+    Capture SDK traces and sandbox logs, traces, and metrics.
   </Card>
   <Card
     title="Modal"
     href="/ingest-data/ai-agents/modal"
     icon={<IconServer />}
   >
-    Serverless Python logs, traces and metrics via OpenTelemetry Collector
+    Send serverless Python logs, traces, and metrics through OpenTelemetry.
+  </Card>
+  <Card
+    title="DBOS"
+    href="/ingest-data/ai-agents/dbos"
+    icon={<IconTimeline />}
+  >
+    Observe durable workflows with logs, traces, and Conductor metrics.
   </Card>
   <Card
     title="Restate"
     href="/ingest-data/ai-agents/restate"
     icon={<IconTimeline />}
   >
-    Durable execution workflow traces and service logs via OpenTelemetry Collector
+    Send durable execution workflow traces and service logs to Parseable.
   </Card>
 </Cards>
 
-## What to Monitor
+## LLMs
 
-### API Calls & Responses
-
-Track every interaction with LLM providers:
-
-- Request parameters (model, temperature, max_tokens)
-- Full prompts and completions
-- Response metadata and finish reasons
-
-### Token Usage & Costs
-
-Monitor consumption to control costs:
-
-- Input and output tokens per request
-- Cost calculations by model
-- Usage trends over time
-
-### Latency & Performance
-
-Measure response times:
-
-- Time to first token (TTFT)
-- Total response time
-- Streaming vs non-streaming performance
-
-### Errors & Failures
-
-Debug issues quickly:
-
-- Rate limit errors
-- API failures and retries
-- Timeout tracking
-
-## Guides & Cookbooks
+LLM integrations help when you want to observe model-facing traffic directly. This can mean hosted provider APIs, SDK-level calls, or self-hosted inference runtimes such as vLLM.
 
 <Cards>
   <Card
-    title="Agentic Observability"
-    href="/cookbook/agentic-observability"
-    icon={<IconRobot />}
-  >
-    End-to-end guide for monitoring AI agents
-  </Card>
-  <Card
-    title="Tool Calls Monitoring"
-    href="/cookbook/tool-calls"
+    title="LiteLLM SDK"
+    href="/ingest-data/ai-agents/litellm-sdk"
     icon={<IconCode />}
   >
-    Track and debug LLM tool/function calls
+    Observe LiteLLM SDK usage from application code.
   </Card>
   <Card
-    title="Instrumentation Guide"
-    href="/cookbook/instrumentation"
-    icon={<IconSettingsAutomation />}
+    title="OpenAI"
+    href="/ingest-data/ai-agents/openai"
+    icon={<IconBrandOpenai />}
   >
-    Add observability to your LLM applications
+    Log OpenAI API calls, responses, latency, and token usage.
+  </Card>
+  <Card
+    title="Anthropic"
+    href="/ingest-data/ai-agents/anthropic"
+    icon={<IconRobot />}
+  >
+    Capture Claude API calls, responses, errors, and token usage.
+  </Card>
+  <Card
+    title="vLLM"
+    href="/ingest-data/ai-agents/vllm"
+    icon={<IconServer />}
+  >
+    Monitor self-hosted vLLM inference serving.
+  </Card>
+</Cards>
+
+## Gateways
+
+Gateways sit between applications and model providers. They are useful when teams want one place to manage routing, keys, budgets, policies, fallbacks, and model-provider telemetry.
+
+<Cards>
+  <Card
+    title="OpenRouter"
+    href="/ingest-data/ai-agents/openrouter"
+    icon={<IconRoute />}
+  >
+    Send OpenRouter traces and dashboard telemetry to Parseable.
+  </Card>
+  <Card
+    title="LiteLLM Gateway"
+    href="/ingest-data/gateways/litellm"
+    icon={<IconRoute />}
+  >
+    Observe LiteLLM Gateway traces and Prometheus metrics.
   </Card>
 </Cards>
