@@ -311,11 +311,11 @@ cluster.
 - Kubernetes rejects changing a volume claim template's `size` on an existing StatefulSet. If the StorageClass supports volume expansion, resize the generated PVC directly.
 
 <Callout type="warn">
-  **Upgrading to chart 3.1.0**
+  **Upgrading to chart 3.1.0 or later**
 
   New installations are not affected. If standalone Parseable was installed
   with chart 3.0.2 or earlier, do not upgrade it directly. Create a separate
-  installation with chart 3.1.0, migrate and verify the data, and then switch
+  installation with chart 3.1.0 or later, migrate and verify the data, and then switch
   traffic to the new installation.
 </Callout>
 
