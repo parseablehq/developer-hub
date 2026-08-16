@@ -2,6 +2,8 @@ import "./global.css";
 import { RootProvider } from "fumadocs-ui/provider/next";
 import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
+import { Analytics as VercelAnalytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import Analytics from "../components/GoogleAnalytics";
 import KoalaAnalytics from "../components/KoalaAnalytics";
 import { SearchProvider } from "../components/SearchProvider";
@@ -40,6 +42,8 @@ export default function Layout({ children }: { children: ReactNode }) {
         </RootProvider>
         {gaId && <Analytics gaId={gaId} />}
         {koalaApiKey && <KoalaAnalytics apiKey={koalaApiKey} />}
+        <VercelAnalytics />
+        <SpeedInsights />
       </body>
     </html>
   );

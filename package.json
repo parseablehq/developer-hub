@@ -19,6 +19,8 @@
     "@radix-ui/react-popover": "^1.1.15",
     "@tabler/icons-react": "^3.30.0",
     "@types/lodash": "^4.17.17",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "class-variance-authority": "^0.7.1",
     "fumadocs-core": "16.4.1",
     "fumadocs-mdx": "14.2.3",
