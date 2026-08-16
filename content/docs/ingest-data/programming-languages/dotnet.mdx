@@ -1,327 +1,375 @@
 ---
 title: .NET
-description: Send logs from .NET applications to Parseable
+description: Send .NET logs, traces, and metrics to Parseable with OpenTelemetry
 ---
 
-Send logs from .NET applications to Parseable using HTTP or logging libraries.
+.NET applications can send logs, traces, and metrics to Parseable through OpenTelemetry. This guide uses an ASP.NET Core application, the OpenTelemetry .NET SDK, and an OpenTelemetry Collector that routes each signal to a separate Parseable dataset.
 
-## Overview
+## What the integration collects
 
-Integrate .NET with Parseable to:
+| Signal | Source | Parseable dataset |
+|---|---|---|
+| Logs | `Microsoft.Extensions.Logging` through OpenTelemetry logs | `dotnet-logs` |
+| Traces | ASP.NET Core, outgoing HTTP calls, and custom spans | `dotnet-traces` |
+| Metrics | ASP.NET Core, HTTP client, process, and .NET runtime metrics | `dotnet-metrics` |
 
-- **Application Logs** - Send structured logs from .NET apps
-- **ASP.NET Core** - Native integration with Microsoft.Extensions.Logging
-- **Serilog Support** - Use with Serilog sink
-- **Structured Logging** - JSON-formatted log entries
+The matching dashboard template is `.NET Application Observability` in the Parseable dashboards repository. It uses PromQL for runtime metrics where possible and SQL for logs, traces, and flattened OpenTelemetry histogram rows.
 
 ## Prerequisites
 
-- .NET 6.0+
-- Parseable instance accessible
-- HttpClient or Serilog
+- .NET 8.0 or later
+- OpenTelemetry Collector Contrib
+- A Parseable ingestor endpoint and API key
+- A Parseable query endpoint for dashboard reads
 
-## Basic HTTP Integration
+<Callout type="info">
+In some deployments ingestion and reads use different endpoints. Point the Collector at the Parseable ingestor endpoint. Use the query endpoint only from the UI, API queries, and dashboards.
+</Callout>
 
-### Using HttpClient
+## Install packages
 
-```csharp
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
-
-public class ParseableLogger : IDisposable
-{
-    private readonly HttpClient _client;
-    private readonly string _stream;
-    private readonly List<object> _buffer = new();
-    private readonly object _lock = new();
-    private readonly int _batchSize;
-    private readonly Timer _flushTimer;
-
-    public ParseableLogger(string url, string dataset, string username, string password, int batchSize = 100)
-    {
-        _stream = dataset;
-        _batchSize = batchSize;
-        
-        _client = new HttpClient { BaseAddress = new Uri(url) };
-        var auth = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}"));
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", auth);
-        
-        _flushTimer = new Timer(_ => Flush(), null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
-    }
-
-    public void Log(string level, string message, object? data = null)
-    {
-        var entry = new
-        {
-            timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-            level,
-            message,
-            data
-        };
-
-        lock (_lock)
-        {
-            _buffer.Add(entry);
-            if (_buffer.Count >= _batchSize)
-            {
-                FlushInternal();
-            }
-        }
-    }
-
-    public void Info(string message, object? data = null) => Log("info", message, data);
-    public void Error(string message, object? data = null) => Log("error", message, data);
-    public void Warning(string message, object? data = null) => Log("warning", message, data);
-
-    public void Flush()
-    {
-        lock (_lock)
-        {
-            FlushInternal();
-        }
-    }
-
-    private void FlushInternal()
-    {
-        if (_buffer.Count == 0) return;
-
-        var entries = _buffer.ToList();
-        _buffer.Clear();
-
-        Task.Run(async () =>
-        {
-            try
-            {
-                var json = JsonSerializer.Serialize(entries);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
-                content.Headers.Add("X-P-Stream", _stream);
-                
-                await _client.PostAsync("/api/v1/ingest", content);
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Failed to send logs: {ex.Message}");
-            }
-        });
-    }
-
-    public void Dispose()
-    {
-        _flushTimer.Dispose();
-        Flush();
-        _client.Dispose();
-    }
-}
-
-// Usage
-using var logger = new ParseableLogger(
-    "http://parseable:8000",
-    "dotnet-app",
-    "admin",
-    "admin"
-);
-
-logger.Info("Application started", new { Version = "1.0.0" });
-logger.Error("Database error", new { Error = "Connection refused" });
-```
-
-## Serilog Integration
-
-### Install Package
+From your ASP.NET Core project directory:
 
 ```bash
-dotnet add package Serilog
-dotnet add package Serilog.Sinks.Http
+dotnet add package OpenTelemetry.Extensions.Hosting
+dotnet add package OpenTelemetry.Exporter.OpenTelemetryProtocol
+dotnet add package OpenTelemetry.Instrumentation.AspNetCore
+dotnet add package OpenTelemetry.Instrumentation.Http
+dotnet add package OpenTelemetry.Instrumentation.Runtime
+dotnet add package OpenTelemetry.Instrumentation.Process
 ```
 
-### Custom Sink
+## Configure ASP.NET Core
+
+Add OpenTelemetry to `Program.cs`:
 
 ```csharp
-using Serilog;
-using Serilog.Core;
-using Serilog.Events;
-using System.Text;
-using System.Text.Json;
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
-public class ParseableSink : ILogEventSink, IDisposable
-{
-    private readonly HttpClient _client;
-    private readonly string _stream;
-    private readonly List<object> _buffer = new();
-    private readonly object _lock = new();
-    private readonly Timer _flushTimer;
-
-    public ParseableSink(string url, string dataset, string username, string password)
-    {
-        _stream = dataset;
-        _client = new HttpClient { BaseAddress = new Uri(url) };
-        var auth = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}"));
-        _client.DefaultRequestHeaders.Authorization = 
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", auth);
-        
-        _flushTimer = new Timer(_ => Flush(), null, 
-            TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
-    }
-
-    public void Emit(LogEvent logEvent)
-    {
-        var entry = new
-        {
-            timestamp = logEvent.Timestamp.UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-            level = logEvent.Level.ToString().ToLower(),
-            message = logEvent.RenderMessage(),
-            exception = logEvent.Exception?.ToString(),
-            properties = logEvent.Properties.ToDictionary(
-                p => p.Key, 
-                p => p.Value.ToString().Trim('"'))
-        };
-
-        lock (_lock)
-        {
-            _buffer.Add(entry);
-            if (_buffer.Count >= 100)
-            {
-                FlushInternal();
-            }
-        }
-    }
-
-    public void Flush()
-    {
-        lock (_lock) { FlushInternal(); }
-    }
-
-    private void FlushInternal()
-    {
-        if (_buffer.Count == 0) return;
-
-        var entries = _buffer.ToList();
-        _buffer.Clear();
-
-        Task.Run(async () =>
-        {
-            var json = JsonSerializer.Serialize(entries);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-            content.Headers.Add("X-P-Stream", _stream);
-            await _client.PostAsync("/api/v1/ingest", content);
-        });
-    }
-
-    public void Dispose()
-    {
-        _flushTimer.Dispose();
-        Flush();
-        _client.Dispose();
-    }
-}
-
-// Extension method
-public static class ParseableSinkExtensions
-{
-    public static LoggerConfiguration Parseable(
-        this LoggerSinkConfiguration config,
-        string url,
-        string dataset,
-        string username,
-        string password)
-    {
-        return config.Sink(new ParseableSink(url, dataset, username, password));
-    }
-}
-```
-
-### Usage
-
-```csharp
-Log.Logger = new LoggerConfiguration()
-    .WriteTo.Parseable(
-        url: "http://parseable:8000",
-        dataset: "dotnet-app",
-        username: "admin",
-        password: "admin")
-    .CreateLogger();
-
-Log.Information("Application started");
-Log.Error("Something went wrong", new { ErrorCode = 500 });
-```
-
-## ASP.NET Core Integration
-
-### Configure in Program.cs
-
-```csharp
 var builder = WebApplication.CreateBuilder(args);
 
-// Add Serilog with Parseable
-builder.Host.UseSerilog((context, config) =>
+var serviceName = builder.Configuration["OTEL_SERVICE_NAME"] ?? "dotnet-api";
+var activitySource = new ActivitySource("MyCompany.MyApp");
+var meter = new Meter("MyCompany.MyApp", "1.0.0");
+var ordersCounter = meter.CreateCounter<long>("app.orders.created", unit: "orders");
+
+builder.Services.AddSingleton(activitySource);
+builder.Services.AddSingleton(meter);
+
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource
+        .AddService(serviceName)
+        .AddAttributes(new Dictionary<string, object>
+        {
+            ["deployment.environment.name"] =
+                builder.Configuration["DEPLOYMENT_ENVIRONMENT"] ?? "production"
+        }))
+    .WithTracing(tracing => tracing
+        .AddSource("MyCompany.MyApp")
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddOtlpExporter())
+    .WithMetrics(metrics => metrics
+        .AddMeter("MyCompany.MyApp")
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddRuntimeInstrumentation()
+        .AddProcessInstrumentation()
+        .AddOtlpExporter());
+
+builder.Logging.AddOpenTelemetry(logging =>
 {
-    config
-        .ReadFrom.Configuration(context.Configuration)
-        .WriteTo.Parseable(
-            url: context.Configuration["Parseable:Url"]!,
-            dataset: context.Configuration["Parseable:Stream"]!,
-            username: context.Configuration["Parseable:Username"]!,
-            password: context.Configuration["Parseable:Password"]!);
+    logging.IncludeFormattedMessage = true;
+    logging.IncludeScopes = true;
+    logging.ParseStateValues = true;
+    logging.SetResourceBuilder(ResourceBuilder.CreateDefault()
+        .AddService(serviceName)
+        .AddAttributes(new Dictionary<string, object>
+        {
+            ["deployment.environment.name"] =
+                builder.Configuration["DEPLOYMENT_ENVIRONMENT"] ?? "production"
+        }));
+    logging.AddOtlpExporter();
 });
 
 var app = builder.Build();
-app.UseSerilogRequestLogging();
+
+app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+
+app.MapPost("/orders", async (ActivitySource source, ILogger<Program> logger) =>
+{
+    using var activity = source.StartActivity("orders.create", ActivityKind.Internal);
+
+    await Task.Delay(Random.Shared.Next(25, 250));
+    var orderId = Guid.NewGuid();
+
+    activity?.SetTag("order.id", orderId);
+    ordersCounter.Add(1);
+    logger.LogInformation("Created order {OrderId}", orderId);
+
+    return Results.Ok(new { orderId });
+});
+
+app.MapGet("/fail", (ActivitySource source, ILogger<Program> logger) =>
+{
+    using var activity = source.StartActivity("orders.failure", ActivityKind.Internal);
+    activity?.SetStatus(ActivityStatusCode.Error, "synthetic failure");
+    logger.LogError("Synthetic failure generated for telemetry validation");
+
+    return Results.Problem("Synthetic failure", statusCode: 500);
+});
+
 app.Run();
 ```
 
-### Configuration
+Set the application exporter endpoint to the Collector:
 
-```json
-{
-  "Parseable": {
-    "Url": "http://parseable:8000",
-    "Stream": "aspnet-app",
-    "Username": "admin",
-    "Password": "admin"
-  }
-}
+```bash
+export OTEL_SERVICE_NAME=dotnet-api
+export DEPLOYMENT_ENVIRONMENT=production
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+export OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+export OTEL_METRIC_EXPORT_INTERVAL=10000
 ```
 
-## OpenTelemetry Integration
+Use `http://localhost:4317` when the Collector runs on the same host as the application.
 
-```csharp
-using OpenTelemetry.Logs;
+## Collector configuration
 
-builder.Logging.AddOpenTelemetry(options =>
-{
-    options.AddOtlpExporter(otlp =>
-    {
-        otlp.Endpoint = new Uri("http://parseable:8000/v1/logs");
-        otlp.Headers = "Authorization=Basic YWRtaW46YWRtaW4=,X-P-Stream=dotnet-otel";
-    });
-});
+Create `otel-collector.yaml`. The exporter examples expect `PARSEABLE_ENDPOINT` and `PARSEABLE_API_KEY` to be set in the Collector environment.
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+  batch:
+    timeout: 5s
+    send_batch_size: 256
+
+exporters:
+  otlphttp/parseable_logs:
+    endpoint: ${env:PARSEABLE_ENDPOINT}
+    encoding: proto
+    headers:
+      X-API-Key: "${env:PARSEABLE_API_KEY}"
+      X-P-Stream: dotnet-logs
+      X-P-Log-Source: otel-logs
+      Content-Type: application/x-protobuf
+    retry_on_failure:
+      enabled: true
+      max_elapsed_time: 0s
+
+  otlphttp/parseable_traces:
+    endpoint: ${env:PARSEABLE_ENDPOINT}
+    encoding: proto
+    headers:
+      X-API-Key: "${env:PARSEABLE_API_KEY}"
+      X-P-Stream: dotnet-traces
+      X-P-Log-Source: otel-traces
+      Content-Type: application/x-protobuf
+    retry_on_failure:
+      enabled: true
+      max_elapsed_time: 0s
+
+  otlphttp/parseable_metrics:
+    endpoint: ${env:PARSEABLE_ENDPOINT}
+    encoding: proto
+    headers:
+      X-API-Key: "${env:PARSEABLE_API_KEY}"
+      X-P-Stream: dotnet-metrics
+      X-P-Log-Source: otel-metrics
+      Content-Type: application/x-protobuf
+    retry_on_failure:
+      enabled: true
+      max_elapsed_time: 0s
+
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/parseable_logs]
+
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/parseable_traces]
+
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/parseable_metrics]
 ```
 
-## Best Practices
+Start the Collector:
 
-1. **Use Batching** - Buffer logs and send in batches
-2. **Async Sending** - Don't block application threads
-3. **Handle Failures** - Log locally on send failures
-4. **Add Context** - Include correlation ID, user ID
-5. **Dispose Properly** - Flush on application shutdown
+```bash
+export PARSEABLE_ENDPOINT='https://ingestor.example.com'
+export PARSEABLE_API_KEY='<your-api-key>'
+
+otelcol-contrib --config otel-collector.yaml
+```
+
+For local testing with basic authentication instead of API keys, replace the `X-API-Key` header with:
+
+```yaml
+Authorization: Basic YWRtaW46YWRtaW4=
+```
+
+`YWRtaW46YWRtaW4=` is the base64 encoding of `admin:admin`.
+
+## Docker Compose example
+
+The following Compose file runs the application and Collector together:
+
+```yaml
+services:
+  dotnet-api:
+    build: .
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      OTEL_SERVICE_NAME: dotnet-api
+      DEPLOYMENT_ENVIRONMENT: docker-compose
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_METRIC_EXPORT_INTERVAL: "10000"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - otel-collector
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.108.0
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    environment:
+      PARSEABLE_ENDPOINT: https://ingestor.example.com
+      PARSEABLE_API_KEY: <your-api-key>
+    volumes:
+      - ./otel-collector.yaml:/etc/otelcol-contrib/config.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+```
+
+Run it:
+
+```bash
+docker compose up --build
+```
+
+## Verify ingestion
+
+Use the Parseable query endpoint to verify each dataset. Quote dataset names that contain hyphens.
+
+```sql
+SELECT count(*) AS rows
+FROM "dotnet-logs"
+WHERE p_timestamp > NOW() - INTERVAL '10 minutes';
+```
+
+```sql
+SELECT count(*) AS rows
+FROM "dotnet-traces"
+WHERE p_timestamp > NOW() - INTERVAL '10 minutes';
+```
+
+```sql
+SELECT metric_name, count(*) AS rows
+FROM "dotnet-metrics"
+WHERE p_timestamp > NOW() - INTERVAL '10 minutes'
+GROUP BY metric_name
+ORDER BY rows DESC;
+```
+
+You should see metric families such as:
+
+- `http.server.request.duration`
+- `http.client.request.duration`
+- `process.memory.usage`
+- `process.cpu.time`
+- `process.runtime.dotnet.gc.collections.count`
+- `process.runtime.dotnet.gc.objects.size`
+- `process.runtime.dotnet.thread_pool.threads.count`
+- `process.runtime.dotnet.exceptions.count`
+
+## Query with PromQL
+
+Parseable exposes ingested OpenTelemetry metrics through the PromQL API. Use the metrics dataset name as the `stream` parameter.
+
+```bash
+curl -G "https://query.example.com/prometheus/api/v1/query" \
+  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
+  --data-urlencode "stream=dotnet-metrics" \
+  --data-urlencode 'query=sum by ("service.name") (process.memory.usage)'
+```
+
+For range queries:
+
+```bash
+curl -G "https://query.example.com/prometheus/api/v1/query_range" \
+  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
+  --data-urlencode "stream=dotnet-metrics" \
+  --data-urlencode 'query=sum by ("service.name") (process.runtime.dotnet.thread_pool.threads.count)' \
+  --data-urlencode "start=2026-01-01T00:00:00Z" \
+  --data-urlencode "end=2026-01-01T01:00:00Z" \
+  --data-urlencode "step=60s"
+```
+
+## Import the dashboard
+
+Import the `.NET Application Observability` template from the Parseable dashboards repository. The template expects these default datasets:
+
+- `dotnet-metrics`
+- `dotnet-traces`
+- `dotnet-logs`
+
+After import, update the dataset variables if your Collector exports to different dataset names.
 
 ## Troubleshooting
 
-### Connection Errors
+### Datasets are created but dashboards show no data
 
-1. Verify Parseable URL is accessible
-2. Check SSL certificate if using HTTPS
-3. Verify credentials
+- Confirm the Collector exports to the ingestor endpoint, not a query-only endpoint.
+- Confirm the dashboard dataset variables match the `X-P-Stream` header values.
+- Use quoted SQL table names for hyphenated datasets, for example `"dotnet-metrics"`.
+- Confirm your dashboard time range covers recent telemetry.
 
-### Missing Logs
+### Traces or logs arrive but metrics are empty
 
-1. Ensure Flush is called on shutdown
-2. Check for exceptions in background tasks
-3. Verify dataset name
+- Confirm `.AddOtlpExporter()` is configured inside `.WithMetrics(...)`.
+- Confirm `OpenTelemetry.Instrumentation.Runtime` and `OpenTelemetry.Instrumentation.Process` are installed.
+- Check Collector logs for failed exports from the metrics pipeline.
 
-## Next Steps
+### PromQL returns no data
 
-- Configure [alerts](/user-guide/alerting) for error patterns
-- Create [dashboards](/user-guide/dashboards) for .NET metrics
-- Explore [OpenTelemetry](/ingest-data/otel) for tracing
+- Query available metric names first:
+
+```bash
+curl -G "https://query.example.com/prometheus/api/v1/label/__name__/values" \
+  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
+  --data-urlencode "stream=dotnet-metrics"
+```
+
+- Use exact OpenTelemetry metric names. For example, use `process.runtime.dotnet.gc.objects.size`, not a Prometheus-style `_bucket` or `_count` name unless that series exists.
+
+## Next steps
+
+- Explore [OpenTelemetry logs](/ingest-data/otel/logs)
+- Explore [OpenTelemetry traces](/ingest-data/otel/traces)
+- Explore [OpenTelemetry metrics](/ingest-data/otel/metrics)
+- Create [dashboards](/user-guide/dashboards) for .NET service health and runtime behavior
