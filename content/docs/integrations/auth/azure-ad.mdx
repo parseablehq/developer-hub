@@ -30,7 +30,7 @@ Integrate Azure AD with Parseable to:
 3. Configure:
    - **Name**: Parseable
    - **Supported account types**: Choose appropriate option
-   - **Redirect URI**: Web - `https://your-parseable.com/callback`
+   - **Redirect URI**: Web - `https://your-parseable.com/api/v1/o/code`
 4. Click **Register**
 
 ### Configure Authentication
@@ -38,7 +38,7 @@ Integrate Azure AD with Parseable to:
 1. Go to **Authentication**
 2. Add platform if needed
 3. Configure:
-   - **Redirect URIs**: `https://your-parseable.com/callback`
+   - **Redirect URIs**: `https://your-parseable.com/api/v1/o/code`
    - **Front-channel logout URL**: `https://your-parseable.com`
    - **ID tokens**: Check this box
 4. Click **Save**
@@ -65,7 +65,7 @@ From **Overview**, copy:
 P_OIDC_CLIENT_ID=your-application-id
 P_OIDC_CLIENT_SECRET=your-client-secret
 P_OIDC_ISSUER=https://login.microsoftonline.com/{tenant-id}/v2.0
-P_OIDC_REDIRECT_URI=https://your-parseable.com/callback
+P_ORIGIN_URI=https://your-parseable.com
 ```
 
 ### Docker Compose
@@ -79,7 +79,7 @@ services:
       - P_OIDC_CLIENT_ID=${AZURE_CLIENT_ID}
       - P_OIDC_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
       - P_OIDC_ISSUER=https://login.microsoftonline.com/${AZURE_TENANT_ID}/v2.0
-      - P_OIDC_REDIRECT_URI=https://your-parseable.com/callback
+      - P_ORIGIN_URI=https://your-parseable.com
 ```
 
 ## OIDC Endpoints
@@ -129,7 +129,7 @@ Add required permissions:
 
 | Code | Description | Solution |
 |------|-------------|----------|
-| AADSTS50011 | Reply URL mismatch | Check redirect URI |
+| AADSTS50011 | Reply URL mismatch | Check that the redirect URI is `https://your-parseable.com/api/v1/o/code` |
 | AADSTS700016 | App not found | Verify client ID |
 | AADSTS7000215 | Invalid secret | Check client secret |
 
