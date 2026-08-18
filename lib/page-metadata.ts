@@ -1,4 +1,3 @@
-const MIN_DESCRIPTION_LENGTH = 120;
 const MAX_DESCRIPTION_LENGTH = 160;
 
 function finishSentence(value: string): string {
@@ -19,13 +18,11 @@ export function getPageDescription(
 ): string {
   const current = description?.replace(/\s+/g, ' ').trim();
 
-  if (current && current.length >= MIN_DESCRIPTION_LENGTH) {
+  if (current) {
     return truncateAtWord(current);
   }
 
-  const context = current
-    ? `${finishSentence(current)} Follow the setup steps and practical guidance for using ${title} in your Parseable observability workflow.`
-    : `Learn about ${title} in Parseable, including core concepts, configuration steps, and practical guidance for building an effective observability workflow.`;
+  const context = `Learn about ${title} in Parseable, including core concepts, configuration steps, and practical guidance for building an effective observability workflow.`;
 
   return truncateAtWord(context);
 }
