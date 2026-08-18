@@ -134,6 +134,30 @@ Use these rules for production work:
 - Rotate the key if it is shared in the wrong channel or exposed outside Slack.
 - Avoid pasting API keys in public channels.
 
+Slack permissions are separate from Parseable permissions. Slack scopes control
+what Slackbot can do inside Slack. The connected Parseable API key controls what
+it can access inside Parseable.
+
+Slackbot uses the following bot token scopes:
+
+| OAuth scope | Description |
+| --- | --- |
+| [`app_mentions:read`](https://docs.slack.dev/reference/scopes/app_mentions:read) | View messages that directly mention `@Parseable` in conversations that the app is in. |
+| [`channels:history`](https://docs.slack.dev/reference/scopes/channels:history) | View messages and other content in public channels that `Parseable` has been added to. |
+| [`channels:read`](https://docs.slack.dev/reference/scopes/channels:read) | View basic information about public channels in a workspace. |
+| [`chat:write`](https://docs.slack.dev/reference/scopes/chat:write) | Send messages as `@Parseable`. |
+| [`commands`](https://docs.slack.dev/reference/scopes/commands) | Add slash commands, including `/parseable connect`. |
+| [`groups:history`](https://docs.slack.dev/reference/scopes/groups:history) | View messages and other content in private channels that `Parseable` has been added to. |
+| [`im:history`](https://docs.slack.dev/reference/scopes/im:history) | View messages and other content in direct messages that `Parseable` has been added to. |
+| [`mpim:history`](https://docs.slack.dev/reference/scopes/mpim:history) | View messages and other content in group direct messages that `Parseable` has been added to. |
+| [`team:read`](https://docs.slack.dev/reference/scopes/team:read) | View the name, email domain, and icon for workspaces that `Parseable` is connected to. |
+| [`users:read`](https://docs.slack.dev/reference/scopes/users:read) | View people in a workspace. |
+| [`users:read.email`](https://docs.slack.dev/reference/scopes/users:read.email) | View email addresses of people in a workspace. |
+
+If the app is submitted to the Slack Marketplace, Slack reviews the requested
+scopes before approval. After approval, Slackbot can only use the scopes Slack
+has approved for that app.
+
 ## How This Differs From Slack Alert Targets
 
 Slackbot is for asking questions and receiving answers in Slack.
