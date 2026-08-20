@@ -3,9 +3,9 @@ title: GitHub Copilot
 description: Send GitHub Copilot agent traces and metrics to Parseable through OpenTelemetry
 ---
 
-GitHub Copilot CLI can export OpenTelemetry traces and metrics for agent sessions. Traces connect an `invoke_agent` root span with model calls and tool executions, while metrics report token usage and other numeric signals.
+GitHub Copilot CLI exports OpenTelemetry traces and metrics for agent sessions. Traces connect an `invoke_agent` root span to model calls and tool executions. Metrics report token usage and other numeric signals.
 
-This guide sends both signals through an OpenTelemetry Collector. Parseable-specific authentication and dataset headers stay in the Collector configuration.
+Route both signals through an OpenTelemetry Collector. This keeps Parseable credentials and dataset headers out of the Copilot configuration.
 
 ```text
 GitHub Copilot CLI
@@ -98,7 +98,7 @@ export OTEL_SERVICE_NAME=github-copilot
 copilot
 ```
 
-Setting `OTEL_EXPORTER_OTLP_ENDPOINT` also enables telemetry, but `COPILOT_OTEL_ENABLED=true` makes the intent explicit. Do not append `/v1/traces` or `/v1/metrics`; Copilot CLI adds the signal path.
+Copilot enables telemetry when you set `OTEL_EXPORTER_OTLP_ENDPOINT`. Set `COPILOT_OTEL_ENABLED=true` to make the configuration explicit. Do not append `/v1/traces` or `/v1/metrics`; Copilot CLI adds the signal path.
 
 Copilot CLI supports `http/json` and `http/protobuf`. The Collector configuration above accepts either protocol over OTLP/HTTP.
 
@@ -124,11 +124,11 @@ Useful trace fields include:
 
 Download the [GitHub Copilot Observability dashboard](https://github.com/parseablehq/dashboards/tree/main/github-copilot-observability) and import its JSON file in Parseable. Map **Traces Dataset** to `copilot-traces`.
 
-The dashboard covers trace volume, sessions, model and token usage, tools, latency, errors, repositories, and recent traces.
+Use the dashboard to track trace volume, sessions, model and token usage, tools, latency, errors, repositories, and recent traces.
 
 ## Configure the Copilot SDK
 
-Applications built with the Copilot SDK can enable the same CLI telemetry through `TelemetryConfig`. For TypeScript:
+If you use the Copilot SDK, enable CLI telemetry through `TelemetryConfig`. For TypeScript:
 
 ```typescript
 import { CopilotClient } from "@github/copilot-sdk";
@@ -154,7 +154,7 @@ Setting the following variable includes full message content:
 export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
 ```
 
-Captured data can include source code, file contents, user prompts, model responses, and tool arguments. Apply Collector redaction rules and access controls before enabling it. GitHub's [OpenTelemetry agent monitoring guide](https://docs.github.com/en/copilot/concepts/agents/opentelemetry) describes the privacy behavior.
+Content capture can include source code, file contents, user prompts, model responses, and tool arguments. Apply Collector redaction rules and access controls before you enable it. GitHub's [OpenTelemetry agent monitoring guide](https://docs.github.com/en/copilot/concepts/agents/opentelemetry) describes the privacy behavior.
 
 ## Troubleshooting
 

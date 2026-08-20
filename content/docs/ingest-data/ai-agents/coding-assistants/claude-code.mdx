@@ -3,9 +3,9 @@ title: Claude Code
 description: Send Claude Code events, metrics, and traces to Parseable through OpenTelemetry
 ---
 
-Claude Code can export usage events, metrics, and beta traces through OpenTelemetry. Parseable stores each signal in its own dataset so you can inspect sessions, API requests, models, tokens, tools, cost, latency, and errors.
+Claude Code exports usage events, metrics, and beta traces through OpenTelemetry. Parseable stores each signal in a separate dataset. You can inspect sessions, model requests, token use, tool activity, cost, latency, and errors.
 
-This guide uses an OpenTelemetry Collector between Claude Code and Parseable. The Collector keeps Parseable authentication and dataset routing outside developer machines.
+Route the telemetry through an OpenTelemetry Collector. This keeps Parseable credentials and dataset routing off developer machines.
 
 ```text
 Claude Code
@@ -17,7 +17,7 @@ OpenTelemetry Collector
   +-- traces ---> claudecode-traces (optional beta)
 ```
 
-Claude Code documents metrics and events as stable telemetry signals. Distributed traces require its enhanced telemetry beta. See [Monitoring Claude Code usage](https://code.claude.com/docs/en/monitoring-usage) for the current signal schema and version requirements.
+Anthropic treats metrics and events as stable telemetry signals. Distributed traces require the enhanced telemetry beta. See [Monitoring Claude Code usage](https://code.claude.com/docs/en/monitoring-usage) for the current schema and version requirements.
 
 ## Prerequisites
 
@@ -116,7 +116,7 @@ Do not append `/v1/logs`, `/v1/metrics`, or `/v1/traces` to `OTEL_EXPORTER_OTLP_
 
 ### Enable beta traces
 
-Add these variables when you also want the interaction, model request, tool, and hook span hierarchy:
+To export the interaction, model request, tool, and hook span hierarchy, set:
 
 ```bash
 export CLAUDE_CODE_ENHANCED_TELEMETRY_BETA=1
@@ -143,7 +143,7 @@ Administrators can place the same environment variables in Claude Code managed s
 }
 ```
 
-Managed settings can lock the OTLP destination for an organization. Check Anthropic's [managed settings documentation](https://code.claude.com/docs/en/settings#settings-files) before rollout.
+Administrators can use managed settings to lock the organization's OTLP destination. Check Anthropic's [managed settings documentation](https://code.claude.com/docs/en/settings#settings-files) before rollout.
 
 ## Verify ingestion
 
@@ -168,11 +168,11 @@ Download the [Claude Code Usage dashboard](https://github.com/parseablehq/dashbo
 - **Logs Dataset** to `claudecode-logs`
 - **Metrics Dataset** to `claudecode-metrics`
 
-The dashboard covers cost, API requests, sessions, tokens, models, tools, commands, errors, and code activity.
+Use the dashboard to track cost, API requests, sessions, tokens, tools, errors, and code activity.
 
 ## Protect sensitive content
 
-Claude Code redacts prompt text, assistant responses, tool details, and tool content by default. Keep those defaults unless your data policy permits content capture.
+Claude Code redacts prompts, responses, tool details, and tool content by default. Keep these defaults unless your data policy permits content capture.
 
 The following settings add sensitive data to telemetry:
 
