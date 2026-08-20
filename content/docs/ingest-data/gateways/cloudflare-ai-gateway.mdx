@@ -191,6 +191,12 @@ Download the [dashboard JSON template](https://raw.githubusercontent.com/parseab
 
 The template uses native Cloudflare OTLP spans and requires no separate metrics dataset. Custom metadata fields such as `workload`, `complexity`, and `source` improve its breakdowns but are optional. After importing, select a time range that contains your gateway traffic.
 
+![Cloudflare AI Gateway dashboard overview in Parseable](./static/cf-1.png)
+
+![Cloudflare AI Gateway traffic dashboard in Parseable](./static/cf-2.png)
+
+![Cloudflare AI Gateway model and trace dashboard in Parseable](./static/cf-3.png)
+
 ## Add custom metadata and trace context
 
 Attach JSON metadata to a request with `cf-aig-metadata`. Use stable dimensions such as workload, environment, tenant, or team so dashboards can group traffic without creating excessive cardinality.
@@ -202,28 +208,11 @@ To connect gateway calls to an existing distributed trace, Cloudflare accepts th
 
 ## Troubleshooting
 
-### No traces arrive
-
-- Confirm that the exporter URL is public HTTPS and ends in `/v1/traces`.
-- Confirm that a Quick Tunnel is still running and its current URL matches the exporter configuration.
-- Check that the request passed through the same Cloudflare gateway whose exporter you configured.
-- Generate a new request, wait briefly, and expand the Parseable time range.
-
-### Parseable returns an authentication error
-
-Verify `X-API-Key`. When using that header, leave Cloudflare's exporter Authorization field empty.
-
-### Parseable reports a missing stream or log source
-
-Create `cf-ai-gateway-traces`, set `X-P-Stream` to that exact value, and set `X-P-Log-Source` to `otel-traces`.
-
-### The model request is rejected
-
-Verify the account ID, gateway ID, `cf-aig-authorization` token, stored provider key, model name, and provider plan. Some models are unavailable on free plans.
-
-### Dashboard charts show no data
-
-Choose a time range containing ingested traces and confirm that the dashboard dataset variable is `cf-ai-gateway-traces`. Cost, token, or latency charts remain empty when the selected traces do not contain those attributes.
+- **No traces arrive:** Confirm that the exporter URL is public HTTPS and ends in `/v1/traces`. If you are using a Quick Tunnel, make sure it is still running and that the current URL matches the exporter configuration. Check that the request passed through the same Cloudflare gateway whose exporter you configured, then generate a new request and expand the Parseable `time range`.
+- **Parseable returns an authentication error:** Verify `X-API-Key`. When using that header, leave Cloudflare's exporter Authorization field empty.
+- **Parseable reports a missing stream or log source:** Create `cf-ai-gateway-traces`, set `X-P-Stream` to that exact value, and set `X-P-Log-Source` to `otel-traces`.
+- **The model request is rejected:** Verify the account ID, gateway ID, `cf-aig-authorization` token, stored provider key, model name, and provider plan. Some models are unavailable on free plans.
+- **Dashboard charts show no data:** Choose a time range containing ingested traces and confirm that the dashboard dataset variable is `cf-ai-gateway-traces`. Cost, token, or latency charts remain empty when the selected traces do not contain those attributes.
 
 ## References
 
