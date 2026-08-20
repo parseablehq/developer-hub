@@ -226,6 +226,12 @@ LIMIT 20;
 
 These queries are meant as starting points. Field names can vary slightly depending on the n8n version and how the spans are flattened after ingestion, so check a few recent records in Parseable first and adjust the column names if required.
 
+## Dashboards
+
+After traces are flowing, you can use a dashboard to keep the main workflow signals in one place instead of writing ad hoc queries each time. Parseable provides an n8n workflow observability dashboard in [parseablehq/dashboards](https://github.com/parseablehq/dashboards/tree/main/n8n-workflow-observability). Use it as a starting point, then map the dataset variable to your `n8n-traces` dataset.
+
+The dashboard covers execution volume, success rate, average duration, the slowest nodes, node execution counts by type, a per-execution summary table and a recent errors table - all from the `workflow.execute` and `node.execute` spans described above.
+
 ## Logs and metrics
 
 n8n's native OpenTelemetry path currently sends workflow traces. If you also want logs in Parseable, collect n8n process or container logs with your existing log shipper or with the OpenTelemetry Collector `filelog` receiver, then export them to Parseable's `/v1/logs` endpoint.
