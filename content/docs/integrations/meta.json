@@ -1,6 +1,7 @@
 {
   "title": "Integrations",
   "pages": [
+    "vercel",
     "alerting",
     "auth",
     "data-platforms",
