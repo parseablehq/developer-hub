@@ -268,41 +268,12 @@ ORDER BY calls DESC;
 
 ## Troubleshoot
 
-### Dataset appears in Traces but not Agents
-
-The dataset was probably auto-created without the Agent Observability tag.
-Recreate an empty dataset with `X-P-Log-Source: otel-traces`,
-`X-P-Telemetry-Type: traces`, and
-`X-P-Dataset-Tag: agent-observability` before ingesting data.
-
-### Traces contain only `chat` operations
-
-OpenLIT is observing direct model calls, not an agent-framework execution.
-Confirm that the installed framework is supported, initialize OpenLIT before
-importing it, and execute the framework's agent runner rather than only its
-underlying model client.
-
-### Tool calls appear without tool execution spans
-
-A model can request a tool without the application executing it. Confirm that
-the agent framework dispatches the tool and that OpenLIT supports instrumenting
-that framework's tool runtime.
-
-### No traces appear
-
-Check Collector logs, confirm the application exports OTLP/HTTP to port `4318`,
-and verify the Parseable exporter includes `X-P-Stream` and
-`X-P-Log-Source: otel-traces`.
-
-### Traces appear but metrics are empty
-
-Metrics use a periodic exporter. Keep the application alive until the first
-export or temporarily set `OTEL_METRIC_EXPORT_INTERVAL=1000`.
-
-### Prompts or responses appear in traces
-
-Set `capture_message_content=False`. This affects only newly generated
-telemetry; review or remove older records separately.
+- **Dataset appears in Traces but not Agents:** The dataset was probably auto-created without the Agent Observability tag. Recreate an empty dataset with `X-P-Log-Source: otel-traces`, `X-P-Telemetry-Type: traces`, and `X-P-Dataset-Tag: agent-observability` before ingesting data.
+- **Traces contain only `chat` operations:** OpenLIT is observing direct model calls, not an agent-framework execution. Confirm that the installed framework is supported, initialize OpenLIT before importing it, and execute the framework's agent runner rather than only its underlying model client.
+- **Tool calls appear without tool execution spans:** A model can request a tool without the application executing it. Confirm that the agent framework dispatches the tool and that OpenLIT supports instrumenting that framework's tool runtime.
+- **No traces appear:** Check Collector logs, confirm the application exports OTLP/HTTP to port `4318`, and verify the Parseable exporter includes `X-P-Stream` and `X-P-Log-Source: otel-traces`.
+- **Traces appear but metrics are empty:** Metrics use a periodic exporter. Keep the application alive until the first export or temporarily set `OTEL_METRIC_EXPORT_INTERVAL=1000`.
+- **Prompts or responses appear in traces:** Set `capture_message_content=False`. This affects only newly generated telemetry; review or remove older records separately.
 
 ## Related documentation
 
