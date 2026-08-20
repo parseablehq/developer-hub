@@ -9,7 +9,7 @@ The LiteLLM Python SDK lets your application call models from OpenAI, Anthropic,
 
 Parseable receives the SDK telemetry over OpenTelemetry. Traces show each model call and how it sits inside your application flow. Logs show the GenAI events emitted by the LiteLLM OpenTelemetry integration. Metrics show request duration, token usage, cost, and streaming latency as OpenTelemetry histograms.
 
-For the standalone gateway or proxy setup, see [LiteLLM Gateway](/docs/ingest-data/gateways/litellm).
+For the standalone gateway or proxy setup, see [LiteLLM Gateway](/ingest-data/gateways/litellm).
 
 ## How it works
 
@@ -280,7 +280,7 @@ WHERE metric_name = 'gen_ai.usage.cost';
 
 Use this SDK integration when the application calls model providers directly through `litellm.completion()` or related SDK methods. It gives you telemetry from inside that Python process.
 
-Use [LiteLLM Gateway](/docs/ingest-data/gateways/litellm) when traffic goes through the LiteLLM Proxy or Gateway. The gateway path adds proxy-level visibility such as authentication, routing, budgets, rate limits, Redis, PostgreSQL, and Prometheus `/metrics` scraping.
+Use [LiteLLM Gateway](/ingest-data/gateways/litellm) when traffic goes through the LiteLLM Proxy or Gateway. The gateway path adds proxy-level visibility such as authentication, routing, budgets, rate limits, Redis, PostgreSQL, and Prometheus `/metrics` scraping.
 
 ## Troubleshooting
 
@@ -306,8 +306,8 @@ Use [LiteLLM Gateway](/docs/ingest-data/gateways/litellm) when traffic goes thro
 
 ## See also
 
-- [LiteLLM Gateway](/docs/ingest-data/gateways/litellm)
-- [Pydantic AI](/docs/ingest-data/ai-agents/pydantic-ai)
-- [Traces](/docs/user-guide/traces)
-- [Logs](/docs/user-guide/logs)
-- [Metrics](/docs/user-guide/metrics)
+- [LiteLLM Gateway](/ingest-data/gateways/litellm)
+- [Pydantic AI](/ingest-data/ai-agents/pydantic-ai)
+- [Traces](/user-guide/traces)
+- [Logs](/user-guide/logs)
+- [Metrics](/user-guide/metrics)

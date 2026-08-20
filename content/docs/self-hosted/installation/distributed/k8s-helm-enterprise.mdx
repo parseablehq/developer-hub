@@ -2,18 +2,19 @@
 title: Kubernetes (Enterprise)
 description: Install Parseable Enterprise in distributed mode on Kubernetes with Helm.
 ---
+import { Step, Steps } from 'fumadocs-ui/components/steps';
 
 <OfferingPills enterprise className="mb-4" />
 
-This guide installs Parseable Enterprise in distributed mode on Kubernetes. The installation creates ingestor, querier, and Prism nodes.
+This guide installs Parseable Enterprise in distributed mode on Kubernetes. The installation creates ingestor, querier, and Prism pods.
 
-To install Parseable OSS, use the [distributed OSS Kubernetes guide](/docs/self-hosted/installation/distributed/k8s-helm-oss).
+To install Parseable OSS, use the [distributed OSS Kubernetes guide](/self-hosted/installation/distributed/k8s-helm-oss).
 
-## 1. Prerequisites
+## Prerequisites
 
 Before you begin, make sure you have:
 
-- `kubectl` configured for your Kubernetes cluster
+- `kubectl` installed and configured for the Kubernetes cluster where you want to install Parseable
 - Helm 3 or later
 - A Kubernetes storage class
 - An existing, empty object-store bucket with access credentials
@@ -29,13 +30,26 @@ kubectl get nodes
 kubectl get storageclass
 ```
 
-## 2. Create the namespace
+The `kubectl config current-context` output should point to the cluster where
+you want to install Parseable. Use one of the storage class names returned by
+`kubectl get storageclass` in the values file below.
+
+<Steps>
+<Step>
+
+## 1. Create the namespace
 
 ```bash
 kubectl create namespace parseable
 ```
 
-## 3. Choose an object store
+If you are testing in a shared cluster, use a separate namespace for your test
+installation and replace `parseable` in the commands below with that namespace.
+
+</Step>
+<Step>
+
+## 2. Choose an object store
 
 Choose exactly one object store below. Replace every `<...>` placeholder in the selected option before running the command.
 
@@ -50,9 +64,24 @@ After completing one option, continue to step 4.
 
 Install MinIO and create a bucket named `parseable`:
 
+Replace `<storage-class>` with one of the storage class names returned by `kubectl get storageclass`.
+
 ```bash
 helm repo add minio https://charts.min.io/
-helm install --namespace minio --create-namespace --set "buckets[0].name=parseable,buckets[0].policy=none,buckets[0].purge=false,rootUser=minioadmin,rootPassword=minioadmin,replicas=1,persistence.enabled=true,persistence.storageClass="",resources.requests.memory=128Mi,mode=standalone" minio minio/minio
+helm install \
+  --namespace minio \
+  --create-namespace \
+  --set buckets[0].name=parseable \
+  --set buckets[0].policy=none \
+  --set buckets[0].purge=false \
+  --set rootUser=minioadmin \
+  --set rootPassword=minioadmin \
+  --set replicas=1 \
+  --set persistence.enabled=true \
+  --set persistence.storageClass=<storage-class> \
+  --set resources.requests.memory=128Mi \
+  --set mode=standalone \
+  minio minio/minio
 ```
 
 Forward the MinIO console port:
@@ -84,7 +113,7 @@ EOF
   that match your MinIO deployment.
 </Callout>
 
-Use `s3-store` in [`enterprise-values.yaml`](#7-create-enterprise-valuesyaml).
+Use `s3-store` in [`enterprise-values.yaml`](#6-create-enterprise-valuesyaml).
 
 ### Option B: Amazon S3
 
@@ -106,10 +135,10 @@ EOF
 <Callout type="info">
   Using Amazon EKS IRSA with Helm chart `3.0.1` or later? Omit `s3.access.key`
   and `s3.secret.key` and configure the Parseable ServiceAccount instead. Follow the
-  [S3 IRSA guide](/docs/self-hosted/storage-targets/aws-s3#kubernetes-with-irsa).
+  [S3 IRSA guide](/self-hosted/storage-targets/aws-s3#kubernetes-with-irsa).
 </Callout>
 
-Use `s3-store` in [`enterprise-values.yaml`](#7-create-enterprise-valuesyaml).
+Use `s3-store` in [`enterprise-values.yaml`](#6-create-enterprise-valuesyaml).
 
 ### Option C: Google Cloud Storage
 
@@ -131,7 +160,7 @@ Keep the service-account JSON file ready. You will create its Kubernetes Secret 
 The service-account JSON file is a credential. Store it securely and never commit it to source control.
 </Callout>
 
-Use `gcs-store` in [`enterprise-values.yaml`](#7-create-enterprise-valuesyaml).
+Use `gcs-store` in [`enterprise-values.yaml`](#6-create-enterprise-valuesyaml).
 
 ### Option D: Azure Blob Storage
 
@@ -149,9 +178,12 @@ azr.url=<azr.url>
 EOF
 ```
 
-Use `blob-store` in [`enterprise-values.yaml`](#7-create-enterprise-valuesyaml).
+Use `blob-store` in [`enterprise-values.yaml`](#6-create-enterprise-valuesyaml).
 
-## 4. Create the Kubernetes Secret
+</Step>
+<Step>
+
+## 3. Create the Kubernetes Secret
 
 After creating the file for your selected object store, review it and create the Kubernetes Secret:
 
@@ -171,7 +203,7 @@ kubectl create secret generic parseable-gcs-key \
   --from-file=key.json='<path-to-service-account-json>'
 ```
 
-You can add supported environment variables to `parseable-env-secret` as needed. See the [environment variables documentation](/docs/self-hosted/configuration).
+You can add supported environment variables to `parseable-env-secret` as needed. See the [environment variables documentation](/self-hosted/configuration).
 
 After confirming that the Kubernetes Secret exists, delete the local plaintext file:
 
@@ -179,7 +211,10 @@ After confirming that the Kubernetes Secret exists, delete the local plaintext f
 rm parseable-env-secret
 ```
 
-## 5. Create Enterprise Secrets
+</Step>
+<Step>
+
+## 4. Create Enterprise Secrets
 
 Create the license Secret. Replace `<license-directory>` with the directory containing both license files:
 
@@ -190,7 +225,7 @@ kubectl create secret generic parseable-license \
   --from-file=parseable_license.sig='<license-directory>/parseable_license.sig'
 ```
 
-Create a random 16-character shared Secret for communication between Enterprise nodes:
+Create a random 16-character shared Secret for communication between Enterprise pods:
 
 ```bash
 kubectl create secret generic parseable-cluster-secret \
@@ -198,14 +233,20 @@ kubectl create secret generic parseable-cluster-secret \
   --from-literal=cluster-secret="$(openssl rand -hex 8)"
 ```
 
-## 6. Add the Parseable Helm repository
+</Step>
+<Step>
+
+## 5. Add the Parseable Helm repository
 
 ```bash
 helm repo add parseable https://charts.parseable.com
 helm repo update parseable
 ```
 
-## 7. Create `enterprise-values.yaml`
+</Step>
+<Step>
+
+## 6. Create `enterprise-values.yaml`
 
 Create a file named `enterprise-values.yaml`:
 
@@ -276,7 +317,7 @@ parseable:
           enabled: true
           storageClass: <storage-class>
           accessMode: ReadWriteOnce
-          size: 100Gi
+          size: 50Gi
 
     prism:
       replicas: 1
@@ -292,7 +333,7 @@ parseable:
 ```
 
 To enable OIDC, add the variables under `parseable.distributed.prism.env`. See
-the [OIDC guide](/docs/user-guide/openid).
+the [OIDC guide](/user-guide/openid).
 
 Before continuing:
 
@@ -301,7 +342,29 @@ Before continuing:
 3. Replace both `<storage-class>` placeholders with a storage class returned by `kubectl get storageclass`.
 4. Adjust replicas, CPU, memory, and volume sizes for your workload.
 
-## 8. Install Parseable Enterprise
+You can render the chart before installing it:
+
+```bash
+helm template parseable parseable/parseable \
+  --namespace parseable \
+  --values ./enterprise-values.yaml
+```
+
+This catches invalid storage combinations before anything is created in the
+cluster.
+
+### Storage behavior
+
+- Enterprise distributed mode requires S3, GCS, or Azure Blob Storage. It does not support `local-store`.
+- Ingestor `staging.enabled: true` creates one staging PVC per ingestor. `false` uses `emptyDir`, so pending staged data is lost if the Pod is replaced.
+- Querier `hotTier.enabled: true` creates one hot-tier PVC per querier. `false` uses `emptyDir`. Hot tier is a cache and can rebuild from the object store.
+- Choose both settings during installation. To change one later, recreate the affected StatefulSet.
+- Kubernetes rejects changing a volume claim template's `size` on an existing StatefulSet. If the StorageClass supports volume expansion, resize each generated PVC directly.
+
+</Step>
+<Step>
+
+## 7. Install Parseable Enterprise
 
 ```bash
 helm upgrade --install parseable parseable/parseable \
@@ -311,16 +374,24 @@ helm upgrade --install parseable parseable/parseable \
   --timeout 10m
 ```
 
-## 9. Verify the installation
+</Step>
+<Step>
+
+## 8. Verify the installation
 
 ```bash
 helm status parseable --namespace parseable
 kubectl get pods,pvc,services,statefulsets --namespace parseable
 ```
 
-The ingestor, querier, and Prism pods should be `Running`, and all PVCs should be `Bound`.
+The ingestor, querier, and Prism pods should be `Running`, and all PVCs should
+be `Bound`. With the sample values above, one staging PVC is created for each
+ingestor replica and one hot-tier PVC is created for each querier replica.
 
-## 10. Access Parseable
+</Step>
+<Step>
+
+## 9. Access Parseable
 
 Forward the Prism service:
 
@@ -338,7 +409,10 @@ Send ingestion traffic inside the cluster to:
 http://parseable-ingestor-service.parseable.svc.cluster.local
 ```
 
-## 11. Troubleshooting
+</Step>
+<Step>
+
+## 10. Troubleshooting
 
 Start with Prism, then the querier, and then the ingestors:
 
@@ -354,3 +428,6 @@ kubectl logs statefulset/parseable-ingestor --namespace parseable
 - `CreateContainerConfigError` usually indicates a missing Secret or Secret key.
 - Object-store authentication errors usually indicate incorrect credentials, permissions, endpoint, bucket, or container values.
 - Use an empty bucket or container for a new Parseable cluster. Metadata from another Parseable cluster can cause credential or deployment identity conflicts.
+
+</Step>
+</Steps>

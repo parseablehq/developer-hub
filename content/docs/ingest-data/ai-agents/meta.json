@@ -1,22 +1,9 @@
 {
-  "title": "AI Agents & LLMs",
+  "title": "AI Infrastructure",
   "pages": [
-    "openai",
-    "anthropic",
-    "litellm-sdk",
-    "pydantic-ai",
-    "openrouter",
-    "vllm",
-    "langchain",
-    "llamaindex",
-    "autogen",
-    "crewai",
-    "dspy",
-    "n8n",
-    "daytona",
-    "dbos",
-    "modal",
-    "temporal",
-    "restate"
+    "agent-frameworks",
+    "sandboxes-runtimes",
+    "llms",
+    "gateways"
   ]
 }

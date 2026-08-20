@@ -1,0 +1,258 @@
+---
+title: "MCP Server"
+description: Use Parseable from Claude, Cursor, VS Code, Codex, and other MCP-compatible AI clients to investigate logs, metrics, traces, and alerts with natural language.
+icon: Cable
+---
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+
+<OfferingPills cloud enterprise className="mb-4" />
+
+Parseable MCP Server lets any MCP-compatible AI client work with your existing Parseable deployment. Instead of copying logs, schemas, alert details, or query output into a chat by hand, the client gets a clear tool surface for the work you would normally do in Prism or through APIs, such as finding datasets, checking schemas, running SQL or PromQL, reviewing alerts, and checking access information.
+
+It does not ingest telemetry, store query results, or create another observability backend. The MCP server is a bridge. Your AI client talks to the MCP server, the MCP server calls Parseable with the API key you provide, and Parseable still enforces the same RBAC permissions that apply everywhere else.
+
+## How it fits
+
+```text
+AI client
+  |
+  | MCP tool call
+  v
+Parseable MCP Server
+  |
+  | Parseable API request with X-API-Key
+  v
+Parseable
+```
+
+This is useful when you want an AI client to help with an investigation without copying logs, metrics, alert definitions, or schema details into the chat by hand. You can ask for recent errors in a dataset, inspect the fields available in a stream, run a bounded SQL query, check a PromQL expression, or review alert configuration from the same place where you are already working.
+
+## Prerequisites
+
+You need a Parseable Cloud account or a self-hosted Parseable instance that the MCP server can reach. You also need a Parseable API key with the right RBAC permissions for the datasets and actions you want the AI client to use.
+
+For local setup, make sure Node.js and `npm` are available on the machine where your MCP client runs. For remote setup, use an MCP client that supports Streamable HTTP connections and custom headers.
+
+## Connection options
+
+| Option | How it works | Best for |
+| --- | --- | --- |
+| Local stdio | The AI client starts `@parseable/parseable-mcp-server` as a local subprocess and passes credentials through local configuration. | Claude Desktop, Claude Code, Cursor, VS Code, and other local MCP clients. |
+| Remote HTTP | The AI client connects to an MCP endpoint over Streamable HTTP and sends the Parseable API key in request headers. | Hosted MCP deployments or clients that prefer a remote connector. |
+
+Local setup is usually the easiest place to start. Remote setup is useful when a team wants one MCP endpoint to manage upgrades and network access centrally.
+
+## Local setup
+
+<Steps>
+<Step>
+
+### Run the setup command
+
+Run the installer from the machine where your MCP client is installed:
+
+```bash
+npx -y @parseable/parseable-mcp-server@latest init
+```
+
+The setup flow asks which client you want to configure, whether you are using Parseable Cloud or a self-hosted instance, and which API key should be used.
+
+</Step>
+<Step>
+
+### Choose the Parseable target
+
+For Parseable Cloud, the setup writes a hosted MCP connection for clients that support it. For self-hosted Parseable, provide the base URL of your Parseable instance, for example:
+
+```text
+https://parseable.example.com
+```
+
+Use the URL that your machine can actually reach. If your Parseable instance is behind a private network, the local MCP client must be on that same network or have access through your usual tunnel or VPN.
+
+</Step>
+<Step>
+
+### Add the API key
+
+Paste a Parseable API key when the setup prompts for it. The key should have only the permissions needed for the work you want the AI client to perform. For example, a read-only investigation workflow should not use a key that can change alerts or manage users.
+
+After setup is complete, restart the MCP client so it can discover the new Parseable tools.
+
+</Step>
+</Steps>
+
+You can also run setup in a scripted form. For a self-hosted Parseable instance:
+
+```bash
+npx -y @parseable/parseable-mcp-server@latest init \
+  --client claude-desktop \
+  --mode self-hosted \
+  --url https://parseable.example.com \
+  --api-key "$PARSEABLE_API_KEY"
+```
+
+For Parseable Cloud:
+
+```bash
+npx -y @parseable/parseable-mcp-server@latest init \
+  --client cursor \
+  --mode cloud \
+  --api-key "$PARSEABLE_API_KEY"
+```
+
+The interactive setup shows the clients supported by the version you are installing.
+
+## Manual local configuration
+
+If you prefer to edit your MCP client configuration directly, add a local server entry like this:
+
+```json
+{
+  "mcpServers": {
+    "Parseable": {
+      "command": "npx",
+      "args": ["-y", "@parseable/parseable-mcp-server@latest"],
+      "env": {
+        "PARSEABLE_URL": "https://parseable.example.com",
+        "PARSEABLE_API_KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+Some MCP clients use `servers` instead of `mcpServers`. Use the shape expected by your client.
+
+## Remote HTTP setup
+
+In remote mode, the client connects to an MCP endpoint and sends credentials as headers. Use HTTPS for remote connections.
+
+For a self-hosted Parseable target:
+
+```json
+{
+  "mcpServers": {
+    "parseable": {
+      "type": "http",
+      "url": "https://mcp.example.com/mcp",
+      "headers": {
+        "X-Parseable-URL": "https://parseable.example.com",
+        "X-API-Key": "your-parseable-api-key"
+      }
+    }
+  }
+}
+```
+
+For Parseable Cloud:
+
+```json
+{
+  "mcpServers": {
+    "parseable": {
+      "type": "http",
+      "url": "https://mcp.parseable.com/mcp",
+      "headers": {
+        "X-Parseable-Mode": "cloud",
+        "X-API-Key": "your-parseable-cloud-api-key"
+      }
+    }
+  }
+}
+```
+
+Do not send credentials to an MCP endpoint you do not trust. The MCP server uses the supplied API key to call Parseable on your behalf.
+
+## What the tools can do
+
+Parseable MCP Server exposes 27 built-in tools around the same objects you already work with in Parseable. Some tools only read data, while a few can change alert state or create alert resources. The exact result still depends on the API key. If the key cannot access a dataset or action in Parseable, the MCP tool cannot access it either.
+
+| Group | Tool | What it does |
+| --- | --- | --- |
+| Datasets and events | `list_datasets` | Lists the datasets the API key can access. |
+|  | `get_dataset_info` | Shows dataset metadata such as retention, time range, and dataset configuration. |
+|  | `get_dataset_schema` | Returns the fields and types available in a dataset. |
+|  | `get_dataset_stats` | Returns dataset-level statistics such as event count and storage size. |
+|  | `sample_events` | Fetches a small, bounded sample of recent events from a dataset. |
+| Queries | `query_sql` | Runs a read-only SQL query against a dataset with query controls applied. |
+|  | `query_promql` | Runs an instant or range PromQL query against a metrics dataset. |
+|  | `explain_query` | Explains a SQL query plan without executing the query itself. |
+| Alerts | `list_alerts` | Lists alerts along with state, severity, tags, and related metadata. |
+|  | `get_alert` | Returns the full configuration for a specific alert. |
+|  | `list_alert_tags` | Lists the tags currently used across alerts. |
+|  | `enable_alert` | Enables an existing alert. |
+|  | `disable_alert` | Disables an existing alert. |
+|  | `evaluate_alert` | Evaluates an alert immediately. This can send real notifications if the condition matches. |
+|  | `create_alert` | Creates a new alert through a guided flow that collects the required alert fields. |
+| Alert targets | `list_alert_targets` | Lists configured notification targets such as Slack, webhook, or Alertmanager targets. |
+|  | `get_alert_target` | Returns the full configuration for a specific alert target. |
+|  | `create_alert_target` | Creates a new notification target for alert delivery. |
+| Access review | `list_users` | Lists users visible to the API key. |
+|  | `get_user_roles` | Shows the roles assigned to a specific user. |
+|  | `list_roles` | Lists the roles configured in Parseable. |
+|  | `get_role` | Shows the permissions attached to a specific role. |
+|  | `get_default_role` | Shows the default role assigned to new users. |
+| Cluster and retention | `ping` | Checks whether the MCP server can reach Parseable and returns basic connectivity details. |
+|  | `get_cluster_status` | Shows node status for a distributed Parseable deployment. |
+|  | `get_cluster_metrics` | Returns high-level cluster metrics for ingest, query, and storage. |
+|  | `get_retention` | Shows the retention policy for a dataset. |
+
+## Common workflows
+
+### Investigate logs
+
+A typical log investigation starts by listing datasets, inspecting the schema, and sampling a few recent records. After that, the AI client can help write a SQL query for a specific time window, run it, and explain the rows that came back.
+
+Example prompts:
+
+- `Show errors from the checkout dataset during the last 30 minutes.`
+- `Which service produced the most 5xx responses today?`
+- `Sample recent events from api-logs so I can understand the fields.`
+
+### Query metrics
+
+For metrics, use PromQL through the MCP server. You can ask for an instant query when you need the current value, or a range query when you want to inspect how a series changed over time.
+
+Example prompts:
+
+- `Run a range query for request latency over the last hour.`
+- `Show the current error rate for the payments service.`
+- `Explain this PromQL query before running it.`
+
+### Work with alerts
+
+The MCP server can help inspect existing alerts and alert targets. It can also help create alerts through a guided flow where the client collects the dataset, condition, evaluation window, severity, tags, and notification target before creation.
+
+Be careful with alert evaluation. Evaluating an alert can trigger real notifications, so review the action before confirming it in your MCP client.
+
+### Review access
+
+You can ask the client to list users, inspect roles assigned to a user, and compare those roles with the default role. This is useful when an API key or user can see less data than expected.
+
+## Query controls
+
+SQL queries must include an explicit time window and are restricted to read-only use. The MCP server blocks common data-changing SQL operations and applies a row limit when the query does not provide one.
+
+`sample_events` is also bounded, so it is meant for understanding the shape of a dataset rather than exporting data. Results remain subject to Parseable RBAC and the configured query limits.
+
+For long investigations, keep time windows narrow first. Increase the range only after you know which dataset, service, or field is relevant.
+
+## Security notes
+
+- Use API keys with the smallest set of roles needed for the workflow, and store them in your MCP client configuration or a secrets manager. Do not commit them to source control.
+- Use HTTPS for remote MCP and Parseable connections, and do not connect an AI client to an MCP endpoint you do not operate or trust.
+- Review state-changing actions such as alert creation, alert enablement, alert disablement, and alert evaluation before confirming them.
+- Rotate the API key in Parseable if it is exposed.
+
+Parseable MCP Server does not store telemetry data, query history, result sets, credentials, or user preferences. Parseable remains the system that authenticates the key and enforces permissions.
+
+## Troubleshooting
+
+- If the tools do not appear in your client, restart the MCP client after running setup.
+- If the local server does not start, check that `PARSEABLE_URL` and `PARSEABLE_API_KEY` are present in the generated client configuration.
+- If you get `401` or `403`, check the API key first. `401` usually means the key is missing, invalid, or rotated. `403` means the key is valid but does not have permission for that dataset or action.
+- If a dataset is missing, check the dataset name and the roles assigned to the API key.
+- If PromQL does not work, confirm that you are querying a metrics dataset and that your Parseable deployment supports PromQL.
+- If a query times out, reduce the time range or result size before increasing timeouts.
+- If a remote connection fails, check the MCP endpoint URL, HTTPS configuration, request headers, and network reachability.

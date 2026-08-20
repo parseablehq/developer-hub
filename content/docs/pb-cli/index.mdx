@@ -39,10 +39,10 @@ pb tail backend
 | `pb status` | Verify the active connection and display server version information |
 | `pb sql` | Run SQL queries, save SQL queries, and open the interactive SQL table view |
 | `pb promql` | Run PromQL range and instant queries, explore labels and series, and inspect cardinality |
-| `pb tail` | Stream live log events from a dataset in real time as newline-delimited JSON |
-| `pb dataset` | List, create, inspect, and delete log, metrics, and traces datasets |
-| `pb user` | Create users, assign roles, and manage user access |
-| `pb role` | Define roles with specific privilege levels and dataset scopes |
+| [`pb tail`](/pb-cli/tail) | Stream live log events from a dataset in real time as newline-delimited JSON |
+| [`pb dataset`](/pb-cli/datasets) | List, create, inspect, and delete log, metrics, and traces datasets |
+| [`pb user`](/pb-cli/admin) | Create users, assign roles, and manage user access |
+| [`pb role`](/pb-cli/admin) | Define roles with specific privilege levels and dataset scopes |
 | `pb version` | Print the CLI version and build commit |
 
 ## Interactive mode
@@ -83,9 +83,9 @@ pb promql run "up" --dataset otel_metrics --instant --output json
 
 ## Getting started
 
-1. [Install pb](/docs/pb-cli/install) - install with the script, Homebrew, or a release archive
-2. [Connect to a server](/docs/pb-cli/connect) - authenticate and save a server profile
-3. [Run a SQL query](/docs/pb-cli/query) - query logs with `pb sql`
-4. [Run a PromQL query](/docs/pb-cli/promql) - query metrics with `pb promql`
-5. [Use aliases](/docs/pb-cli/aliases) - learn the short command forms such as `ls`, `rm`, `stat`, and `set-url`
-6. [Use pb with AI agents](/docs/pb-cli/agents) - configure safe, read-only agent access
+1. [Install pb](/pb-cli/install) - install with the script, Homebrew, or a release archive
+2. [Connect to a server](/pb-cli/connect) - authenticate and save a server profile
+3. [Run a SQL query](/pb-cli/query) - query logs with `pb sql`
+4. [Run a PromQL query](/pb-cli/promql) - query metrics with `pb promql`
+5. [Use aliases](/pb-cli/aliases) - learn the short command forms such as `ls`, `rm`, `stat`, and `set-url`
+6. [Use pb with AI agents](/pb-cli/agents) - configure safe, read-only agent access

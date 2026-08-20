@@ -29,7 +29,7 @@ export default function TerminalContent({ command }: TerminalContentProps) {
     setOutput(null);
 
     try {
-      const response = await fetch('/api/execute-curl', {
+      const response = await fetch('/docs/api/execute-curl', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ command: editableCommand }),

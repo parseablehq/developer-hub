@@ -1,0 +1,7 @@
+{
+  "title": "Gateways",
+  "pages": [
+    "[OpenRouter](/ingest-data/ai-agents/openrouter)",
+    "[LiteLLM Gateway](/ingest-data/gateways/litellm)"
+  ]
+}

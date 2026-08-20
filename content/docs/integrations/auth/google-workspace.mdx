@@ -46,7 +46,7 @@ If prompted, configure the consent screen:
 
 1. **Application type**: Web application
 2. **Name**: Parseable
-3. **Authorized redirect URIs**: `https://your-parseable.com/callback`
+3. **Authorized redirect URIs**: `https://your-parseable.com/api/v1/o/code`
 4. Click **Create**
 5. Copy **Client ID** and **Client Secret**
 
@@ -58,7 +58,7 @@ If prompted, configure the consent screen:
 P_OIDC_CLIENT_ID=your-client-id.apps.googleusercontent.com
 P_OIDC_CLIENT_SECRET=your-client-secret
 P_OIDC_ISSUER=https://accounts.google.com
-P_OIDC_REDIRECT_URI=https://your-parseable.com/callback
+P_ORIGIN_URI=https://your-parseable.com
 ```
 
 ### Docker Compose
@@ -72,7 +72,7 @@ services:
       - P_OIDC_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - P_OIDC_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - P_OIDC_ISSUER=https://accounts.google.com
-      - P_OIDC_REDIRECT_URI=https://your-parseable.com/callback
+      - P_ORIGIN_URI=https://your-parseable.com
 ```
 
 ## OIDC Endpoints
@@ -120,10 +120,10 @@ Configure allowed domains in Parseable settings.
 
 1. Check client ID format (ends with `.apps.googleusercontent.com`)
 2. Verify client secret is correct
-3. Check redirect URI matches exactly
+3. Check that the authorized redirect URI is `https://your-parseable.com/api/v1/o/code`
 
 ## Next Steps
 
-- Configure [OAuth](/docs/user-guide/openid) for other providers
-- Set up [RBAC](/docs/user-guide/rbac) in Parseable
-- Review [security best practices](/docs/user-guide/rbac)
+- Configure [OAuth](/user-guide/openid) for other providers
+- Set up [RBAC](/user-guide/rbac) in Parseable
+- Review [security best practices](/user-guide/rbac)
