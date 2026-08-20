@@ -77,44 +77,9 @@ If the integration was limited to selected projects, generate traffic from both 
 
 ## Import the Vercel dashboard
 
-Use the [Vercel Integration Observability dashboard](https://github.com/parseablehq/dashboards/tree/main/vercel-integration-observability) to monitor all four signals from one view. The template contains 22 SQL tiles across Overview, Logs, Traces, Speed Insights and Web Analytics sections.
+The reusable [Vercel Integration Observability dashboard](https://github.com/parseablehq/dashboards/tree/main/vercel-integration-observability) contains 22 SQL tiles for logs, traces, Speed Insights and Web Analytics. Import `vercel-integration-observability-mixed.json`, then map its four dataset variables to the datasets selected during Vercel installation. Sections for signals you did not enable remain empty.
 
-1. Download the [dashboard JSON](https://raw.githubusercontent.com/parseablehq/dashboards/main/vercel-integration-observability/vercel-integration-observability-mixed.json).
-2. In Parseable, open **Dashboards** and use the dashboard import flow.
-3. Upload the downloaded JSON file.
-4. Map the dashboard's four dataset variables to the datasets selected during Vercel installation.
-
-Sections for signals you did not enable remain empty. You can import the dashboard with only a subset of the four signals and add the remaining dataset mappings later.
-
-### Overview
-
-The overview shows event totals for each signal and the current log error rate.
-
-![Vercel Integration Observability dashboard overview](./static/vercel/Overview.png)
-
-### Logs
-
-Inspect recent logs, error events, volume by level and requests by HTTP status code.
-
-![Vercel logs dashboard](./static/vercel/Logs.png)
-
-### Traces
-
-Review recent spans, slow spans, average duration and route groups.
-
-![Vercel traces dashboard](./static/vercel/Traces.png)
-
-### Speed Insights
-
-Track LCP, CLS and INP ratings by route.
-
-![Vercel Speed Insights dashboard](./static/vercel/SpeedInsights.png)
-
-### Web Analytics
-
-Analyze recent pageviews by path, event type and origin.
-
-![Vercel Web Analytics dashboard](./static/vercel/WebAnalytics.png)
+![Vercel Web Analytics dashboard in Parseable](./static/vercel/WebAnalytics.png)
 
 ## Update the configuration
 
