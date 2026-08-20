@@ -1,9 +1,9 @@
 ---
 title: Vercel
-description: Send Vercel logs, traces, Speed Insights, and Web Analytics to Parseable
+description: Send Vercel logs, traces, Speed Insights and Web Analytics to Parseable
 ---
 
-The Parseable integration for Vercel creates and manages Vercel Drains that send telemetry directly to Parseable Cloud or a self-hosted Parseable deployment. You do not need to configure drain endpoints or headers manually.
+The Parseable integration creates Vercel Drains for Parseable Cloud and self-hosted deployments. The setup wizard handles endpoints and authentication headers.
 
 ## What the integration collects
 
@@ -16,7 +16,7 @@ You can enable any of these signals during installation:
 | Speed Insights | `vercel_speed_insights` | JSON over HTTP |
 | Web Analytics | `vercel_analytics` | JSON over HTTP |
 
-Vercel sends each signal straight to your Parseable ingest endpoint. The Parseable control-plane service configures the drains but does not proxy or store telemetry.
+Vercel sends each signal to your Parseable ingest endpoint. Parseable configures the drains without proxying or storing telemetry.
 
 ## Prerequisites
 
@@ -43,10 +43,10 @@ Vercel enforces this project selection. A drain configured for all permitted pro
 
 The setup wizard offers two connection types:
 
-- **Parseable Cloud** — enter a Parseable Cloud API key. The integration discovers the workspace ingest endpoint automatically.
-- **Self-hosted** — enter the publicly reachable base URL of your Parseable cluster and a scoped ingest API key.
+- **Parseable Cloud:** Enter a Parseable Cloud API key. Parseable finds the workspace ingest endpoint.
+- **Self-hosted:** Enter the public base URL of your Parseable cluster and a scoped ingest API key.
 
-The self-hosted URL must start with `https://` or `http://`, must be reachable by the integration, and must not redirect to a private or internal network address.
+The self-hosted URL must start with `https://` or `http://`, must be reachable by the integration and must not redirect to a private or internal network address.
 
 ### 4. Select signals and datasets
 
@@ -61,23 +61,23 @@ The wizard validates the Parseable connection and tests the proposed Vercel deli
 
 ### 5. Review and finish
 
-Review the deployment, destination, and signal-to-dataset mappings, then finish the installation. Parseable creates the drains and returns you to Vercel.
+Review the destination and signal-to-dataset mappings, then finish the installation. Parseable creates the drains and returns you to Vercel.
 
 If any drain fails, the installation removes drains created during that attempt instead of leaving a partial configuration.
 
 ## Verify the installation
 
-In Vercel, open **Team Settings > Drains**. You should see one Parseable drain for every signal enabled during setup.
+In Vercel, open **Team Settings > Drains**. You should see one Parseable drain per enabled signal.
 
 Generate traffic or deploy the selected Vercel project, then check the corresponding datasets in Parseable. Data can take a short time to appear.
 
-For logs, useful Vercel fields can include project, deployment, environment, source, path, status, and request identifiers. Traces appear through Parseable's native OpenTelemetry trace ingestion.
+For logs, useful Vercel fields can include project, deployment, environment, source, path, status and request identifiers. Traces appear through Parseable's native OpenTelemetry trace ingestion.
 
 If the integration was limited to selected projects, generate traffic from both selected and unselected projects. Only telemetry from selected projects should appear.
 
 ## Import the Vercel dashboard
 
-Use the [Vercel Integration Observability dashboard](https://github.com/parseablehq/dashboards/tree/main/vercel-integration-observability) to monitor all four signals from one view. The template contains 22 SQL tiles across Overview, Logs, Traces, Speed Insights, and Web Analytics sections.
+Use the [Vercel Integration Observability dashboard](https://github.com/parseablehq/dashboards/tree/main/vercel-integration-observability) to monitor all four signals from one view. The template contains 22 SQL tiles across Overview, Logs, Traces, Speed Insights and Web Analytics sections.
 
 1. Download the [dashboard JSON](https://raw.githubusercontent.com/parseablehq/dashboards/main/vercel-integration-observability/vercel-integration-observability-mixed.json).
 2. In Parseable, open **Dashboards** and use the dashboard import flow.
@@ -88,31 +88,31 @@ Sections for signals you did not enable remain empty. You can import the dashboa
 
 ### Overview
 
-The overview shows total log events, spans, Speed Insights events, pageviews, and the current log error rate.
+The overview shows event totals for each signal and the current log error rate.
 
 ![Vercel Integration Observability dashboard overview](./static/vercel/Overview.png)
 
 ### Logs
 
-Inspect recent logs and errors, log volume by level, and requests by HTTP status code.
+Inspect recent logs, error events, volume by level and requests by HTTP status code.
 
 ![Vercel logs dashboard](./static/vercel/Logs.png)
 
 ### Traces
 
-Review recent and slow spans, average span duration, and spans grouped by route.
+Review recent spans, slow spans, average duration and route groups.
 
 ![Vercel traces dashboard](./static/vercel/Traces.png)
 
 ### Speed Insights
 
-Track Core Web Vitals including LCP, CLS, and INP, with ratings and route-level breakdowns.
+Track LCP, CLS and INP ratings by route.
 
 ![Vercel Speed Insights dashboard](./static/vercel/SpeedInsights.png)
 
 ### Web Analytics
 
-Analyze recent pageviews and events grouped by path, event type, and origin.
+Analyze recent pageviews by path, event type and origin.
 
 ![Vercel Web Analytics dashboard](./static/vercel/WebAnalytics.png)
 
@@ -120,31 +120,31 @@ Analyze recent pageviews and events grouped by path, event type, and origin.
 
 Open the installed Parseable integration in Vercel and select **Configure**.
 
-1. Enter the API key currently connected to the installation to verify ownership.
-2. Update dataset names as needed.
-3. To rotate credentials, enter a replacement API key with ingest access to every configured dataset.
+1. Enter the API key connected to the installation to verify ownership.
+2. Update dataset names.
+3. To rotate credentials, enter a replacement API key with ingest access to each configured dataset.
 4. Select **Save changes**.
 
-The integration tests the replacement settings, updates the Vercel drains, and then saves the new configuration. Leaving the replacement-key field empty keeps the current key.
+The integration tests the replacement settings, updates the Vercel drains and then saves the new configuration. Leaving the replacement-key field empty keeps the current key.
 
-The enabled signal set cannot be changed on this page. To add or remove signal types, uninstall and reinstall the integration with the required selection.
+The configuration page keeps the original signal set. Uninstall and reinstall the integration to add or remove signals.
 
 ## Uninstall
 
 Remove Parseable from the integration settings in Vercel. Vercel stops the associated drains and notifies Parseable that the installation was removed.
 
-Uninstalling does not delete your Parseable datasets or revoke the API key you supplied. Revoke that key separately in Parseable if it is no longer needed.
+Uninstalling leaves your Parseable datasets and API key intact. Revoke the key in Parseable when you no longer need it.
 
 ## Troubleshooting
 
 ### Installation cannot start
 
-Start installation from the Parseable listing in Vercel. The Parseable redirect URL only works when Vercel supplies a one-time authorization code and configuration parameters; opening it directly produces an installation error.
+Start installation from the Parseable listing in Vercel. The redirect URL requires a one-time authorization code and configuration parameters from Vercel. Opening that URL in your browser produces an installation error.
 
 ### Parseable rejects the API key
 
 - Confirm the key is active and copied without surrounding whitespace.
-- Confirm its role grants ingest access to every selected dataset.
+- Confirm its role grants ingest access to each selected dataset.
 - For Parseable Cloud, confirm the key belongs to a running workspace.
 - For self-hosted Parseable, confirm the URL points to the ingest endpoint associated with that key.
 
@@ -152,9 +152,9 @@ Start installation from the Parseable listing in Vercel. The Parseable redirect 
 
 - Confirm the cluster is reachable from the public internet.
 - Use the Parseable base URL, without an ingestion path such as `/api/v1/ingest` or `/v1/traces`.
-- Use HTTPS with a valid certificate when possible.
-- Check firewalls, allowlists, proxies, and DNS resolution.
-- Private, loopback, link-local, and cloud-metadata addresses are rejected.
+- Use HTTPS with a valid certificate.
+- Check firewalls, allowlists, proxies and DNS resolution.
+- Private, loopback, link-local and cloud-metadata addresses are rejected.
 
 ### Drain creation or delivery fails
 
@@ -174,6 +174,6 @@ Start installation from the Parseable listing in Vercel. The Parseable redirect 
 ## Security notes
 
 - Use a dedicated, dataset-scoped ingestion key rather than an administrator or query key.
-- Store the key securely. Parseable encrypts the saved credential and never displays it from the configuration page.
-- Telemetry flows directly from Vercel to the selected Parseable cluster.
-- Rotating or uninstalling the integration does not revoke customer-owned Parseable keys automatically.
+- Store the key in a secrets manager. Parseable encrypts the saved credential and hides it on the configuration page.
+- Vercel sends telemetry to the selected Parseable cluster.
+- Parseable leaves customer-owned keys intact during rotation and uninstall. Revoke unused keys from Access Management.
