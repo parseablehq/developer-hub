@@ -1,9 +1,9 @@
 ---
 title: OpenAI Codex
-description: Send Codex logs, traces, and metrics directly to Parseable through OpenTelemetry
+description: Send Codex logs, traces and metrics directly to Parseable through OpenTelemetry
 ---
 
-Codex exports OpenTelemetry logs, traces, and metrics from local coding sessions. Its native `[otel]` configuration sends each signal directly to a separate Parseable dataset, without an OpenTelemetry Collector.
+Codex exports OpenTelemetry logs, traces and metrics from local coding sessions. Configure its native `[otel]` exporter to send each signal to a separate Parseable dataset without an OpenTelemetry Collector.
 
 ```text
 Codex
@@ -13,8 +13,6 @@ Codex
 ```
 
 ## Prerequisites
-
-You need:
 
 - Codex CLI installed and authenticated
 - A Parseable instance reachable from the developer machine
@@ -48,7 +46,7 @@ Restart Codex after changing `config.toml`. Existing processes do not reload tel
 
 ## Verify ingestion
 
-Start a new Codex session, submit a prompt, and let Codex run one tool. Then check:
+Start a new Codex session, submit a prompt and let Codex run one tool. Then check:
 
 1. `codex-logs` contains events from the session.
 2. `codex-traces` contains spans for the agent run and its operations.
@@ -60,7 +58,7 @@ If no data arrives, run Codex with strict configuration validation:
 codex --strict-config
 ```
 
-This reports unsupported or misspelled `config.toml` fields for the installed Codex version.
+Codex reports fields that the installed version does not support or recognize.
 
 ## Import the dashboard
 
@@ -70,7 +68,7 @@ Download the [Codex Observability dashboard](https://github.com/parseablehq/dash
 - **Traces Dataset** to `codex-traces`
 - **Metrics Dataset** to `codex-metrics`
 
-Use the dashboard to inspect sessions, turns, models, tokens, cache use, cost, latency, tools, MCP activity, approvals, errors, logs, and traces.
+Use the dashboard to inspect sessions, turns, models, tokens, cache use, cost, latency, tools, MCP activity, approvals, errors, logs and traces.
 
 ![Codex cost and FinOps dashboard](/images/coding-assistants/codex-cost-and-finops.png)
 
@@ -83,11 +81,11 @@ Keep prompt logging disabled unless your data policy permits it:
 log_user_prompt = false
 ```
 
-Setting `log_user_prompt = true` can send source code, file paths, secrets, personal data, and other prompt content to the logs dataset. Restrict dataset access and retention before enabling it.
+Setting `log_user_prompt = true` can send source code, file paths, secrets, personal data and other prompt content to the logs dataset. Restrict dataset access and retention before enabling it.
 
 ## Troubleshooting
 
-- **No datasets appear:** confirm Codex can reach the Parseable ingestor and verify each endpoint, API key, `X-P-Stream`, and `X-P-Log-Source` value.
-- **Only one signal arrives:** check that `exporter`, `trace_exporter`, and `metrics_exporter` each use the matching `/v1/logs`, `/v1/traces`, or `/v1/metrics` endpoint.
-- **Parseable rejects exports:** confirm `protocol = "json"`, include `Content-Type = "application/json"`, and use the ingestor URL and port.
+- **No datasets appear:** confirm Codex can reach the Parseable ingestor and verify each endpoint, API key, `X-P-Stream` and `X-P-Log-Source` value.
+- **Only one signal arrives:** check that `exporter`, `trace_exporter` and `metrics_exporter` each use the matching `/v1/logs`, `/v1/traces`, or `/v1/metrics` endpoint.
+- **Parseable rejects exports:** confirm `protocol = "json"`, include `Content-Type = "application/json"` and use the ingestor URL and port.
 - **Configuration fails:** run `codex --strict-config` and compare the reported field with the configuration supported by your installed Codex version.

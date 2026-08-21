@@ -1,9 +1,9 @@
 ---
 title: Claude Code
-description: Send Claude Code events, metrics, and traces directly to Parseable through OpenTelemetry
+description: Send Claude Code events, metrics and traces directly to Parseable through OpenTelemetry
 ---
 
-Claude Code exports usage events, metrics, and beta traces through OpenTelemetry. Send each signal directly to a separate Parseable dataset to inspect sessions, model requests, token use, tool activity, cost, latency, and errors.
+Claude Code exports usage events, metrics and beta traces through OpenTelemetry. Send each signal directly to a separate Parseable dataset to inspect sessions, model requests, token use, tool activity, cost, latency and errors.
 
 ```text
 Claude Code
@@ -12,11 +12,9 @@ Claude Code
   +-- traces ---> Parseable: claudecode-traces (optional beta)
 ```
 
-Anthropic treats metrics and events as stable telemetry signals. Distributed traces require the enhanced telemetry beta. See [Monitoring Claude Code usage](https://code.claude.com/docs/en/monitoring-usage) for the current schema and version requirements.
+Anthropic treats metrics and events as stable telemetry signals. Enhanced telemetry remains in beta and enables distributed traces. See [Monitoring Claude Code usage](https://code.claude.com/docs/en/monitoring-usage) for the current schema and version requirements.
 
 ## Prerequisites
-
-You need:
 
 - Claude Code installed and authenticated
 - A Parseable instance reachable from the developer machine
@@ -81,7 +79,7 @@ Administrators can place the same values in Claude Code managed settings. Replac
 }
 ```
 
-Add the beta trace variables from the previous section if your team also collects traces. Administrators can use managed settings to lock the organization's OTLP destination. Check Anthropic's [managed settings documentation](https://code.claude.com/docs/en/settings#settings-files) before rollout.
+Add the beta trace variables from the previous section if your team collects traces. Managed settings let administrators lock the organization's OTLP destination. Check Anthropic's [managed settings documentation](https://code.claude.com/docs/en/settings#settings-files) before rollout.
 
 ## Verify ingestion
 
@@ -89,7 +87,7 @@ Start Claude Code and submit one prompt. Then check:
 
 1. `claudecode-logs` contains a `claude_code.user_prompt` event.
 2. `claudecode-metrics` contains `claude_code.session.count`.
-3. If beta traces are enabled, `claudecode-traces` contains a `claude_code.interaction` root span.
+3. If you enabled beta traces, `claudecode-traces` contains a `claude_code.interaction` root span.
 
 Run Claude Code with debug logging if no telemetry arrives:
 
@@ -104,25 +102,25 @@ Download the [Claude Code Usage dashboard](https://github.com/parseablehq/dashbo
 - **Logs Dataset** to `claudecode-logs`
 - **Metrics Dataset** to `claudecode-metrics`
 
-Use the dashboard to track cost, API requests, sessions, tokens, tools, errors, and code activity.
+Use the dashboard to track cost, API requests, sessions, tokens, tools, errors and code activity.
 
 ![Claude Code cost and token usage dashboard](/images/coding-assistants/claude-code-cost-and-tokens.png)
 
 ## Protect sensitive content
 
-Claude Code redacts prompts, responses, tool details, and tool content by default. Keep these defaults unless your data policy permits content capture.
+Claude Code redacts prompts, responses, tool details and tool content by default. Keep these defaults unless your data policy permits content capture.
 
 | Setting | Captured data |
 | --- | --- |
 | `OTEL_LOG_USER_PROMPTS=1` | User prompt text |
 | `OTEL_LOG_ASSISTANT_RESPONSES=1` | Assistant response text |
-| `OTEL_LOG_TOOL_DETAILS=1` | Tool parameters, commands, file paths, and MCP names |
+| `OTEL_LOG_TOOL_DETAILS=1` | Tool parameters, commands, file paths and MCP names |
 | `OTEL_LOG_TOOL_CONTENT=1` | Tool input and output content in trace events |
 
 ## Troubleshooting
 
-- **No datasets appear:** confirm Claude Code can reach Parseable and that each signal has the correct endpoint, `X-P-Stream`, and `X-P-Log-Source` value.
+- **No datasets appear:** confirm Claude Code can reach Parseable and that each signal has the correct endpoint, `X-P-Stream` and `X-P-Log-Source` value.
 - **Metrics arrive but logs do not:** confirm `OTEL_LOGS_EXPORTER=otlp` and submit a prompt after restarting Claude Code.
-- **Traces do not arrive:** confirm both beta variables are set and your Claude Code version supports enhanced telemetry.
+- **Traces do not arrive:** set both beta variables and confirm your Claude Code version supports enhanced telemetry.
 - **Parseable rejects exports:** verify the API key and use the Parseable ingestor URL, including its port.
 - **The dashboard is empty:** map its dataset variables to `claudecode-logs` and `claudecode-metrics`.

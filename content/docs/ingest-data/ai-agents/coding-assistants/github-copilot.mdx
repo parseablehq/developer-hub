@@ -3,7 +3,7 @@ title: GitHub Copilot
 description: Send GitHub Copilot agent traces directly to Parseable through OpenTelemetry
 ---
 
-GitHub Copilot CLI exports OpenTelemetry traces for agent sessions. Each trace connects an `invoke_agent` root span to model calls and tool executions. This guide disables metric export and sends traces directly to Parseable.
+GitHub Copilot CLI exports OpenTelemetry traces for agent sessions. Each trace connects an `invoke_agent` root span to model calls and tool executions. Disable metric export and send the traces to Parseable.
 
 ```text
 GitHub Copilot CLI
@@ -12,11 +12,9 @@ GitHub Copilot CLI
 Parseable: copilot-traces
 ```
 
-GitHub documents the emitted spans, attributes, and supported environment variables in the [Copilot CLI command reference](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference#opentelemetry-monitoring).
+GitHub documents the emitted spans, attributes and supported environment variables in the [Copilot CLI command reference](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference#opentelemetry-monitoring).
 
 ## Prerequisites
-
-You need:
 
 - GitHub Copilot CLI installed and authenticated
 - A Parseable instance reachable from the developer machine
@@ -40,11 +38,11 @@ export OTEL_SERVICE_NAME=github-copilot
 copilot
 ```
 
-Copilot appends `/v1/traces` to `OTEL_EXPORTER_OTLP_ENDPOINT`. Keep the endpoint set to the Parseable base URL. `OTEL_METRICS_EXPORTER=none` prevents metrics from using the trace dataset headers.
+Copilot appends `/v1/traces` to `OTEL_EXPORTER_OTLP_ENDPOINT`, so use the Parseable base URL. `OTEL_METRICS_EXPORTER=none` prevents metrics from using the trace dataset headers.
 
 For a self-hosted deployment that uses basic authentication, replace `X-P-API-Key=${PARSEABLE_API_KEY}` with `Authorization=Basic <base64-encoded-username-and-password>` in `OTEL_EXPORTER_OTLP_HEADERS`.
 
-Copilot CLI supports `http/json` and `http/protobuf`. Parseable accepts the `http/json` configuration shown above.
+Copilot CLI supports `http/json` and `http/protobuf`. Parseable accepts the `http/json` configuration above.
 
 ## Verify ingestion
 
@@ -56,8 +54,8 @@ Start Copilot CLI and submit a request that causes one model call and one tool c
 
 Useful trace fields include:
 
-- `span_trace_id`, `span_span_id`, and `span_parent_span_id`
-- `span_name`, `span_duration_ns`, and `span_status_code`
+- `span_trace_id`, `span_span_id` and `span_parent_span_id`
+- `span_name`, `span_duration_ns` and `span_status_code`
 - `gen_ai.request.model` and `gen_ai.response.model`
 - `gen_ai.usage.input_tokens` and `gen_ai.usage.output_tokens`
 - `gen_ai.tool.name`
@@ -67,7 +65,7 @@ Useful trace fields include:
 
 Download the [GitHub Copilot Observability dashboard](https://github.com/parseablehq/dashboards/tree/main/github-copilot-observability) and import its JSON file in Parseable. Map **Traces Dataset** to `copilot-traces`.
 
-Use the dashboard to track trace volume, sessions, model and token usage, tools, latency, errors, repositories, and recent traces.
+Use the dashboard to track trace volume, sessions, model and token usage, tools, latency, errors, repositories and recent traces.
 
 ![GitHub Copilot models and tokens dashboard](/images/coding-assistants/github-copilot-models-and-tokens.png)
 
@@ -87,24 +85,24 @@ const client = new CopilotClient({
 });
 ```
 
-Set `OTEL_METRICS_EXPORTER=none` and `OTEL_EXPORTER_OTLP_HEADERS` in the SDK process environment. GitHub provides equivalent options for Python, Go, .NET, Java, and Rust in [OpenTelemetry instrumentation for Copilot SDK](https://docs.github.com/en/copilot/how-tos/copilot-sdk/observability/opentelemetry).
+Set `OTEL_METRICS_EXPORTER=none` and `OTEL_EXPORTER_OTLP_HEADERS` in the SDK process environment. GitHub provides equivalent options for Python, Go, .NET, Java and Rust in [OpenTelemetry instrumentation for Copilot SDK](https://docs.github.com/en/copilot/how-tos/copilot-sdk/observability/opentelemetry).
 
 ## Protect sensitive content
 
-Copilot excludes prompts, responses, and tool arguments by default. Keep content capture disabled for shared or production environments.
+Copilot excludes prompts, responses and tool arguments by default. Keep content capture disabled for shared or production environments.
 
-This variable includes full message content:
+Enable full message capture with:
 
 ```bash
 export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
 ```
 
-Content capture can include source code, file contents, user prompts, model responses, and tool arguments. Apply Parseable access controls before enabling it. GitHub's [OpenTelemetry agent monitoring guide](https://docs.github.com/en/copilot/concepts/agents/opentelemetry) describes the privacy behavior.
+Content capture can include source code, file contents, user prompts, model responses and tool arguments. Apply Parseable access controls before enabling it. GitHub's [OpenTelemetry agent monitoring guide](https://docs.github.com/en/copilot/concepts/agents/opentelemetry) describes the privacy behavior.
 
 ## Troubleshooting
 
-- **No spans arrive:** confirm Copilot CLI can reach Parseable, verify the API key, and set `OTEL_LOG_LEVEL=DEBUG` to inspect exporter diagnostics.
+- **No spans arrive:** confirm Copilot CLI can reach Parseable, verify the API key and set `OTEL_LOG_LEVEL=DEBUG` to inspect exporter diagnostics.
 - **The trace has no child spans:** generate a new session after setting the environment variables. Existing Copilot processes do not inherit later shell changes.
-- **Metrics appear in the trace dataset:** confirm `OTEL_METRICS_EXPORTER=none` is set in the Copilot process environment.
+- **Metrics appear in the trace dataset:** set `OTEL_METRICS_EXPORTER=none` in the Copilot process environment.
 - **Parseable rejects exports:** use the Parseable ingestor base URL and verify `X-P-Stream=copilot-traces` and `X-P-Log-Source=otel-traces`.
 - **The dashboard is empty:** map **Traces Dataset** to `copilot-traces` and choose a time range that includes the test session.
