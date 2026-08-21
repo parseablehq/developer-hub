@@ -1,0 +1,91 @@
+---
+title: OpenAI Codex
+description: Send Codex logs, traces, and metrics directly to Parseable through OpenTelemetry
+---
+
+Codex exports OpenTelemetry logs, traces, and metrics from local coding sessions. Its native `[otel]` configuration sends each signal directly to a separate Parseable dataset, without an OpenTelemetry Collector.
+
+```text
+Codex
+  |-- logs ----> Parseable: codex-logs
+  |-- traces ---> Parseable: codex-traces
+  +-- metrics --> Parseable: codex-metrics
+```
+
+## Prerequisites
+
+You need:
+
+- Codex CLI installed and authenticated
+- A Parseable instance reachable from the developer machine
+- A Parseable API key with ingest access
+
+## Configure telemetry
+
+Open `~/.codex/config.toml` and add:
+
+```toml
+[otel]
+environment = "production"
+log_user_prompt = false
+
+exporter = { otlp-http = { endpoint = "https://<your-parseable-host>:8000/v1/logs", protocol = "json", headers = { X-P-API-Key = "<parseable-api-key>", X-P-Stream = "codex-logs", X-P-Log-Source = "otel-logs", Content-Type = "application/json" } } }
+
+trace_exporter = { otlp-http = { endpoint = "https://<your-parseable-host>:8000/v1/traces", protocol = "json", headers = { X-P-API-Key = "<parseable-api-key>", X-P-Stream = "codex-traces", X-P-Log-Source = "otel-traces", Content-Type = "application/json" } } }
+
+metrics_exporter = { otlp-http = { endpoint = "https://<your-parseable-host>:8000/v1/metrics", protocol = "json", headers = { X-P-API-Key = "<parseable-api-key>", X-P-Stream = "codex-metrics", X-P-Log-Source = "otel-metrics", Content-Type = "application/json" } } }
+```
+
+Set `environment` to a value such as `development`, `staging`, or `production`. Parseable stores it with the telemetry so you can separate environments in queries and dashboards.
+
+For a self-hosted deployment that uses basic authentication, replace `X-P-API-Key = "<parseable-api-key>"` in each exporter with:
+
+```toml
+Authorization = "Basic <base64-encoded-username-and-password>"
+```
+
+Restart Codex after changing `config.toml`. Existing processes do not reload telemetry settings.
+
+## Verify ingestion
+
+Start a new Codex session, submit a prompt, and let Codex run one tool. Then check:
+
+1. `codex-logs` contains events from the session.
+2. `codex-traces` contains spans for the agent run and its operations.
+3. `codex-metrics` contains Codex measurements.
+
+If no data arrives, run Codex with strict configuration validation:
+
+```bash
+codex --strict-config
+```
+
+This reports unsupported or misspelled `config.toml` fields for the installed Codex version.
+
+## Import the dashboard
+
+Download the [Codex Observability dashboard](https://github.com/parseablehq/dashboards/tree/main/codex-observability) and import its JSON file in Parseable. Map:
+
+- **Logs Dataset** to `codex-logs`
+- **Traces Dataset** to `codex-traces`
+- **Metrics Dataset** to `codex-metrics`
+
+Use the dashboard to inspect sessions, turns, models, tokens, cache use, cost, latency, tools, MCP activity, approvals, errors, logs, and traces.
+
+## Protect prompt content
+
+Keep prompt logging disabled unless your data policy permits it:
+
+```toml
+[otel]
+log_user_prompt = false
+```
+
+Setting `log_user_prompt = true` can send source code, file paths, secrets, personal data, and other prompt content to the logs dataset. Restrict dataset access and retention before enabling it.
+
+## Troubleshooting
+
+- **No datasets appear:** confirm Codex can reach the Parseable ingestor and verify each endpoint, API key, `X-P-Stream`, and `X-P-Log-Source` value.
+- **Only one signal arrives:** check that `exporter`, `trace_exporter`, and `metrics_exporter` each use the matching `/v1/logs`, `/v1/traces`, or `/v1/metrics` endpoint.
+- **Parseable rejects exports:** confirm `protocol = "json"`, include `Content-Type = "application/json"`, and use the ingestor URL and port.
+- **Configuration fails:** run `codex --strict-config` and compare the reported field with the configuration supported by your installed Codex version.
