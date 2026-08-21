@@ -1,4 +1,4 @@
 {
   "title": "Coding assistants",
-  "pages": ["claude-code", "github-copilot"]
+  "pages": ["claude-code", "github-copilot", "codex"]
 }
