@@ -3,7 +3,11 @@ title: Vercel
 description: Send Vercel logs, traces, Speed Insights and Web Analytics to Parseable
 ---
 
-The Parseable integration creates Vercel Drains for Parseable Cloud and self-hosted deployments. The setup wizard handles endpoints and authentication headers.
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+
+Vercel is a frontend cloud platform for building and running web applications, serverless functions and edge workloads. Once those applications are live, their logs, traces, web vitals and analytics events are useful outside the Vercel dashboard as well, especially when teams want to query them with the rest of their telemetry.
+
+The Parseable integration creates Vercel Drains for Parseable Cloud and self-hosted deployments. The setup wizard handles endpoints, dataset mapping and authentication headers, so you do not have to create each drain by hand.
 
 ## What the integration collects
 
@@ -12,11 +16,11 @@ You can enable any of these signals during installation:
 | Signal | Default dataset | Delivery |
 | --- | --- | --- |
 | Logs | `vercel_logs` | JSON over HTTP |
-| Traces | `vercel_traces` | OTLP/HTTP JSON |
+| Traces | `vercel_traces` | OTLP/HTTP |
 | Speed Insights | `vercel_speed_insights` | JSON over HTTP |
 | Web Analytics | `vercel_analytics` | JSON over HTTP |
 
-Vercel sends each signal to your Parseable ingest endpoint. Parseable configures the drains without proxying or storing telemetry.
+Vercel sends each enabled signal to your Parseable ingest endpoint. Parseable stores the incoming records in the dataset selected for that signal.
 
 ## Prerequisites
 
@@ -29,17 +33,26 @@ For a self-hosted deployment, expose the Parseable ingest endpoint over HTTPS. A
 
 ## Install from Vercel
 
-### 1. Open the integration
+<Steps>
+<Step>
+
+### Open the integration
 
 Open the [Parseable integration on Vercel](https://vercel.com/integrations/parseable) and select **Connect Account**.
 
-### 2. Choose the Vercel scope
+</Step>
+<Step>
+
+### Choose the Vercel scope
 
 Select the Vercel team and projects that may send telemetry. Choose all projects or limit the integration to specific projects, then approve the requested Drains permission.
 
 Vercel enforces this project selection. A drain configured for all permitted projects does not receive telemetry from projects outside the integration configuration.
 
-### 3. Choose the Parseable deployment
+</Step>
+<Step>
+
+### Choose the Parseable deployment
 
 The setup wizard offers two connection types:
 
@@ -48,7 +61,10 @@ The setup wizard offers two connection types:
 
 The self-hosted URL must start with `https://` or `http://`, must be reachable by the integration and must not redirect to a private or internal network address.
 
-### 4. Select signals and datasets
+</Step>
+<Step>
+
+### Select signals and datasets
 
 Enable at least one signal. Keep the default dataset names or replace them with datasets already covered by the API key:
 
@@ -59,11 +75,17 @@ Enable at least one signal. Keep the default dataset names or replace them with 
 
 The wizard validates the Parseable connection and tests the proposed Vercel delivery settings before it creates a drain for each enabled signal.
 
-### 5. Review and finish
+</Step>
+<Step>
+
+### Review and finish
 
 Review the destination and signal-to-dataset mappings, then finish the installation. Parseable creates the drains and returns you to Vercel.
 
 If any drain fails, the installation removes drains created during that attempt instead of leaving a partial configuration.
+
+</Step>
+</Steps>
 
 ## Verify the installation
 
@@ -77,7 +99,7 @@ If the integration was limited to selected projects, generate traffic from both 
 
 ## Import the Vercel dashboard
 
-The reusable [Vercel Integration Observability dashboard](https://github.com/parseablehq/dashboards/tree/main/vercel-integration-observability) contains 22 SQL tiles for logs, traces, Speed Insights and Web Analytics. Import `vercel-integration-observability-mixed.json`, then map its four dataset variables to the datasets selected during Vercel installation. Sections for signals you did not enable remain empty.
+The reusable [Vercel Integration Observability dashboard](https://github.com/parseablehq/dashboards/tree/main/vercel-integration-observability) contains panels for logs, traces, Speed Insights and Web Analytics. Import `vercel-integration-observability-mixed.json`, then map its four dataset variables to the datasets selected during Vercel installation. Sections for signals you did not enable remain empty.
 
 ![Vercel Web Analytics dashboard in Parseable](./static/vercel/WebAnalytics.png)
 
