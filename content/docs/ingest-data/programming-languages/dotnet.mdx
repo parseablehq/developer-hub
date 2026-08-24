@@ -3,9 +3,13 @@ title: .NET
 description: Send .NET logs, traces, and metrics to Parseable with OpenTelemetry
 ---
 
-.NET applications can send logs, traces, and metrics to Parseable through OpenTelemetry. This guide uses an ASP.NET Core application, the OpenTelemetry .NET SDK, and an OpenTelemetry Collector that routes each signal to a separate Parseable dataset.
+.NET applications already have good hooks for telemetry. Application logs usually come from `ILogger`, traces come from `Activity` and ASP.NET Core instrumentation, and metrics come from `Meter`, HTTP instrumentation, runtime instrumentation, and process instrumentation. With OpenTelemetry, these signals can leave the application over OTLP and flow through an OpenTelemetry Collector before they reach Parseable.
+
+This page uses an ASP.NET Core application as the example. The same pattern works for other .NET services as long as they can export logs, traces, and metrics over OTLP.
 
 ## What the integration collects
+
+The setup sends each signal to a separate Parseable dataset. Keeping the datasets separate makes it easier to use the right query mode for each signal later.
 
 | Signal | Source | Parseable dataset |
 |---|---|---|
@@ -13,14 +17,15 @@ description: Send .NET logs, traces, and metrics to Parseable with OpenTelemetry
 | Traces | ASP.NET Core, outgoing HTTP calls, and custom spans | `dotnet-traces` |
 | Metrics | ASP.NET Core, HTTP client, process, and .NET runtime metrics | `dotnet-metrics` |
 
-The matching dashboard template is `.NET Application Observability` in the Parseable dashboards repository. It uses PromQL for runtime metrics where possible and SQL for logs, traces, and flattened OpenTelemetry histogram rows.
+For metrics, exact names can differ slightly by OpenTelemetry .NET package version. Start by checking the metric inventory in Parseable, then use those names in PromQL or dashboards.
 
 ## Prerequisites
 
 - .NET 8.0 or later
 - OpenTelemetry Collector Contrib
-- A Parseable ingestor endpoint and API key
-- A Parseable query endpoint for dashboard reads
+- A Parseable ingestor endpoint
+- A Parseable API key
+- A Parseable query endpoint for SQL, PromQL, and dashboard reads
 
 <Callout type="info">
 In some deployments ingestion and reads use different endpoints. Point the Collector at the Parseable ingestor endpoint. Use the query endpoint only from the UI, API queries, and dashboards.
@@ -28,7 +33,7 @@ In some deployments ingestion and reads use different endpoints. Point the Colle
 
 ## Install packages
 
-From your ASP.NET Core project directory:
+From your ASP.NET Core project directory, install the OpenTelemetry packages used by the example:
 
 ```bash
 dotnet add package OpenTelemetry.Extensions.Hosting
@@ -41,7 +46,7 @@ dotnet add package OpenTelemetry.Instrumentation.Process
 
 ## Configure ASP.NET Core
 
-Add OpenTelemetry to `Program.cs`:
+Add OpenTelemetry to `Program.cs`. This example emits normal application logs, automatic HTTP traces, runtime metrics, and one custom span and counter so you can confirm the full path is working.
 
 ```csharp
 using System.Diagnostics;
@@ -139,9 +144,9 @@ export OTEL_METRIC_EXPORT_INTERVAL=10000
 
 Use `http://localhost:4317` when the Collector runs on the same host as the application.
 
-## Collector configuration
+## Configure the Collector
 
-Create `otel-collector.yaml`. The exporter examples expect `PARSEABLE_ENDPOINT` and `PARSEABLE_API_KEY` to be set in the Collector environment.
+Create `otel-collector.yaml`. The Collector receives OTLP from the .NET application and forwards logs, traces, and metrics to Parseable. The exporter examples expect `PARSEABLE_ENDPOINT` and `PARSEABLE_API_KEY` to be set in the Collector environment.
 
 ```yaml
 receivers:
@@ -225,14 +230,6 @@ export PARSEABLE_API_KEY='<your-api-key>'
 otelcol-contrib --config otel-collector.yaml
 ```
 
-For local testing with basic authentication instead of API keys, replace the `X-API-Key` header with:
-
-```yaml
-Authorization: Basic YWRtaW46YWRtaW4=
-```
-
-`YWRtaW46YWRtaW4=` is the base64 encoding of `admin:admin`.
-
 ## Docker Compose example
 
 The following Compose file runs the application and Collector together:
@@ -272,7 +269,20 @@ Run it:
 docker compose up --build
 ```
 
-## Verify ingestion
+## Generate test telemetry
+
+After the application starts, send a few successful requests and one failing request:
+
+```bash
+curl http://localhost:8080/health
+curl -X POST http://localhost:8080/orders
+curl -X POST http://localhost:8080/orders
+curl -i http://localhost:8080/fail
+```
+
+Give the Collector a few seconds to batch and export the data.
+
+## Verify in Parseable
 
 Use the Parseable query endpoint to verify each dataset. Quote dataset names that contain hyphens.
 
@@ -296,18 +306,23 @@ GROUP BY metric_name
 ORDER BY rows DESC;
 ```
 
-You should see metric families such as:
+You should see log records from `ILogger`, span records from HTTP and custom `Activity` instrumentation, and metric records from ASP.NET Core, HTTP client, process, runtime, and custom meters.
 
-- `http.server.request.duration`
-- `http.client.request.duration`
-- `process.memory.usage`
-- `process.cpu.time`
-- `process.runtime.dotnet.gc.collections.count`
-- `process.runtime.dotnet.gc.objects.size`
-- `process.runtime.dotnet.thread_pool.threads.count`
-- `process.runtime.dotnet.exceptions.count`
+## View the data in Parseable
 
-## Query with PromQL
+Open the `dotnet-logs` dataset to inspect application log lines, severity, service metadata, and structured fields captured through OpenTelemetry logs.
+
+![.NET logs in Parseable](./static/dotnet-logs.png)
+
+Open the `dotnet-metrics` dataset from the Metrics view to inspect runtime and application metrics. Common examples include HTTP request duration, process CPU and memory, runtime GC activity, thread pool activity, and the custom `app.orders.created` counter from the sample application.
+
+![.NET metrics in Parseable](./static/dotnet-metrics.png)
+
+Open the `dotnet-traces` dataset from the Traces view to inspect request paths, span duration, service name, status, and error spans.
+
+![.NET traces in Parseable](./static/dotnet-traces.png)
+
+## Query metrics with PromQL
 
 Parseable exposes ingested OpenTelemetry metrics through the PromQL API. Use the metrics dataset name as the `stream` parameter.
 
@@ -330,34 +345,7 @@ curl -G "https://query.example.com/prometheus/api/v1/query_range" \
   --data-urlencode "step=60s"
 ```
 
-## Import the dashboard
-
-Import the `.NET Application Observability` template from the Parseable dashboards repository. The template expects these default datasets:
-
-- `dotnet-metrics`
-- `dotnet-traces`
-- `dotnet-logs`
-
-After import, update the dataset variables if your Collector exports to different dataset names.
-
-## Troubleshooting
-
-### Datasets are created but dashboards show no data
-
-- Confirm the Collector exports to the ingestor endpoint, not a query-only endpoint.
-- Confirm the dashboard dataset variables match the `X-P-Stream` header values.
-- Use quoted SQL table names for hyphenated datasets, for example `"dotnet-metrics"`.
-- Confirm your dashboard time range covers recent telemetry.
-
-### Traces or logs arrive but metrics are empty
-
-- Confirm `.AddOtlpExporter()` is configured inside `.WithMetrics(...)`.
-- Confirm `OpenTelemetry.Instrumentation.Runtime` and `OpenTelemetry.Instrumentation.Process` are installed.
-- Check Collector logs for failed exports from the metrics pipeline.
-
-### PromQL returns no data
-
-- Query available metric names first:
+If a PromQL query returns no data, first list available metric names for the dataset:
 
 ```bash
 curl -G "https://query.example.com/prometheus/api/v1/label/__name__/values" \
@@ -365,7 +353,15 @@ curl -G "https://query.example.com/prometheus/api/v1/label/__name__/values" \
   --data-urlencode "stream=dotnet-metrics"
 ```
 
-- Use exact OpenTelemetry metric names. For example, use `process.runtime.dotnet.gc.objects.size`, not a Prometheus-style `_bucket` or `_count` name unless that series exists.
+## Troubleshooting
+
+- **Datasets are created but no data appears.** Confirm the Collector exports to the ingestor endpoint, not a query-only endpoint. Also check that the `X-P-Stream` values in the Collector match the dataset names you are opening in Parseable.
+
+- **Logs or traces arrive but metrics are empty.** Confirm `.AddOtlpExporter()` is configured inside `.WithMetrics(...)`, and that `OpenTelemetry.Instrumentation.Runtime` and `OpenTelemetry.Instrumentation.Process` are installed. Check Collector logs for failed exports from the metrics pipeline.
+
+- **PromQL returns no data.** Query available metric names first, then use the exact names returned by Parseable. Metric names can differ across OpenTelemetry .NET package versions.
+
+- **Dashboard panels are empty.** Confirm your dashboard variables point to `dotnet-logs`, `dotnet-traces`, and `dotnet-metrics`, or update them if you changed the dataset names in the Collector.
 
 ## Next steps
 
