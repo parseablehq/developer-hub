@@ -5,6 +5,7 @@ description: Send telemetry from agent frameworks, sandboxes, LLM runtimes, and 
 
 import {
   IconBrandOpenai,
+  IconBrandGithub,
   IconBrain,
   IconCode,
   IconLink,
@@ -80,6 +81,34 @@ Agent frameworks usually carry the highest-level application context. They can s
     icon={<IconCode />}
   >
     Monitor DSPy programs and prompt optimization workflows.
+  </Card>
+</Cards>
+
+## Coding assistants
+
+Coding assistants emit agent-level telemetry from interactive development sessions. Use these guides to inspect model calls, token usage, tool execution, latency, errors, and session activity.
+
+<Cards>
+  <Card
+    title="Claude Code"
+    href="/docs/ingest-data/ai-agents/coding-assistants/claude-code"
+    icon={<IconRobot />}
+  >
+    Export Claude Code events, metrics and optional traces to Parseable.
+  </Card>
+  <Card
+    title="GitHub Copilot"
+    href="/docs/ingest-data/ai-agents/coding-assistants/github-copilot"
+    icon={<IconBrandGithub />}
+  >
+    Export GitHub Copilot agent traces to Parseable.
+  </Card>
+  <Card
+    title="OpenAI Codex"
+    href="/docs/ingest-data/ai-agents/coding-assistants/codex"
+    icon={<IconBrandOpenai />}
+  >
+    Export Codex logs, traces and metrics directly to Parseable.
   </Card>
 </Cards>
 
