@@ -6,12 +6,14 @@ description: Send OpenAI Python SDK traces to Parseable using OpenTelemetry
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
 
-The OpenAI Python SDK does not emit OpenTelemetry data on its own — there is no built-in `openai.instrument()`. (The separate `openai-agents` package has its own built-in tracing, but that's for building agents, not for instrumenting plain `openai` client calls.) To get spans out of a plain `client.chat.completions.create()` call, you need a third-party instrumentor that monkey-patches the client. This guide covers the two most common ones:
+The OpenAI Python SDK does not emit OpenTelemetry data on its own. There is no built-in `openai.instrument()` method for plain SDK calls. The separate `openai-agents` package has its own tracing, but that is meant for applications built with the Agents SDK, not for instrumenting a regular `openai` client.
 
-- **[OpenLIT](https://github.com/openlit/openlit)** — one-call `openlit.init()`, ships its own OTLP exporter setup, includes token cost calculation out of the box. Also what [CrewAI](/ingest-data/ai-agents/crewai) and [LiteLLM SDK](/ingest-data/ai-agents/litellm-sdk) integrations in this hub use.
-- **[OpenInference](https://github.com/Arize-ai/openinference)** — a standard OpenTelemetry instrumentor (`OpenAIInstrumentor().instrument(tracer_provider=...)`), so you set up the OTel `TracerProvider`/exporter yourself and it composes cleanly with other OpenInference instrumentors (e.g. `CrewAIInstrumentor`) on the same provider.
+To get spans from a call such as `client.chat.completions.create()`, use an instrumentor that patches the OpenAI client before it makes requests. This page shows two common options:
 
-Both emit GenAI semantic-convention spans and land in the same shape of Parseable dataset. Pick one — don't run both against the same client, they'll double-instrument.
+- **[OpenLIT](https://github.com/openlit/openlit):** a short `openlit.init()` setup, its own OTLP exporter configuration and token cost calculation out of the box. This is also the pattern used by the [CrewAI](/ingest-data/ai-agents/crewai) and [LiteLLM SDK](/ingest-data/ai-agents/litellm-sdk) docs in this hub.
+- **[OpenInference](https://github.com/Arize-ai/openinference):** a standard OpenTelemetry instrumentor through `OpenAIInstrumentor().instrument(tracer_provider=...)`. You create the `TracerProvider` and exporter yourself, which makes it easier to combine with other OpenInference instrumentors on the same provider.
+
+Both approaches emit GenAI semantic convention spans that can be stored in the same Parseable traces dataset. Pick one for a given OpenAI client. Running both together can double-instrument the same request.
 
 ## How it works
 
@@ -27,7 +29,7 @@ Parseable
   +--> openai-sdk-traces   traces dataset in Parseable
 ```
 
-Each chat completion produces a `chat <model>` span carrying GenAI attributes (prompt, response, tokens, cost) plus a child `POST` span for the underlying HTTP call to `api.openai.com`. If the model responds with tool calls, the follow-up request that sends tool results back is captured as its own linked span in the same trace.
+Each chat completion produces a `chat <model>` span with GenAI attributes such as prompt, response, token usage and cost when the instrumentor provides it. The trace also includes a child `POST` span for the underlying HTTP call to `api.openai.com`. If the model responds with tool calls, the follow-up request that sends tool results back is captured as another span in the same trace.
 
 ## Prerequisites
 
@@ -75,7 +77,7 @@ Whichever instrumentor you pick, it must run before you construct the `OpenAI` c
 <Tabs items={['OpenLIT', 'OpenInference']}>
 <Tab value="OpenLIT">
 
-`openlit.init()` sets up its own `TracerProvider` and OTLP exporter — no separate OTel setup needed.
+`openlit.init()` sets up its own `TracerProvider` and OTLP exporter, so you do not need a separate OpenTelemetry setup for this path.
 
 ```python
 import os
@@ -111,7 +113,7 @@ print(response.choices[0].message.content)
 </Tab>
 <Tab value="OpenInference">
 
-OpenInference is a plain OTel instrumentor — you build the `TracerProvider` and exporter yourself, then hand them to `OpenAIInstrumentor().instrument(...)`. This is the same pattern the [CrewAI](/ingest-data/ai-agents/crewai) integration uses to combine `CrewAIInstrumentor` and `OpenAIInstrumentor` on one provider.
+OpenInference is a standard OpenTelemetry instrumentor. You build the `TracerProvider` and exporter yourself, then pass that provider to `OpenAIInstrumentor().instrument(...)`. This is the same pattern the [CrewAI](/ingest-data/ai-agents/crewai) integration uses when it combines `CrewAIInstrumentor` and `OpenAIInstrumentor` on one provider.
 
 ```python
 import os
@@ -146,7 +148,7 @@ response = client.chat.completions.create(
 print(response.choices[0].message.content)
 ```
 
-`OTLPSpanExporter` here builds the URL as `{PARSEABLE_URL}/v1/traces` explicitly — unlike OpenLIT, it does not append the path for you. `BatchSpanProcessor` batches on a timer by default; for short scripts call `provider.force_flush()` (or `provider.shutdown()`) before exit so spans aren't lost.
+`OTLPSpanExporter` builds the URL as `{PARSEABLE_URL}/v1/traces` explicitly. Unlike OpenLIT, it does not append the path for you. `BatchSpanProcessor` batches on a timer by default. For short scripts, call `provider.force_flush()` or `provider.shutdown()` before exit so spans are exported before the process ends.
 
 </Tab>
 </Tabs>
@@ -158,7 +160,7 @@ The dataset named in `X-P-Stream` is created automatically on first ingest if it
 
 ### Tool calls
 
-Tool-calling requests instrument the same way under both instrumentors — no extra setup. OpenAI SDK-level tool call and result messages get captured as part of the same trace.
+Tool-calling requests use the same instrumentation path under both instrumentors. OpenAI SDK-level tool call and result messages are captured as part of the same trace.
 
 ```python
 tools = [{
@@ -199,14 +201,14 @@ if message.tool_calls:
 
 ### Send a few requests
 
-Run the application a few times with different models and prompts, including at least one tool-calling request, to see the full range of spans in Parseable.
+Run the application a few times with different models and prompts, including at least one tool-calling request. This gives you enough data to inspect normal chat spans, HTTP spans and tool-call follow-up spans in Parseable.
 
 </Step>
 </Steps>
 
 ## What you get in Parseable
 
-Open `openai-sdk-traces` from the Traces page. Each chat completion appears as a `chat <model>` span carrying the full set of GenAI attributes, with a child `POST` span for the HTTP call. Multiple calls in one process share `service.instance.id`, and tool-call follow-up requests link back to the originating trace via `span_trace_id`.
+Open `openai-sdk-traces` from the Traces page. Each chat completion appears as a `chat <model>` span with GenAI attributes, plus a child `POST` span for the HTTP call. Multiple calls in one process share `service.instance.id`, and tool-call follow-up requests can be followed through the same trace identifiers.
 
 ## Useful fields
 
@@ -254,9 +256,9 @@ GROUP BY model;
 
 ## OpenLIT or OpenInference
 
-Use **OpenLIT** when you want a single `init()` call, built-in cost calculation, and don't need to compose with other non-OpenInference instrumentors.
+Use **OpenLIT** when you want a short `init()` call, built-in cost calculation and a setup that does not require you to build the OpenTelemetry provider yourself.
 
-Use **OpenInference** when you're already building an OTel `TracerProvider` for other instrumentors (e.g. combining `CrewAIInstrumentor` and `OpenAIInstrumentor` on one provider, as the [CrewAI integration](/ingest-data/ai-agents/crewai) does), or you want direct control over the exporter and processors.
+Use **OpenInference** when you are already building an OpenTelemetry `TracerProvider` for other instrumentors, such as combining `CrewAIInstrumentor` and `OpenAIInstrumentor` on one provider, or when you want direct control over the exporter and processors.
 
 ## Troubleshooting
 
@@ -266,7 +268,7 @@ Use **OpenInference** when you're already building an OTel `TracerProvider` for 
 
 - **Traces appear late or not at all in short scripts**
 
-  OpenLIT: set `disable_batch=True` in `openlit.init()`. OpenInference: call `provider.force_flush()` or `provider.shutdown()` before the process exits — `BatchSpanProcessor` batches on a timer by default.
+  OpenLIT: set `disable_batch=True` in `openlit.init()`. OpenInference: call `provider.force_flush()` or `provider.shutdown()` before the process exits. `BatchSpanProcessor` batches on a timer by default.
 
 - **Prompt or response text appears in telemetry and that's a concern**
 
