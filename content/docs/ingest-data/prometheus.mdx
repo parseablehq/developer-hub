@@ -2,13 +2,13 @@
 title: Prometheus Remote Write
 ---
 
-Ingest metrics via the Prometheus Remote Write protocol. Accepts snappy-compressed protobuf payloads (the standard Prometheus remote write format). Metrics are converted to OpenTelemetry format and ingested into the specified stream.
+Use this endpoint when Prometheus sends metrics directly to Parseable through the Prometheus Remote Write protocol. Parseable accepts the snappy-compressed protobuf payload sent by Prometheus, converts the samples to OpenTelemetry metrics, and writes them to the dataset named in `X-P-Stream`.
 
 **Endpoint:** `POST /v1/prometheus/write`
 
 | Header             | Required | Description                                                    |
 |--------------------|----------|----------------------------------------------------------------|
-| `Authorization`    | Yes      | Basic auth credentials                                         |
+| `X-API-Key`        | Yes      | Parseable API key with access to write to the target dataset   |
 | `Content-Encoding` | Yes      | Must be `snappy`                                               |
 | `Content-Type`     | Yes      | `application/x-protobuf`                                       |
 | `X-P-Stream`       | Yes       | Target stream name.                 |
@@ -18,11 +18,11 @@ Ingest metrics via the Prometheus Remote Write protocol. Accepts snappy-compress
 
 ```yaml
 remote_write:
-  - url: "http://parseable:8000/v1/prometheus/write"
-    basic_auth:
-      username: admin
-      password: admin
+  - url: "http://<parseable-ingestor-endpoint>:8000/v1/prometheus/write"
     headers:
-      X-P-Stream: otel_metrics
+      X-API-Key: <parseable-api-key>
+      X-P-Stream: prometheus-metrics
       X-P-Log-Source: otel-metrics
 ```
+
+`X-P-Stream` is the metrics dataset that should receive the samples. Prometheus sets the remote write content headers for the protobuf payload, so the main values you usually configure are the URL, `X-API-Key`, `X-P-Stream`, and `X-P-Log-Source`.
