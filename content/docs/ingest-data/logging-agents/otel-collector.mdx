@@ -1,56 +1,223 @@
 ---
 title: "OpenTelemetry Collector"
+description: "Configure the OpenTelemetry Collector to send logs, metrics, and traces to Parseable."
 redirect_from:
   - /datasource/log-agents/otel-collector
 ---
 
-## Pre-requisites
+Applications and infrastructure send telemetry to the OpenTelemetry Collector. The Collector processes the data and exports it to a backend. Run it between your workloads and Parseable to manage batching, retries, memory protection, routing, and credentials.
 
-- OTEL Collector installed on your target infrastructure. Refer the [OpenTelemetry Collector installation documentation](https://opentelemetry.io/docs/collector/installation/) for installation instructions.
-- Parseable installed on infrastructure of your choice. Refer the [Parseable installation documentation](/self-hosted/installation/).
+Configure one Collector to send logs, metrics, and traces to separate Parseable datasets over OTLP HTTP.
 
-## Configuration
-We'll use the OTLP receiver and the OTEL HTTP exporter to send logs to Parseable.
+## Architecture
+
+```text
+Applications and infrastructure
+  -> OTLP gRPC :4317 or OTLP HTTP :4318
+  -> OpenTelemetry Collector
+       -> memory limiter
+       -> batch processor
+       -> sending queue and retries
+  -> Parseable
+       -> otel-logs
+       -> otel-metrics
+       -> otel-traces
+```
+
+The Collector builds and runs telemetry pipelines. Parseable stores and queries their output.
+
+## Prerequisites
+
+- A running [Parseable deployment](/docs/get-started)
+- An [OpenTelemetry Collector installation](https://opentelemetry.io/docs/collector/install/) containing the components used by your receivers
+- A Parseable API key with write access to the target datasets
+- Network access from the Collector to the Parseable endpoint
+
+Use the OpenTelemetry Collector Contrib distribution when you need components such as `filelog`, Prometheus, Kubernetes receivers, or Kubernetes metadata processors.
+
+## Configure the Collector
+
+This configuration accepts all three signals over OTLP. Separate Parseable exporters route each signal to its own dataset.
 
 ```yaml
 receivers:
   otlp:
     protocols:
-      grpc: null
-      http: null
-exporters:
-  otlphttp:
-    endpoint: '[PARSEABLE_URL]'
-    headers:
-      Authorization: '[BASIC_AUTH_TOKEN]'
-      X-P-Log-Source: otel
-      X-P-Stream: '[NAME_OF THE_STREAM_TO_SEND_LOGS_TO]'
-      Content-Type: application/json
-    encoding: json
-    tls:
-      insecure: true
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
 processors:
-  batch: null
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 75
+    spike_limit_percentage: 15
+  batch:
+    send_batch_size: 8192
+    timeout: 5s
+
+exporters:
+  otlphttp/parseable_logs:
+    endpoint: ${env:PARSEABLE_ENDPOINT}
+    encoding: proto
+    headers:
+      X-API-Key: ${env:PARSEABLE_API_KEY}
+      X-P-Stream: otel-logs
+      X-P-Log-Source: otel-logs
+    retry_on_failure:
+      enabled: true
+      max_elapsed_time: 0s
+    sending_queue:
+      enabled: true
+      queue_size: 10000
+
+  otlphttp/parseable_metrics:
+    endpoint: ${env:PARSEABLE_ENDPOINT}
+    encoding: proto
+    headers:
+      X-API-Key: ${env:PARSEABLE_API_KEY}
+      X-P-Stream: otel-metrics
+      X-P-Log-Source: otel-metrics
+    retry_on_failure:
+      enabled: true
+      max_elapsed_time: 0s
+    sending_queue:
+      enabled: true
+      queue_size: 10000
+
+  otlphttp/parseable_traces:
+    endpoint: ${env:PARSEABLE_ENDPOINT}
+    encoding: proto
+    headers:
+      X-API-Key: ${env:PARSEABLE_API_KEY}
+      X-P-Stream: otel-traces
+      X-P-Log-Source: otel-traces
+    retry_on_failure:
+      enabled: true
+      max_elapsed_time: 0s
+    sending_queue:
+      enabled: true
+      queue_size: 10000
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
 service:
+  extensions: [health_check]
   pipelines:
     logs:
-      receivers:
-        - otlp
-      processors:
-        - batch
-      exporters:
-        - otlphttp
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/parseable_logs]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/parseable_metrics]
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/parseable_traces]
 ```
 
-The configuration above sets up the OTLP receiver to receive logs and the OTEL HTTP exporter to send logs to Parseable. The exporter configuration includes the Parseable endpoint, authorization headers, and the log source and dataset names.
-
-Please ensure to change the `[PARSEABLE_URL]`, `[BASIC_AUTH_TOKEN]`, and `[NAME_OF THE_STREAM_TO_SEND_LOGS_TO]` placeholders with the actual values. The `[PARSEABLE_URL]` is the Parseable ingestor's endpoint to send logs to, like `http://ingestor.demo.parseable.com`. The `[BASIC_AUTH_TOKEN]` is the basic auth token to authenticate with Parseable. The `[NAME_OF THE_STREAM_TO_SEND_LOGS_TO]` is the name of the dataset in Parseable to send logs to.
-
-### Start the OpenTelemetry Collector
-After you have update the configuration file successfully (replaced the placeholders), start the OpenTelemetry Collector with the updated configuration file. For example, for a configuration file named `config.yaml` with OTEL Collector binary named `otel`, you can start the collector with the following command:
+Set the environment variables before starting the Collector:
 
 ```bash
-./otelcol --config ./config.yaml
-```
-Now the collector is running on HTTP port `4317` and gRPC port `4318`. By default, Parseable's `/v1/logs` endpoint is active, so it will ingest the logs directly.
+export PARSEABLE_ENDPOINT="https://<YOUR_PARSEABLE_ENDPOINT>"
+export PARSEABLE_API_KEY="<YOUR_PARSEABLE_API_KEY>"
 
+otelcol-contrib --config ./config.yaml
+```
+
+`PARSEABLE_ENDPOINT` is the base Parseable endpoint. The OTLP HTTP exporter appends `/v1/logs`, `/v1/metrics`, or `/v1/traces` for the corresponding pipeline.
+
+If you use Basic Authentication instead of an API key, replace `X-API-Key` with:
+
+```yaml
+Authorization: "Basic <BASE64_ENCODED_USERNAME_AND_PASSWORD>"
+```
+
+Keep `tls.insecure` disabled for a production HTTPS endpoint. Configure a custom certificate authority in the exporter TLS settings when your Parseable deployment uses a private CA.
+
+## Point applications at the Collector
+
+Applications can send OTLP traffic to either Collector receiver:
+
+| Protocol | Default port | Example endpoint |
+| --- | ---: | --- |
+| OTLP gRPC | `4317` | `http://otel-collector:4317` |
+| OTLP HTTP | `4318` | `http://otel-collector:4318` |
+
+For an OTLP HTTP SDK, set:
+
+```bash
+export OTEL_EXPORTER_OTLP_ENDPOINT="http://otel-collector:4318"
+```
+
+Use the Collector Service name that the instrumented workload can reach. Expose the receivers only to clients that need access.
+
+## Add other receivers
+
+The OTLP receiver handles telemetry produced by OpenTelemetry SDKs and compatible applications. Infrastructure data often needs additional receivers:
+
+- Use `filelog` to collect container or host log files.
+- Use `prometheus` to scrape Prometheus metrics endpoints.
+- Use `hostmetrics` for CPU, memory, filesystem, network, and process metrics.
+- Use Kubernetes receivers and the `k8sattributes` processor to add pod, namespace, node, and workload context.
+
+Reference each declared receiver in the appropriate pipeline. A declaration outside `service.pipelines` leaves the receiver disabled.
+
+For Kubernetes collection, follow the [Kubernetes guide](/docs/ingest-data/containers/kubernetes).
+
+## Verify the pipeline
+
+Check that the Collector process remains healthy:
+
+```bash
+curl http://127.0.0.1:13133/
+```
+
+Then send telemetry through the Collector and confirm that these datasets receive recent records in Parseable:
+
+| Signal | Default dataset | Parseable endpoint |
+| --- | --- | --- |
+| Logs | `otel-logs` | `/v1/logs` |
+| Metrics | `otel-metrics` | `/v1/metrics` |
+| Traces | `otel-traces` | `/v1/traces` |
+
+You can rename the datasets by changing `X-P-Stream`, but keep `X-P-Log-Source` set to the signal-specific value shown in the configuration.
+
+## Production guidance
+
+- Put `memory_limiter` before processors that buffer or transform data.
+- Put `batch` after filtering or sampling processors to avoid batching records that the pipeline will drop.
+- Keep exporter retries and sending queues enabled to absorb temporary backend or network failures.
+- Size the queue for the expected outage window and available Collector memory. The Collector discards its in-memory queue when it restarts.
+- Monitor accepted, refused, sent, failed, and queue-capacity metrics from the Collector's internal telemetry.
+- Use multiple Collector replicas for availability. Stateful processors such as tail sampling require additional routing so spans from one trace reach the same Collector.
+- Redact credentials and personal data before export. See [Remove PII at the Source with OpenTelemetry Collector](https://www.parseable.com/blog/scrub-pii-at-the-source-with-opentelemetry-collector).
+- Load-test the complete pipeline before choosing batch sizes, queue sizes, memory limits, and replica counts for production.
+
+## Troubleshooting
+
+### The Collector receives no data
+
+- Confirm that the application uses port `4317` for OTLP gRPC or `4318` for OTLP HTTP.
+- Confirm that the receiver appears in the corresponding `service.pipelines` entry.
+- Check Services, network policies, firewalls, DNS, and TLS settings between the application and Collector.
+
+### Data reaches the Collector but not Parseable
+
+- Check Collector logs for authentication, TLS, timeout, and export errors.
+- Confirm that `PARSEABLE_ENDPOINT` is reachable from the Collector.
+- Confirm that the API key has write access to each dataset named by `X-P-Stream`.
+- Confirm that the exporter is enabled in the correct pipeline.
+
+### The Collector restarts or drops data
+
+- Check its container memory limit and the `memory_limiter` thresholds.
+- Inspect exporter queue utilization and failed-send metrics.
+- Reduce expensive transformations, increase resources, or scale the Collector when export throughput remains below ingestion throughput.
+
+See the [OpenTelemetry logs](/docs/ingest-data/otel/logs), [metrics](/docs/ingest-data/otel/metrics), and [traces](/docs/ingest-data/otel/traces) documentation for signal-specific details.
