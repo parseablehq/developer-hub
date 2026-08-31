@@ -1,19 +1,27 @@
 ---
-title: Logging Agents
-description: Send logs to Parseable using popular logging agents
+title: Telemetry Agents
+description: Send logs, metrics, and traces to Parseable through common telemetry agents.
 redirect_from:
   - /datasource/log-agents
 ---
 
-Parseable supports ingestion from various logging agents. Choose the agent that best fits your infrastructure:
+Telemetry agents sit close to the systems that produce data. They read container logs, application logs, host metrics, Prometheus metrics, or OTLP signals, then forward that data to Parseable with the labels and metadata you need for search and dashboards.
 
-- [Fluent Bit](/ingest-data/logging-agents/fluent-bit) - Lightweight and high-performance log processor
-- [Vector](/ingest-data/logging-agents/vector) - High-performance observability data pipeline
-- [Fluentd](/ingest-data/logging-agents/fluentd) - Unified logging layer
-- [Logstash](/ingest-data/logging-agents/logstash) - Server-side data processing pipeline
-- [Filebeat](/ingest-data/logging-agents/filebeat) - Lightweight shipper for logs
-- [Promtail](/ingest-data/logging-agents/promtail) - Agent for Loki, works with Parseable
-- [OpenTelemetry Collector](/ingest-data/logging-agents/otel-collector) - Vendor-agnostic telemetry collection
-- [Syslog](/ingest-data/logging-agents/syslog) - Standard logging protocol
-- [Apache Log4j](/ingest-data/logging-agents/apache-log-4j) - Java logging framework
-- [Prometheus](/ingest-data/logging-agents/prometheus) - Metrics collection and forwarding
+Parseable supports ingesting logs, metrics, and traces from agents that teams already use in production. Plain JSON logs are sent to `/api/v1/ingest` with an `X-P-Stream` header. OTLP logs, metrics, and traces are sent to `/v1/logs`, `/v1/metrics`, and `/v1/traces`, with both `X-P-Stream` and the matching `X-P-Log-Source` header. For authenticated ingestion, use an API key through the `X-API-Key` header.
+
+Use this section when you already have an agent running, or when you want to pick one for a new deployment.
+
+| Agent | Good fit |
+| --- | --- |
+| [Apache Log4j 2](/ingest-data/logging-agents/apache-log-4j) | Java application logs sent directly from the app over HTTP. |
+| [Filebeat](/ingest-data/logging-agents/filebeat) | Existing Beats pipelines where Filebeat ships logs to Logstash, and Logstash forwards them to Parseable. |
+| [Fluent Bit](/ingest-data/logging-agents/fluent-bit) | Lightweight container, Kubernetes, host, and edge log collection. |
+| [Fluentd](/ingest-data/logging-agents/fluentd) | Existing Fluentd pipelines that need an HTTP destination for Parseable. |
+| [Logstash](/ingest-data/logging-agents/logstash) | Filter-heavy log pipelines and Beats ingestion before sending data to Parseable. |
+| [OpenTelemetry Collector](/ingest-data/logging-agents/otel-collector) | Logs, metrics, and traces pipelines built around OpenTelemetry receivers, processors, and exporters. |
+| [Prometheus](/ingest-data/logging-agents/prometheus) | Metrics ingestion through Prometheus Remote Write. |
+| [Promtail](/ingest-data/logging-agents/promtail) | Existing Loki-style log pipelines that can be routed through the OpenTelemetry Collector. |
+| [Syslog-ng](/ingest-data/logging-agents/syslog) | Network, host, and appliance logs collected through syslog. |
+| [Vector](/ingest-data/logging-agents/vector) | High-throughput log pipelines with transforms before HTTP delivery. |
+
+If you are starting fresh on Kubernetes, Fluent Bit or the OpenTelemetry Collector is usually the simplest place to begin. If your team already runs Filebeat, Fluentd, Logstash, Promtail, Syslog-ng, or Vector, keep that pipeline and update only the output stage that sends data to Parseable.

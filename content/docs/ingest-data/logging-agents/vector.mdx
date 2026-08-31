@@ -1,72 +1,52 @@
 ---
 title: Vector
+description: Send logs from Vector to Parseable through the HTTP sink.
 redirect_from:
   - /datasource/log-agents/vector
 ---
 
-This document explains how to set up [Vector](https://vector.dev) to ship logs to Parseable on a Kubernetes cluster. We use Vector's kubernetes_logs source to collect logs from Kubernetes pods. Then we use the http sink to send logs to Parseable.
+Vector can collect logs from files, Kubernetes, journald, syslog, and several other sources, then transform those events before sending them onward. Use the HTTP sink when Parseable is the destination for that pipeline.
 
-## Kubernetes
-Please ensure kubectl and helm installed and configured to access your Kubernetes cluster.
+## Prerequisites
 
-Parseable installed on your Kubernetes cluster. Refer to the [Parseable Kubernetes documentation](/self-hosted/installation/distributed/k8s-helm-oss).
+You need Vector installed, a Parseable ingest endpoint, an API key, and a dataset name. The example below writes Kubernetes logs to `vector-logs`.
 
-### Install Vector  
-We use the official [Vector Helm chart](https://github.com/vectordotdev/helm-charts). But, we'll use a modified values.yaml file, that contains the configuration for Vector to send logs to Parseable.
+## Configure Vector
 
-```bash
-wget https://www.parseable.com/vector/values.yaml
-helm repo add vector https://helm.vector.dev
+Create or update `vector.toml` with a source and an HTTP sink for Parseable.
 
-helm install vector vector/vector \
-  --namespace vector \
-  --create-namespace \
-  --values values.yaml
+```toml
+[sources.kubernetes_logs]
+type = "kubernetes_logs"
+
+[transforms.add_parseable_fields]
+type = "remap"
+inputs = ["kubernetes_logs"]
+source = '''
+.source_agent = "vector"
+.cluster = "production"
+'''
+
+[sinks.parseable]
+type = "http"
+inputs = ["add_parseable_fields"]
+uri = "http://<parseable-ingestor-endpoint>:8000/api/v1/ingest"
+method = "post"
+compression = "gzip"
+
+[sinks.parseable.encoding]
+codec = "json"
+
+[sinks.parseable.request.headers]
+Content-Type = "application/json"
+X-API-Key = "<parseable-api-key>"
+X-P-Stream = "vector-logs"
 ```
 
-Let's take a deeper look at the Vector sink configuration in `values.yaml`. Important to notice here is that we use the sink type http. Source can be any of the supported sources by Vector.
+If you are reading from a different source, keep the same sink and change only the source and transform blocks. For example, file logs can use `sources.file`, while host logs may come from journald or syslog.
 
-```yaml
-  sources:
-    kubernetes_logs:
-      type: kubernetes_logs
-  sinks:
-    parseable:
-      type: http
-      method: post
-      batch:
-        max_bytes: 10485760
-        max_events: 1000
-        timeout_secs: 10
-      compression: gzip
-      inputs: 
-        - kubernetes_logs
-      encoding:
-        codec: json
-      uri: 'http://parseable.parseable.svc.cluster.local/api/v1/ingest'
-      auth:
-        strategy: basic
-        user: admin
-        password: admin
-      request:
-        headers:
-          X-P-Stream: vectordemo  ## dataset/dataset name
-      healthcheck:
-        enabled: true
-        path: 'http://parseable.parseable.svc.cluster.local/api/v1/liveness'
-        port: 80
-```
+## Verify Logs
 
-## Batching and Compression
+Start Vector and check its internal logs for HTTP response codes from Parseable. Then open `vector-logs` in Parseable and confirm that events include the fields you expect from Vector and your transform.
 
-Parseable supports batching and compressing the log data before sending it via HTTP POST. Vector supports this feature via the batch and compression options. We recommend enabling both of these options to reduce the number of HTTP requests and to reduce the size of the HTTP payload.
-
-## Check logs in Parseable
-
-If you've not already done so, port-forward Parseable service to access the dashboard with `kubectl`:
-
-```bash
-kubectl port-forward svc/parseable 8000:80 -n parseable
-```
-
-You can now check the Parseable server `vectordemo` dataset to see the logs from this setup.
+If ingestion fails, check that the API key can write to the dataset, the ingest endpoint is reachable from the Vector host, and the sink is sending JSON records rather than plain text.

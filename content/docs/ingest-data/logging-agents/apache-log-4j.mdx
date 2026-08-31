@@ -1,36 +1,56 @@
 ---
-title: "Apache Log4j 2"
+title: Apache Log4j 2
+description: Send Java application logs from Apache Log4j 2 to Parseable over HTTP.
 redirect_from:
   - /datasource/log-agents/apache-log-4j
 ---
 
-Apache Log4j 2 is a Java-based logging framework. It is one of most popular logging frameworks in Java. This document explains how to use the [Log4j 2 HTTP appender](https://logging.apache.org/log4j/2.x/manual/appenders.html#HTTP) to send logs to Parseable.
+Apache Log4j 2 is a common logging framework for Java applications. If your application already uses Log4j 2, you can add an HTTP appender and send structured logs directly to a Parseable dataset.
 
-### Prerequisites
-- Parseable server installed and running. See [installation](/self-hosted/installation/) for more details.
-- A Java project with Log4j dependency.
+This path is useful when you want application logs without running a separate node-level agent. For larger Kubernetes or VM deployments, you can still use Fluent Bit, Fluentd, Logstash, or the OpenTelemetry Collector to collect logs outside the application.
 
-### Setup
-Edit the log4j2.xml file to add the following configuration. Please ensure to update the url, Authorization, and X-P-Stream properties with the correct values.
+## Prerequisites
 
+Make sure you have a Parseable ingest endpoint, an API key that can write to the target dataset, and a dataset name for these logs. In the examples below, the dataset is `java-app-logs`.
+
+## Configure Log4j 2
+
+Add an HTTP appender to your `log4j2.xml` file. The appender sends JSON records to Parseable and uses headers to set the API key and dataset.
 
 ```xml
-<?xml version="1.0" encoding="UTF-8" ?>
-<Configuration status="TRACE">
-    <Appenders>
-        <Http name="Parseable" url="<parseable-server-url>/api/v1/ingest" method="POST">
-            <Property name="Authorization" value="Basic <basic-auth-hash>" />
-            <Property name="X-P-Stream" value="<dataset-name>" />
-            <Property name="Accept" value="application/json" />
-            <JsonLayout properties="true"/>
-        </Http>
-    </Appenders>
-    <Loggers>
-        <Root level="info">
-            <AppenderRef ref="Parseable"/>
-        </Root>
-    </Loggers>
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <Http name="Parseable"
+          url="http://<parseable-ingestor-endpoint>:8000/api/v1/ingest"
+          method="POST">
+      <Property name="Content-Type" value="application/json" />
+      <Property name="X-API-Key" value="<parseable-api-key>" />
+      <Property name="X-P-Stream" value="java-app-logs" />
+      <JsonLayout compact="true"
+                  eventEol="true"
+                  properties="true"
+                  stacktraceAsString="true" />
+    </Http>
+
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d{ISO8601} %-5p %c{1} - %m%n" />
+    </Console>
+  </Appenders>
+
+  <Loggers>
+    <Root level="info">
+      <AppenderRef ref="Console" />
+      <AppenderRef ref="Parseable" />
+    </Root>
+  </Loggers>
 </Configuration>
 ```
-Once the configuration is updated, restart the application. You should start seeing logs in Parseable.
 
+Replace `<parseable-ingestor-endpoint>` with the host that receives ingestion traffic, and replace `<parseable-api-key>` with an API key that has access to write to `java-app-logs`.
+
+## Verify Logs
+
+Start the Java application and emit a few log lines. In Parseable, open the `java-app-logs` dataset and check that the latest events include fields such as `loggerName`, `level`, `message`, `thread`, and `timeMillis`.
+
+If logs do not appear, check the application logs for HTTP appender errors. Most issues come from an unreachable ingest endpoint, an API key without write access, or a missing `X-P-Stream` header.
