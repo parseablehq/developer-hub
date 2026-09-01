@@ -5,9 +5,9 @@ redirect_from:
   - /datasource/log-agents/otel-collector
 ---
 
-Applications and infrastructure send telemetry to the OpenTelemetry Collector. The Collector processes the data and exports it to a backend. Run it between your workloads and Parseable to manage batching, retries, memory protection, routing, and credentials.
+The OpenTelemetry Collector is a vendor-agnostic way to receive, process, and export telemetry data. It lets applications, agents, and infrastructure components send logs, metrics, and traces to the Collector instead of wiring each source directly to a backend.
 
-Configure one Collector to send logs, metrics, and traces to separate Parseable datasets over OTLP HTTP.
+Collector configuration is built around pipelines. A pipeline has receivers, optional processors, and exporters. In this setup, the Collector receives OTLP data and sends logs, metrics, and traces to separate Parseable datasets over OTLP HTTP.
 
 ## Architecture
 
@@ -131,12 +131,6 @@ otelcol-contrib --config ./config.yaml
 ```
 
 `PARSEABLE_ENDPOINT` is the base Parseable endpoint. The OTLP HTTP exporter appends `/v1/logs`, `/v1/metrics`, or `/v1/traces` for the corresponding pipeline.
-
-If you use Basic Authentication instead of an API key, replace `X-API-Key` with:
-
-```yaml
-Authorization: "Basic <BASE64_ENCODED_USERNAME_AND_PASSWORD>"
-```
 
 Keep `tls.insecure` disabled for a production HTTPS endpoint. Configure a custom certificate authority in the exporter TLS settings when your Parseable deployment uses a private CA.
 

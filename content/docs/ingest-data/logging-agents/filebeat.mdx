@@ -1,115 +1,67 @@
 ---
 title: Filebeat
-description: Ship logs from Filebeat to Parseable
+description: Send Filebeat logs to Parseable through Logstash.
 redirect_from:
   - /datasource/log-agents/filebeat
 ---
 
-Ship logs from Filebeat to Parseable using the HTTP output.
+Filebeat is a lightweight shipper for files, container logs, and common application modules. It is usually deployed close to the workload, reads new log lines, adds host or container metadata, and forwards those events to an output.
 
-## Overview
-
-Integrate Filebeat with Parseable to:
-
-- **Lightweight Collection** - Minimal resource footprint
-- **Rich Inputs** - Collect from files, containers, cloud services
-- **Modules** - Pre-built configurations for common applications
-- **Reliable Delivery** - At-least-once delivery guarantee
+For Parseable, the clean path is Filebeat to Logstash, then Logstash to Parseable over HTTP. Filebeat keeps doing collection and enrichment, while Logstash handles the HTTP delivery to Parseable with the required API key and dataset headers.
 
 ## Prerequisites
 
-- Filebeat installed
-- Parseable instance accessible
-- Log files or inputs configured
+You need Filebeat on the host or Kubernetes node, Logstash reachable from Filebeat, a Parseable ingest endpoint, an API key, and a dataset name. The examples below use `filebeat-logs`.
 
-## Filebeat Configuration
+## Configure Filebeat
 
-### Basic Configuration
-
-Create `filebeat.yml`:
+Create or update `filebeat.yml` so Filebeat reads your logs and sends them to Logstash.
 
 ```yaml
 filebeat.inputs:
-  - type: log
+  - type: filestream
+    id: app-logs
     enabled: true
     paths:
-      - /var/log/*.log
+      - /var/log/myapp/*.log
     fields:
-      source: filebeat
+      source_agent: filebeat
     fields_under_root: true
 
-output.http:
-  hosts: ["http://parseable:8000/api/v1/ingest"]
-  method: "POST"
-  headers:
-    Authorization: "Basic YWRtaW46YWRtaW4="
-    X-P-Stream: "filebeat-logs"
-    Content-Type: "application/json"
-  codec.format:
-    string: '[%{[message]}]'
+output.logstash:
+  hosts: ["logstash:5044"]
 ```
 
-### JSON Log Collection
-
-For JSON-formatted logs:
+For Docker logs, mount `/var/lib/docker/containers` into the Filebeat container and add Docker metadata:
 
 ```yaml
 filebeat.inputs:
-  - type: log
+  - type: filestream
+    id: docker-logs
     enabled: true
     paths:
-      - /var/log/app/*.json
-    json.keys_under_root: true
-    json.add_error_key: true
-
-processors:
-  - timestamp:
-      field: timestamp
-      layouts:
-        - '2006-01-02T15:04:05.000Z'
-      test:
-        - '2024-01-15T10:30:00.000Z'
-
-output.http:
-  hosts: ["http://parseable:8000/api/v1/ingest"]
-  method: "POST"
-  headers:
-    Authorization: "Basic YWRtaW46YWRtaW4="
-    X-P-Stream: "app-logs"
-  batch.size: 100
-  batch.timeout: 5s
-```
-
-### Container Logs
-
-Collect Docker container logs:
-
-```yaml
-filebeat.inputs:
-  - type: container
-    paths:
-      - '/var/lib/docker/containers/*/*.log'
+      - /var/lib/docker/containers/*/*.log
+    parsers:
+      - container: ~
     processors:
       - add_docker_metadata:
           host: "unix:///var/run/docker.sock"
 
-output.http:
-  hosts: ["http://parseable:8000/api/v1/ingest"]
-  method: "POST"
-  headers:
-    Authorization: "Basic YWRtaW46YWRtaW4="
-    X-P-Stream: "container-logs"
+output.logstash:
+  hosts: ["logstash:5044"]
 ```
 
-### Kubernetes Logs
-
-For Kubernetes deployments:
+For Kubernetes, Filebeat can read `/var/log/containers/*.log` and attach Kubernetes metadata:
 
 ```yaml
 filebeat.inputs:
-  - type: container
+  - type: filestream
+    id: kubernetes-logs
+    enabled: true
     paths:
       - /var/log/containers/*.log
+    parsers:
+      - container: ~
     processors:
       - add_kubernetes_metadata:
           host: ${NODE_NAME}
@@ -117,131 +69,47 @@ filebeat.inputs:
             - logs_path:
                 logs_path: "/var/log/containers/"
 
-output.http:
-  hosts: ["http://parseable:8000/api/v1/ingest"]
-  method: "POST"
-  headers:
-    Authorization: "Basic YWRtaW46YWRtaW4="
-    X-P-Stream: "k8s-logs"
+output.logstash:
+  hosts: ["logstash:5044"]
 ```
 
-## Filebeat Modules
+If you use Filebeat modules, keep them enabled. The module output can still go to Logstash, and Logstash can forward the enriched events to Parseable.
 
-Use built-in modules for common applications:
+## Configure Logstash
 
-### Enable Module
+Create a Logstash pipeline that receives Beats events and sends them to Parseable.
 
-```bash
-filebeat modules enable nginx
-filebeat modules enable mysql
+```ruby
+input {
+  beats {
+    port => 5044
+  }
+}
+
+filter {
+  mutate {
+    add_field => { "source_pipeline" => "filebeat-logstash" }
+  }
+}
+
+output {
+  http {
+    url => "http://<parseable-ingestor-endpoint>:8000/api/v1/ingest"
+    http_method => "post"
+    format => "json_batch"
+    content_type => "application/json"
+    headers => {
+      "X-API-Key" => "<parseable-api-key>"
+      "X-P-Stream" => "filebeat-logs"
+    }
+  }
+}
 ```
 
-### Module Configuration
+Use the same Logstash pattern if Filebeat reads Nginx, MySQL, system logs, or application logs through modules. The output block is the part that decides where the records land in Parseable.
 
-```yaml
-# modules.d/nginx.yml
-- module: nginx
-  access:
-    enabled: true
-    var.paths: ["/var/log/nginx/access.log*"]
-  error:
-    enabled: true
-    var.paths: ["/var/log/nginx/error.log*"]
-```
+## Verify Logs
 
-## Running Filebeat
+Run `filebeat test config` to confirm the Filebeat configuration is valid. After Filebeat and Logstash start, check the Logstash logs for successful HTTP responses from Parseable, then open `filebeat-logs` in Parseable and look for recent events.
 
-### Docker
-
-```bash
-docker run -d \
-  --name filebeat \
-  -v $(pwd)/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro \
-  -v /var/log:/var/log:ro \
-  docker.elastic.co/beats/filebeat:8.11.0
-```
-
-### Docker Compose
-
-```yaml
-version: '3.8'
-services:
-  filebeat:
-    image: docker.elastic.co/beats/filebeat:8.11.0
-    user: root
-    volumes:
-      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
-      - /var/log:/var/log:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-```
-
-### Kubernetes DaemonSet
-
-```yaml
-apiVersion: apps/v1
-kind: DaemonSet
-metadata:
-  name: filebeat
-spec:
-  selector:
-    matchLabels:
-      app: filebeat
-  template:
-    spec:
-      containers:
-        - name: filebeat
-          image: docker.elastic.co/beats/filebeat:8.11.0
-          volumeMounts:
-            - name: config
-              mountPath: /usr/share/filebeat/filebeat.yml
-              subPath: filebeat.yml
-            - name: varlog
-              mountPath: /var/log
-              readOnly: true
-      volumes:
-        - name: config
-          configMap:
-            name: filebeat-config
-        - name: varlog
-          hostPath:
-            path: /var/log
-```
-
-## Configuration Options
-
-| Parameter | Description |
-|-----------|-------------|
-| `output.http.hosts` | Parseable endpoint URL |
-| `output.http.headers` | HTTP headers including auth |
-| `output.http.batch.size` | Events per batch |
-| `output.http.batch.timeout` | Max wait time for batch |
-
-## Best Practices
-
-1. **Use Batching** - Configure appropriate batch sizes
-2. **Add Metadata** - Include host, container, or k8s metadata
-3. **Parse JSON** - Use JSON parsing for structured logs
-4. **Monitor Filebeat** - Enable monitoring endpoints
-5. **Handle Backpressure** - Configure queue settings
-
-## Troubleshooting
-
-### Events Not Sending
-
-1. Test Filebeat configuration: `filebeat test config`
-2. Test output: `filebeat test output`
-3. Check Filebeat logs
-4. Verify Parseable endpoint is accessible
-
-### Duplicate Events
-
-1. Check registry file location
-2. Verify clean_removed setting
-3. Check for multiple Filebeat instances
-
-## Next Steps
-
-- Configure [Fluent Bit](/ingest-data/logging-agents) as alternative
-- Set up [alerts](/user-guide/alerting) for log patterns
-- Create [dashboards](/user-guide/dashboards) for monitoring
+If no data appears, check the path Filebeat is reading, confirm Filebeat can reach Logstash on port `5044`, and confirm Logstash can reach the Parseable ingest endpoint with the configured API key.
