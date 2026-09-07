@@ -8,9 +8,11 @@ Parseable enables ingesting the OpenTelemetry traces sent from the OTEL collecto
 
 Below is the sample configuration of the OTEL collector to send the traces to Parseable
 
+Using an older OpenTelemetry Collector version? Replace `otlp_http` with `otlphttp`.
+
 ```yaml
 exporters:
-  otlphttp/parseabletraces:
+  otlp_http/parseabletraces:
     endpoint: "<parseable-endpoint> eg. http://localhost:8000"
     headers:
       Authorization: "Basic <base64 encoded string of username:password>"
@@ -24,7 +26,7 @@ exporters:
 service:
   pipelines:
     traces:
-      exporters: [otlphttp/parseabletraces]
+      exporters: [otlp_http/parseabletraces]
 ```
 ## Support for Protocol Buffers
 
@@ -34,7 +36,7 @@ Parseable also supports ingesting the OpenTelemetry Traces sent from the OTEL co
 
 ```yaml
 exporters:
-  otlphttp/parseabletraces:
+  otlp_http/parseabletraces:
     endpoint: "http://parseable:8000"
     headers:
       Authorization: "Basic YWRtaW46YWRtaW4="  # admin:admin in base64
@@ -48,7 +50,7 @@ exporters:
 service:
   pipelines:
     traces:
-      exporters: [otlphttp/parseabletraces]
+      exporters: [otlp_http/parseabletraces]
 ```
 
 ## Data Flattening
