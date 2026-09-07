@@ -166,19 +166,37 @@ Do not send credentials to an MCP endpoint you do not trust. The MCP server uses
 
 ## What the tools can do
 
-Parseable MCP Server exposes tools around the same objects you already work with in Parseable.
+Parseable MCP Server exposes 27 built-in tools around the same objects you already work with in Parseable. Some tools only read data, while a few can change alert state or create alert resources. The exact result still depends on the API key. If the key cannot access a dataset or action in Parseable, the MCP tool cannot access it either.
 
-| Area | Tools |
-| --- | --- |
-| Dataset discovery | List datasets, inspect schema, view dataset metadata and stats, and sample recent events. |
-| Queries | Run read-only SQL queries, run instant or range PromQL queries, and explain SQL before execution. |
-| Alerts | List alerts, inspect one alert, list tags, enable or disable alerts, evaluate an alert, and create alerts through guided input. |
-| Alert targets | List, inspect, and create notification targets. |
-| Access review | List users, view a user's roles, list roles, inspect role permissions, and view the default role. |
-| Cluster and retention | Check cluster status, cluster metrics, and dataset retention. |
-| Diagnostics | Use `ping` to verify the connection path from the MCP client to Parseable. |
-
-The exact result still depends on the API key. If the key cannot access a dataset or action in Parseable, the MCP tool cannot access it either.
+| Group | Tool | What it does |
+| --- | --- | --- |
+| Datasets and events | `list_datasets` | Lists the datasets the API key can access. |
+|  | `get_dataset_info` | Shows dataset metadata such as retention, time range, and dataset configuration. |
+|  | `get_dataset_schema` | Returns the fields and types available in a dataset. |
+|  | `get_dataset_stats` | Returns dataset-level statistics such as event count and storage size. |
+|  | `sample_events` | Fetches a small, bounded sample of recent events from a dataset. |
+| Queries | `query_sql` | Runs a read-only SQL query against a dataset with query controls applied. |
+|  | `query_promql` | Runs an instant or range PromQL query against a metrics dataset. |
+|  | `explain_query` | Explains a SQL query plan without executing the query itself. |
+| Alerts | `list_alerts` | Lists alerts along with state, severity, tags, and related metadata. |
+|  | `get_alert` | Returns the full configuration for a specific alert. |
+|  | `list_alert_tags` | Lists the tags currently used across alerts. |
+|  | `enable_alert` | Enables an existing alert. |
+|  | `disable_alert` | Disables an existing alert. |
+|  | `evaluate_alert` | Evaluates an alert immediately. This can send real notifications if the condition matches. |
+|  | `create_alert` | Creates a new alert through a guided flow that collects the required alert fields. |
+| Alert targets | `list_alert_targets` | Lists configured notification targets such as Slack, webhook, or Alertmanager targets. |
+|  | `get_alert_target` | Returns the full configuration for a specific alert target. |
+|  | `create_alert_target` | Creates a new notification target for alert delivery. |
+| Access review | `list_users` | Lists users visible to the API key. |
+|  | `get_user_roles` | Shows the roles assigned to a specific user. |
+|  | `list_roles` | Lists the roles configured in Parseable. |
+|  | `get_role` | Shows the permissions attached to a specific role. |
+|  | `get_default_role` | Shows the default role assigned to new users. |
+| Cluster and retention | `ping` | Checks whether the MCP server can reach Parseable and returns basic connectivity details. |
+|  | `get_cluster_status` | Shows node status for a distributed Parseable deployment. |
+|  | `get_cluster_metrics` | Returns high-level cluster metrics for ingest, query, and storage. |
+|  | `get_retention` | Shows the retention policy for a dataset. |
 
 ## Common workflows
 

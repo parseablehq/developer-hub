@@ -2,6 +2,7 @@
   "title": "Gateways",
   "pages": [
     "[OpenRouter](/ingest-data/ai-agents/openrouter)",
-    "[LiteLLM Gateway](/ingest-data/gateways/litellm)"
+    "[LiteLLM Gateway](/ingest-data/gateways/litellm)",
+    "[Cloudflare AI Gateway](/ingest-data/gateways/cloudflare-ai-gateway)"
   ]
 }

@@ -36,7 +36,7 @@ Integrate Okta with Parseable to:
 
 1. **App integration name**: Parseable
 2. **Grant type**: Authorization Code
-3. **Sign-in redirect URIs**: `https://your-parseable.com/callback`
+3. **Sign-in redirect URIs**: `https://your-parseable.com/api/v1/o/code`
 4. **Sign-out redirect URIs**: `https://your-parseable.com`
 5. **Controlled access**: Select appropriate option
 6. Click **Save**
@@ -64,7 +64,7 @@ Integrate Okta with Parseable to:
 P_OIDC_CLIENT_ID=your-client-id
 P_OIDC_CLIENT_SECRET=your-client-secret
 P_OIDC_ISSUER=https://dev-123456.okta.com
-P_OIDC_REDIRECT_URI=https://your-parseable.com/callback
+P_ORIGIN_URI=https://your-parseable.com
 ```
 
 ### Docker Compose
@@ -78,7 +78,7 @@ services:
       - P_OIDC_CLIENT_ID=${OKTA_CLIENT_ID}
       - P_OIDC_CLIENT_SECRET=${OKTA_CLIENT_SECRET}
       - P_OIDC_ISSUER=https://dev-123456.okta.com
-      - P_OIDC_REDIRECT_URI=https://your-parseable.com/callback
+      - P_ORIGIN_URI=https://your-parseable.com
 ```
 
 ## OIDC Endpoints
@@ -112,9 +112,9 @@ P_OIDC_ISSUER=https://dev-123456.okta.com/oauth2/default
 
 ### Login Redirect Loop
 
-1. Verify redirect URI matches exactly
-2. Check client ID and secret
-3. Verify issuer URL format
+1. Verify the Okta redirect URI is `https://your-parseable.com/api/v1/o/code`
+2. Make sure `P_ORIGIN_URI` is the public base URL, for example `https://your-parseable.com`
+3. Check client ID, client secret, and issuer URL format
 
 ### User Not Authorized
 

@@ -64,9 +64,24 @@ After completing one option, continue to step 4.
 
 Install MinIO and create a bucket named `parseable`:
 
+Replace `<storage-class>` with one of the storage class names returned by `kubectl get storageclass`.
+
 ```bash
 helm repo add minio https://charts.min.io/
-helm install --namespace minio --create-namespace --set "buckets[0].name=parseable,buckets[0].policy=none,buckets[0].purge=false,rootUser=minioadmin,rootPassword=minioadmin,replicas=1,persistence.enabled=true,persistence.storageClass="",resources.requests.memory=128Mi,mode=standalone" minio minio/minio
+helm install \
+  --namespace minio \
+  --create-namespace \
+  --set buckets[0].name=parseable \
+  --set buckets[0].policy=none \
+  --set buckets[0].purge=false \
+  --set rootUser=minioadmin \
+  --set rootPassword=minioadmin \
+  --set replicas=1 \
+  --set persistence.enabled=true \
+  --set persistence.storageClass=<storage-class> \
+  --set resources.requests.memory=128Mi \
+  --set mode=standalone \
+  minio minio/minio
 ```
 
 Forward the MinIO console port:

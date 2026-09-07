@@ -10,29 +10,57 @@ redirect_from:
   - /server/integrations/authentik-sso-provider
 ---
 
-Parseable supports OpenID Connect (OIDC) authentication for secure access to all its functionality. An OpenID server publishes its metadata at a well-known URL, typically `https://server.com/.well-known/openid-configuration`. Parseable uses OpenID connect discovery mechanism to connect to Identity providers.
+[OpenID Connect](https://openid.net/) (OIDC) lets Parseable delegate user
+sign-in to an identity provider while keeping Parseable roles and permissions in
+control of what each user can access after login. Teams usually use it when they
+already manage users in systems such as Auth0, Okta, Azure AD, Google Workspace,
+Keycloak, or Authentik.
+
+Parseable connects to the identity provider through OIDC discovery. The provider
+must expose its metadata at a discovery URL such as
+`https://identity-provider.example.com/.well-known/openid-configuration`.
+Parseable uses that metadata to find the authorization, token, userinfo, logout,
+and JWKS endpoints required for the login flow.
 
 ## Prerequisites
 
-Before you begin, make sure you have the following prerequisites:
+Before you start, keep these values ready:
 
-- A configured OIDC provider which provides group claims for each user. Parseable will map the group name for a user with role created in the instance.
-- Knowledge of your OIDC identity provider and its configuration details.
-- A Parseable instance with admin access and the endpoint to access Parseable should have TLS certification (`https://parseable-endpoint`)
-- You need to set the redirect uri in the OIDC identity provider to `<parseable-instance-url>/api/v1/o/code`. For example, if Parseable instance is hosted at `https://demo.parseable.com/` then the redirect uri should be `https://demo.parseable.com/api/v1/o/code`.
-- You need to add the encryption key on your OIDC provider used to encrypt the keys.
-- Default OIDC role created on Parseable instance.
+- A Parseable instance with admin access.
+- A public HTTPS URL for Parseable, for example `https://demo.parseable.com`.
+- An OIDC client or application created in your identity provider.
+- The OIDC client ID, client secret, and issuer URL.
+- A redirect URI registered in the identity provider as
+  `<parseable-instance-url>/api/v1/o/code`. For example, when Parseable is
+  hosted at `https://demo.parseable.com`, register
+  `https://demo.parseable.com/api/v1/o/code`.
+- A default OIDC role in Parseable, or OIDC group claims that match role names
+  already created in Parseable.
+
+If you use group-to-role mapping, make sure your identity provider includes the
+`groups` claim in the ID token. Parseable reads those group values and matches
+them with roles created in Parseable.
 
 ## Environment Variables
 
-To use OIDC authentication with Parseable, you need to set the following environment variables:
+Set the following environment variables on the Parseable node that serves the
+Console and login endpoints:
 
 | Variable Name | Required | Description | Default | Example |
 | --- | --- | --- | --- | --- |
-| P_OIDC_CLIENT_ID | Yes | Your OIDC client identifier provided by your identity provider. | "" | "client-id from the OIDC identity provider" |
-| P_OIDC_CLIENT_SECRET | Yes | Your OIDC client secret provided by your identity provider. | "" | "client-secret from the OIDC identity provider" |
-| P_OIDC_ISSUER | Yes | The OIDC issuer URL, typically provided by your identity provider. It points to the OIDC authorization server. Should support discovery protocol | "" | "https://accounts.google.com" |
-| P_ORIGIN_URI | Yes | The URI where Parseable is hosted or accessible. This should be the base URL of your Parseable instance. | "" | "https://demo.parseable.com/" |
+| `P_OIDC_CLIENT_ID` | Yes | Client ID from the OIDC client or application created in your identity provider. | `""` | `parseable` |
+| `P_OIDC_CLIENT_SECRET` | Yes | Client secret from the same OIDC client or application. | `""` | `client-secret` |
+| `P_OIDC_ISSUER` | Yes | Issuer URL for the identity provider. The issuer must support OIDC discovery. | `""` | `https://accounts.google.com` |
+| `P_ORIGIN_URI` | Yes | Public base URL where users access Parseable. This is used to build the callback URL. | `""` | `https://demo.parseable.com/` |
+| `P_OIDC_SCOPE` | No | OIDC scopes requested during login. Keep the default unless your provider requires a different scope set. | `openid profile email offline_access` | `openid profile email groups` |
+
+<Callout type="info">
+  Parseable builds the OIDC callback URL from `P_ORIGIN_URI`. Do not set
+  `P_OIDC_REDIRECT_URI`. In your identity provider, register the redirect URI as
+  the Parseable public URL followed by `/api/v1/o/code`. For example, when
+  `P_ORIGIN_URI=https://demo.parseable.com`, register
+  `https://demo.parseable.com/api/v1/o/code`.
+</Callout>
 
 ## Kubernetes with Helm chart 3.0.0 and later
 
@@ -95,37 +123,60 @@ parseable:
 </Callout>
 
 If a reverse proxy terminates TLS, configure it to preserve the original host
-and protocol headers. `P_ORIGIN_URI` must be the public HTTPS URL registered
-with the identity provider.
+and protocol headers. `P_ORIGIN_URI` must be the same public HTTPS URL that is
+used to register the redirect URI in the identity provider.
 
 ## Privilege Management with OIDC
 
-You can either setup a default OIDC role on Parseable instance or map a user group from your identity provider to a role on Parseable instance.
+After a user signs in through OIDC, Parseable still needs to decide what that
+user can do. You can handle this in two ways:
+
+- Set a default OIDC role for new OIDC users.
+- Map OIDC groups from the identity provider to Parseable roles.
+
+The group-to-role path is useful when your identity provider already manages
+teams such as `platform`, `security`, or `support`. The default role path is
+useful when every OIDC user should start with the same baseline access.
 
 ### Assign default role to any new OIDC user
 
-Users that are not a part of group(s) or are part of group(s) where corresponding role is not created on Parseable, will be assigned a default role.
+Users receive the default OIDC role when they are not part of any mapped group,
+or when their OIDC groups do not have matching roles in Parseable.
 
-Follow below steps to set default OIDC role on Parseable instance:
+To set a default OIDC role:
 
-1. Login to Parseable with admin access
-2. Click on "Users" from the left pane
-3. Click on "Create Role", provide the name of the role and the privilege to assign
+1. Log in to Parseable as an admin.
+2. Open **Users** from the left navigation.
+3. Create a role with the privileges you want new OIDC users to receive.
+4. Click **Set Default OIDC Role**.
+5. Select the role you created and save the setting.
 
-Once created, Click on "Set Default OIDC Role", select the role just created from the dropdown and click on "Set Default OIDC Role".
+Once this is set, new OIDC users who do not match a group-specific role will be
+assigned this default role at login.
 
 ### Multi-Role Support
 
-Parseable's OIDC integration supports **assigning multiple roles to a single user**, providing flexible, fine-grained access control for your team.
+Parseable can assign multiple roles to the same OIDC user. This is useful when a
+user belongs to more than one team or needs access to different datasets with
+different permissions.
 
-**Benefits:**
+For example:
 
-- Give a DevOps engineer both `writer` and `reader` roles for different datasets
-- Grant a user `reader` permissions, so they can review logs across datasets without manual role shuffling
-- All roles are respected in UI and API, just assign them in your OIDC provider and Parseable does the rest
+- A platform user can have `writer` access on one dataset and `reader` access on another.
+- A support user can receive read access across selected datasets without manual user-by-user setup.
+- The same role assignments are respected by both the UI and API.
 
 ### Map user groups to roles on Parseable
 
-To map your user group to a role on Parseable you must first create that role on Parseable instance with the same name as the user group from your identity provider. To create roles in Parseable, you can use the Create a role API. This allows you to define custom roles for users, granting them specific privileges and permissions within the application.
+To map OIDC groups to Parseable roles, create roles in Parseable with the same
+names as the group values sent by your identity provider. For example, if the ID
+token contains a group named `platform-admins`, create a Parseable role named
+`platform-admins`.
 
-Once we have roles setup now your users can login with SSO and all the permissions will be immediately granted. Please note that per user customization is not an option for OIDC users. It is recommended you create a new role if such case arises.
+You can create roles from the Parseable UI or through the create role API. Once
+the roles exist, users can sign in with SSO and Parseable will apply the matching
+role permissions during login.
+
+Per-user customization is not available for OIDC users. If a user needs a
+different permission set, create a new role and manage that assignment from the
+identity provider.

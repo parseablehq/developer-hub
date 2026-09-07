@@ -1,6 +1,7 @@
 {
   "title": "Infrastructure",
   "pages": [
+    "traefik",
     "windows-server"
   ]
 }

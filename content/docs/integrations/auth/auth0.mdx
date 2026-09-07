@@ -36,7 +36,7 @@ Integrate Auth0 with Parseable to:
 
 1. Go to **Settings** tab
 2. Configure:
-   - **Allowed Callback URLs**: `https://your-parseable.com/callback`
+   - **Allowed Callback URLs**: `https://your-parseable.com/api/v1/o/code`
    - **Allowed Logout URLs**: `https://your-parseable.com`
    - **Allowed Web Origins**: `https://your-parseable.com`
 3. Click **Save Changes**
@@ -56,7 +56,7 @@ From the **Settings** tab, copy:
 P_OIDC_CLIENT_ID=your-client-id
 P_OIDC_CLIENT_SECRET=your-client-secret
 P_OIDC_ISSUER=https://your-tenant.auth0.com/
-P_OIDC_REDIRECT_URI=https://your-parseable.com/callback
+P_ORIGIN_URI=https://your-parseable.com
 ```
 
 ### Docker Compose
@@ -70,7 +70,7 @@ services:
       - P_OIDC_CLIENT_ID=${AUTH0_CLIENT_ID}
       - P_OIDC_CLIENT_SECRET=${AUTH0_CLIENT_SECRET}
       - P_OIDC_ISSUER=https://your-tenant.auth0.com/
-      - P_OIDC_REDIRECT_URI=https://your-parseable.com/callback
+      - P_ORIGIN_URI=https://your-parseable.com
 ```
 
 ## OIDC Endpoints
@@ -120,9 +120,9 @@ Enable social login:
 
 ### Callback URL Mismatch
 
-1. Verify callback URL matches exactly (including trailing slash)
-2. Check for http vs https
-3. Verify domain is correct
+1. Verify the Auth0 callback URL is `https://your-parseable.com/api/v1/o/code`
+2. Make sure `P_ORIGIN_URI` is the public base URL, for example `https://your-parseable.com`
+3. Check for http vs https and confirm the domain is correct
 
 ### Token Issues
 

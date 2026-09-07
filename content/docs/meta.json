@@ -16,6 +16,7 @@
     "features",
     "key-concepts",
     "integrations",
+    "slack-bot",
     "---Ingesting Data---",
     "ingest-data/auto-instrumentation",
     "ingest-data/otel",

@@ -1,6 +1,7 @@
 {
   "title": "Integrations",
   "pages": [
+    "application-platforms",
     "alerting",
     "auth",
     "data-platforms",

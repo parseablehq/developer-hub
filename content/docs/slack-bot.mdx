@@ -1,0 +1,179 @@
+---
+title: Slackbot
+description: Ask Parseable questions from Slack using Slackbot and MCP.
+---
+
+The Parseable Slackbot brings Parseable investigation into the Slack
+conversation where an incident, alert, or debugging thread is already happening.
+Instead of switching context to copy a query into a browser, a user can connect
+their Parseable account from Slack and ask questions with `@parseable`.
+
+The bot is available for Parseable OSS, Cloud, and Enterprise users. There is no
+separate setup flow for each edition. Slackbot works through the Parseable MCP
+path and is accessed from Slack chat. Slack is the place where the user asks the
+question, MCP provides the tool
+interface, and Parseable returns data from logs, metrics, traces, alerts, and
+other supported resources.
+
+## How It Works
+
+```text
+Slack user
+  |
+  | /parseable connect
+  | API key
+  v
+Parseable Slackbot
+  |
+  | MCP request
+  v
+Parseable MCP Server
+  |
+  | Parseable API request
+  v
+Parseable Cloud, Enterprise, or OSS
+```
+
+The bot does not ingest telemetry or create a new data store. It calls Parseable
+through MCP and returns the answer in Slack. Parseable still authenticates the
+API key and enforces the permissions attached to that key.
+
+This works across Parseable Cloud, Parseable Enterprise, and self-hosted OSS
+deployments. The exact actions available in Slack depend on the Parseable API key
+used during connection.
+
+## What You Can Ask
+
+Once connected, mention the bot in a Slack channel or thread and ask a question:
+
+```text
+@parseable show me errors from api-gateway in the last 10 minutes
+```
+
+You can use the bot for the same kind of investigation you would normally do in
+Parseable or through the MCP Server:
+
+- Find datasets and inspect schema.
+- Query logs with a bounded time range.
+- Run PromQL for metrics.
+- Look up traces and service behavior.
+- Inspect alerts and alert targets.
+- Review users, roles, and access information when the API key allows it.
+- Create or evaluate alerts when the connected key has those permissions and the
+  action is confirmed.
+
+For read-only workflows, connect with a read-only Parseable API key.
+
+## Prerequisites
+
+Before you start, make sure you have:
+
+- Access to the Slack workspace where the Parseable bot is installed.
+- A Parseable Cloud, Enterprise, or OSS deployment.
+- A Parseable API key with the permissions you want the bot to use.
+
+## Connect From Slack
+
+Run the connect command in Slack:
+
+```text
+/parseable connect
+```
+
+The bot asks for the details it needs to reach Parseable. For Parseable Cloud,
+provide the API key for the workspace you want to query. For Enterprise or OSS,
+provide the Parseable URL and API key if the bot asks for both.
+
+After the connection is saved, ask a small test question:
+
+```text
+@parseable list datasets
+```
+
+If the bot returns the dataset list, the Slack workspace is connected to
+Parseable and ready for investigation.
+
+## Ask Questions in Context
+
+The bot is most useful when the question already has context. You can ask inside
+an alert thread, an incident channel, or a service-specific channel.
+
+Examples:
+
+```text
+@parseable what changed in checkout errors during the last 30 minutes?
+```
+
+```text
+@parseable query payment-api logs for 5xx errors in the last hour
+```
+
+```text
+@parseable show request latency for frontend over the last 15 minutes
+```
+
+```text
+@parseable summarize recent alerts for production
+```
+
+Keep the first question narrow. Start with a dataset, service name, error type,
+or time window. Once the bot finds the right direction, ask follow-up questions
+in the same thread.
+
+## Permissions and Safety
+
+Slackbot follows the same security model as the MCP Server. It does not get
+special access to Parseable. If the connected API key cannot access a dataset,
+the bot cannot access it either.
+
+Use these rules for production work:
+
+- Use least-privilege API keys.
+- Prefer read-only keys for investigation channels.
+- Use a separate key for workflows that need alert creation or alert evaluation.
+- Rotate the key if it is shared in the wrong channel or exposed outside Slack.
+- Avoid pasting API keys in public channels.
+
+Slack permissions are separate from Parseable permissions. Slack scopes control
+what Slackbot can do inside Slack. The connected Parseable API key controls what
+it can access inside Parseable.
+
+Slackbot uses the following bot token scopes:
+
+| OAuth scope | Description |
+| --- | --- |
+| [`app_mentions:read`](https://docs.slack.dev/reference/scopes/app_mentions:read) | View messages that directly mention `@Parseable` in conversations that the app is in. |
+| [`channels:history`](https://docs.slack.dev/reference/scopes/channels:history) | View messages and other content in public channels that `Parseable` has been added to. |
+| [`channels:read`](https://docs.slack.dev/reference/scopes/channels:read) | View basic information about public channels in a workspace. |
+| [`chat:write`](https://docs.slack.dev/reference/scopes/chat:write) | Send messages as `@Parseable`. |
+| [`commands`](https://docs.slack.dev/reference/scopes/commands) | Add slash commands, including `/parseable connect`. |
+| [`groups:history`](https://docs.slack.dev/reference/scopes/groups:history) | View messages and other content in private channels that `Parseable` has been added to. |
+| [`im:history`](https://docs.slack.dev/reference/scopes/im:history) | View messages and other content in direct messages that `Parseable` has been added to. |
+| [`mpim:history`](https://docs.slack.dev/reference/scopes/mpim:history) | View messages and other content in group direct messages that `Parseable` has been added to. |
+| [`team:read`](https://docs.slack.dev/reference/scopes/team:read) | View the name, email domain, and icon for workspaces that `Parseable` is connected to. |
+| [`users:read`](https://docs.slack.dev/reference/scopes/users:read) | View people in a workspace. |
+| [`users:read.email`](https://docs.slack.dev/reference/scopes/users:read.email) | View email addresses of people in a workspace. |
+
+If the app is submitted to the Slack Marketplace, Slack reviews the requested
+scopes before approval. After approval, Slackbot can only use the scopes Slack
+has approved for that app.
+
+## How This Differs From Slack Alert Targets
+
+Slackbot is for asking questions and receiving answers in Slack.
+
+Slack alert targets are different. They send alert notifications from Parseable
+to a Slack channel when an alert fires. If you only want alert messages in Slack,
+use the [Slack alerting integration](/integrations/alerting/slack). If you want
+to ask questions from Slack, use Slackbot.
+
+Both can be useful together. An alert can arrive in Slack, and the same thread
+can continue with an `@parseable` question to inspect the logs, metrics, traces,
+or alerts behind the incident.
+
+## Related Pages
+
+- [MCP Server](/mcp)
+- [Alerts](/user-guide/alerting)
+- [Slack alerting integration](/integrations/alerting/slack)
+- [API keys](/user-guide/api-keys)

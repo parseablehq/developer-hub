@@ -10,6 +10,22 @@ export const source = loader({
   baseUrl: '/',
   source: docs.toFumadocsSource(),
   plugins: [openapiPlugin()],
+  pageTree: {
+    transformers: [
+      {
+        file(node) {
+          if (node.url === '/ingest-data/logging-agents/otel-collector') {
+            return {
+              ...node,
+              name: 'OTel Collector',
+            };
+          }
+
+          return node;
+        },
+      },
+    ],
+  },
   icon(icon) {
     if (icon && icon in icons) {
       return createElement(icons[icon as keyof typeof icons]);
