@@ -1,0 +1,78 @@
+---
+title: Auth0
+description: Stream Auth0 tenant logs to Parseable
+---
+
+Send Auth0 authentication and security events to Parseable using an Auth0 Custom Webhook.
+
+## Prerequisites
+
+- An Auth0 tenant with Log Streams enabled
+- Parseable deployed and accessible through HTTPS
+- A Parseable API key with ingestion access
+
+## Create a Parseable Dataset
+
+1. Log in to Parseable.
+2. Create a dataset named `auth0_logs`.
+3. Select **Arbitrary logs** as the dataset type.
+4. Create an API key with ingestion access to `auth0_logs`.
+
+The ingestion endpoint is:
+
+```text
+https://<parseable-ingestion-host>/api/v1/logstream/auth0_logs
+```
+
+For distributed deployments, use the Parseable ingestion endpoint rather than the query endpoint.
+
+## Create an Auth0 Log Stream
+
+1. Log in to the Auth0 Dashboard.
+2. Go to **Monitoring** → **Streams**.
+3. Click **Create Log Stream**.
+4. Select **Custom Webhook**.
+5. Configure the stream:
+
+| Setting | Value |
+| --- | --- |
+| Name | `Parseable` |
+| Payload URL | `https://<parseable-ingestion-host>/api/v1/logstream/auth0_logs` |
+| Authorization Token | `Bearer <parseable-api-key>` |
+| Content Type | `application/json` |
+| Content Format | `JSON Array` |
+
+6. Select the required event categories.
+7. Save the log stream.
+
+Auth0 sends the Authorization Token as the HTTP `Authorization` header. The dataset name is included in the endpoint, so `X-P-Stream` and `X-P-Log-Source` headers are not required.
+
+## Verify Log Delivery
+
+1. Trigger an Auth0 event, such as a successful login, failed login, signup, MFA challenge, or user deletion.
+2. Go to **Monitoring** → **Logs** in Auth0 and confirm that the event exists.
+3. Open the log stream's **Health** tab and confirm that delivery succeeds.
+4. Open the `auth0_logs` dataset in Parseable and confirm that the event is available.
+
+Common Auth0 fields in Parseable include:
+
+| Parseable field | Purpose |
+| --- | --- |
+| `data_type` | Auth0 event code |
+| `data_date` | Event timestamp |
+| `data_description` | Event description |
+| `data_client_name` | Auth0 application name |
+| `data_connection` | Authentication connection |
+| `data_user_id` | Auth0 user identifier |
+| `data_ip` | Source IP address |
+| `log_id` | Auth0 log-event identifier |
+
+## Troubleshooting
+
+- **`401 Unauthorized`:** Confirm the Authorization Token is `Bearer <parseable-api-key>` and that the key has ingestion access to `auth0_logs`.
+- **Auth0 shows no deliveries:** Trigger a tenant event and confirm that the selected event filters include its category.
+- **Delivery succeeds but no data appears:** Confirm that the URL uses the ingestion endpoint and ends with `/api/v1/logstream/auth0_logs`.
+
+## Import the Auth0 Dashboard
+
+Use the [Auth0 Security Overview dashboard](https://github.com/parseablehq/dashboards/tree/main/auth0-security-overview) to monitor login activity, failures, user lifecycle events, source IPs, and recent security events. Map its dataset variable to `auth0_logs` after import.
