@@ -20,10 +20,9 @@ remote_write:
     headers:
       X-API-Key: <parseable-api-key>
       X-P-Stream: prometheus-metrics
-      X-P-Log-Source: otel-metrics
 ```
 
-`X-API-Key` authorizes the write to Parseable. `X-P-Stream` decides the target metrics dataset, and `X-P-Log-Source: otel-metrics` tells Parseable to treat the incoming payload as metrics data.
+`X-API-Key` authorizes the write to Parseable. `X-P-Stream` decides the target metrics dataset, tells Parseable to treat the incoming payload as metrics data.
 
 ## Fluent Bit with OpenTelemetry Output
 
@@ -51,7 +50,6 @@ Fluent Bit is useful when you already run it as a telemetry agent and want it to
     Tls                   Off
     Header                X-API-Key <parseable-api-key>
     Header                X-P-Stream prometheus-metrics
-    Header                X-P-Log-Source otel-metrics
     Add_label             app fluent-bit
 ```
 
@@ -85,7 +83,6 @@ exporters:
     headers:
       X-API-Key: <parseable-api-key>
       X-P-Stream: prometheus-metrics
-      X-P-Log-Source: otel-metrics
     encoding: proto
     tls:
       insecure: true
@@ -106,6 +103,6 @@ Keep the dataset name clear enough for the team that owns it. For example, use s
 ## Things to Check
 
 - Use the ingestor endpoint, not a query-only endpoint, for writes.
-- Keep `X-P-Log-Source` set to `otel-metrics`.
+- Confirm the exporter is sending to the metrics endpoint.
 - Use an API key that can write to the target dataset.
 - Start with a short `scrape_interval`, then tune it based on the metric volume you expect.

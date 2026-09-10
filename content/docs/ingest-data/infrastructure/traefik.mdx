@@ -131,7 +131,6 @@ exporters:
     headers:
       X-API-Key: ${env:PARSEABLE_API_KEY}
       X-P-Stream: traefik-metrics
-      X-P-Log-Source: otel-metrics
     retry_on_failure:
       enabled: true
       max_elapsed_time: 0s
@@ -142,7 +141,6 @@ exporters:
     headers:
       X-API-Key: ${env:PARSEABLE_API_KEY}
       X-P-Stream: traefik-traces
-      X-P-Log-Source: otel-traces
     retry_on_failure:
       enabled: true
       max_elapsed_time: 0s

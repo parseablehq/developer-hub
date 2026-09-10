@@ -180,7 +180,7 @@ paths:
       operationId: ingestOtlpLogs
       description: |
         Ingest OpenTelemetry logs through Parseable's native OTLP logs endpoint.
-        Use `X-P-Stream` to choose the destination dataset and `X-P-Log-Source: otel-logs` to identify the payload type.
+        Use `X-P-Stream` to choose the destination dataset. Parseable identifies the OTLP signal type from the `/v1/logs` endpoint.
       requestBody:
         content:
           application/json:
@@ -193,13 +193,6 @@ paths:
           in: header
           schema:
             type: string
-          required: true
-        - name: X-P-Log-Source
-          in: header
-          schema:
-            type: string
-            enum:
-              - otel-logs
           required: true
       responses:
         '200':
@@ -214,7 +207,7 @@ paths:
       operationId: ingestOtlpTraces
       description: |
         Ingest OpenTelemetry traces through Parseable's native OTLP traces endpoint.
-        Use `X-P-Stream` to choose the destination dataset and `X-P-Log-Source: otel-traces` to identify the payload type.
+        Use `X-P-Stream` to choose the destination dataset. Parseable identifies the OTLP signal type from the `/v1/traces` endpoint.
       requestBody:
         content:
           application/json:
@@ -227,13 +220,6 @@ paths:
           in: header
           schema:
             type: string
-          required: true
-        - name: X-P-Log-Source
-          in: header
-          schema:
-            type: string
-            enum:
-              - otel-traces
           required: true
       responses:
         '200':
@@ -248,7 +234,7 @@ paths:
       operationId: ingestOtlpMetrics
       description: |
         Ingest OpenTelemetry metrics through Parseable's native OTLP metrics endpoint.
-        Use `X-P-Stream` to choose the destination dataset and `X-P-Log-Source: otel-metrics` to identify the payload type.
+        Use `X-P-Stream` to choose the destination dataset. Parseable identifies the OTLP signal type from the `/v1/metrics` endpoint.
       requestBody:
         content:
           application/json:
@@ -261,13 +247,6 @@ paths:
           in: header
           schema:
             type: string
-          required: true
-        - name: X-P-Log-Source
-          in: header
-          schema:
-            type: string
-            enum:
-              - otel-metrics
           required: true
       responses:
         '200':
@@ -297,13 +276,6 @@ paths:
           in: header
           schema:
             type: string
-          required: true
-        - name: X-P-Log-Source
-          in: header
-          schema:
-            type: string
-            enum:
-              - otel-metrics
           required: true
       responses:
         '200':

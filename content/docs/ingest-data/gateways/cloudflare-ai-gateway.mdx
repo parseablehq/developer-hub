@@ -44,7 +44,6 @@ export PARSEABLE_STREAM="cf-ai-gateway-traces"
 
 curl -X PUT "$PARSEABLE_URL/api/v1/logstream/$PARSEABLE_STREAM" \
   -H "X-API-Key: ${PARSEABLE_API_KEY}" \
-  -H "X-P-Log-Source: otel-traces" \
   -H "X-P-Telemetry-Type: traces"
 ```
 
@@ -74,7 +73,6 @@ In the Cloudflare dashboard, open **AI > AI Gateway**, select your gateway, open
 | Format | JSON |
 | `X-API-Key` | Your Parseable API key |
 | `X-P-Stream` | `cf-ai-gateway-traces` |
-| `X-P-Log-Source` | `otel-traces` |
 
 Leave the exporter's **Authorization** field empty when authenticating with `X-API-Key`. Do not configure both authentication methods for the same Parseable endpoint.
 
@@ -210,7 +208,7 @@ To connect gateway calls to an existing distributed trace, Cloudflare accepts th
 
 - **No traces arrive:** Confirm that the exporter URL is public HTTPS and ends in `/v1/traces`. If you are using a Quick Tunnel, make sure it is still running and that the current URL matches the exporter configuration. Check that the request passed through the same Cloudflare gateway whose exporter you configured, then generate a new request and expand the Parseable `time range`.
 - **Parseable returns an authentication error:** Verify `X-API-Key`. When using that header, leave Cloudflare's exporter Authorization field empty.
-- **Parseable reports a missing stream or log source:** Create `cf-ai-gateway-traces`, set `X-P-Stream` to that exact value, and set `X-P-Log-Source` to `otel-traces`.
+- **Parseable reports a missing stream:** Create `cf-ai-gateway-traces` and set `X-P-Stream` to that exact value.
 - **The model request is rejected:** Verify the account ID, gateway ID, `cf-aig-authorization` token, stored provider key, model name, and provider plan. Some models are unavailable on free plans.
 - **Dashboard charts show no data:** Choose a time range containing ingested traces and confirm that the dashboard dataset variable is `cf-ai-gateway-traces`. Cost, token, or latency charts remain empty when the selected traces do not contain those attributes.
 

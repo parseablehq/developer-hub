@@ -100,7 +100,7 @@ Each call emits a record with `type: "user_event"`, `event_name`, and `event_dat
 ## Python-specific notes
 
 - **`SanitizingSpanExporter`** flattens Temporal's non-primitive span attributes (nested dicts, `datetime`, `None`) before OTLP serialization. Without it, Parseable's strict OTLP parser rejects payloads with `400 Invalid data for Value`. Wired automatically.
-- **`X-P-Log-Source` headers** are set automatically: `otel-logs` for the log pipeline and `otel-traces` for traces, as required by Parseable's OTLP ingestor.
+- **OTLP signal routing** is handled by the `/v1/logs` and `/v1/traces` endpoint paths, so no signal-source header is needed.
 - **OTel pinning.** `opentelemetry-sdk>=1.25,<2` because Temporal's SDK rides the 1.x line.
 
 ## Links

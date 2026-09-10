@@ -55,10 +55,9 @@ remote_write:
     headers:
       X-API-Key: <parseable-api-key>
       X-P-Stream: docker-metrics
-      X-P-Log-Source: otel-metrics
 ```
 
-`X-API-Key` authorizes the write to Parseable. `X-P-Stream` selects the Parseable dataset. Keep `X-P-Log-Source` set to `otel-metrics`. Change the `node` label when monitoring more than one Docker host.
+`X-API-Key` authorizes the write to Parseable. `X-P-Stream` selects the Parseable dataset. Parseable treats the payload as metrics because Prometheus remote write sends it to `/v1/prometheus/write`. Change the `node` label when monitoring more than one Docker host.
 
 The metric relabel rules expose the cAdvisor `name` label as `container` and shorten Docker Compose's project and service label names. These names match the dashboard variables and queries.
 
@@ -446,7 +445,7 @@ The Project and Service filters are populated from Docker Compose labels. Contai
 1. Open the Prometheus Targets page and confirm that cAdvisor is **UP**
 2. Check `docker compose logs cadvisor prometheus` for scrape or remote-write errors
 3. Verify that Prometheus can reach `/v1/prometheus/write` on the Parseable ingestor
-4. Confirm the `X-P-Stream: docker-metrics` and `X-P-Log-Source: otel-metrics` headers
+4. Confirm the `X-P-Stream: docker-metrics` header
 5. Confirm that the cAdvisor container can read the Docker runtime paths mounted in the Compose file
 
 Some metric families are conditional. Health-state metrics require Docker health checks, project and service labels require Docker Compose, and resource-limit metrics require limits on the container.

@@ -65,7 +65,6 @@ Create a dataset for CrewAI spans and tag it for Agent Observability:
 ```bash
 curl -X PUT "$PARSEABLE_URL/api/v1/logstream/$PARSEABLE_STREAM" \
   -H "X-API-Key: ${PARSEABLE_API_KEY}" \
-  -H "X-P-Log-Source: otel-traces" \
   -H "X-P-Telemetry-Type: traces" \
   -H "X-P-Dataset-Tag: agent-observability"
 ```
@@ -140,7 +139,6 @@ provider.add_span_processor(
             headers={
                 "X-API-Key": os.environ["PARSEABLE_API_KEY"],
                 "X-P-Stream": parseable_stream,
-                "X-P-Log-Source": "otel-traces",
             },
         )
     )
@@ -248,7 +246,7 @@ Agent goals, backstories, task descriptions, prompts, completions, and tool inpu
 
 ## Troubleshooting
 
-- **No traces appear:** Confirm that `PARSEABLE_URL` is reachable from the application, the API key has ingest access, the endpoint is `/v1/traces`, and `X-P-Log-Source` is set to `otel-traces`.
+- **No traces appear:** Confirm that `PARSEABLE_URL` is reachable from the application, the API key has ingest access, and the exporter endpoint is `/v1/traces`.
 
 - **Only CrewAI spans appear:** CrewAI instrumentation captures the workflow, but provider-level instrumentation captures the detailed model call. Make sure the matching provider instrumentor runs before the crew executes.
 

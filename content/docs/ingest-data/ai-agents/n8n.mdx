@@ -119,7 +119,6 @@ exporters:
     headers:
       X-P-API-Key: "<YOUR_PARSEABLE_API_KEY>"
       X-P-Stream: "n8n-traces"
-      X-P-Log-Source: "otel-traces"
       Content-Type: "application/x-protobuf"
     encoding: proto
 
@@ -139,7 +138,6 @@ If your Parseable deployment still uses basic authentication, use the `Authoriza
 headers:
   Authorization: "Basic <base64 encoded username:password>"
   X-P-Stream: "n8n-traces"
-  X-P-Log-Source: "otel-traces"
   Content-Type: "application/x-protobuf"
 ```
 

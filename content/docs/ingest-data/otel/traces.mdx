@@ -17,7 +17,6 @@ exporters:
     headers:
       Authorization: "Basic <base64 encoded string of username:password>"
       X-P-Stream: otel-traces       # dataset/dataset name
-      X-P-Log-Source: otel-traces
       Content-Type: application/json
     encoding: json
     tls:
@@ -41,7 +40,6 @@ exporters:
     headers:
       Authorization: "Basic YWRtaW46YWRtaW4="  # admin:admin in base64
       X-P-Stream: otel-traces        # dataset/dataset name
-      X-P-Log-Source: otel-traces
       Content-Type: application/x-protobuf
     encoding: proto
     tls:

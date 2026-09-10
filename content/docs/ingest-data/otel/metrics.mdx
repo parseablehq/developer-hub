@@ -15,7 +15,6 @@ exporters:
     headers:
       Authorization: "Basic <base64 encoded string of username:password>"
       X-P-Stream: otel-metrics     # dataset/dataset name
-      X-P-Log-Source: otel-metrics
       Content-Type: application/json
     encoding: json
     tls:
@@ -40,7 +39,6 @@ exporters:
     headers:
       Authorization: "Basic YWRtaW46YWRtaW4="  # admin:admin in base64
       X-P-Stream: otel-metrics       # dataset/dataset name
-      X-P-Log-Source: otel-metrics
       Content-Type: application/x-protobuf
     encoding: proto
     tls:
@@ -59,7 +57,6 @@ By default Parseable infers timestamp data types for time related fields (e.g. `
 ```bash
 curl -X PUT https://<parseable-endpoint>/api/v1/logstream/otel-metrics \
   -H "Authorization: Basic <base64-encoded-credentials>" \
-  -H "X-P-Log-Source: otel-metrics" \
   -H "x-p-infer-timestamp: false"
 ```
 
@@ -70,7 +67,7 @@ curl -X PUT https://<parseable-endpoint>/api/v1/logstream/otel-metrics \
 <Callout type="info">
 The `x-p-infer-timestamp` header:
 - Can only be set at dataset **creation** time. It cannot be changed via an update.
-- Is only valid when `X-P-Log-Source` is `otel-metrics`. Setting it for other log sources will return a `400 Bad Request`.
+- Is only valid for OTLP metrics datasets. Setting it for other telemetry types will return a `400 Bad Request`.
 </Callout>
 
 ## Data flattening

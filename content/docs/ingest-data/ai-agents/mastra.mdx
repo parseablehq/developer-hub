@@ -114,10 +114,9 @@ const resourceAttributes = {
   'deployment.environment': process.env.NODE_ENV ?? 'development',
 };
 
-const headers = (stream: string, source: string) => ({
+const headers = (stream: string) => ({
   'X-API-Key': apiKey,
   'X-P-Stream': stream,
-  'X-P-Log-Source': source,
 });
 
 const traceExporter = new OtelExporter({
@@ -125,7 +124,7 @@ const traceExporter = new OtelExporter({
     custom: {
       endpoint,
       protocol: 'http/json',
-      headers: headers('mastra-traces', 'otel-traces'),
+      headers: headers('mastra-traces'),
     },
   },
   signals: { traces: true, logs: false },
@@ -137,7 +136,7 @@ const logExporter = new OtelExporter({
     custom: {
       endpoint,
       protocol: 'http/json',
-      headers: headers('mastra-logs', 'otel-logs'),
+      headers: headers('mastra-logs'),
     },
   },
   signals: { traces: false, logs: true },
@@ -160,7 +159,7 @@ class ParseableMetricExporter extends BaseExporter {
 
     const metricExporter = new OTLPMetricExporter({
       url: `${endpoint}/v1/metrics`,
-      headers: headers('mastra-metrics', 'otel-metrics'),
+      headers: headers('mastra-metrics'),
     });
 
     const reader = new PeriodicExportingMetricReader({
@@ -334,7 +333,7 @@ histogram_quantile(
 )
 ```
 
-If a dataset remains empty, check the application logs for OTLP errors and verify the endpoint, API key, `X-P-Stream`, and `X-P-Log-Source` headers.
+If a dataset remains empty, check the application logs for OTLP errors and verify the endpoint, API key, and `X-P-Stream` header.
 
 </Step>
 </Steps>

@@ -64,7 +64,6 @@ exporters:
     headers:
       X-API-Key: ${env:PARSEABLE_API_KEY}
       X-P-Stream: otel-logs
-      X-P-Log-Source: otel-logs
     retry_on_failure:
       enabled: true
       max_elapsed_time: 0s
@@ -78,7 +77,6 @@ exporters:
     headers:
       X-API-Key: ${env:PARSEABLE_API_KEY}
       X-P-Stream: otel-metrics
-      X-P-Log-Source: otel-metrics
     retry_on_failure:
       enabled: true
       max_elapsed_time: 0s
@@ -92,7 +90,6 @@ exporters:
     headers:
       X-API-Key: ${env:PARSEABLE_API_KEY}
       X-P-Stream: otel-traces
-      X-P-Log-Source: otel-traces
     retry_on_failure:
       enabled: true
       max_elapsed_time: 0s
@@ -180,7 +177,7 @@ Then send telemetry through the Collector and confirm that these datasets receiv
 | Metrics | `otel-metrics` | `/v1/metrics` |
 | Traces | `otel-traces` | `/v1/traces` |
 
-You can rename the datasets by changing `X-P-Stream`, but keep `X-P-Log-Source` set to the signal-specific value shown in the configuration.
+You can rename the datasets by changing `X-P-Stream`. Parseable derives the OTLP signal type from the endpoint used by each pipeline.
 
 ## Production guidance
 

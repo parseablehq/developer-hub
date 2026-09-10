@@ -90,7 +90,6 @@ exporters:
     headers:
       X-API-Key: ${env:PARSEABLE_API_KEY}
       X-P-Stream: ${env:PARSEABLE_LOGS_STREAM}
-      X-P-Log-Source: otel-logs
       Content-Type: application/json
 
   otlphttp/parseable_traces:
@@ -99,7 +98,6 @@ exporters:
     headers:
       X-API-Key: ${env:PARSEABLE_API_KEY}
       X-P-Stream: ${env:PARSEABLE_TRACES_STREAM}
-      X-P-Log-Source: otel-traces
       Content-Type: application/json
 
   otlphttp/parseable_metrics:
@@ -108,7 +106,6 @@ exporters:
     headers:
       X-API-Key: ${env:PARSEABLE_API_KEY}
       X-P-Stream: ${env:PARSEABLE_METRICS_STREAM}
-      X-P-Log-Source: otel-metrics
       Content-Type: application/json
 
 service:
@@ -356,7 +353,7 @@ A healthy Collector response tells you the process is running. If Parseable is s
 
 - **The Modal test does not appear in Parseable**: Confirm the Collector URL is public HTTPS, the tunnel or gateway is running, and `OTEL_HEADER_Authorization` matches `OTLP_INGEST_TOKEN`.
 - **The Collector returns `401`**: Check the bearer token used by Modal. Managed telemetry uses `OTEL_HEADER_Authorization`; application telemetry uses `OTEL_EXPORTER_OTLP_HEADERS`.
-- **The Collector receives data but Parseable is empty**: Verify `PARSEABLE_ENDPOINT`, `PARSEABLE_API_KEY`, `X-P-Stream`, and `X-P-Log-Source` in the Collector exporter config.
+- **The Collector receives data but Parseable is empty**: Verify `PARSEABLE_ENDPOINT`, `PARSEABLE_API_KEY`, and `X-P-Stream` in the Collector exporter config.
 - **Logs arrive but traces or metrics do not**: Confirm the application has the matching OTLP exporters installed and that the app calls `force_flush` before shutdown.
 - **Metric charts show no visible points**: Run the workload more than once, wait at least one batch interval, and refresh the time range in Parseable.
 - **Telemetry stops after a while**: Temporary tunnel URLs stop working when the tunnel process exits. Create a new URL and update the Modal Secret and managed integration.

@@ -45,14 +45,12 @@ exporters:
     headers:
       Authorization: "Basic <base64 user:pass>"
       X-P-Stream: "restate-traces"
-      X-P-Log-Source: "otel-traces"
 
   otlp_http/logs:
     endpoint: https://<parseable-host>
     headers:
       Authorization: "Basic <base64 user:pass>"
       X-P-Stream: "restate-logs"
-      X-P-Log-Source: "otel-logs"
 
 service:
   pipelines:

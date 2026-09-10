@@ -105,12 +105,11 @@ remote_write:
       password: <parseable-password>
     headers:
       X-P-Stream: starburst-metrics
-      X-P-Log-Source: otel-metrics
 ```
 
 The Starburst side of this configuration follows their documented scrape pattern for Galaxy metrics, including `metrics_path: /v1/metrics`, HTTPS, and basic authentication with the service account.
 
-On the Parseable side, `remote_write` sends Prometheus metrics into Parseable, `X-P-Stream: starburst-metrics` decides the destination dataset, and `X-P-Log-Source: otel-metrics` marks the payload as metrics data.
+On the Parseable side, `remote_write` sends Prometheus metrics into Parseable. `X-P-Stream: starburst-metrics` decides the destination dataset, and Parseable treats the payload as metrics because it arrives on the metrics endpoint.
 
 </Step>
 <Step>

@@ -119,7 +119,6 @@ exporters:
     headers:
       X-API-Key: "${env:PARSEABLE_API_KEY}"
       X-P-Stream: redis-logs
-      X-P-Log-Source: otel-logs
       Content-Type: application/json
     retry_on_failure:
       enabled: true
@@ -131,7 +130,6 @@ exporters:
     headers:
       X-API-Key: "${env:PARSEABLE_API_KEY}"
       X-P-Stream: redis-metrics
-      X-P-Log-Source: otel-metrics
       Content-Type: application/json
     retry_on_failure:
       enabled: true
@@ -143,7 +141,6 @@ exporters:
     headers:
       X-API-Key: "${env:PARSEABLE_API_KEY}"
       X-P-Stream: redis-traces
-      X-P-Log-Source: otel-traces
       Content-Type: application/json
     retry_on_failure:
       enabled: true

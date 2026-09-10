@@ -34,11 +34,11 @@ export OTEL_METRICS_EXPORTER=otlp
 
 export OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/json
 export OTEL_EXPORTER_OTLP_LOGS_ENDPOINT="${PARSEABLE_URL}/v1/logs"
-export OTEL_EXPORTER_OTLP_LOGS_HEADERS="X-P-API-Key=${PARSEABLE_API_KEY},X-P-Stream=claudecode-logs,X-P-Log-Source=otel-logs"
+export OTEL_EXPORTER_OTLP_LOGS_HEADERS="X-P-API-Key=${PARSEABLE_API_KEY},X-P-Stream=claudecode-logs"
 
 export OTEL_EXPORTER_OTLP_METRICS_PROTOCOL=http/json
 export OTEL_EXPORTER_OTLP_METRICS_ENDPOINT="${PARSEABLE_URL}/v1/metrics"
-export OTEL_EXPORTER_OTLP_METRICS_HEADERS="X-P-API-Key=${PARSEABLE_API_KEY},X-P-Stream=claudecode-metrics,X-P-Log-Source=otel-metrics"
+export OTEL_EXPORTER_OTLP_METRICS_HEADERS="X-P-API-Key=${PARSEABLE_API_KEY},X-P-Stream=claudecode-metrics"
 
 claude
 ```
@@ -54,7 +54,7 @@ export CLAUDE_CODE_ENHANCED_TELEMETRY_BETA=1
 export OTEL_TRACES_EXPORTER=otlp
 export OTEL_EXPORTER_OTLP_TRACES_PROTOCOL=http/json
 export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="${PARSEABLE_URL}/v1/traces"
-export OTEL_EXPORTER_OTLP_TRACES_HEADERS="X-P-API-Key=${PARSEABLE_API_KEY},X-P-Stream=claudecode-traces,X-P-Log-Source=otel-traces"
+export OTEL_EXPORTER_OTLP_TRACES_HEADERS="X-P-API-Key=${PARSEABLE_API_KEY},X-P-Stream=claudecode-traces"
 ```
 
 Claude Code requires both `CLAUDE_CODE_ENABLE_TELEMETRY=1` and `CLAUDE_CODE_ENHANCED_TELEMETRY_BETA=1` for traces. Anthropic may change the beta schema between releases.
@@ -71,10 +71,10 @@ Administrators can place the same values in Claude Code managed settings. Replac
     "OTEL_METRICS_EXPORTER": "otlp",
     "OTEL_EXPORTER_OTLP_LOGS_PROTOCOL": "http/json",
     "OTEL_EXPORTER_OTLP_LOGS_ENDPOINT": "https://<your-parseable-host>:8000/v1/logs",
-    "OTEL_EXPORTER_OTLP_LOGS_HEADERS": "X-P-API-Key=<parseable-api-key>,X-P-Stream=claudecode-logs,X-P-Log-Source=otel-logs",
+    "OTEL_EXPORTER_OTLP_LOGS_HEADERS": "X-P-API-Key=<parseable-api-key>,X-P-Stream=claudecode-logs",
     "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL": "http/json",
     "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT": "https://<your-parseable-host>:8000/v1/metrics",
-    "OTEL_EXPORTER_OTLP_METRICS_HEADERS": "X-P-API-Key=<parseable-api-key>,X-P-Stream=claudecode-metrics,X-P-Log-Source=otel-metrics"
+    "OTEL_EXPORTER_OTLP_METRICS_HEADERS": "X-P-API-Key=<parseable-api-key>,X-P-Stream=claudecode-metrics"
   }
 }
 ```
@@ -119,7 +119,7 @@ Claude Code redacts prompts, responses, tool details and tool content by default
 
 ## Troubleshooting
 
-- **No datasets appear:** confirm Claude Code can reach Parseable and that each signal has the correct endpoint, `X-P-Stream` and `X-P-Log-Source` value.
+- **No datasets appear:** confirm Claude Code can reach Parseable and that each signal has the correct endpoint and `X-P-Stream` value.
 - **Metrics arrive but logs do not:** confirm `OTEL_LOGS_EXPORTER=otlp` and submit a prompt after restarting Claude Code.
 - **Traces do not arrive:** set both beta variables and confirm your Claude Code version supports enhanced telemetry.
 - **Parseable rejects exports:** verify the API key and use the Parseable ingestor URL, including its port.

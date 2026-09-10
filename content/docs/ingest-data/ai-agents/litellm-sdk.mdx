@@ -51,18 +51,15 @@ Create one dataset for each signal. This keeps the views in Prism clean and lets
 ```bash
 curl -X PUT "$PARSEABLE_URL/api/v1/logstream/litellm-sdk-traces" \
   -H "X-API-Key: ${PARSEABLE_API_KEY}" \
-  -H "X-P-Log-Source: otel-traces" \
   -H "X-P-Telemetry-Type: traces" \
   -H "X-P-Dataset-Tag: agent-observability"
 
 curl -X PUT "$PARSEABLE_URL/api/v1/logstream/litellm-sdk-logs" \
   -H "X-API-Key: ${PARSEABLE_API_KEY}" \
-  -H "X-P-Log-Source: otel-logs" \
   -H "X-P-Telemetry-Type: logs"
 
 curl -X PUT "$PARSEABLE_URL/api/v1/logstream/litellm-sdk-metrics" \
   -H "X-API-Key: ${PARSEABLE_API_KEY}" \
-  -H "X-P-Log-Source: otel-metrics" \
   -H "X-P-Telemetry-Type: metrics"
 ```
 
@@ -90,7 +87,6 @@ exporters:
     headers:
       X-API-Key: "${env:PARSEABLE_API_KEY}"
       X-P-Stream: litellm-sdk-traces
-      X-P-Log-Source: otel-traces
 
   otlphttp/parseable_logs:
     endpoint: "${env:PARSEABLE_URL}"
@@ -98,7 +94,6 @@ exporters:
     headers:
       X-API-Key: "${env:PARSEABLE_API_KEY}"
       X-P-Stream: litellm-sdk-logs
-      X-P-Log-Source: otel-logs
 
   otlphttp/parseable_metrics:
     endpoint: "${env:PARSEABLE_URL}"
@@ -106,7 +101,6 @@ exporters:
     headers:
       X-API-Key: "${env:PARSEABLE_API_KEY}"
       X-P-Stream: litellm-sdk-metrics
-      X-P-Log-Source: otel-metrics
 
 service:
   pipelines:
@@ -286,11 +280,11 @@ Use [LiteLLM Gateway](/ingest-data/gateways/litellm) when traffic goes through t
 
 - **Traces appear, but logs do not**
 
-  Confirm `enable_events=True` in `OpenTelemetryConfig`, and check that the Collector has a `logs` pipeline exporting to `litellm-sdk-logs` with `X-P-Log-Source: otel-logs`.
+  Confirm `enable_events=True` in `OpenTelemetryConfig`, and check that the Collector has a `logs` pipeline exporting to `litellm-sdk-logs`.
 
 - **Metrics do not appear**
 
-  Confirm `enable_metrics=True` and check that the Collector has a `metrics` pipeline exporting to `litellm-sdk-metrics` with `X-P-Log-Source: otel-metrics`.
+  Confirm `enable_metrics=True` and check that the Collector has a `metrics` pipeline exporting to `litellm-sdk-metrics`.
 
 - **Query reports `No field named data_point_value`**
 

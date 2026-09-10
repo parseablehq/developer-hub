@@ -90,7 +90,6 @@ openlit.init(
     otlp_headers={
         "X-API-Key": os.environ["PARSEABLE_API_KEY"],
         "X-P-Stream": "openai-sdk-traces",
-        "X-P-Log-Source": "otel-traces",
     },
     service_name="openai-sdk-demo",
     environment="production",
@@ -133,7 +132,6 @@ exporter = OTLPSpanExporter(
     headers={
         "X-API-Key": os.environ["PARSEABLE_API_KEY"],
         "X-P-Stream": "openai-sdk-traces",
-        "X-P-Log-Source": "otel-traces",
     },
 )
 provider.add_span_processor(BatchSpanProcessor(exporter))
