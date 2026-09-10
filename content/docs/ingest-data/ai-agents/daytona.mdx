@@ -35,15 +35,15 @@ Daytona sandbox telemetry
   -> metrics -> Parseable dataset: daytona-metrics
 ```
 
-The OpenTelemetry Collector is recommended for sandbox telemetry because Daytona uses one organization-level OTLP configuration. Parseable needs signal-specific headers such as `X-P-Log-Source=otel-logs`, `otel-traces`, or `otel-metrics`. The Collector receives all signals from Daytona and routes each one to the correct Parseable dataset.
+The OpenTelemetry Collector is recommended for sandbox telemetry because Daytona uses one organization-level OTLP configuration. Each Parseable dataset needs its own `X-P-Stream` header. The Collector receives all signals from Daytona and routes each one to the correct Parseable dataset.
 
 ## Prerequisites
 
 Before you start, keep these ready:
 
 - A Daytona account and API key
-- A Parseable instance reachable from your application and from the OpenTelemetry Collector
-- A Parseable API key with ingest access
+- A Parseable Cloud or Enterprise instance reachable from your application and from the OpenTelemetry Collector. These examples use OTLP over HTTP with Protocol Buffers.
+- A Parseable API key with ingest access, sent as a Bearer token
 - Python 3 if you want to run the SDK example below
 - An OpenTelemetry Collector for routing sandbox logs, traces, and metrics
 
@@ -68,7 +68,7 @@ export DAYTONA_API_KEY="<daytona-api-key>"
 export DAYTONA_OTEL_ENABLED=true
 export OTEL_EXPORTER_OTLP_ENDPOINT="https://parseable.example.com"
 export OTEL_EXPORTER_OTLP_PROTOCOL="http/protobuf"
-export OTEL_EXPORTER_OTLP_HEADERS="X-P-API-Key=<parseable-api-key>,X-P-Stream=daytona-sdk-traces,X-P-Log-Source=otel-traces"
+export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Bearer <parseable-api-key>,X-P-Stream=daytona-sdk-traces"
 ```
 
 Use the Parseable base URL without `/v1/traces`. The OTLP HTTP exporter appends the signal path.
@@ -185,27 +185,24 @@ exporters:
     endpoint: "${env:PARSEABLE_ENDPOINT}"
     encoding: proto
     headers:
-      X-P-API-Key: "${env:PARSEABLE_API_KEY}"
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: "daytona-logs"
-      X-P-Log-Source: "otel-logs"
       Content-Type: "application/x-protobuf"
 
   otlphttp/parseable_traces:
     endpoint: "${env:PARSEABLE_ENDPOINT}"
     encoding: proto
     headers:
-      X-P-API-Key: "${env:PARSEABLE_API_KEY}"
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: "daytona-traces"
-      X-P-Log-Source: "otel-traces"
       Content-Type: "application/x-protobuf"
 
   otlphttp/parseable_metrics:
     endpoint: "${env:PARSEABLE_ENDPOINT}"
     encoding: proto
     headers:
-      X-P-API-Key: "${env:PARSEABLE_API_KEY}"
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: "daytona-metrics"
-      X-P-Log-Source: "otel-metrics"
       Content-Type: "application/x-protobuf"
 
 service:
@@ -341,16 +338,16 @@ The `daytona-metrics` dataset is useful when you want to see how a sandbox behav
 
 Direct export to Parseable is fine for SDK traces because the SDK trace exporter only needs one signal-specific configuration.
 
-For sandbox telemetry, use the Collector. Daytona's organization setting uses one endpoint and one header set for logs, traces, and metrics. The Collector lets you send each signal to Parseable with the correct `X-P-Log-Source` and dataset name.
+For sandbox telemetry, use the Collector. Daytona's organization setting uses one endpoint and one header set for logs, traces, and metrics. The Collector lets you send each signal to the correct Parseable dataset with its own `X-P-Stream` header.
 
 ## Troubleshooting
 
 - If SDK traces do not appear, confirm `DAYTONA_OTEL_ENABLED=true`, use `OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf`, and close the Daytona client so buffered spans flush.
 - If the exporter reaches the wrong path, use the Parseable base URL in `OTEL_EXPORTER_OTLP_ENDPOINT`. Do not append `/v1/traces`.
-- If authentication fails, check `X-P-API-Key` or use `Authorization: Basic <base64 username:password>` for older Parseable deployments.
+- If authentication fails, confirm the API key has ingest access and is sent as `Authorization: Bearer <parseable-api-key>`.
 - If sandbox logs or metrics are missing from SDK tracing, that is expected. Configure Daytona sandbox telemetry in the dashboard.
 - If no sandbox telemetry appears, confirm the Daytona organization setting has applied and the Collector is reachable over HTTPS from Daytona.
-- If only one signal appears, check that the Collector has separate logs, traces, and metrics pipelines, and that each exporter uses the matching `X-P-Log-Source`.
+- If only one signal appears, check that the Collector has separate logs, traces, and metrics pipelines, and that each exporter uses the intended `X-P-Stream`.
 - If metrics are delayed, wait at least 60 to 90 seconds after the workload starts.
 
 For more protocol details, see [Daytona OpenTelemetry collection](https://www.daytona.io/docs/en/observability/otel-collection/), [Parseable OTLP logs](/ingest-data/otel/logs), [Parseable OTLP traces](/ingest-data/otel/traces), and [Parseable OTLP metrics](/ingest-data/otel/metrics).
