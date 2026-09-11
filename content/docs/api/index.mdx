@@ -106,7 +106,7 @@ X-API-Key: <api-key>
 
 You can find the setup flow in the [API Keys](/user-guide/api-keys) guide.
 
-For ingestion endpoints, the other header to pay attention to is usually `X-P-Stream`. That header tells Parseable which dataset should receive the payload. OTLP routes also use `X-P-Log-Source` to identify whether the payload is logs, traces, or metrics.
+For ingestion endpoints, the other header to pay attention to is usually `X-P-Stream`. That header tells Parseable which dataset should receive the payload. For OTLP routes, Parseable identifies whether the payload is logs, traces, or metrics from the endpoint path.
 
 ## Need Help?
 

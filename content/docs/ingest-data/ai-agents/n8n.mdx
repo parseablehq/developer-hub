@@ -117,9 +117,8 @@ exporters:
   otlphttp/parseabletraces:
     endpoint: "https://<YOUR_PARSEABLE_URL>"
     headers:
-      X-P-API-Key: "<YOUR_PARSEABLE_API_KEY>"
+      Authorization: "Bearer <YOUR_PARSEABLE_API_KEY>"
       X-P-Stream: "n8n-traces"
-      X-P-Log-Source: "otel-traces"
       Content-Type: "application/x-protobuf"
     encoding: proto
 
@@ -133,13 +132,12 @@ service:
 
 Replace `<YOUR_PARSEABLE_URL>` with your Parseable base URL, for example `http://parseable:8000` or your Parseable Cloud endpoint.
 
-If your Parseable deployment still uses basic authentication, use the `Authorization` header instead of `X-P-API-Key`.
+If your Parseable deployment still uses basic authentication, replace the Bearer token with a Basic Auth value.
 
 ```yaml
 headers:
   Authorization: "Basic <base64 encoded username:password>"
   X-P-Stream: "n8n-traces"
-  X-P-Log-Source: "otel-traces"
   Content-Type: "application/x-protobuf"
 ```
 

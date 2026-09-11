@@ -7,7 +7,7 @@ redirect_from:
 
 Telemetry agents sit close to the systems that produce data. They read container logs, application logs, host metrics, Prometheus metrics, or OTLP signals, then forward that data to Parseable with the labels and metadata you need for search and dashboards.
 
-Parseable supports ingesting logs, metrics, and traces from agents that teams already use in production. Plain JSON logs are sent to `/api/v1/ingest` with an `X-P-Stream` header. OTLP logs, metrics, and traces are sent to `/v1/logs`, `/v1/metrics`, and `/v1/traces`, with both `X-P-Stream` and the matching `X-P-Log-Source` header. For authenticated ingestion, use an API key through the `X-API-Key` header.
+Parseable supports ingesting logs, metrics, and traces from agents that teams already use in production. Plain JSON logs are sent to `/api/v1/ingest` with an `X-P-Stream` header. OTLP logs, metrics, and traces are sent to `/v1/logs`, `/v1/metrics`, and `/v1/traces`; Parseable derives the signal type from the endpoint and uses `X-P-Stream` for the destination dataset. For OTLP examples, send the Parseable API key as a Bearer token in the `Authorization` header.
 
 Use this section when you already have an agent running, or when you want to pick one for a new deployment.
 

@@ -156,9 +156,8 @@ exporters:
     endpoint: ${PARSEABLE_URL}
     encoding: json
     headers:
-      X-API-Key: "${PARSEABLE_API_KEY}"
+      Authorization: "Bearer ${PARSEABLE_API_KEY}"
       X-P-Stream: "${STREAM_NAME}"
-      X-P-Log-Source: "otel-traces"
       X-P-Dataset-Tag: "agent-observability"
 
 service:
@@ -185,7 +184,7 @@ For smaller setups, you can send traces directly from the application to Parseab
 
 ```bash
 export OTEL_EXPORTER_OTLP_ENDPOINT=${PARSEABLE_URL}
-export OTEL_EXPORTER_OTLP_HEADERS="X-API-Key=${PARSEABLE_API_KEY},X-P-Stream=${PARSEABLE_DATASET_NAME},X-P-Log-Source=otel-traces,X-P-Dataset-Tag=agent-observability"
+export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Bearer ${PARSEABLE_API_KEY},X-P-Stream=${PARSEABLE_DATASET_NAME},X-P-Dataset-Tag=agent-observability"
 export OTEL_SERVICE_NAME=my-agent
 export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
 ```

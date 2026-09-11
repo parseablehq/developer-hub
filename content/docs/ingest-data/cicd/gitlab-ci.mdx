@@ -263,7 +263,7 @@ Use OpenTelemetry for distributed tracing of pipelines.
 ```yaml
 variables:
   OTEL_EXPORTER_OTLP_ENDPOINT: ${PARSEABLE_OTEL_ENDPOINT}
-  OTEL_EXPORTER_OTLP_HEADERS: "Authorization=Basic ${PARSEABLE_AUTH},X-P-Stream=gitlab-traces"
+  OTEL_EXPORTER_OTLP_HEADERS: "Authorization=Bearer ${PARSEABLE_API_KEY},X-P-Stream=gitlab-traces"
   OTEL_SERVICE_NAME: gitlab-ci
 
 build:
@@ -283,6 +283,7 @@ Configure these variables in GitLab:
 |----------|------|-------------|
 | `PARSEABLE_URL` | Variable | Parseable instance URL |
 | `PARSEABLE_AUTH` | Variable (masked) | Base64 encoded `username:password` |
+| `PARSEABLE_API_KEY` | Variable (masked) | Parseable API key for OTLP tracing |
 | `PARSEABLE_OTEL_ENDPOINT` | Variable | OTEL endpoint (for tracing) |
 
 ## Querying GitLab Logs

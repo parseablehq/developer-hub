@@ -32,7 +32,7 @@ export COPILOT_OTEL_ENABLED=true
 export OTEL_METRICS_EXPORTER=none
 export OTEL_EXPORTER_OTLP_ENDPOINT="${PARSEABLE_URL}"
 export OTEL_EXPORTER_OTLP_PROTOCOL=http/json
-export OTEL_EXPORTER_OTLP_HEADERS="X-P-API-Key=${PARSEABLE_API_KEY},X-P-Stream=copilot-traces,X-P-Log-Source=otel-traces"
+export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Bearer ${PARSEABLE_API_KEY},X-P-Stream=copilot-traces"
 export OTEL_SERVICE_NAME=github-copilot
 
 copilot
@@ -40,7 +40,7 @@ copilot
 
 Copilot appends `/v1/traces` to `OTEL_EXPORTER_OTLP_ENDPOINT`, so use the Parseable base URL. `OTEL_METRICS_EXPORTER=none` prevents metrics from using the trace dataset headers.
 
-For a self-hosted deployment that uses basic authentication, replace `X-P-API-Key=${PARSEABLE_API_KEY}` with `Authorization=Basic <base64-encoded-username-and-password>` in `OTEL_EXPORTER_OTLP_HEADERS`.
+For a self-hosted deployment that uses basic authentication, replace `Authorization=Bearer ${PARSEABLE_API_KEY}` with `Authorization=Basic <base64-encoded-username-and-password>` in `OTEL_EXPORTER_OTLP_HEADERS`.
 
 Copilot CLI supports `http/json` and `http/protobuf`. Parseable accepts the `http/json` configuration above.
 
@@ -104,5 +104,5 @@ Content capture can include source code, file contents, user prompts, model resp
 - **No spans arrive:** confirm Copilot CLI can reach Parseable, verify the API key and set `OTEL_LOG_LEVEL=DEBUG` to inspect exporter diagnostics.
 - **The trace has no child spans:** generate a new session after setting the environment variables. Existing Copilot processes do not inherit later shell changes.
 - **Metrics appear in the trace dataset:** set `OTEL_METRICS_EXPORTER=none` in the Copilot process environment.
-- **Parseable rejects exports:** use the Parseable ingestor base URL and verify `X-P-Stream=copilot-traces` and `X-P-Log-Source=otel-traces`.
+- **Parseable rejects exports:** use the Parseable ingestor base URL and verify `X-P-Stream=copilot-traces`.
 - **The dashboard is empty:** map **Traces Dataset** to `copilot-traces` and choose a time range that includes the test session.

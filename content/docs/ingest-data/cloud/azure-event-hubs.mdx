@@ -105,9 +105,8 @@ exporters:
   otlphttp/parseable:
     endpoint: "http://parseable:8000"
     headers:
-      Authorization: "Basic YWRtaW46YWRtaW4="
+      Authorization: "Bearer <parseable-api-key>"
       X-P-Stream: "azure-events"
-      X-P-Log-Source: "otel-logs"
 
 service:
   pipelines:

@@ -91,10 +91,11 @@ scrape_configs:
 
 remote_write:
   - url: "https://<parseable-host>:8000/v1/prometheus/write"
+    authorization:
+      type: Bearer
+      credentials: <parseable-api-key>
     headers:
-      X-API-Key: <parseable-api-key>
       X-P-Stream: temporal-metrics
-      X-P-Log-Source: otel-metrics
 ```
 
 After Prometheus starts writing to Parseable, open the `temporal-metrics` dataset in the Metrics page. Temporal keeps the full SDK metrics reference in its [SDK metrics documentation](https://docs.temporal.io/references/sdk-metrics), which is useful when deciding which worker and workflow metrics to dashboard.

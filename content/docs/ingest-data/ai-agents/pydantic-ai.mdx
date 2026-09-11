@@ -48,8 +48,7 @@ Create a trace dataset and tag it for Agent Observability:
 
 ```bash
 curl -X PUT "$PARSEABLE_URL/api/v1/logstream/pydantic-ai-traces" \
-  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
-  -H "X-P-Log-Source: otel-traces" \
+  -H "Authorization: Bearer ${PARSEABLE_API_KEY}" \
   -H "X-P-Telemetry-Type: traces" \
   -H "X-P-Dataset-Tag: agent-observability"
 ```
@@ -58,8 +57,7 @@ Create a metrics dataset when you also want token usage, latency, and streaming 
 
 ```bash
 curl -X PUT "$PARSEABLE_URL/api/v1/logstream/pydantic-ai-metrics" \
-  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
-  -H "X-P-Log-Source: otel-metrics" \
+  -H "Authorization: Bearer ${PARSEABLE_API_KEY}" \
   -H "X-P-Telemetry-Type: metrics"
 ```
 
@@ -116,9 +114,8 @@ tracer_provider.add_span_processor(
         OTLPSpanExporter(
             endpoint=f"{parseable_url}/v1/traces",
             headers={
-                "X-API-Key": parseable_api_key,
+                "Authorization": f"Bearer {parseable_api_key}",
                 "X-P-Stream": "pydantic-ai-traces",
-                "X-P-Log-Source": "otel-traces",
             },
         )
     )
@@ -129,9 +126,8 @@ metric_reader = PeriodicExportingMetricReader(
     OTLPMetricExporter(
         endpoint=f"{parseable_url}/v1/metrics",
         headers={
-            "X-API-Key": parseable_api_key,
+            "Authorization": f"Bearer {parseable_api_key}",
             "X-P-Stream": "pydantic-ai-metrics",
-            "X-P-Log-Source": "otel-metrics",
         },
     ),
     export_interval_millis=5000,
@@ -307,11 +303,11 @@ Open the `pydantic-ai-metrics` dataset from the Metrics page. You should see met
 
 - **No traces appear**
 
-  Confirm `Agent.instrument_all(...)` runs before the agent call, and check that the trace exporter points to `${PARSEABLE_URL}/v1/traces` with `X-P-Stream: pydantic-ai-traces` and `X-P-Log-Source: otel-traces`.
+  Confirm `Agent.instrument_all(...)` runs before the agent call, and check that the trace exporter points to `${PARSEABLE_URL}/v1/traces` with `X-P-Stream: pydantic-ai-traces`.
 
 - **Metrics are missing**
 
-  Confirm the `MeterProvider` is passed to `InstrumentationSettings`, and check that the metric exporter points to `${PARSEABLE_URL}/v1/metrics` with `X-P-Stream: pydantic-ai-metrics` and `X-P-Log-Source: otel-metrics`.
+  Confirm the `MeterProvider` is passed to `InstrumentationSettings`, and check that the metric exporter points to `${PARSEABLE_URL}/v1/metrics` with `X-P-Stream: pydantic-ai-metrics`.
 
 - **Tool arguments or results are missing**
 

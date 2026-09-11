@@ -53,19 +53,16 @@ Create one dataset for each OpenTelemetry signal:
 
 ```bash
 curl -X PUT "$PARSEABLE_URL/api/v1/logstream/hermes-traces" \
-  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
-  -H "X-P-Log-Source: otel-traces" \
+  -H "Authorization: Bearer ${PARSEABLE_API_KEY}" \
   -H "X-P-Telemetry-Type: traces" \
   -H "X-P-Dataset-Tag: agent-observability"
 
 curl -X PUT "$PARSEABLE_URL/api/v1/logstream/hermes-logs" \
-  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
-  -H "X-P-Log-Source: otel-logs" \
+  -H "Authorization: Bearer ${PARSEABLE_API_KEY}" \
   -H "X-P-Telemetry-Type: logs"
 
 curl -X PUT "$PARSEABLE_URL/api/v1/logstream/hermes-metrics" \
-  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
-  -H "X-P-Log-Source: otel-metrics" \
+  -H "Authorization: Bearer ${PARSEABLE_API_KEY}" \
   -H "X-P-Telemetry-Type: metrics"
 ```
 
@@ -130,9 +127,8 @@ backends:
     name: parseable-traces
     endpoint: https://parseable.example.com/v1/traces
     headers:
-      X-API-Key: <parseable-api-key>
+      Authorization: "Bearer <parseable-api-key>"
       X-P-Stream: hermes-traces
-      X-P-Log-Source: otel-traces
       X-P-Dataset-Tag: agent-observability
     traces: true
     metrics: false
@@ -142,9 +138,8 @@ backends:
     name: parseable-metrics
     endpoint: https://parseable.example.com/v1/traces
     headers:
-      X-API-Key: <parseable-api-key>
+      Authorization: "Bearer <parseable-api-key>"
       X-P-Stream: hermes-metrics
-      X-P-Log-Source: otel-metrics
     traces: false
     metrics: true
     logs: false
@@ -153,9 +148,8 @@ backends:
     name: parseable-logs
     endpoint: https://parseable.example.com/v1/traces
     headers:
-      X-API-Key: <parseable-api-key>
+      Authorization: "Bearer <parseable-api-key>"
       X-P-Stream: hermes-logs
-      X-P-Log-Source: otel-logs
     traces: false
     metrics: false
     logs: true
@@ -241,7 +235,7 @@ You can still query token counts, model names, durations, tool names, statuses, 
 - **OpenTelemetry imports fail:** Install the plugin into the same Python environment that provides the `hermes` command.
 - **OTLP requests return 404 or 405:** Point the backend entries at the Parseable ingestor. Keep `/v1/traces` in each configured endpoint.
 - **Few traces arrive from short CLI runs:** Keep `force_flush_on_session_end: true` and raise `span_batch_export_timeout_ms` to `30000`.
-- **Traces arrive but logs do not:** Set `capture_logs: true`, keep a log-capable OTLP backend entry, and verify `X-P-Log-Source: otel-logs`.
+- **Traces arrive but logs do not:** Set `capture_logs: true`, keep a log-capable OTLP backend entry, and verify the backend sends logs to `/v1/logs`.
 - **Agent Observability reports missing message fields:** Enable the content fields required by your use case after reviewing their privacy impact. The dashboard still works with content capture disabled.
 - **Token totals look doubled:** Sum token attributes from the root `agent` spans or from the `api.*` spans. Do not add both sets together.
 

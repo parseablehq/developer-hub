@@ -43,13 +43,13 @@ await DBOS.launch({
 });
 ```
 
-Configure Parseable OTLP headers separately for logs and traces. Keep `X-P-Log-Source` fixed to the OTLP source type and use `X-P-Stream` for the destination stream name.
+Configure Parseable OTLP headers separately for logs and traces. Use `X-P-Stream` for the destination stream name; Parseable derives the signal type from the endpoint path.
 
 ```bash
 PARSEABLE_OTLP_ENDPOINT=http://parseable.example:8000
 
-OTEL_EXPORTER_OTLP_LOGS_HEADERS=Authorization=Basic <base64 user:pass>,X-P-Stream=dbos-logs,X-P-Log-Source=otel-logs
-OTEL_EXPORTER_OTLP_TRACES_HEADERS=Authorization=Basic <base64 user:pass>,X-P-Stream=dbos-traces,X-P-Log-Source=otel-traces
+OTEL_EXPORTER_OTLP_LOGS_HEADERS=Authorization=Bearer <parseable-api-key>,X-P-Stream=dbos-logs
+OTEL_EXPORTER_OTLP_TRACES_HEADERS=Authorization=Bearer <parseable-api-key>,X-P-Stream=dbos-traces
 ```
 
 After restarting the DBOS app, trigger a workflow and check the `dbos-logs` and `dbos-traces` streams in Parseable.
@@ -106,10 +106,10 @@ scrape_configs:
           - conductor:8090
 
 remote_write:
-  - url: http://parseable.example:8000/api/v1/ingest
-    basic_auth:
-      username: admin
-      password: admin
+  - url: http://parseable.example:8000/v1/prometheus/write
+    authorization:
+      type: Bearer
+      credentials: <parseable-api-key>
     headers:
       X-P-Stream: dbos-conductor-metrics
 ```
@@ -138,8 +138,8 @@ Check Parseable:
 
 ## Troubleshooting
 
-- **Logs fail with `Please use "x-p-log-source: otel-logs"`** - Set `X-P-Log-Source=otel-logs` for logs. Do not replace it with the stream name.
-- **Traces do not appear** - Set `X-P-Log-Source=otel-traces` for traces and restart the DBOS application after changing environment variables.
+- **Logs do not appear** - Confirm the logs exporter uses the `/v1/logs` endpoint and restart the DBOS application after changing environment variables.
+- **Traces do not appear** - Confirm the traces exporter uses the `/v1/traces` endpoint and restart the DBOS application after changing environment variables.
 - **Metrics endpoint returns unauthorized** - Pass the DBOS Conductor API key as a bearer token.
 - **No metrics endpoint exists** - Metrics require DBOS Conductor. The regular DBOS application server does not expose `/v1/metrics`.
 - **PromQL is unavailable in Parseable** - PromQL metrics querying requires Parseable Enterprise.

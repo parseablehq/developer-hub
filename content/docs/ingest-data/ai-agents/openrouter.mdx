@@ -59,13 +59,12 @@ Add these headers in the OpenRouter destination configuration:
 
 ```json
 {
-  "X-API-Key": "<parseable-api-key>",
-  "X-P-Stream": "openrouter-traces",
-  "X-P-Log-Source": "otel-traces"
+  "Authorization": "Bearer <parseable-api-key>",
+  "X-P-Stream": "openrouter-traces"
 }
 ```
 
-`X-API-Key` authenticates the request with Parseable. `X-P-Stream` tells Parseable which dataset should receive the traces. `X-P-Log-Source` tells Parseable that the incoming OTLP payload contains traces.
+The Bearer token authenticates the request with Parseable. `X-P-Stream` tells Parseable which dataset should receive the traces. Parseable identifies the signal as traces from the `/v1/traces` endpoint.
 
 In the OpenRouter dashboard, open **Settings > Observability**, enable **Broadcast**, and add an **OpenTelemetry Collector** destination. Set the endpoint to the Parseable `/v1/traces` URL and paste the headers JSON above. Use **Test Connection** before saving the destination.
 
@@ -106,9 +105,8 @@ exporters:
     traces_endpoint: https://<your-parseable-host>:8000/v1/traces
     encoding: json
     headers:
-      X-API-Key: ${env:PARSEABLE_API_KEY}
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: openrouter-traces
-      X-P-Log-Source: otel-traces
 
 service:
   extensions: [bearertokenauth/openrouter]
@@ -183,7 +181,7 @@ curl https://openrouter.ai/api/v1/chat/completions \
   }'
 ```
 
-OpenRouter uses `Authorization: Bearer <OPENROUTER_API_KEY>` for its own API. Parseable uses `X-API-Key` on the OTLP destination or inside the Collector exporter.
+OpenRouter uses `Authorization: Bearer <OPENROUTER_API_KEY>` for its own API. Parseable uses `Authorization: Bearer <parseable-api-key>` on the OTLP destination or inside the Collector exporter.
 
 Broadcast delivery is asynchronous, so give it a few seconds after the model response is returned.
 
@@ -301,9 +299,8 @@ The token and cost dashboard gives you a quick view of input tokens, output toke
 ## Troubleshooting
 
 - If OpenRouter **Test Connection** fails, check that the endpoint is public HTTPS and points to `/v1/traces`.
-- If Parseable returns a missing log source error, check that `X-P-Log-Source` is set to `otel-traces`.
 - If the dataset already exists but ingestion fails, make sure it was created as a traces dataset. If it was created earlier as a plain JSON log dataset, use a new dataset name or recreate it through OTLP traces ingestion.
-- If traces reach the Collector but not Parseable, check the Collector logs and confirm `X-API-Key`, `X-P-Stream`, and `X-P-Log-Source` are present in the exporter headers.
+- If traces reach the Collector but not Parseable, check the Collector logs and confirm `Authorization` and `X-P-Stream` are present in the exporter headers.
 - If no real requests appear after a successful test, confirm that your application is calling OpenRouter and not a provider API directly. Broadcast only runs for requests that pass through OpenRouter.
 
 ## Next steps

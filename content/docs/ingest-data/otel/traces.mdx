@@ -15,9 +15,8 @@ exporters:
   otlp_http/parseabletraces:
     endpoint: "<parseable-endpoint> eg. http://localhost:8000"
     headers:
-      Authorization: "Basic <base64 encoded string of username:password>"
+      Authorization: "Bearer <parseable-api-key>"
       X-P-Stream: otel-traces       # dataset/dataset name
-      X-P-Log-Source: otel-traces
       Content-Type: application/json
     encoding: json
     tls:
@@ -39,9 +38,8 @@ exporters:
   otlp_http/parseabletraces:
     endpoint: "http://parseable:8000"
     headers:
-      Authorization: "Basic YWRtaW46YWRtaW4="  # admin:admin in base64
+      Authorization: "Bearer <parseable-api-key>"
       X-P-Stream: otel-traces        # dataset/dataset name
-      X-P-Log-Source: otel-traces
       Content-Type: application/x-protobuf
     encoding: proto
     tls:

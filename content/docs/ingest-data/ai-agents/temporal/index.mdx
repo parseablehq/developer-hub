@@ -70,10 +70,11 @@ scrape_configs:
 
 remote_write:
   - url: "https://<parseable-host>:8000/v1/prometheus/write"
+    authorization:
+      type: Bearer
+      credentials: <parseable-api-key>
     headers:
-      X-API-Key: <parseable-api-key>
       X-P-Stream: temporal-metrics
-      X-P-Log-Source: otel-metrics
 ```
 
 Temporal SDK metrics include worker activity, workflow task execution, activity execution, task queue polling, schedule-to-start latency, and end-to-end workflow execution latency. The exact metric names depend on the SDK and the Temporal runtime path being used, so use Temporal's official [SDK metrics reference](https://docs.temporal.io/references/sdk-metrics) when deciding what to dashboard.

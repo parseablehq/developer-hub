@@ -129,9 +129,8 @@ If Fluent Bit is receiving OpenTelemetry logs and you want to keep the OTLP form
     Host          <parseable-ingestor-host>
     Port          8000
     Logs_uri      /v1/logs
-    Header        X-API-Key <parseable-api-key>
+    Header        Authorization Bearer <parseable-api-key>
     Header        X-P-Stream fluent-bit-otel-logs
-    Header        X-P-Log-Source otel-logs
 ```
 
 Use `/api/v1/ingest` for normal JSON events. Use `/v1/logs` only when the payload is OTLP logs.
@@ -145,7 +144,7 @@ In Parseable, open the dataset named in `X-P-Stream`. Kubernetes records should 
 ## Troubleshooting
 
 - If Fluent Bit cannot connect, confirm that the `Host`, `Port`, and TLS settings match the Parseable ingest endpoint.
-- If Parseable returns `401` or `403`, check that `X-API-Key` is present and the key can write to the dataset.
-- If Parseable returns `400`, confirm that the output uses JSON for `/api/v1/ingest`, or OTLP logs with `X-P-Log-Source: otel-logs` for `/v1/logs`.
+- If Parseable returns `401` or `403`, check that the Bearer token is present and the key can write to the dataset.
+- If Parseable returns `400`, confirm that the output uses JSON for `/api/v1/ingest`, or OTLP logs for `/v1/logs`.
 - If Kubernetes metadata is missing, check the service account permissions and the Kubernetes filter configuration.
 - If Fluent Bit retries often, reduce batch size, check network latency, and make sure the Parseable ingestor has enough capacity for the incoming volume.

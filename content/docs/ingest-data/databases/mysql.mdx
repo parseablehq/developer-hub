@@ -215,27 +215,24 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      X-API-Key: "${env:PARSEABLE_API_KEY}"
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: mysql-logs
-      X-P-Log-Source: otel-logs
       Content-Type: application/json
 
   otlphttp/parseable_metrics:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      X-API-Key: "${env:PARSEABLE_API_KEY}"
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: mysql-metrics
-      X-P-Log-Source: otel-metrics
       Content-Type: application/json
 
   otlphttp/parseable_traces:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      X-API-Key: "${env:PARSEABLE_API_KEY}"
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: mysql-traces
-      X-P-Log-Source: otel-traces
       Content-Type: application/json
 
 service:

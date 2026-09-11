@@ -79,9 +79,8 @@ exporters:
     endpoint: "http://<parseable-ingestor-endpoint>:8000"
     encoding: proto
     headers:
-      X-API-Key: <parseable-api-key>
+      Authorization: "Bearer <parseable-api-key>"
       X-P-Stream: promtail-logs
-      X-P-Log-Source: otel-logs
 
 service:
   pipelines:
@@ -91,7 +90,7 @@ service:
       exporters: [otlphttp/parseable_logs]
 ```
 
-The OTLP HTTP exporter appends `/v1/logs` for the logs pipeline. Keep `X-P-Log-Source` set to `otel-logs`, and change `X-P-Stream` if you want the logs to land in a different Parseable dataset.
+The OTLP HTTP exporter appends `/v1/logs` for the logs pipeline. Change `X-P-Stream` if you want the logs to land in a different Parseable dataset.
 
 ## Verify Logs
 

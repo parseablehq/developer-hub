@@ -27,7 +27,7 @@ OpenTelemetry Collector
   +--> litellm-metrics  metrics dataset in Parseable
 ```
 
-Use separate datasets for traces and metrics. They use different telemetry sources and different `X-P-Log-Source` values.
+Use separate datasets for traces and metrics. Parseable identifies each telemetry signal from its OTLP endpoint.
 
 ## Prerequisites
 
@@ -51,8 +51,7 @@ Create a trace dataset for LiteLLM spans:
 
 ```bash
 curl -X PUT "$PARSEABLE_URL/api/v1/logstream/litellm-traces" \
-  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
-  -H "X-P-Log-Source: otel-traces" \
+  -H "Authorization: Bearer ${PARSEABLE_API_KEY}" \
   -H "X-P-Telemetry-Type: traces" \
   -H "X-P-Dataset-Tag: agent-observability"
 ```
@@ -61,8 +60,7 @@ Create a metrics dataset for LiteLLM gateway and GenAI metrics:
 
 ```bash
 curl -X PUT "$PARSEABLE_URL/api/v1/logstream/litellm-metrics" \
-  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
-  -H "X-P-Log-Source: otel-metrics" \
+  -H "Authorization: Bearer ${PARSEABLE_API_KEY}" \
   -H "X-P-Telemetry-Type: metrics"
 ```
 
@@ -148,17 +146,15 @@ exporters:
     endpoint: "${env:PARSEABLE_URL}"
     encoding: json
     headers:
-      X-API-Key: "${env:PARSEABLE_API_KEY}"
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: litellm-traces
-      X-P-Log-Source: otel-traces
 
   otlphttp/parseable_metrics:
     endpoint: "${env:PARSEABLE_URL}"
     encoding: json
     headers:
-      X-API-Key: "${env:PARSEABLE_API_KEY}"
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: litellm-metrics
-      X-P-Log-Source: otel-metrics
 
 service:
   pipelines:
