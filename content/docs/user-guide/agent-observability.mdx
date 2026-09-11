@@ -92,7 +92,7 @@ Start with the guide for your framework:
 | --- | --- | --- | --- |
 | [Pydantic AI](/ingest-data/ai-agents/pydantic-ai) | Agent, model, and tool-call traces | [CrewAI](/ingest-data/ai-agents/crewai) | Crews, agents, tasks, LLM calls, and errors |
 | [n8n](/ingest-data/ai-agents/n8n) | Workflow automation traces and related telemetry | [Mastra](/ingest-data/ai-agents/mastra) | Agent logs, traces, and metrics |
-| [Hermes Agent](/ingest-data/ai-agents/hermes) | Agent invocations, token usage, model calls, tools, logs, and metrics | [OpenLIT](/ingest-data/ai-agents/openlit) | Agent, workflow, tool, and model telemetry |
+| [Hermes Agent](/ingest-data/ai-agents/hermes) | Agent invocations, token usage, model calls, tools, logs, and metrics | [OpenLIT](https://www.parseable.com/docs/ingest-data/ai-agents/openlit) | Agent, workflow, tool, and model telemetry |
 | [LangChain](/ingest-data/ai-agents/langchain) | LangChain application traces | [LlamaIndex](/ingest-data/ai-agents/llamaindex) | Retrieval and generation workflow traces |
 | [AutoGen](/ingest-data/ai-agents/autogen) | Multi-agent conversations and failures | [DSPy](/ingest-data/ai-agents/dspy) | DSPy programs and prompt optimization workflows |
 
@@ -100,7 +100,7 @@ After choosing a framework guide, use the collector or direct OTLP export option
 
 ## Framework support matrix
 
-Agent Observability is framework-aware when the incoming traces include agent, model, and tool attributes. Some frameworks emit those attributes directly. Others use instrumentation libraries such as OpenLIT or OpenInference to translate framework activity into OpenTelemetry spans.
+Agent Observability is framework-aware when the incoming traces include agent, model, and tool attributes. Some frameworks emit those attributes directly. Others use instrumentation libraries such as [OpenLIT](https://www.parseable.com/docs/ingest-data/ai-agents/openlit) or [OpenInference](https://github.com/Arize-ai/openinference) to translate framework activity into OpenTelemetry spans.
 
 | Path | Status |
 | --- | --- |
