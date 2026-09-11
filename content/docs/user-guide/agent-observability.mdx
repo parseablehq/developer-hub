@@ -14,6 +14,8 @@ Parseable Agent Observability gives you that view inside Prism. You can begin wi
 
 It is built on the [OpenTelemetry GenAI semantic conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/), so the telemetry follows a standard shape for model calls, token usage, inputs, outputs, tool calls, and agent spans. For message content, Parseable follows the native GenAI model: use `gen_ai.input.messages`, `gen_ai.output.messages`, `gen_ai.system_instructions`, and the `gen_ai.client.inference.operation.details` event when you capture full request and response details.
 
+Parseable is not tied to one agent framework. Any supported framework or instrumentation path that sends compatible OpenTelemetry trace data can feed Agent Observability. Use the framework-specific guides when you want setup instructions for a particular stack.
+
 Once your agent is instrumented, the Agents page becomes the place where you understand how that agent behaves in production. You can see how often it runs, which models it uses, how many tokens it consumes, where it spends time, which tools it calls, and where a run needs review.
 
 ## Explore agent activity
@@ -64,16 +66,14 @@ Use Add filter to narrow the table when you already know what kind of run you ar
 
 When you open a run, Parseable shows the trace behind it. User-facing input appears as user messages in the UI. Model or agent output appears as agent messages. Under the hood, keep this telemetry native to OpenTelemetry by recording message content with `gen_ai.input.messages`, `gen_ai.output.messages`, and `gen_ai.client.inference.operation.details` rather than relying on custom message event names.
 
-## Instrument agents with Pydantic AI
+## Instrument agents with supported frameworks
 
-Parseable now supports Agent Observability through Pydantic AI. If your agent is built with Pydantic AI, enable its OpenTelemetry instrumentation and send the traces to Parseable through an OpenTelemetry Collector. Parseable then uses those spans to build the Overview, Models, Tools, and Agent Runs views.
-
-This is the recommended path because Pydantic AI already understands the agent structure. It emits spans for the agent run, model requests, and tool execution, while Parseable turns that telemetry into a UI that is easier to navigate than raw traces alone.
+Parseable supports Agent Observability for multiple agent frameworks and instrumentation libraries. The exact setup depends on the framework, but the data path is the same: capture agent, model, and tool telemetry, export it through OpenTelemetry, and send the trace dataset to Parseable with the `agent-observability` dataset tag.
 
 At a high level, the flow looks like this:
 
 ```text
-Pydantic AI agent
+Supported agent framework
   |
   | OpenTelemetry traces
   v
@@ -86,44 +86,25 @@ Parseable traces dataset
 Agents page in Prism
 ```
 
-In your Pydantic AI application, configure OpenTelemetry before the agent runs and enable Pydantic AI instrumentation:
+Start with the guide for your framework:
 
-```python
-import os
+| Framework guide | What it covers | Framework guide | What it covers |
+| --- | --- | --- | --- |
+| [Pydantic AI](/ingest-data/ai-agents/pydantic-ai) | Agent, model, and tool-call traces | [CrewAI](/ingest-data/ai-agents/crewai) | Crews, agents, tasks, LLM calls, and errors |
+| [n8n](/ingest-data/ai-agents/n8n) | Workflow automation traces and related telemetry | [Mastra](/ingest-data/ai-agents/mastra) | Agent logs, traces, and metrics |
+| [Hermes Agent](/ingest-data/ai-agents/hermes) | Agent invocations, token usage, model calls, tools, logs, and metrics | [OpenLIT](/ingest-data/ai-agents/openlit) | Agent, workflow, tool, and model telemetry |
+| [LangChain](/ingest-data/ai-agents/langchain) | LangChain application traces | [LlamaIndex](/ingest-data/ai-agents/llamaindex) | Retrieval and generation workflow traces |
+| [AutoGen](/ingest-data/ai-agents/autogen) | Multi-agent conversations and failures | [DSPy](/ingest-data/ai-agents/dspy) | DSPy programs and prompt optimization workflows |
 
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.trace import set_tracer_provider
-from pydantic_ai import Agent, InstrumentationSettings
+After choosing a framework guide, use the collector or direct OTLP export options below to send the resulting traces to Parseable.
 
+## Framework support matrix
 
-provider = TracerProvider(
-    resource=Resource.create(
-        {"service.name": os.getenv("OTEL_SERVICE_NAME", "pydantic-ai-agent")}
-    )
-)
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-set_tracer_provider(provider)
-
-Agent.instrument_all(
-    InstrumentationSettings(
-        version=5,
-        include_content=True,
-    )
-)
-```
-
-`version=5` uses Pydantic AI's current OpenTelemetry instrumentation format. `include_content=True` captures prompts, completions, and tool payloads in telemetry, so use it only when that content is safe to store.
-
-## Language support matrix
-
-Pydantic AI is a Python framework, so the supported setup in this guide is Python first. The telemetry still travels through OpenTelemetry, which means the data path stays open and standards-based.
+Agent Observability is framework-aware when the incoming traces include agent, model, and tool attributes. Some frameworks emit those attributes directly. Others use instrumentation libraries such as OpenLIT or OpenInference to translate framework activity into OpenTelemetry spans.
 
 | Path | Status |
 | --- | --- |
-| Pydantic AI with OpenTelemetry | Recommended |
+| Supported agent framework guide | Recommended |
 | OpenTelemetry Collector export | Recommended for production |
 | Direct OTLP export to Parseable | Useful for small or local setups |
 
