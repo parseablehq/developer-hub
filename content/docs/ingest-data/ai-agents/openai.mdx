@@ -88,7 +88,7 @@ from openai import OpenAI
 openlit.init(
     otlp_endpoint=os.environ["PARSEABLE_URL"],  # e.g. http://<parseable-host>:8010
     otlp_headers={
-        "X-API-Key": os.environ["PARSEABLE_API_KEY"],
+        "Authorization": f"Bearer {os.environ['PARSEABLE_API_KEY']}",
         "X-P-Stream": "openai-sdk-traces",
     },
     service_name="openai-sdk-demo",
@@ -130,7 +130,7 @@ provider = TracerProvider(
 exporter = OTLPSpanExporter(
     endpoint=f"{os.environ['PARSEABLE_URL']}/v1/traces",
     headers={
-        "X-API-Key": os.environ["PARSEABLE_API_KEY"],
+        "Authorization": f"Bearer {os.environ['PARSEABLE_API_KEY']}",
         "X-P-Stream": "openai-sdk-traces",
     },
 )

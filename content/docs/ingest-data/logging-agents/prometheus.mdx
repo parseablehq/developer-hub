@@ -17,12 +17,14 @@ The direct path is Prometheus Remote Write. Prometheus continues to scrape your 
 ```yaml
 remote_write:
   - url: "http://<parseable-ingestor-endpoint>:8000/v1/prometheus/write"
+    authorization:
+      type: Bearer
+      credentials: <parseable-api-key>
     headers:
-      X-API-Key: <parseable-api-key>
       X-P-Stream: prometheus-metrics
 ```
 
-`X-API-Key` authorizes the write to Parseable. `X-P-Stream` decides the target metrics dataset, tells Parseable to treat the incoming payload as metrics data.
+The Bearer token authorizes the write to Parseable. `X-P-Stream` decides the target metrics dataset, and Parseable treats the payload as metrics data because it arrives on the remote-write endpoint.
 
 ## Fluent Bit with OpenTelemetry Output
 
@@ -48,7 +50,7 @@ Fluent Bit is useful when you already run it as a telemetry agent and want it to
     Metrics_uri           /v1/metrics
     Log_response_payload  True
     Tls                   Off
-    Header                X-API-Key <parseable-api-key>
+    Header                Authorization Bearer <parseable-api-key>
     Header                X-P-Stream prometheus-metrics
     Add_label             app fluent-bit
 ```
@@ -81,7 +83,7 @@ exporters:
   otlphttp/parseable:
     endpoint: "http://<parseable-ingestor-endpoint>:8000"
     headers:
-      X-API-Key: <parseable-api-key>
+      Authorization: "Bearer <parseable-api-key>"
       X-P-Stream: prometheus-metrics
     encoding: proto
     tls:

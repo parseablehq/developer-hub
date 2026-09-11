@@ -62,7 +62,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: proto
     headers:
-      X-API-Key: ${env:PARSEABLE_API_KEY}
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: otel-logs
     retry_on_failure:
       enabled: true
@@ -75,7 +75,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: proto
     headers:
-      X-API-Key: ${env:PARSEABLE_API_KEY}
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: otel-metrics
     retry_on_failure:
       enabled: true
@@ -88,7 +88,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: proto
     headers:
-      X-API-Key: ${env:PARSEABLE_API_KEY}
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: otel-traces
     retry_on_failure:
       enabled: true

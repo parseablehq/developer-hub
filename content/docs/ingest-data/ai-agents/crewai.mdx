@@ -64,7 +64,7 @@ Create a dataset for CrewAI spans and tag it for Agent Observability:
 
 ```bash
 curl -X PUT "$PARSEABLE_URL/api/v1/logstream/$PARSEABLE_STREAM" \
-  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
+  -H "Authorization: Bearer ${PARSEABLE_API_KEY}" \
   -H "X-P-Telemetry-Type: traces" \
   -H "X-P-Dataset-Tag: agent-observability"
 ```
@@ -137,7 +137,7 @@ provider.add_span_processor(
         OTLPSpanExporter(
             endpoint=f"{parseable_url}/v1/traces",
             headers={
-                "X-API-Key": os.environ["PARSEABLE_API_KEY"],
+                "Authorization": f"Bearer {os.environ['PARSEABLE_API_KEY']}",
                 "X-P-Stream": parseable_stream,
             },
         )

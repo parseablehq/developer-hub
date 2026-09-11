@@ -53,16 +53,16 @@ Create one dataset for each OpenTelemetry signal:
 
 ```bash
 curl -X PUT "$PARSEABLE_URL/api/v1/logstream/hermes-traces" \
-  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
+  -H "Authorization: Bearer ${PARSEABLE_API_KEY}" \
   -H "X-P-Telemetry-Type: traces" \
   -H "X-P-Dataset-Tag: agent-observability"
 
 curl -X PUT "$PARSEABLE_URL/api/v1/logstream/hermes-logs" \
-  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
+  -H "Authorization: Bearer ${PARSEABLE_API_KEY}" \
   -H "X-P-Telemetry-Type: logs"
 
 curl -X PUT "$PARSEABLE_URL/api/v1/logstream/hermes-metrics" \
-  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
+  -H "Authorization: Bearer ${PARSEABLE_API_KEY}" \
   -H "X-P-Telemetry-Type: metrics"
 ```
 
@@ -127,7 +127,7 @@ backends:
     name: parseable-traces
     endpoint: https://parseable.example.com/v1/traces
     headers:
-      X-API-Key: <parseable-api-key>
+      Authorization: "Bearer <parseable-api-key>"
       X-P-Stream: hermes-traces
       X-P-Dataset-Tag: agent-observability
     traces: true
@@ -138,7 +138,7 @@ backends:
     name: parseable-metrics
     endpoint: https://parseable.example.com/v1/traces
     headers:
-      X-API-Key: <parseable-api-key>
+      Authorization: "Bearer <parseable-api-key>"
       X-P-Stream: hermes-metrics
     traces: false
     metrics: true
@@ -148,7 +148,7 @@ backends:
     name: parseable-logs
     endpoint: https://parseable.example.com/v1/traces
     headers:
-      X-API-Key: <parseable-api-key>
+      Authorization: "Bearer <parseable-api-key>"
       X-P-Stream: hermes-logs
     traces: false
     metrics: false

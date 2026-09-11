@@ -100,9 +100,9 @@ scrape_configs:
 
 remote_write:
   - url: "http://<parseable-ingestor>:8000/v1/prometheus/write"
-    basic_auth:
-      username: <parseable-username>
-      password: <parseable-password>
+    authorization:
+      type: Bearer
+      credentials: <parseable-api-key>
     headers:
       X-P-Stream: starburst-metrics
 ```

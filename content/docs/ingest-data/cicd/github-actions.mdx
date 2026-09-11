@@ -164,7 +164,7 @@ on:
 
 env:
   OTEL_EXPORTER_OTLP_ENDPOINT: ${{ secrets.PARSEABLE_OTEL_ENDPOINT }}
-  OTEL_EXPORTER_OTLP_HEADERS: "Authorization=Basic ${{ secrets.PARSEABLE_AUTH }},X-P-Stream=github-actions-traces"
+  OTEL_EXPORTER_OTLP_HEADERS: "Authorization=Bearer ${{ secrets.PARSEABLE_API_KEY }},X-P-Stream=github-actions-traces"
 
 jobs:
   build:
@@ -305,6 +305,7 @@ Add these secrets to your repository:
 |--------|-------------|
 | `PARSEABLE_URL` | Your Parseable instance URL |
 | `PARSEABLE_AUTH` | Base64 encoded `username:password` |
+| `PARSEABLE_API_KEY` | Parseable API key for OTLP tracing |
 | `PARSEABLE_OTEL_ENDPOINT` | OTEL endpoint (for tracing) |
 
 ## Best Practices

@@ -63,7 +63,7 @@ exporters:
   otlphttp/parseable:
     endpoint: "http://parseable:8000"
     headers:
-      Authorization: "Basic YWRtaW46YWRtaW4="
+      Authorization: "Bearer <parseable-api-key>"
       X-P-Stream: "cloudwatch-logs"
     tls:
       insecure: true
@@ -95,7 +95,7 @@ exporters:
   otlphttp/parseable:
     endpoint: "http://parseable:8000"
     headers:
-      Authorization: "Basic YWRtaW46YWRtaW4="
+      Authorization: "Bearer <parseable-api-key>"
       X-P-Stream: "cloudwatch-logs"
     tls:
       insecure: true
@@ -126,7 +126,7 @@ exporters:
   otlphttp/parseable:
     endpoint: "http://parseable:8000"
     headers:
-      Authorization: "Basic YWRtaW46YWRtaW4="
+      Authorization: "Bearer <parseable-api-key>"
       X-P-Stream: "lambda-logs"
     tls:
       insecure: true
@@ -160,7 +160,7 @@ exporters:
   otlphttp/parseable:
     endpoint: "http://parseable:8000"
     headers:
-      Authorization: "Basic YWRtaW46YWRtaW4="
+      Authorization: "Bearer <parseable-api-key>"
       X-P-Stream: "lambda-logs"
     tls:
       insecure: true

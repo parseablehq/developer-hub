@@ -13,7 +13,7 @@ exporters:
   otlphttp/parseablemetrics:
     endpoint: "<parseable-endpoint> eg. http://localhost:8000"
     headers:
-      Authorization: "Basic <base64 encoded string of username:password>"
+      Authorization: "Bearer <parseable-api-key>"
       X-P-Stream: otel-metrics     # dataset/dataset name
       Content-Type: application/json
     encoding: json
@@ -37,7 +37,7 @@ exporters:
   otlphttp/parseablemetrics:
     endpoint: "http://parseable:8000"
     headers:
-      Authorization: "Basic YWRtaW46YWRtaW4="  # admin:admin in base64
+      Authorization: "Bearer <parseable-api-key>"
       X-P-Stream: otel-metrics       # dataset/dataset name
       Content-Type: application/x-protobuf
     encoding: proto
@@ -56,7 +56,7 @@ By default Parseable infers timestamp data types for time related fields (e.g. `
 
 ```bash
 curl -X PUT https://<parseable-endpoint>/api/v1/logstream/otel-metrics \
-  -H "Authorization: Basic <base64-encoded-credentials>" \
+  -H "Authorization: Bearer <parseable-api-key>" \
   -H "x-p-infer-timestamp: false"
 ```
 

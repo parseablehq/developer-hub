@@ -26,7 +26,7 @@ Traefik traces
   -> Parseable dataset: traefik-traces
 ```
 
-Keep the Collector between Traefik and Parseable for metrics and traces. It gives you batching, retries, memory protection, Kubernetes metadata, and one place to manage the `X-API-Key` and dataset headers. Logs can use the same Collector through the `filelog` receiver, or any Kubernetes log agent you already run.
+Keep the Collector between Traefik and Parseable for metrics and traces. It gives you batching, retries, memory protection, Kubernetes metadata, and one place to manage Bearer-token auth and dataset headers. Logs can use the same Collector through the `filelog` receiver, or any Kubernetes log agent you already run.
 
 ## What the integration collects
 
@@ -129,7 +129,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: proto
     headers:
-      X-API-Key: ${env:PARSEABLE_API_KEY}
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: traefik-metrics
     retry_on_failure:
       enabled: true
@@ -139,7 +139,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: proto
     headers:
-      X-API-Key: ${env:PARSEABLE_API_KEY}
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: traefik-traces
     retry_on_failure:
       enabled: true

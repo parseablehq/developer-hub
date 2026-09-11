@@ -48,8 +48,8 @@ Configure Parseable OTLP headers separately for logs and traces. Use `X-P-Stream
 ```bash
 PARSEABLE_OTLP_ENDPOINT=http://parseable.example:8000
 
-OTEL_EXPORTER_OTLP_LOGS_HEADERS=Authorization=Basic <base64 user:pass>,X-P-Stream=dbos-logs
-OTEL_EXPORTER_OTLP_TRACES_HEADERS=Authorization=Basic <base64 user:pass>,X-P-Stream=dbos-traces
+OTEL_EXPORTER_OTLP_LOGS_HEADERS=Authorization=Bearer <parseable-api-key>,X-P-Stream=dbos-logs
+OTEL_EXPORTER_OTLP_TRACES_HEADERS=Authorization=Bearer <parseable-api-key>,X-P-Stream=dbos-traces
 ```
 
 After restarting the DBOS app, trigger a workflow and check the `dbos-logs` and `dbos-traces` streams in Parseable.
@@ -106,10 +106,10 @@ scrape_configs:
           - conductor:8090
 
 remote_write:
-  - url: http://parseable.example:8000/api/v1/ingest
-    basic_auth:
-      username: admin
-      password: admin
+  - url: http://parseable.example:8000/v1/prometheus/write
+    authorization:
+      type: Bearer
+      credentials: <parseable-api-key>
     headers:
       X-P-Stream: dbos-conductor-metrics
 ```

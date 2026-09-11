@@ -180,7 +180,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      X-API-Key: "${env:PARSEABLE_API_KEY}"
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: windows-logs
       Content-Type: application/json
     retry_on_failure:
@@ -191,7 +191,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      X-API-Key: "${env:PARSEABLE_API_KEY}"
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: windows-metrics
       Content-Type: application/json
     retry_on_failure:
@@ -202,7 +202,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      X-API-Key: "${env:PARSEABLE_API_KEY}"
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: windows-traces
       Content-Type: application/json
     retry_on_failure:

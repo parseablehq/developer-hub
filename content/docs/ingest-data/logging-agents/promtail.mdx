@@ -79,7 +79,7 @@ exporters:
     endpoint: "http://<parseable-ingestor-endpoint>:8000"
     encoding: proto
     headers:
-      X-API-Key: <parseable-api-key>
+      Authorization: "Bearer <parseable-api-key>"
       X-P-Stream: promtail-logs
 
 service:

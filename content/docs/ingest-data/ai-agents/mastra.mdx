@@ -115,7 +115,7 @@ const resourceAttributes = {
 };
 
 const headers = (stream: string) => ({
-  'X-API-Key': apiKey,
+  'Authorization': `Bearer ${apiKey}`,
   'X-P-Stream': stream,
 });
 

@@ -43,13 +43,13 @@ exporters:
   otlp_http/traces:
     endpoint: https://<parseable-host>
     headers:
-      Authorization: "Basic <base64 user:pass>"
+      Authorization: "Bearer <parseable-api-key>"
       X-P-Stream: "restate-traces"
 
   otlp_http/logs:
     endpoint: https://<parseable-host>
     headers:
-      Authorization: "Basic <base64 user:pass>"
+      Authorization: "Bearer <parseable-api-key>"
       X-P-Stream: "restate-logs"
 
 service:

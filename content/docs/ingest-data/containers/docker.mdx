@@ -52,12 +52,14 @@ scrape_configs:
 
 remote_write:
   - url: "https://<parseable-ingestor>/v1/prometheus/write"
+    authorization:
+      type: Bearer
+      credentials: <parseable-api-key>
     headers:
-      X-API-Key: <parseable-api-key>
       X-P-Stream: docker-metrics
 ```
 
-`X-API-Key` authorizes the write to Parseable. `X-P-Stream` selects the Parseable dataset. Parseable treats the payload as metrics because Prometheus remote write sends it to `/v1/prometheus/write`. Change the `node` label when monitoring more than one Docker host.
+The Bearer token authorizes the write to Parseable. `X-P-Stream` selects the Parseable dataset. Parseable treats the payload as metrics because Prometheus remote write sends it to `/v1/prometheus/write`. Change the `node` label when monitoring more than one Docker host.
 
 The metric relabel rules expose the cAdvisor `name` label as `container` and shorten Docker Compose's project and service label names. These names match the dashboard variables and queries.
 

@@ -27,16 +27,16 @@ Open `~/.codex/config.toml` and add:
 environment = "production"
 log_user_prompt = false
 
-exporter = { otlp-http = { endpoint = "https://<your-parseable-host>:8000/v1/logs", protocol = "json", headers = { X-P-API-Key = "<parseable-api-key>", X-P-Stream = "codex-logs", Content-Type = "application/json" } } }
+exporter = { otlp-http = { endpoint = "https://<your-parseable-host>:8000/v1/logs", protocol = "json", headers = { Authorization = "Bearer <parseable-api-key>", X-P-Stream = "codex-logs", Content-Type = "application/json" } } }
 
-trace_exporter = { otlp-http = { endpoint = "https://<your-parseable-host>:8000/v1/traces", protocol = "json", headers = { X-P-API-Key = "<parseable-api-key>", X-P-Stream = "codex-traces", Content-Type = "application/json" } } }
+trace_exporter = { otlp-http = { endpoint = "https://<your-parseable-host>:8000/v1/traces", protocol = "json", headers = { Authorization = "Bearer <parseable-api-key>", X-P-Stream = "codex-traces", Content-Type = "application/json" } } }
 
-metrics_exporter = { otlp-http = { endpoint = "https://<your-parseable-host>:8000/v1/metrics", protocol = "json", headers = { X-P-API-Key = "<parseable-api-key>", X-P-Stream = "codex-metrics", Content-Type = "application/json" } } }
+metrics_exporter = { otlp-http = { endpoint = "https://<your-parseable-host>:8000/v1/metrics", protocol = "json", headers = { Authorization = "Bearer <parseable-api-key>", X-P-Stream = "codex-metrics", Content-Type = "application/json" } } }
 ```
 
 Set `environment` to a value such as `development`, `staging`, or `production`. Parseable stores it with the telemetry so you can separate environments in queries and dashboards.
 
-For a self-hosted deployment that uses basic authentication, replace `X-P-API-Key = "<parseable-api-key>"` in each exporter with:
+For a self-hosted deployment that uses basic authentication, replace `Authorization = "Bearer <parseable-api-key>"` in each exporter with:
 
 ```toml
 Authorization = "Basic <base64-encoded-username-and-password>"

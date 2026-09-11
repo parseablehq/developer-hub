@@ -34,16 +34,16 @@ export OTEL_METRICS_EXPORTER=otlp
 
 export OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/json
 export OTEL_EXPORTER_OTLP_LOGS_ENDPOINT="${PARSEABLE_URL}/v1/logs"
-export OTEL_EXPORTER_OTLP_LOGS_HEADERS="X-P-API-Key=${PARSEABLE_API_KEY},X-P-Stream=claudecode-logs"
+export OTEL_EXPORTER_OTLP_LOGS_HEADERS="Authorization=Bearer ${PARSEABLE_API_KEY},X-P-Stream=claudecode-logs"
 
 export OTEL_EXPORTER_OTLP_METRICS_PROTOCOL=http/json
 export OTEL_EXPORTER_OTLP_METRICS_ENDPOINT="${PARSEABLE_URL}/v1/metrics"
-export OTEL_EXPORTER_OTLP_METRICS_HEADERS="X-P-API-Key=${PARSEABLE_API_KEY},X-P-Stream=claudecode-metrics"
+export OTEL_EXPORTER_OTLP_METRICS_HEADERS="Authorization=Bearer ${PARSEABLE_API_KEY},X-P-Stream=claudecode-metrics"
 
 claude
 ```
 
-For a self-hosted deployment that uses basic authentication, replace `X-P-API-Key=${PARSEABLE_API_KEY}` in each header value with `Authorization=Basic <base64-encoded-username-and-password>`.
+For a self-hosted deployment that uses basic authentication, replace `Authorization=Bearer ${PARSEABLE_API_KEY}` in each header value with `Authorization=Basic <base64-encoded-username-and-password>`.
 
 ### Enable beta traces
 
@@ -54,7 +54,7 @@ export CLAUDE_CODE_ENHANCED_TELEMETRY_BETA=1
 export OTEL_TRACES_EXPORTER=otlp
 export OTEL_EXPORTER_OTLP_TRACES_PROTOCOL=http/json
 export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="${PARSEABLE_URL}/v1/traces"
-export OTEL_EXPORTER_OTLP_TRACES_HEADERS="X-P-API-Key=${PARSEABLE_API_KEY},X-P-Stream=claudecode-traces"
+export OTEL_EXPORTER_OTLP_TRACES_HEADERS="Authorization=Bearer ${PARSEABLE_API_KEY},X-P-Stream=claudecode-traces"
 ```
 
 Claude Code requires both `CLAUDE_CODE_ENABLE_TELEMETRY=1` and `CLAUDE_CODE_ENHANCED_TELEMETRY_BETA=1` for traces. Anthropic may change the beta schema between releases.
@@ -71,10 +71,10 @@ Administrators can place the same values in Claude Code managed settings. Replac
     "OTEL_METRICS_EXPORTER": "otlp",
     "OTEL_EXPORTER_OTLP_LOGS_PROTOCOL": "http/json",
     "OTEL_EXPORTER_OTLP_LOGS_ENDPOINT": "https://<your-parseable-host>:8000/v1/logs",
-    "OTEL_EXPORTER_OTLP_LOGS_HEADERS": "X-P-API-Key=<parseable-api-key>,X-P-Stream=claudecode-logs",
+    "OTEL_EXPORTER_OTLP_LOGS_HEADERS": "Authorization=Bearer <parseable-api-key>,X-P-Stream=claudecode-logs",
     "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL": "http/json",
     "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT": "https://<your-parseable-host>:8000/v1/metrics",
-    "OTEL_EXPORTER_OTLP_METRICS_HEADERS": "X-P-API-Key=<parseable-api-key>,X-P-Stream=claudecode-metrics"
+    "OTEL_EXPORTER_OTLP_METRICS_HEADERS": "Authorization=Bearer <parseable-api-key>,X-P-Stream=claudecode-metrics"
   }
 }
 ```

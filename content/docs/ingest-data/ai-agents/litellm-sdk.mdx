@@ -50,16 +50,16 @@ Create one dataset for each signal. This keeps the views in Prism clean and lets
 
 ```bash
 curl -X PUT "$PARSEABLE_URL/api/v1/logstream/litellm-sdk-traces" \
-  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
+  -H "Authorization: Bearer ${PARSEABLE_API_KEY}" \
   -H "X-P-Telemetry-Type: traces" \
   -H "X-P-Dataset-Tag: agent-observability"
 
 curl -X PUT "$PARSEABLE_URL/api/v1/logstream/litellm-sdk-logs" \
-  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
+  -H "Authorization: Bearer ${PARSEABLE_API_KEY}" \
   -H "X-P-Telemetry-Type: logs"
 
 curl -X PUT "$PARSEABLE_URL/api/v1/logstream/litellm-sdk-metrics" \
-  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
+  -H "Authorization: Bearer ${PARSEABLE_API_KEY}" \
   -H "X-P-Telemetry-Type: metrics"
 ```
 
@@ -85,21 +85,21 @@ exporters:
     endpoint: "${env:PARSEABLE_URL}"
     encoding: json
     headers:
-      X-API-Key: "${env:PARSEABLE_API_KEY}"
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: litellm-sdk-traces
 
   otlphttp/parseable_logs:
     endpoint: "${env:PARSEABLE_URL}"
     encoding: json
     headers:
-      X-API-Key: "${env:PARSEABLE_API_KEY}"
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: litellm-sdk-logs
 
   otlphttp/parseable_metrics:
     endpoint: "${env:PARSEABLE_URL}"
     encoding: json
     headers:
-      X-API-Key: "${env:PARSEABLE_API_KEY}"
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: litellm-sdk-metrics
 
 service:

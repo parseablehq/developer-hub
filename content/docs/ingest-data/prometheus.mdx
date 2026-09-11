@@ -8,7 +8,7 @@ Use this endpoint when Prometheus sends metrics directly to Parseable through th
 
 | Header             | Required | Description                                                    |
 |--------------------|----------|----------------------------------------------------------------|
-| `X-API-Key`        | Yes      | Parseable API key with access to write to the target dataset   |
+| `Authorization`    | Yes      | Bearer token for a Parseable API key with access to write to the target dataset |
 | `Content-Encoding` | Yes      | Must be `snappy`                                               |
 | `Content-Type`     | Yes      | `application/x-protobuf`                                       |
 | `X-P-Stream`       | Yes       | Target stream name.                 |
@@ -18,9 +18,11 @@ Use this endpoint when Prometheus sends metrics directly to Parseable through th
 ```yaml
 remote_write:
   - url: "http://<parseable-ingestor-endpoint>:8000/v1/prometheus/write"
+    authorization:
+      type: Bearer
+      credentials: <parseable-api-key>
     headers:
-      X-API-Key: <parseable-api-key>
       X-P-Stream: prometheus-metrics
 ```
 
-`X-P-Stream` is the metrics dataset that should receive the samples. Prometheus sets the remote write content headers for the protobuf payload, so the main values you usually configure are the URL, `X-API-Key`, and `X-P-Stream`.
+`X-P-Stream` is the metrics dataset that should receive the samples. Prometheus sets the remote write content headers for the protobuf payload, so the main values you usually configure are the URL, Bearer token, and `X-P-Stream`.

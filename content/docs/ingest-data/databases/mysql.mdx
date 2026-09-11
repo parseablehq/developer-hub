@@ -215,7 +215,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      X-API-Key: "${env:PARSEABLE_API_KEY}"
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: mysql-logs
       Content-Type: application/json
 
@@ -223,7 +223,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      X-API-Key: "${env:PARSEABLE_API_KEY}"
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: mysql-metrics
       Content-Type: application/json
 
@@ -231,7 +231,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      X-API-Key: "${env:PARSEABLE_API_KEY}"
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: mysql-traces
       Content-Type: application/json
 

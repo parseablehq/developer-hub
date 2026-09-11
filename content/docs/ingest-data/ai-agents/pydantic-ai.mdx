@@ -48,7 +48,7 @@ Create a trace dataset and tag it for Agent Observability:
 
 ```bash
 curl -X PUT "$PARSEABLE_URL/api/v1/logstream/pydantic-ai-traces" \
-  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
+  -H "Authorization: Bearer ${PARSEABLE_API_KEY}" \
   -H "X-P-Telemetry-Type: traces" \
   -H "X-P-Dataset-Tag: agent-observability"
 ```
@@ -57,7 +57,7 @@ Create a metrics dataset when you also want token usage, latency, and streaming 
 
 ```bash
 curl -X PUT "$PARSEABLE_URL/api/v1/logstream/pydantic-ai-metrics" \
-  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
+  -H "Authorization: Bearer ${PARSEABLE_API_KEY}" \
   -H "X-P-Telemetry-Type: metrics"
 ```
 
@@ -114,7 +114,7 @@ tracer_provider.add_span_processor(
         OTLPSpanExporter(
             endpoint=f"{parseable_url}/v1/traces",
             headers={
-                "X-API-Key": parseable_api_key,
+                "Authorization": f"Bearer {parseable_api_key}",
                 "X-P-Stream": "pydantic-ai-traces",
             },
         )
@@ -126,7 +126,7 @@ metric_reader = PeriodicExportingMetricReader(
     OTLPMetricExporter(
         endpoint=f"{parseable_url}/v1/metrics",
         headers={
-            "X-API-Key": parseable_api_key,
+            "Authorization": f"Bearer {parseable_api_key}",
             "X-P-Stream": "pydantic-ai-metrics",
         },
     ),

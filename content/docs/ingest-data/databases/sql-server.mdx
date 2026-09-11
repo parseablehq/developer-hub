@@ -139,7 +139,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      X-API-Key: "${env:PARSEABLE_API_KEY}"
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: sqlserver-logs
       Content-Type: application/json
     retry_on_failure:
@@ -150,7 +150,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      X-API-Key: "${env:PARSEABLE_API_KEY}"
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: sqlserver-metrics
       Content-Type: application/json
     retry_on_failure:
@@ -161,7 +161,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      X-API-Key: "${env:PARSEABLE_API_KEY}"
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: sqlserver-traces
       Content-Type: application/json
     retry_on_failure:

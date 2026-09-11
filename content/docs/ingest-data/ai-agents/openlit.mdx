@@ -57,7 +57,7 @@ Create the trace dataset and tag it for Agent Observability:
 
 ```bash
 curl -X PUT "$PARSEABLE_URL/api/v1/logstream/$OPENLIT_TRACE_STREAM" \
-  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
+  -H "Authorization: Bearer ${PARSEABLE_API_KEY}" \
   -H "X-P-Telemetry-Type: traces" \
   -H "X-P-Dataset-Tag: agent-observability"
 ```
@@ -66,7 +66,7 @@ Create the metrics dataset:
 
 ```bash
 curl -X PUT "$PARSEABLE_URL/api/v1/logstream/$OPENLIT_METRIC_STREAM" \
-  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
+  -H "Authorization: Bearer ${PARSEABLE_API_KEY}" \
   -H "X-P-Telemetry-Type: metrics"
 ```
 
@@ -97,14 +97,14 @@ exporters:
     endpoint: "${env:PARSEABLE_URL}"
     encoding: json
     headers:
-      X-API-Key: "${env:PARSEABLE_API_KEY}"
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: "${env:OPENLIT_TRACE_STREAM}"
 
   otlphttp/parseable_metrics:
     endpoint: "${env:PARSEABLE_URL}"
     encoding: json
     headers:
-      X-API-Key: "${env:PARSEABLE_API_KEY}"
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: "${env:OPENLIT_METRIC_STREAM}"
 
 service:
