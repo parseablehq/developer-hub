@@ -3,6 +3,40 @@ title: Release notes
 icon: Book
 ---
 
+## v3.0
+
+August 9, 2026
+
+Parseable 3.0 focuses on making the platform safer, easier to operate, and better suited to teams running logs, metrics, traces, agents, runtimes, and model traffic in one production environment. It is a hardening release for existing deployments and a broader platform release for teams adopting Parseable across AI infrastructure and day-to-day observability workflows.
+
+#### Security and operational hardening
+
+This release tightens several areas that affect authentication, authorization, query safety, and data isolation. It includes fixes and improvements around API key security, SQL injection protection in list condition expressions, SSRF protection for alert targets, path traversal protection for local filesystem filters, dataset authorization, OAuth sync, OIDC redirects, and dependency and runtime hardening across the backend and Prism UI.
+
+It also improves ingestion and trace endpoint behavior, alert query metadata, and OpenTelemetry metric handling, including exemplar and metric field fixes.
+
+#### Tools for teams and agents
+
+Parseable 3.0 adds more ways to work with telemetry outside the browser. The Parseable MCP Server gives MCP-compatible clients such as Claude, Cursor, VS Code, Codex, and other agentic tools a safer interface for inspecting datasets, schemas, logs, metrics, traces, alerts, and cluster health.
+
+The `pb` command line interface also expands the terminal workflow for querying, tailing, inspecting profiles, and automating common telemetry tasks.
+
+#### AI infrastructure observability
+
+This release expands Parseable's AI infrastructure coverage across agent frameworks, sandboxes and runtimes, LLMs, and gateways. Agent framework integrations help teams inspect runs, model calls, tool calls, workflow steps, and failures. Runtime and sandbox integrations add visibility into execution, retries, logs, traces, and metrics. LLM and gateway integrations help with model latency, errors, token usage, routing, and provider behavior.
+
+Together with Agent Observability in Prism, these integrations make it easier to follow an AI workload across the application, model, tool, runtime, and infrastructure layers.
+
+#### Governance, Prism, and Kubernetes operations
+
+Multi tenancy adds a clearer workspace boundary for shared deployments, keeping users, roles, API keys, datasets, dashboards, alerts, queries, and storage paths scoped to the right tenant.
+
+Prism continues to improve the product surfaces used during investigations, including Agent Observability, APM service maps, dashboards, and reusable templates from the public `parseablehq/dashboards` repository.
+
+On Kubernetes, Parseable 3.0 improves the installation and operations story through Helm chart updates and Parseable Auto Instrumentation (PAI). PAI uses the OpenTelemetry Operator and OpenTelemetry Collector to collect logs, metrics, traces, and Kubernetes events with less manual collector wiring, while still keeping the generated resources inspectable as normal Kubernetes objects.
+
+For a detailed walkthrough, read the [Parseable 3.0 release recap](https://www.parseable.com/blog/parseable-3-release-recap). For the complete changelog, contributors, and tagged release assets, see the [GitHub v3.0.0 release](https://github.com/parseablehq/parseable/releases/tag/v3.0.0).
+
 ## v2.9
 
 June 13, 2026
