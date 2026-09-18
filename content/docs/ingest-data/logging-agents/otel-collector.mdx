@@ -28,7 +28,7 @@ The Collector builds and runs telemetry pipelines. Parseable stores and queries 
 
 ## Prerequisites
 
-- A running [Parseable deployment](/docs/get-started)
+- A running [Parseable deployment](/get-started)
 - An [OpenTelemetry Collector installation](https://opentelemetry.io/docs/collector/install/) containing the components used by your receivers
 - A Parseable API key with write access to the target datasets
 - Network access from the Collector to the Parseable endpoint
@@ -159,7 +159,7 @@ The OTLP receiver handles telemetry produced by OpenTelemetry SDKs and compatibl
 
 Reference each declared receiver in the appropriate pipeline. A declaration outside `service.pipelines` leaves the receiver disabled.
 
-For Kubernetes collection, follow the [Kubernetes guide](/docs/ingest-data/containers/kubernetes).
+For Kubernetes collection, follow the [Kubernetes guide](/ingest-data/containers/kubernetes).
 
 ## Verify the pipeline
 
@@ -211,4 +211,4 @@ You can rename the datasets by changing `X-P-Stream`. Parseable derives the OTLP
 - Inspect exporter queue utilization and failed-send metrics.
 - Reduce expensive transformations, increase resources, or scale the Collector when export throughput remains below ingestion throughput.
 
-See the [OpenTelemetry logs](/docs/ingest-data/otel/logs), [metrics](/docs/ingest-data/otel/metrics), and [traces](/docs/ingest-data/otel/traces) documentation for signal-specific details.
+See the [OpenTelemetry logs](/ingest-data/otel/logs), [metrics](/ingest-data/otel/metrics), and [traces](/ingest-data/otel/traces) documentation for signal-specific details.
