@@ -3,7 +3,6 @@
   "pages": [
     "auth0",
     "falco",
-    "trivy",
-    "siem-export"
+    "trivy"
   ]
 }
