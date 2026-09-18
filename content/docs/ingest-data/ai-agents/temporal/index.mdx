@@ -1,7 +1,18 @@
 ---
-title: Overview
-description: Ship Temporal workflow and activity execution events to Parseable as OpenTelemetry logs, traces, and SDK metrics
+title: Temporal
+description: Observe Temporal workers and Temporal Cloud in Parseable
 ---
+
+Temporal is a durable execution platform for workflows and applications. Parseable can observe both sides of a Temporal deployment: workflow and activity telemetry emitted by your workers and service metrics exposed by Temporal Cloud.
+
+<PageTabs items={['Worker telemetry', 'Temporal Cloud metrics']}>
+  <PageTab value="Worker telemetry">
+
+Use Parseable's Temporal middleware plugins to send workflow and activity logs and traces directly from your workers. Temporal SDK metrics can also be scraped from each worker and sent to Parseable with Prometheus Remote Write.
+
+Pick your SDK below to install the plugin. Continue through this page for the shared event schema, queries, dashboards and operational caveats.
+
+## Worker telemetry
 
 Parseable provides middleware plugins for [Temporal](https://temporal.io/) that ship workflow and activity execution events to a Parseable instance as OpenTelemetry **logs** and **traces**. Temporal SDKs can also expose worker and client level **metrics**, which can be scraped by Prometheus and forwarded to Parseable through Prometheus Remote Write.
 
@@ -21,7 +32,7 @@ For metrics, enable Temporal SDK telemetry on the worker or client process and e
 | Python      | [`temporal-parseable`](https://pypi.org/project/temporal-parseable/)      | [Python](/ingest-data/ai-agents/temporal/python)         |
 | Java        | [`temporal-parseable`](https://central.sonatype.com/artifact/com.parseable/temporal-parseable) | [Java](/ingest-data/ai-agents/temporal/java)             |
 
-All three plugins emit the **same log schema** and OTLP trace format, so dashboards, alerts, and SQL queries are portable across workers in different languages.
+All three plugins emit the **same log schema** and OTLP trace format, so dashboards, alerts and SQL queries are portable across workers in different languages.
 
 ## What gets captured
 
@@ -38,13 +49,13 @@ All workflow-side emission is **replay-safe**: every plugin guards emission so w
 
 Logs are POSTed to `${endpoint}/v1/logs`; traces to `${endpoint}/v1/traces`. The two pipelines are independently configurable - disable either layer per-SDK (`logs: false`, `traces: false`, `logs=None`, etc.).
 
-Streams default to `temporal-logs` and `temporal-traces`. Let the OTLP ingest path create these datasets on first write, or make sure any existing dataset matches the signal type. `temporal-logs` should be a logs dataset and `temporal-traces` should be a traces dataset.
+Streams default to `temporal-logs` and `temporal-traces`. Let the OTLP ingest path create these datasets on first write or make sure any existing dataset matches the signal type. `temporal-logs` should be a logs dataset and `temporal-traces` should be a traces dataset.
 
 <Callout type="warn">
 Do not create `temporal-traces` as a plain log dataset through the logstream API. Trace records should arrive through `/v1/traces` so Parseable stores them as traces.
 </Callout>
 
-Metrics follow a separate Prometheus path. Temporal exposes SDK metrics from the worker or client process, Prometheus scrapes that endpoint, and Parseable receives the samples through `POST /v1/prometheus/write`.
+Metrics follow a separate Prometheus path. Temporal exposes SDK metrics from the worker or client process, Prometheus scrapes that endpoint and Parseable receives the samples through `POST /v1/prometheus/write`.
 
 ```text
 Temporal Worker or Client
@@ -77,25 +88,25 @@ remote_write:
       X-P-Stream: temporal-metrics
 ```
 
-Temporal SDK metrics include worker activity, workflow task execution, activity execution, task queue polling, schedule-to-start latency, and end-to-end workflow execution latency. The exact metric names depend on the SDK and the Temporal runtime path being used, so use Temporal's official [SDK metrics reference](https://docs.temporal.io/references/sdk-metrics) when deciding what to dashboard.
+Temporal SDK metrics include worker activity, workflow task execution, activity execution, task queue polling, schedule-to-start latency and end-to-end workflow execution latency. The exact metric names depend on the SDK and the Temporal runtime path being used, so use Temporal's official [SDK metrics reference](https://docs.temporal.io/references/sdk-metrics) when deciding what to dashboard.
 
 To validate the setup, run a workflow and check three places in Parseable:
 
-- `temporal-logs` should show workflow, activity, signal, query, update, and custom event records.
+- `temporal-logs` should show workflow, activity, signal, query, update and custom event records.
 - `temporal-traces` should show workflow and activity spans for the run.
 - `temporal-metrics` should show SDK metrics after Prometheus scrapes the worker or client process and remote writes to Parseable.
 
 ## View in Parseable
 
-Once the worker starts exporting data, each signal lands in its own dataset. Start with the Logs page when you want a flat event view of workflow and activity lifecycle records. This is useful for filtering by `workflow_id`, `activity_name`, `status`, or `error`.
+Once the worker starts exporting data, each signal lands in its own dataset. Start with the Logs page when you want a flat event view of workflow and activity lifecycle records. This is useful for filtering by `workflow_id`, `activity_name`, `status` or `error`.
 
 ![Temporal workflow logs in Parseable](./static/temporal-logs.png)
 
-Use the Traces page when you want to follow a workflow run as spans. This gives you the execution shape of the run, including workflow spans, activity spans, child workflow calls, and timing.
+Use the Traces page when you want to follow a workflow run as spans. This gives you the execution shape of the run, including workflow spans, activity spans, child workflow calls and timing.
 
 ![Temporal workflow traces in Parseable](./static/temporal-traces.png)
 
-Use the Metrics page for Temporal SDK metrics collected through Prometheus. This is where worker, workflow task, activity, polling, and latency metrics show up after Prometheus remote writes them into Parseable.
+Use the Metrics page for Temporal SDK metrics collected through Prometheus. This is where worker, workflow task, activity, polling and latency metrics show up after Prometheus remote writes them into Parseable.
 
 ![Temporal SDK metrics in Parseable](./static/temporal-metrics.png)
 
@@ -166,7 +177,7 @@ ORDER BY timestamp;
 
 ## Dashboards
 
-After logs, traces, and metrics are flowing, you can use dashboards to keep the main workflow signals in one place. Parseable provides a Temporal workflow observability dashboard in [parseablehq/dashboards](https://github.com/parseablehq/dashboards/tree/main/temporal-workflow-observability). Use it as a starting point, then update dataset names and queries for your Temporal deployment.
+After logs, traces and metrics are flowing, you can use dashboards to keep the main workflow signals in one place. Parseable provides a Temporal workflow observability dashboard in [parseablehq/dashboards](https://github.com/parseablehq/dashboards/tree/main/temporal-workflow-observability). Use it as a starting point, then update dataset names and queries for your Temporal deployment.
 
 The spans dashboard helps you look at workflow and activity execution across runs without opening each trace manually.
 
@@ -178,7 +189,7 @@ The metrics dashboard gives you a quick way to watch SDK level worker and workfl
 
 ## Caveats (apply to all SDKs)
 
-- **Throw `ApplicationFailure` for graceful handler failures.** Signal/update handlers that throw a plain `Error` / `Exception` are treated by Temporal as a workflow-task failure: the task is retried until it succeeds, and the plugin emits one `started`+`failed` record pair per retry. Throw `ApplicationFailure` with `nonRetryable: true` (TypeScript) or raise `ApplicationFailure(non_retryable=True)` (Python) instead - the interceptor records exactly one `failed` event and the error propagates to the client as an update failure rather than a task failure.
+- **Throw `ApplicationFailure` for graceful handler failures.** Signal/update handlers that throw a plain `Error` / `Exception` are treated by Temporal as a workflow-task failure: the task is retried until it succeeds and the plugin emits one `started`+`failed` record pair per retry. Throw `ApplicationFailure` with `nonRetryable: true` (TypeScript) or raise `ApplicationFailure(non_retryable=True)` (Python) instead - the interceptor records exactly one `failed` event and the error propagates to the client as an update failure rather than a task failure.
 - **`child_workflow` completion is tracked from the child, not the start RPC.** The outbound interceptor wraps the result promise so `status: 'completed'` (or `failed`) fires when the child actually finishes - not when the start call returns. Start-time RPC errors and run-time child failures are reported with distinct `failed` records.
 - **OTel SDK pinned to 1.x.** Temporal's OTel plugin pins the 1.x line; the Parseable plugins follow until Temporal moves to 2.x.
 - **Empty-body warning on OTLP success is benign.** Parseable returns HTTP 200 with an empty body for accepted OTLP payloads. OTel's deserializer logs `Export succeeded but could not deserialize response - is the response specification compliant?` at `DEBUG` level only.
@@ -188,3 +199,91 @@ The metrics dashboard gives you a quick way to watch SDK level worker and workfl
 - TypeScript plugin: [github.com/parseablehq/temporal-plugin](https://github.com/parseablehq/temporal-plugin)
 - Python plugin: [github.com/parseablehq/temporal-plugin-python](https://github.com/parseablehq/temporal-plugin-python)
 - Java plugin: [github.com/parseablehq/temporal-plugin-java](https://github.com/parseablehq/temporal-plugin-java)
+
+{/* End worker telemetry guide. */}
+
+  </PageTab>
+  <PageTab value="Temporal Cloud metrics">
+
+Temporal Cloud publishes account and namespace metrics through an OpenMetrics endpoint. Run an OpenTelemetry Collector to scrape that endpoint and export the metrics to Parseable over OTLP/HTTP:
+
+```text
+Temporal Cloud /v1/metrics
+  |
+  | OpenMetrics scrape
+  v
+OpenTelemetry Collector
+  |
+  | OTLP/HTTP
+  v
+Parseable /v1/metrics
+  |
+  +--> <metrics-dataset>
+```
+
+## Before you begin
+
+Create a Temporal Cloud service account, grant it the **Metrics Read-Only** role and generate an API key. Create a Parseable API key with ingest access to your metrics dataset. You also need a place to run the OpenTelemetry Collector, such as a Kubernetes cluster, container platform or VM.
+
+In the examples below, `<metrics-dataset>` represents the Parseable dataset where you want to store Temporal Cloud metrics. Replace it with your dataset name.
+
+## Configure the collector
+
+Save this as `otel-collector.yaml`:
+
+```yaml
+receivers:
+  prometheus/temporal-cloud:
+    config:
+      scrape_configs:
+        - job_name: temporal-cloud
+          scrape_interval: 30s
+          scrape_timeout: 30s
+          honor_timestamps: true
+          scheme: https
+          authorization:
+            type: Bearer
+            credentials: "${env:TEMPORAL_CLOUD_API_KEY}"
+          static_configs:
+            - targets: ["metrics.temporal.io"]
+          metrics_path: /v1/metrics
+
+processors:
+  batch: {}
+
+exporters:
+  otlphttp/parseable:
+    endpoint: "https://<parseable-host>"
+    headers:
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
+      X-P-Stream: "<metrics-dataset>"
+
+service:
+  pipelines:
+    metrics/temporal-cloud:
+      receivers: [prometheus/temporal-cloud]
+      processors: [batch]
+      exporters: [otlphttp/parseable]
+```
+
+Set `TEMPORAL_CLOUD_API_KEY` and `PARSEABLE_API_KEY`, replace `<parseable-host>`, then start the OpenTelemetry Collector with this configuration. The OTLP/HTTP exporter appends `/v1/metrics` to the Parseable endpoint.
+
+<Callout type="info">
+The Collector handles both the OpenMetrics scrape and the OTLP export. You do not need a Prometheus server for this path.
+</Callout>
+
+## Verify ingestion
+
+After two scrape intervals, open **Metrics** in Parseable and select the dataset you configured as `<metrics-dataset>`. Look for series with the `temporal_cloud_v1_` prefix.
+
+If the dataset remains empty, check the Collector logs first. A `401` from `metrics.temporal.io` points to the Temporal service account or API key. An export error points to the Parseable URL, API key or dataset permission.
+
+## Links
+
+- [Temporal Cloud metrics integrations](https://docs.temporal.io/cloud/metrics/openmetrics/metrics-integrations)
+- [Parseable OpenTelemetry metrics ingestion](/ingest-data/otel/metrics)
+
+{/* End Temporal Cloud metrics guide. */}
+
+  </PageTab>
+</PageTabs>

@@ -11,6 +11,7 @@ import { YouTubeEmbed } from './components/YouTubeEmbed';
 import CurlTerminal from './components/CurlTerminal';
 import EditableCode from './components/EditableCode';
 import { LocalVideo } from './components/LocalVideo';
+import { PageTab, PageTabs } from './components/PageTabs';
 
 // Create the APIPage component using the new Fumadocs 16.x API
 const APIPage = createAPIPage(openapi);
@@ -27,6 +28,8 @@ export function getMDXComponents(components: MDXComponents = {}): MDXComponents 
     Cards,
     Tabs,
     Tab,
+    PageTabs,
+    PageTab,
     ProBadge,
     EnterpriseBadge,
     OfferingPills,
