@@ -3,7 +3,8 @@
   "pages": [
     "agent-frameworks",
     "coding-assistants",
-    "sandboxes-runtimes",
+    "sandboxes",
+    "agent-runtimes",
     "llms",
     "gateways"
   ]
