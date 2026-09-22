@@ -3,6 +3,8 @@ title: NVIDIA DCGM Exporter
 description: Send NVIDIA GPU metrics from DCGM Exporter to Parseable with the OpenTelemetry Collector.
 ---
 
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+
 [NVIDIA DCGM Exporter](https://github.com/NVIDIA/dcgm-exporter) exposes GPU telemetry in the Prometheus format. It uses NVIDIA Data Center GPU Manager (DCGM) to collect utilization, memory, temperature, power, PCIe, and hardware health metrics.
 
 Parseable can ingest these metrics through an OpenTelemetry Collector. The Collector scrapes DCGM Exporter and sends the samples to Parseable over OTLP HTTP.
