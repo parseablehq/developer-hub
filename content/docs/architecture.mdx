@@ -30,7 +30,7 @@ To ensure data durability during staging, we recommend attaching a small, reliab
 
 A background job then reads the staged Arrow files, converts them into highly compressed Parquet files, and uploads them to S3 or any configured object store. During this transformation, the ingestion node also generates query metadata, which significantly enhances performance during log searches and queries.
 
-![Parseable Ingestion Architecture](./static/ingestion-architecture.png)
+![Parseable Ingestion Architecture](./static/ingest-arch.webp)
 
 ## Query
 
@@ -44,7 +44,7 @@ Based on metadata, the node identifies the relevant parquet files and uses the o
 
 Another node called Prism node responds to all the role, user management, dataset management API. In Parseable OSS, a query node also serves as the leader node. 
 
-![Parseable Query Architecture](./static/query-architecture.png)
+![Parseable Query Architecture](./static/query-arch.webp)
 
 ## Design choices
 
