@@ -9,24 +9,24 @@ Parseable is an open source, column-oriented data lake platform, purpose built f
 
 Parseable is written in Rust and built on Apache Arrow and Apache Parquet. Rust gives predictable, low-latency performance with no garbage collection pauses and a small memory footprint. 
 
-Arrow is the in-memory columnar representation, which makes query execution vectorized and data exchange zero copy. Parquet is the storage at rest format — open, columnar, and widely supported.
+Arrow is the in-memory columnar representation, which makes query execution vectorized and data exchange zero copy. Parquet is the storage at rest format: open, columnar, and widely supported.
 
 - <strong>Data lake engine</strong>: The Parseable data lake engine is built for high-throughput ingestion. Incoming telemetry is staged locally and then forwarded to object storage in batches. This stage-and-forward design absorbs ingestion spikes without pushing backpressure onto the sender, and writes efficiently sized objects to the store. The engine handles compression, object storage prefix and partition layout, and metadata management.
 
 - <strong>Query engine</strong>: The query engine supports SQL and PromQL natively. Storage and compute are separate, so query nodes scale independently of ingestion. To keep queries fast, the engine caches frequently accessed data on the query node's local disk, serving hot queries from local NVMe rather than round-tripping to object storage on every call.
 
-![](./static/intro-image.png)
+![](./static/main-arch.webp)
 
 As every telemetry signal is stored as standard Parquet on object storage, the data is never trapped inside Parseable: any Parquet compatible engine can read it.
 
 ## Telemetry signals
 
-Telemetry signals have different shapes, query patterns, and volumes. Logs are wide and dynamic, metrics are dense and numeric, traces are linked trees of spans — and each performs best when its storage layout, schema handling, and query interface match the way that signal is actually produced and read.
+Telemetry signals have different shapes, query patterns, and volumes. Logs are wide and dynamic, metrics are dense and numeric, traces are linked trees of spans, and each performs best when its storage layout, schema handling, and query interface match the way that signal is actually produced and read.
 
-Data lake architecture was built for exactly this: holding distinct but related datasets — structured, semi-structured, and unstructured, in one open store. With storage decoupled from compute so each dataset can be queried on its own terms. That makes the data lake the natural foundation for observability.
+Data lake architecture was built for exactly this: holding distinct but related datasets, including structured, semi-structured, and unstructured data, in one open store. With storage decoupled from compute so each dataset can be queried on its own terms. That makes the data lake the natural foundation for observability.
 
 ### Logs
-Logs are the generally highest-volume signals. They range from unstructured text to semi-structured JSON, with constantly drifting schemas. The common pattern for queries is a filter over a time window — where people are trying to find the needle. Teams are also increasingly using aggregations over [wide, high-cardinality events](https://www.parseable.com/blog/decision-framework-wide-events-or-traces). 
+Logs are the generally highest-volume signals. They range from unstructured text to semi-structured JSON, with constantly drifting schemas. The common pattern for queries is a filter over a time window, where people are trying to find the needle. Teams are also increasingly using aggregations over [wide, high-cardinality events](https://www.parseable.com/blog/decision-framework-wide-events-or-traces). 
 
 Parseable can ingest logs with dynamic or fixed schema. For dynamic schema, new fields are picked up automatically, and sparse or wide events stay cheap because columnar storage only reads the columns a query touches.
 
@@ -38,9 +38,9 @@ Metrics are numeric time series identified by a name and a set of labels. The ha
 Parseable stores metrics in the columnar data lake and exposes them through native PromQL. With additional metadata like series hash and frequency, label values are stored as column data rather than expanded into a per-series index, so high-cardinality labels don't carry any penalty. Metrics can be ingested over [OpenTelemetry](/ingest-data/otel/metrics) or [Prometheus remote write](/ingest-data/prometheus).
 
 ### Traces
-A trace is a tree of spans tied together by a trace ID, where each span is a structured event with its own timing and attributes. Trace workloads mix two access patterns: fetch a single trace by ID, and aggregate across many spans for service-level views — latency percentiles, error rates, dependency maps.
+A trace is a tree of spans tied together by a trace ID, where each span is a structured event with its own timing and attributes. Trace workloads mix two access patterns: fetch a single trace by ID, and aggregate across many spans for service-level views such as latency percentiles, error rates, and dependency maps.
 
-Parseable stores spans as columnar events, so both patterns run on the same data — trace lookup by ID, and the aggregations behind its APM features. Traces are [ingested over OTLP](/ingest-data/otel/traces).
+Parseable stores spans as columnar events, so both patterns run on the same data for trace lookup by ID and the aggregations behind its APM features. Traces are [ingested over OTLP](/ingest-data/otel/traces).
 
 ## Use cases
 
