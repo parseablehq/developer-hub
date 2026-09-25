@@ -1,6 +1,7 @@
 {
   "title": "Application Platforms",
   "pages": [
+    "n8n",
     "vercel"
   ]
 }

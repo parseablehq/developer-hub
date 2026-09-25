@@ -1,0 +1,138 @@
+---
+title: n8n community node
+description: Query and ingest Parseable data from n8n workflows
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+
+The Parseable community node connects n8n workflows to Parseable. You can query records with SQL, query metrics with PromQL, or send JSON events to a dataset without building HTTP requests by hand.
+
+The node also works as a tool in n8n AI Agent workflows. An agent can query Parseable during an investigation and use the returned records or metrics in later workflow steps.
+
+## Supported operations
+
+| Operation | Use it to |
+| --- | --- |
+| Query Records (SQL) | Read records from a Parseable dataset within a time range |
+| Query Metrics (PromQL) | Run an instant or range query against a metrics dataset |
+| Ingest Events | Send a JSON object or array of objects to a Parseable dataset |
+
+PromQL requires Parseable Cloud or Enterprise. SQL queries and JSON ingestion work with Parseable deployments that support those APIs.
+
+## Prerequisites
+
+- An n8n instance with community-node support
+- A Parseable Cloud workspace or self-hosted Parseable deployment
+- A Parseable API key with access to the datasets used by the workflow
+
+Give the API key the permissions required by the workflow. A workflow that reads records needs query access. A workflow that sends events needs ingest access. See [API keys](/docs/user-guide/api-keys) for role examples.
+
+## Install the node
+
+<Steps>
+<Step>
+
+### Open the Parseable integration
+
+Open the [Parseable integration on n8n](https://n8n.io/integrations/parseable/) and follow the installation instructions for your n8n instance.
+
+You can also install `n8n-nodes-parseable` from **Settings > Community Nodes** in n8n.
+
+</Step>
+<Step>
+
+### Add Parseable credentials
+
+Create a **Parseable API** credential in n8n and enter:
+
+| Field | Value |
+| --- | --- |
+| Query Base URL | Parseable endpoint that serves SQL and PromQL queries |
+| Ingest Base URL | Parseable endpoint that accepts JSON events |
+| API Key | API key used by the workflow |
+| Tenant ID | Tenant for a multi-tenant deployment, when required |
+
+Use the same base URL for query and ingestion on a standalone deployment. Distributed deployments can use separate query and ingest URLs. Enter base URLs without API paths such as `/api/v1/query` or `/api/v1/ingest` because the node adds those paths.
+
+</Step>
+<Step>
+
+### Test the credential
+
+Save the credential and run its connection test. The test checks the query endpoint and authentication. Run an **Ingest Events** operation to test the ingest endpoint before using it in a production workflow.
+
+</Step>
+</Steps>
+
+## Query records with SQL
+
+Add the Parseable node to a workflow and select **Query Records (SQL)**. Choose a dataset and time range, then write a query with `{{dataset}}` in the `FROM` clause:
+
+```sql
+SELECT *
+FROM {{dataset}}
+WHERE level = 'error'
+ORDER BY p_timestamp DESC
+LIMIT 50
+```
+
+The node replaces `{{dataset}}` with the selected dataset and returns each row as an n8n item. You can pass those items to an IF node, notification service, or AI Agent.
+
+## Query metrics with PromQL
+
+Select **Query Metrics (PromQL)** and choose an instant or range query. Range queries also need a start time, end time and step.
+
+```text
+rate(http_requests_total[5m])
+```
+
+The node returns the Parseable Prometheus response as one n8n item.
+
+## Ingest workflow events
+
+Select **Ingest Events**, choose the target dataset and pass a JSON object or array of objects. The default expression sends the current n8n item:
+
+```text
+{{$json}}
+```
+
+Use this operation for workflow events and records. To collect n8n execution traces and platform logs, follow the [n8n observability guide](/docs/ingest-data/ai-agents/n8n).
+
+## Use Parseable with an AI Agent
+
+The Parseable node can act as an n8n AI Agent tool. Connect it to the agent's tool input and describe the dataset and query task in the tool parameters. Use a read-only API key when the agent only needs SQL or PromQL access.
+
+Example workflows include:
+
+- Query recent errors and send a summary to Slack
+- Check a service metric before starting a rollback workflow
+- Let an AI Agent inspect logs while handling an incident
+- Send webhook or workflow results to a Parseable dataset
+
+## Troubleshooting
+
+### Credential test fails
+
+- Confirm the Query Base URL points to a reachable Parseable endpoint.
+- Remove API paths, query parameters, fragments and embedded credentials from both base URLs.
+- Confirm the API key can list datasets on the query endpoint.
+- Add the tenant ID when the Parseable deployment requires one.
+
+### SQL query fails
+
+- Include `{{dataset}}` in the SQL query.
+- Confirm the selected dataset exists and the API key can query it.
+- Check that the start time comes before the end time.
+
+### Events do not appear
+
+- Confirm the Ingest Base URL points to the ingest endpoint for the deployment.
+- Confirm the API key has ingest access to the selected dataset.
+- Send a JSON object or a non-empty array of objects.
+
+## Resources
+
+- [Parseable integration on n8n](https://n8n.io/integrations/parseable/)
+- [`n8n-nodes-parseable` on npm](https://www.npmjs.com/package/n8n-nodes-parseable)
+- [Parseable n8n node source](https://github.com/parseablehq/n8n-nodes)
+- [n8n community nodes documentation](https://docs.n8n.io/integrations/community-nodes/)
