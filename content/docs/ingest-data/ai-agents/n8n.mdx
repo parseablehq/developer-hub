@@ -5,6 +5,8 @@ description: Send n8n workflow traces and related telemetry to Parseable
 
 n8n is often where a lot of small decisions in a system come together. A workflow might start from a webhook, call a few APIs, run an AI node, update a database, and then wait for another event before it continues.
 
+To query or ingest Parseable data inside a workflow, use the [Parseable community node for n8n](/docs/integrations/application-platforms/n8n).
+
 When that workflow is simple, the execution page in n8n is usually enough. But once workflows become production paths, you need to see them beside the rest of your application telemetry. Parseable can receive n8n workflow traces through OpenTelemetry, so you can query and inspect workflow behavior from the same place where you already work with logs and traces.
 
 ## What n8n exports
