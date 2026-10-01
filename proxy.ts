@@ -10,6 +10,13 @@ import { NextResponse, type NextRequest } from 'next/server';
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  if (pathname === '/introduction' || pathname === '/introduction/') {
+    const destination = new URL('/docs', request.url);
+    destination.search = request.nextUrl.search;
+
+    return NextResponse.redirect(destination, 308);
+  }
+
   // NextURL separates a configured base path from `pathname`, so this is the
   // reliable way to distinguish `/docs/architecture` from `/architecture`.
   if (request.nextUrl.basePath === '/docs') {

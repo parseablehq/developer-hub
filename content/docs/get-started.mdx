@@ -1,79 +1,42 @@
 ---
 title: Quickstart
+description: Start Parseable, send one event, and confirm it appears in the console.
 icon: Rocket
 redirect_from:
   - /get-started
   - /quickstart
 ---
-import { IconChartCohort, IconDirections, IconCloudDataConnection, IconBrandInertia, IconFileTypeSql, IconServerBolt,
- IconSchema, IconFileDigitFilled, IconCloudComputing, IconCloud } from '@tabler/icons-react';
-import { Step, Steps } from 'fumadocs-ui/components/steps';
 
+## Choose how to run Parseable
 
-## Run locally
+<Cards>
+  <Card href="/quickstart/cloud" title="Parseable Cloud">Create a managed workspace.</Card>
+  <Card href="/quickstart/binary" title="Local binary">Run Parseable on your laptop.</Card>
+  <Card href="/quickstart/docker" title="Docker">Start a local container.</Card>
+</Cards>
 
-Download and run the Parseable binary on your laptop:
+Follow one of those guides to start an instance. For a local binary or Docker instance, continue below to send your first event. For Cloud, use the ingestion endpoint and credentials shown in your workspace instead of the local values.
 
-```bash
-curl -fsSL https://logg.ing/install | bash
-```
+## Send your first event
 
-For Windows users
-
-```bash
-powershell -c "irm https://logg.ing/install-windows | iex"
-```
-
-Once you have Parseable running, send an event with the command below. This will send logs to the demo stream. You can see the logs in the dashboard.
+The local instance listens on port `8000`. Send one JSON event to the `demo` dataset:
 
 ```bash
-curl --location --request POST 'http://localhost:8000/api/v1/ingest' \
---header 'X-P-Stream: demo' \
---header 'Authorization: Basic YWRtaW46YWRtaW4=' \
---header 'Content-Type: application/json' \
---data-raw '[
-    {
-        "id": "434a5f5e-2f5f-11ed-a261-0242ac120002",
-        "datetime": "24/Jun/2022:14:12:15 +0000",
-        "host": "153.10.110.81"
-    }
-]'
+curl --location 'http://localhost:8000/api/v1/ingest' \
+  --header 'X-P-Stream: demo' \
+  --header 'Authorization: Basic YWRtaW46YWRtaW4=' \
+  --header 'Content-Type: application/json' \
+  --data '[{"message":"hello from Parseable"}]'
 ```
 
-Open the console at [http://localhost:8000](http://localhost:8000) and sign in with `admin` / `admin`. For other install options and a full walkthrough, see the [Docker quickstart](/quickstart/docker).
+The `X-P-Stream` header selects the dataset. The authorization header uses the local default `admin:admin` credentials.
 
-## Parseable Cloud
+## Verify it worked
 
-To get started with our fully managed cloud offering, sign up for Parseable Cloud for a free 14-day trial, without any credit card required. Parseable Cloud includes all the features of Parseable, with the added benefits of a fully managed service, automatic updates, and dedicated support.
+Open [the local console](http://localhost:8000), sign in with `admin` / `admin`, and select `demo` in the log explorer. You should see the event with `message` set to `hello from Parseable`.
 
-<Steps>
-<Step>
-### Sign up
+If it does not appear, confirm that Parseable is still running, then check the URL, credentials, and `X-P-Stream` header in the command above. For a production deployment, use the [self-hosted installation guide](/self-hosted/installation).
 
-Sign up on [https://app.parseable.com/](https://app.parseable.com/) to create your account.
+## Next steps
 
-</Step>
-<Step>
-### Ingest data
-
-You can connect to your data sources in a few clicks and start ingesting your data. Parseable supports a wide range of data sources - refer the "Ingesting data" section in the documentation for more details. 
-
-</Step>
-
-<Step>
-### Create your first dashboard
-
-Once your data is ingested, you can start creating dashboards and queries to analyze your data.
-</Step>
-
-<Step>
-### Set your first alert
-
-You can set up alerts to get notified when certain conditions are met in your data. For example, you can set up an alert to get notified when the number of errors in your application exceeds a certain threshold.
-
-</Step>
-</Steps>
-
-## Production installation
-
-To deploy Parseable in a production environment, refer to the [production installation guide](/self-hosted/installation).
+Send data from [OpenTelemetry](/ingest-data/otel), [a logging agent](/ingest-data/logging-agents), or [your application](/ingest-data/programming-languages). Then [query logs](/user-guide/sql-editor), [build a dashboard](/user-guide/dashboards), or [set an alert](/user-guide/alerting).
