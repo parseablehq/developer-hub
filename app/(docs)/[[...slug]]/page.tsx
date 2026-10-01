@@ -73,12 +73,12 @@ export async function generateMetadata(props: {
 }) {
   const params = await props.params;
 
-  // Handle root /docs path - will redirect, but provide metadata just in case
+  // Handle the root /docs path with homepage-specific metadata.
   if (!params.slug || params.slug.length === 0) {
     return {
-      title: "Parseable Documentation",
+      title: "Home",
       description:
-        "Explore Parseable documentation for installation, telemetry ingestion, querying, integrations, and operating an observability data lake.",
+        "Understand Parseable's data lake architecture and find the right guide for your task.",
     };
   }
 

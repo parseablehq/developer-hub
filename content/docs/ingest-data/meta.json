@@ -1,0 +1,17 @@
+{
+  "title": "More sources",
+  "pages": [
+    "auto-instrumentation",
+    "zero-instrumentation",
+    "databases",
+    "infrastructure",
+    "gpu",
+    "containers",
+    "streaming",
+    "prometheus",
+    "cicd",
+    "cloud",
+    "security",
+    "programming-languages"
+  ]
+}
