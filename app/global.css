@@ -49,6 +49,11 @@
 
 figure{ padding: 15px;}
 
+/* Quickstart behaves like a page entry, while still revealing run options when selected. */
+a:has([data-quickstart-sidebar]) > [data-icon] {
+  display: none;
+}
+
 /* Target the zoomed/magnified image overlay */
 .dark [data-rmiz-modal-overlay] {
   background-color: rgba(0, 0, 0, 0.9) !important;
