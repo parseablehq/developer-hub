@@ -2,6 +2,7 @@ import { docs, releaseNotes } from '@/.source/server';
 import { loader } from 'fumadocs-core/source';
 import { icons } from 'lucide-react';
 import { createOpenAPI, openapiPlugin } from 'fumadocs-openapi/server';
+import type { Folder } from 'fumadocs-core/page-tree';
 import { createElement } from 'react';
 
 // See https://fumadocs.vercel.app/docs/headless/source-api for more info
@@ -22,6 +23,38 @@ export const source = loader({
           }
 
           return node;
+        },
+        root(node) {
+          const start = node.children.findIndex(
+            (item) => item.type === 'page' && item.url === '/ingestion',
+          );
+          if (start === -1) return node;
+
+          const nextSection = node.children.findIndex(
+            (item, index) => index > start && item.type === 'separator',
+          );
+          const end = nextSection === -1 ? node.children.length : nextSection;
+          const index = node.children[start];
+          if (index.type !== 'page') return node;
+
+          // Group sidebar links without moving content or changing their URLs.
+          const group: Folder = {
+            $id: `${node.$id ?? 'root'}:ingestion`,
+            type: 'folder',
+            name: index.name,
+            index,
+            defaultOpen: true,
+            children: node.children.slice(start + 1, end),
+          };
+
+          return {
+            ...node,
+            children: [
+              ...node.children.slice(0, start),
+              group,
+              ...node.children.slice(end),
+            ],
+          };
         },
       },
     ],

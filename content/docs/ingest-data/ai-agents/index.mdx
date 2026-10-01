@@ -21,6 +21,29 @@ AI systems are usually made of more than one model call. A request can move thro
 
 This section groups Parseable integrations by the part of the AI stack they observe. Use the framework guides when you want agent, model, and tool-call traces. Use the sandbox and runtime guides when you need visibility into execution environments and long-running workflows. Use the LLM and gateway guides when the main question is about model traffic, token usage, latency, and errors.
 
+## Find your integration
+
+<Cards>
+  <Card title="Agent frameworks" href="#agent-frameworks" icon={<IconRobot />}>
+    Agent, model, and tool-call traces from application frameworks.
+  </Card>
+  <Card title="Coding assistants" href="#coding-assistants" icon={<IconCode />}>
+    Session and tool activity from development assistants.
+  </Card>
+  <Card title="Sandboxes" href="#sandboxes" icon={<IconServer />}>
+    Telemetry from isolated code execution and serverless jobs.
+  </Card>
+  <Card title="Agent runtimes" href="#agent-runtimes" icon={<IconTimeline />}>
+    Durable workflows, retries, and execution traces.
+  </Card>
+  <Card title="LLMs" href="#llms" icon={<IconBrain />}>
+    Model API calls and self-hosted inference.
+  </Card>
+  <Card title="Gateways" href="#gateways" icon={<IconRoute />}>
+    Routing, usage, latency, and errors at the model gateway.
+  </Card>
+</Cards>
+
 ## Agent frameworks
 
 Agent frameworks usually carry the highest-level application context. They can show which agent ran, which prompt or task started the run, which model was called, which tool was used, and where the run failed or slowed down.
@@ -60,6 +83,20 @@ Agent frameworks usually carry the highest-level application context. They can s
     icon={<IconBrain />}
   >
     Send Mastra agent logs, traces, and metrics to Parseable.
+  </Card>
+  <Card
+    title="Hermes Agent"
+    href="/ingest-data/ai-agents/hermes"
+    icon={<IconRobot />}
+  >
+    Observe Hermes Agent sessions and tool activity.
+  </Card>
+  <Card
+    title="OpenLIT"
+    href="/ingest-data/ai-agents/openlit"
+    icon={<IconBrain />}
+  >
+    Send OpenLIT traces and metrics to Parseable.
   </Card>
   <Card
     title="LangChain"
@@ -119,18 +156,11 @@ Coding assistants emit agent-level telemetry from interactive development sessio
   </Card>
 </Cards>
 
-## Sandboxes and runtimes
+## Sandboxes
 
-Sandboxes and execution runtimes are where agent work becomes real system activity. These guides focus on telemetry from code execution, durable workflows, serverless jobs, and workflow orchestration layers.
+Sandboxes show what happens when agents execute code and jobs in isolated environments. These guides cover sandbox activity, logs, traces, and metrics.
 
 <Cards>
-  <Card
-    title="Temporal"
-    href="/ingest-data/ai-agents/temporal"
-    icon={<IconTimeline />}
-  >
-    Observe Temporal workflows, activities, SDK telemetry, and metrics.
-  </Card>
   <Card
     title="Daytona"
     href="/ingest-data/ai-agents/daytona"
@@ -144,6 +174,20 @@ Sandboxes and execution runtimes are where agent work becomes real system activi
     icon={<IconServer />}
   >
     Send serverless Python logs, traces, and metrics through OpenTelemetry.
+  </Card>
+</Cards>
+
+## Agent runtimes
+
+Agent runtimes carry work across steps, retries, and long-running workflows. Use these guides to follow execution and diagnose failures across the workflow lifecycle.
+
+<Cards>
+  <Card
+    title="Temporal"
+    href="/ingest-data/ai-agents/temporal"
+    icon={<IconTimeline />}
+  >
+    Observe Temporal workflows, activities, SDK telemetry, and metrics.
   </Card>
   <Card
     title="DBOS"
