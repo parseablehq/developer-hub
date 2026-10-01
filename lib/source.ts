@@ -2,8 +2,35 @@ import { docs, releaseNotes } from '@/.source/server';
 import { loader } from 'fumadocs-core/source';
 import { icons } from 'lucide-react';
 import { createOpenAPI, openapiPlugin } from 'fumadocs-openapi/server';
-import type { Folder } from 'fumadocs-core/page-tree';
+import type { Folder, Item, Node } from 'fumadocs-core/page-tree';
 import { createElement } from 'react';
+
+function findPage(nodes: Node[], url: string): Item | undefined {
+  for (const item of nodes) {
+    if (item.type === 'page' && item.url === url) {
+      return item;
+    }
+
+    if (item.type === 'folder') {
+      const child = findPage(item.children, url);
+      if (child) return child;
+    }
+  }
+}
+
+function hasQuickstartPages(item: Node): item is Folder {
+  return (
+    item.type === 'folder' &&
+    item.children.some((child) => child.type === 'page' && child.url.startsWith('/quickstart/'))
+  );
+}
+
+function isTelemetrySignalPage(item: Node): item is Item {
+  return (
+    item.type === 'page' &&
+    ['/user-guide/logs', '/user-guide/metrics', '/user-guide/traces'].includes(item.url)
+  );
+}
 
 // See https://fumadocs.vercel.app/docs/headless/source-api for more info
 export const source = loader({
@@ -25,16 +52,83 @@ export const source = loader({
           return node;
         },
         root(node) {
-          const start = node.children.findIndex(
+          let children = node.children;
+          const quickstartIndex = children.findIndex(hasQuickstartPages);
+          const quickstartFolder = children[quickstartIndex];
+          const quickstartPage = children.find(
+            (item): item is Item => item.type === 'page' && item.url === '/get-started',
+          );
+
+          if (quickstartPage && quickstartFolder?.type === 'folder') {
+            const selfHostedInstall = findPage(children, '/self-hosted/installation');
+            const quickstartChildren: Node[] = [
+              ...quickstartFolder.children,
+              ...(selfHostedInstall
+                ? [
+                    {
+                      ...selfHostedInstall,
+                      $id: `${selfHostedInstall.$id ?? 'self-hosted-installation'}:quickstart`,
+                      name: 'Self Host',
+                    },
+                  ]
+                : []),
+            ];
+            const quickstartGroup: Folder = {
+              $id: `${node.$id ?? 'root'}:quickstart`,
+              type: 'folder',
+              name: createElement('span', { 'data-quickstart-sidebar': '' }, quickstartPage.name),
+              index: quickstartPage,
+              icon: quickstartPage.icon,
+              defaultOpen: false,
+              children: quickstartChildren,
+            };
+
+            const nextChildren = children.filter(
+              (item) => item !== quickstartPage && item !== quickstartFolder,
+            );
+            const insertAt = nextChildren.findIndex(
+              (item) => item.type === 'page' && item.url === '/mcp',
+            );
+            const safeInsertAt = insertAt === -1 ? nextChildren.length : insertAt;
+
+            children = [
+              ...nextChildren.slice(0, safeInsertAt),
+              quickstartGroup,
+              ...nextChildren.slice(safeInsertAt),
+            ];
+          }
+
+          const signalStart = children.findIndex(
+            (item) => item.type === 'page' && item.url === '/user-guide/logs',
+          );
+          const signalPages = children.filter(isTelemetrySignalPage);
+
+          if (signalStart !== -1 && signalPages.length === 3) {
+            const telemetrySignalsGroup: Folder = {
+              $id: `${node.$id ?? 'root'}:telemetry-signals`,
+              type: 'folder',
+              name: 'Telemetry Signals',
+              defaultOpen: false,
+              children: signalPages,
+            };
+
+            children = [
+              ...children.slice(0, signalStart).filter((item) => !isTelemetrySignalPage(item)),
+              telemetrySignalsGroup,
+              ...children.slice(signalStart).filter((item) => !isTelemetrySignalPage(item)),
+            ];
+          }
+
+          const start = children.findIndex(
             (item) => item.type === 'page' && item.url === '/ingestion',
           );
-          if (start === -1) return node;
+          if (start === -1) return { ...node, children };
 
-          const nextSection = node.children.findIndex(
+          const nextSection = children.findIndex(
             (item, index) => index > start && item.type === 'separator',
           );
-          const end = nextSection === -1 ? node.children.length : nextSection;
-          const index = node.children[start];
+          const end = nextSection === -1 ? children.length : nextSection;
+          const index = children[start];
           if (index.type !== 'page') return node;
 
           // Group sidebar links without moving content or changing their URLs.
@@ -44,15 +138,15 @@ export const source = loader({
             name: index.name,
             index,
             defaultOpen: true,
-            children: node.children.slice(start + 1, end),
+            children: children.slice(start + 1, end),
           };
 
           return {
             ...node,
             children: [
-              ...node.children.slice(0, start),
+              ...children.slice(0, start),
               group,
-              ...node.children.slice(end),
+              ...children.slice(end),
             ],
           };
         },

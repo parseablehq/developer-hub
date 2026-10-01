@@ -4,8 +4,6 @@ description: Understand Parseable's data lake architecture and find the right gu
 icon: House
 ---
 
-import { Cloud, Container, Download, Terminal } from 'lucide-react';
-
 Parseable is an open source, column-oriented data lake built for observability. It brings logs, metrics, traces, and agent telemetry into one system, with SQL and PromQL queries, dashboards, alerting, APM, and AI workflows on top.
 
 Telemetry does not all behave the same way. Logs can be wide and change shape from event to event; metrics can have millions of label combinations; and traces need both individual span lookup and service-level analysis. Parseable stores these signals on a shared, open data lake foundation while letting each be ingested and queried in the way it needs.
@@ -24,47 +22,43 @@ Parseable is written in Rust for predictable performance without garbage collect
 
 You can use the self-hosted core as a single binary, run a managed [Cloud workspace](/quickstart/cloud), or choose [Enterprise](/editions/compare) for advanced deployments. See the [edition comparison](/editions/compare) for details.
 
-## Get started
-
-Choose how you want to run Parseable. The [quickstart](/get-started) takes you from a running instance to a verified first event.
-
-<Cards>
-  <Card href="/quickstart/cloud" icon={<Cloud className="size-5" />} title="Parseable Cloud">
-    Create a managed workspace.
-  </Card>
-  <Card href="/quickstart/binary" icon={<Download className="size-5" />} title="Local binary">
-    Run Parseable on your laptop.
-  </Card>
-  <Card href="/quickstart/docker" icon={<Container className="size-5" />} title="Docker">
-    Start a local container.
-  </Card>
-  <Card href="/pb-cli" icon={<Terminal className="size-5" />} title="pb CLI">
-    Query and manage a running instance from your terminal.
-  </Card>
-</Cards>
-
 ## Send data from your stack
 
 The [ingestion overview](/ingestion) explains the available protocols. Start with the source you already have:
 
-| Source | Guide |
-| --- | --- |
-| OpenTelemetry Collector | [Collector setup](/ingest-data/logging-agents/otel-collector) |
-| Fluent Bit or Vector | [Fluent Bit](/ingest-data/logging-agents/fluent-bit) · [Vector](/ingest-data/logging-agents/vector) |
-| Docker or Kubernetes | [Docker](/ingest-data/containers/docker) · [Kubernetes](/ingest-data/containers/kubernetes) |
-| Prometheus | [Remote write](/ingest-data/prometheus) |
-| Application code | [Programming languages](/ingest-data/programming-languages) |
-| AI agents and LLM infrastructure | [AI infrastructure](/ingest-data/ai-agents) |
+<Cards>
+  <Card href="/ingest-data/logging-agents/otel-collector" title="Collector setup">
+    Send telemetry through the OpenTelemetry Collector.
+  </Card>
+  <Card href="/ingest-data/logging-agents/fluent-bit" title="Fluent Bit">
+    Forward logs from lightweight agents and edge workloads.
+  </Card>
+  <Card href="/ingest-data/logging-agents/vector" title="Vector">
+    Route, transform, and send logs with Vector.
+  </Card>
+  <Card href="/ingest-data/containers/docker" title="Docker">
+    Collect logs from Docker containers.
+  </Card>
+  <Card href="/ingest-data/containers/kubernetes" title="Kubernetes">
+    Send logs and telemetry from Kubernetes clusters.
+  </Card>
+  <Card href="/ingest-data/prometheus" title="Prometheus remote write">
+    Ingest Prometheus metrics with remote write.
+  </Card>
+  <Card href="/ingest-data/programming-languages" title="Programming languages">
+    Send telemetry directly from application code.
+  </Card>
+  <Card href="/ingest-data/ai-agents" title="AI infrastructure">
+    Observe agents, LLM gateways, runtimes, and coding assistants.
+  </Card>
+</Cards>
 
 ## Work with each signal
 
-**Logs** range from unstructured text to JSON with changing fields. Parseable can read selected columns from wide or sparse events, while [LogIQ](/user-guide/log-iq) can extract fields from verbose log strings. [Send OTLP logs](/ingest-data/otel/logs), then use the [log explorer](/user-guide/logs) or [SQL editor](/user-guide/sql-editor).
-
-**Metrics** are numeric time series identified by labels. High cardinality comes from many label combinations; Parseable stores label values as column data and provides native PromQL. Send metrics with [OpenTelemetry](/ingest-data/otel/metrics) or [Prometheus remote write](/ingest-data/prometheus), then [explore metrics](/user-guide/metrics) or [query with PromQL](/user-guide/promql).
-
-**Traces** connect spans by trace ID. Investigations need both a specific trace and aggregations across spans, such as latency and error rates. Parseable supports both patterns on the same columnar data. [Send OTLP traces](/ingest-data/otel/traces), then use [traces](/user-guide/traces) or [APM](/user-guide/apm).
-
-**Agent telemetry** adds activity from AI agents and LLM infrastructure to the same observability foundation. Follow the [AI infrastructure guides](/ingest-data/ai-agents) and [agent observability](/user-guide/agent-observability) to inspect it.
+- **Logs:** Work with events that range from unstructured text to JSON with changing fields. Parseable can read selected columns from wide or sparse events, while [LogIQ](/user-guide/log-iq) can extract fields from verbose log strings. [Send OTLP logs](/ingest-data/otel/logs), then use the [log explorer](/user-guide/logs) or [SQL editor](/user-guide/sql-editor).
+- **Metrics:** Store numeric time series identified by labels. Parseable stores label values as column data for high-cardinality metrics and provides native PromQL. Send metrics with [OpenTelemetry](/ingest-data/otel/metrics) or [Prometheus remote write](/ingest-data/prometheus), then [explore metrics](/user-guide/metrics) or [query with PromQL](/user-guide/promql).
+- **Traces:** Connect spans by trace ID for specific trace lookup and service-level analysis, including latency and error rates. Parseable supports both patterns on the same columnar data. [Send OTLP traces](/ingest-data/otel/traces), then use [traces](/user-guide/traces) or [APM](/user-guide/apm).
+- **Agent telemetry:** Bring activity from AI agents and LLM infrastructure into the same observability foundation. Follow the [AI infrastructure guides](/ingest-data/ai-agents) and [agent observability](/user-guide/agent-observability) to inspect it.
 
 ## Keep working
 

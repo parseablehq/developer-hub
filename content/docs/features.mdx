@@ -4,14 +4,22 @@ redirect_from:
   - /features
   - /features/index
 ---
-import { IconSparkles, IconBellRinging, IconDashboard, IconCode, IconSql,IconGauge, IconLock, IconBrain, IconUserCircle, IconDatabase, IconRefresh, IconApi } from '@tabler/icons-react';
+import { IconSparkles, IconBellRinging, IconDashboard, IconSql, IconGauge, IconLock, IconBrain, IconUserCircle, IconDatabase, IconRefresh, IconApi, IconActivityHeartbeat } from '@tabler/icons-react';
 
-Explore Parseable's features designed to enhance your observability experience. From intuitive dashboards to advanced search capabilities, these features will help you get the most out of your telemetry data and streamline your observability workflow.
+Explore the main capabilities available in Parseable, from AI-native investigation and APM to dashboards, alerting, PromQL, access control, APIs, and automated Kubernetes instrumentation. Use this page as a feature map for moving from telemetry collection to investigation, operations, and production management.
 
 <Cards>
 
 <Card href="/user-guide/ai-native" icon={<IconSparkles className="text-purple-600" />} title='AI Native'>
 AI-powered observability with Keystone Q&A, dataset summarization, and natural language to SQL conversion.
+</Card>
+
+<Card href="/user-guide/apm" icon={<IconActivityHeartbeat className="text-purple-600" />} title='APM'>
+Analyze service health, latency, errors, and traces from one application performance workflow.
+</Card>
+
+<Card href="/user-guide/agent-observability" icon={<IconBrain className="text-purple-600" />} title='Agent Observability'>
+Debug AI agent runs with traces, prompts, tool calls, costs, and runtime behavior in one view.
 </Card>
 
 <Card href="/user-guide/alerting" icon={<IconBellRinging className="text-purple-600" />} title='Alerting'>
@@ -52,6 +60,14 @@ Optimize query performance with intelligent caching mechanisms for frequently ac
 
 <Card href="/api" icon={<IconApi className="text-purple-600" />} title='API Reference'>
 Comprehensive API documentation for programmatic access to Parseable's features and capabilities.
+</Card>
+
+<Card href="/user-guide/multi-tenancy" icon={<IconUserCircle className="text-purple-600" />} title='Multi-tenancy'>
+Run tenant-aware deployments with isolated request handling, storage layout, and access control.
+</Card>
+
+<Card href="/ingest-data/auto-instrumentation" icon={<IconRefresh className="text-purple-600" />} title='PAI' className="col-span-2">
+Parseable Auto Instrumentation, or PAI, is a Kubernetes operator that automatically collects logs, metrics, traces, and Kubernetes events from a cluster and exports them to Parseable, with zero manual configuration required.
 </Card>
 
 </Cards>
