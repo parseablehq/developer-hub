@@ -11,6 +11,7 @@ import { YouTubeEmbed } from './components/YouTubeEmbed';
 import CurlTerminal from './components/CurlTerminal';
 import EditableCode from './components/EditableCode';
 import { LocalVideo } from './components/LocalVideo';
+import { IntegrationLogo } from './components/IntegrationLogo';
 import { PageTab, PageTabs } from './components/PageTabs';
 
 // Create the APIPage component using the new Fumadocs 16.x API
@@ -37,6 +38,7 @@ export function getMDXComponents(components: MDXComponents = {}): MDXComponents 
     CurlTerminal,
     EditableCode,
     LocalVideo,
+    IntegrationLogo,
     APIPage,
     
     // Override any components if needed
