@@ -74,3 +74,8 @@ iframe[src*="youtube-nocookie.com"] {
     z-index: 1 !important;
   }
 }
+
+/* No shadow on card icon boxes in integration logo grids */
+:has(> [data-card] .integration-logo) > [data-card] > .shadow-md {
+  box-shadow: none;
+}
