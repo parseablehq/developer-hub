@@ -20,6 +20,58 @@ Field name starting with `@` is replaced with `_`. In case of key collision, the
 When an incoming event has a field with a data type different from the existing schema, the field is automatically renamed with a type suffix (e.g., `body_timestamp_utf8`, `span_kind_int64`). This prevents ingestion failures where field types may vary between events.
 </Callout>
 
+## Ingestion guides
+
+Choose the ingestion path that matches the system sending data to Parseable.
+
+<Cards>
+  <Card href="/ingest-data/otel" title="OpenTelemetry">
+    Send logs, metrics, and traces through OTLP and OpenTelemetry-compatible pipelines.
+  </Card>
+  <Card href="/ingest-data/prometheus" title="Prometheus Remote Write">
+    Ingest Prometheus metrics with the remote write protocol.
+  </Card>
+  <Card href="/ingest-data/ai-agents" title="AI Infrastructure">
+    Observe agents, LLMs, gateways, runtimes, sandboxes, and coding assistants.
+  </Card>
+  <Card href="/ingest-data/logging-agents" title="Telemetry Agents">
+    Forward telemetry with collectors and agents such as Fluent Bit, Vector, Logstash, and OTel Collector.
+  </Card>
+  <Card href="/ingest-data/containers" title="Containers">
+    Collect logs and telemetry from Docker, Kubernetes, ECS, EKS, GKE, and AKS.
+  </Card>
+  <Card href="/ingest-data/streaming" title="Streaming">
+    Route events through Kafka, Redpanda, RabbitMQ, NATS, Cribl, and managed streaming platforms.
+  </Card>
+  <Card href="/ingest-data/databases" title="Databases">
+    Send or migrate telemetry from PostgreSQL, MySQL, MongoDB, Redis, SQL Server, and Elasticsearch.
+  </Card>
+  <Card href="/ingest-data/auto-instrumentation" title="Parseable Auto Instrumentation">
+    Collect Kubernetes logs, metrics, traces, and events with Parseable-managed instrumentation.
+  </Card>
+  <Card href="/ingest-data/zero-instrumentation" title="eBPF">
+    Capture kernel-level observability signals with eBPF-based tooling.
+  </Card>
+  <Card href="/ingest-data/gpu" title="GPU">
+    Collect GPU metrics and accelerator telemetry.
+  </Card>
+  <Card href="/ingest-data/cicd" title="CI/CD">
+    Capture telemetry from GitHub Actions, Jenkins, GitLab CI, CircleCI, ArgoCD, and Terraform.
+  </Card>
+  <Card href="/ingest-data/security" title="Security">
+    Bring security events from Auth0, Falco, Trivy, and related sources into Parseable.
+  </Card>
+  <Card href="/ingest-data/infrastructure" title="Infrastructure">
+    Collect telemetry from infrastructure services such as Traefik and Windows Server.
+  </Card>
+  <Card href="/ingest-data/cloud" title="Cloud">
+    Ingest logs and events from AWS, Azure, Google Cloud, and Fly.io.
+  </Card>
+  <Card href="/ingest-data/programming-languages" title="Programming Languages">
+    Send telemetry directly from application code in Python, JavaScript, Go, Java, Rust, .NET, PHP, and Ruby.
+  </Card>
+</Cards>
+
 ## Ingestion HTTP headers
 
 You can use HTTP headers to control how data is ingested and processed.

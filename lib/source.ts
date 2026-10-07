@@ -32,6 +32,22 @@ function isTelemetrySignalPage(item: Node): item is Item {
   );
 }
 
+function isOperatePage(item: Node): item is Item {
+  return (
+    item.type === 'page' &&
+    [
+      '/user-guide/rbac',
+      '/user-guide/multi-tenancy',
+      '/user-guide/api-keys',
+      '/user-guide/openid',
+      '/user-guide/retention',
+      '/user-guide/smart-cache',
+      '/self-hosted/metrics',
+      '/self-hosted/telemetry',
+    ].includes(item.url)
+  );
+}
+
 // See https://fumadocs.vercel.app/docs/headless/source-api for more info
 export const source = loader({
   // Next.js adds the public `/docs` base path to generated links.
@@ -101,17 +117,49 @@ export const source = loader({
           children = children.map((item) => {
             if (item.type === 'folder' && item.index?.url === '/integrations') {
               return {
-                ...item,
-                name: 'Overview',
-                index: {
-                  ...item.index,
-                  name: 'Overview',
-                },
+                ...item.index,
+                name: 'Integrations',
               };
             }
 
             return item;
           });
+
+          const ingestionIndex = children.findIndex(
+            (item) => item.type === 'page' && item.url === '/ingestion',
+          );
+          const ingestionSectionIndex = children.findIndex(
+            (item, index) => index > ingestionIndex && item.type === 'separator' && item.name === 'Ingestion',
+          );
+
+          if (ingestionIndex !== -1 && ingestionSectionIndex !== -1) {
+            const nextSectionIndex = children.findIndex(
+              (item, index) => index > ingestionSectionIndex && item.type === 'separator',
+            );
+            const ingestionSectionEnd = nextSectionIndex === -1 ? children.length : nextSectionIndex;
+            const ingestionPage = children[ingestionIndex];
+            const ingestionChildren = children
+              .slice(ingestionSectionIndex + 1, ingestionSectionEnd)
+              .filter((item) => !hasQuickstartPages(item));
+
+            if (ingestionPage.type === 'page' && ingestionChildren.length > 0) {
+              const ingestionGroup: Folder = {
+                $id: `${node.$id ?? 'root'}:ingestion`,
+                type: 'folder',
+                name: 'Ingestion',
+                index: ingestionPage,
+                defaultOpen: true,
+                children: ingestionChildren,
+              };
+
+              children = [
+                ...children.slice(0, ingestionIndex),
+                ingestionGroup,
+                ...children.slice(ingestionIndex + 1, ingestionSectionIndex),
+                ...children.slice(ingestionSectionEnd),
+              ];
+            }
+          }
 
           const signalStart = children.findIndex(
             (item) => item.type === 'page' && item.url === '/user-guide/logs',
@@ -134,38 +182,30 @@ export const source = loader({
             ];
           }
 
-          const start = children.findIndex(
-            (item) => item.type === 'page' && item.url === '/ingestion',
+          const operateStart = children.findIndex(
+            (item) => item.type === 'page' && item.url === '/user-guide/rbac',
           );
-          if (start === -1) return { ...node, children };
+          const operatePages = children.filter(isOperatePage);
 
-          const nextSection = children.findIndex(
-            (item, index) => index > start && item.type === 'separator',
-          );
-          const end = nextSection === -1 ? children.length : nextSection;
-          const index = children[start];
-          if (index.type !== 'page') return node;
+          if (operateStart !== -1 && operatePages.length > 0) {
+            const operateGroup: Folder = {
+              $id: `${node.$id ?? 'root'}:operate`,
+              type: 'folder',
+              name: 'Operate',
+              defaultOpen: false,
+              children: operatePages,
+            };
 
-          // Group sidebar links without moving content or changing their URLs.
-          const group: Folder = {
-            $id: `${node.$id ?? 'root'}:ingestion`,
-            type: 'folder',
-            name: 'Overview',
-            index: {
-              ...index,
-              name: 'Overview',
-            },
-            defaultOpen: true,
-            children: children.slice(start + 1, end),
-          };
+            children = [
+              ...children.slice(0, operateStart).filter((item) => !isOperatePage(item)),
+              operateGroup,
+              ...children.slice(operateStart).filter((item) => !isOperatePage(item)),
+            ];
+          }
 
           return {
             ...node,
-            children: [
-              ...children.slice(0, start),
-              group,
-              ...children.slice(end),
-            ],
+            children,
           };
         },
       },

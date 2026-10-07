@@ -1,12 +1,12 @@
 {
   "title": "More sources",
   "pages": [
-    "auto-instrumentation",
-    "databases",
-    "zero-instrumentation",
-    "gpu",
     "containers",
     "streaming",
+    "databases",
+    "auto-instrumentation",
+    "zero-instrumentation",
+    "gpu",
     "prometheus",
     "cicd",
     "security",
