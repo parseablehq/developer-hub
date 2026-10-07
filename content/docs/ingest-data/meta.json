@@ -2,16 +2,16 @@
   "title": "More sources",
   "pages": [
     "auto-instrumentation",
-    "zero-instrumentation",
     "databases",
-    "infrastructure",
+    "zero-instrumentation",
     "gpu",
     "containers",
     "streaming",
     "prometheus",
     "cicd",
-    "cloud",
     "security",
+    "infrastructure",
+    "cloud",
     "programming-languages"
   ]
 }

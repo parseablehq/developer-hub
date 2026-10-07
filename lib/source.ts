@@ -98,6 +98,21 @@ export const source = loader({
             ];
           }
 
+          children = children.map((item) => {
+            if (item.type === 'folder' && item.index?.url === '/integrations') {
+              return {
+                ...item,
+                name: 'Overview',
+                index: {
+                  ...item.index,
+                  name: 'Overview',
+                },
+              };
+            }
+
+            return item;
+          });
+
           const signalStart = children.findIndex(
             (item) => item.type === 'page' && item.url === '/user-guide/logs',
           );
@@ -135,8 +150,11 @@ export const source = loader({
           const group: Folder = {
             $id: `${node.$id ?? 'root'}:ingestion`,
             type: 'folder',
-            name: index.name,
-            index,
+            name: 'Overview',
+            index: {
+              ...index,
+              name: 'Overview',
+            },
             defaultOpen: true,
             children: children.slice(start + 1, end),
           };

@@ -3,7 +3,6 @@ import type { ReactNode } from 'react';
 import { baseOptions } from '@/app/layout.config';
 import { source } from '@/lib/source';
 import SearchButton from '@/components/SearchButton';
-import { AskAITrigger } from '@/components/AskAI';
 
 export default function Layout({ children }: { children: ReactNode }) {
   return (
@@ -18,7 +17,6 @@ export default function Layout({ children }: { children: ReactNode }) {
       }}
     >
       {children}
-      <AskAITrigger />
     </DocsLayout>
   );
 }
