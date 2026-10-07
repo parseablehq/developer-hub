@@ -160,7 +160,6 @@ content/docs/integrations/containers/google-gke.mdx,,,
 content/docs/integrations/containers/amazon-eks.mdx,,,
 content/docs/integrations/log-shippers/filebeat.mdx,,,
 content/docs/integrations/log-shippers/promtail.mdx,,,
-content/docs/introduction.mdx,,,https://www.parseable.com/docs/introduction
 content/docs/api/v1/logstream/stream_name/put.mdx,,,https://www.parseable.com/docs/api/v1/logstream/stream_name/put
 content/docs/api/v1/logstream/stream_name/post.mdx,,,https://www.parseable.com/docs/api/v1/logstream/stream_name/post
 content/docs/api/v1/logstream/stream_name/delete.mdx,,,https://www.parseable.com/docs/api/v1/logstream/stream_name/delete

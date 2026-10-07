@@ -1,85 +1,72 @@
 ---
 title: Home
+description: Understand Parseable's data lake architecture and find the right guide for your task.
 icon: House
 ---
 
-import {IconEmpathize,IconTelescope, IconRocket, IconCloudDataConnection, IconFileTextShield, IconLayersIntersect, IconHandClick,IconGeometry,IconBrandSpeedtest,IconBrandInertia,IconFileTypeSql, IconCloud,IconBrandTabler,IconBrandOpenSource } from '@tabler/icons-react';
-import { Banner } from 'fumadocs-ui/components/banner';
-import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
+Parseable is an open source, column-oriented data lake built for observability. It brings logs, metrics, traces, and agent telemetry into one system, with SQL and PromQL queries, dashboards, alerting, APM, and AI workflows on top.
 
-Parseable is an open source, column oriented, data lake platform, purpose built for observability. It provides SQL & PromQL queries and major observability features like agent observability, alerting, dashboards, anomaly detection, APM - all within a single binary.
+Telemetry does not all behave the same way. Logs can be wide and change shape from event to event; metrics can have millions of label combinations; and traces need both individual span lookup and service-level analysis. Parseable stores these signals on a shared, open data lake foundation while letting each be ingested and queried in the way it needs.
 
-Observability data volumes have outgrown traditional systems. Time series databases are reeling under the weight of high-cardinality telemetry, while deluge of logs and traces have rendered traditional search engines hard to use for observability. The core architectural and technical assumptions of these systems are no longer valid.
+## How Parseable works
 
-Parseable is built for this new reality. Logs, metrics, and traces each have distinct shapes, cardinality, and access patterns; Parseable handles each on its own terms rather than forcing them into one model. Underneath, a single data lake foundation stores every signal as open, columnar Parquet on object storage, keeping durable storage cleanly separated from elastic query compute.
+Parseable treats growing telemetry as a data engineering problem. Data moves through three stages:
 
-Teams use Parseable to unify telemetry data from across their infrastructure, applications and agents. Whether you're just starting to build observability or hitting the limits of your current TSDB or search engines, Parseable gives you an open foundation, that scales with you.
+1. **Ingest:** The data lake engine accepts events at high volume, stages them locally, and forwards them in batches. Staging helps absorb ingestion spikes while producing efficiently sized objects for storage.
+2. **Store:** Events are compressed into columnar Apache Parquet files on object storage. Queries can read only the columns they need, and other Parquet-compatible tools can use the same data.
+3. **Query:** A separate query engine runs SQL and PromQL. It caches frequently accessed data on local disk, so hot queries do not need to fetch every file from object storage. Ingestion and query capacity can scale independently.
 
-## Get started
+![Telemetry flows from ingestion through object storage to the Parseable query engine](./static/main-arch.webp)
 
-Download and run the Parseable binary on your laptop:
+Parseable is written in Rust for predictable performance without garbage collection pauses. Apache Arrow provides an in-memory columnar format for vectorized execution; Parquet is the open format at rest. This design supports wide events, high-cardinality metrics, and growing volumes without keeping every byte on always-hot storage. Read the [architecture](/architecture) and [key concepts](/key-concepts) for the deeper model.
 
-```bash
-curl -fsSL https://logg.ing/install | bash
-```
+You can use the self-hosted core as a single binary, run a managed [Cloud workspace](/quickstart/cloud), or choose [Enterprise](/editions/compare) for advanced deployments. See the [edition comparison](/editions/compare) for details.
 
-<Callout title="For Windows users">
-```bash
-powershell -c "irm https://logg.ing/install-windows | iex"
-```
-</Callout>
+## Send data from your stack
 
-Once you have Parseable running, send an event with the command below. This will send logs to the demo stream. You can see the logs in the dashboard.
+The [ingestion overview](/ingestion) explains the available protocols. Start with the source you already have:
 
-```bash
-curl --location --request POST 'http://localhost:8000/api/v1/ingest' \
---header 'X-P-Stream: demo' \
---header 'Authorization: Basic YWRtaW46YWRtaW4=' \
---header 'Content-Type: application/json' \
---data-raw '[
-    {
-        "id": "434a5f5e-2f5f-11ed-a261-0242ac120002",
-        "datetime": "24/Jun/2022:14:12:15 +0000",
-        "host": "153.10.110.81"
-    }
-]'
-```
+<Cards>
+  <Card href="/ingest-data/logging-agents/otel-collector" title="Collector setup">
+    Send telemetry through the OpenTelemetry Collector.
+  </Card>
+  <Card href="/ingest-data/logging-agents/fluent-bit" title="Fluent Bit">
+    Forward logs from lightweight agents and edge workloads.
+  </Card>
+  <Card href="/ingest-data/logging-agents/vector" title="Vector">
+    Route, transform, and send logs with Vector.
+  </Card>
+  <Card href="/ingest-data/containers/docker" title="Docker">
+    Collect logs from Docker containers.
+  </Card>
+  <Card href="/ingest-data/containers/kubernetes" title="Kubernetes">
+    Send logs and telemetry from Kubernetes clusters.
+  </Card>
+  <Card href="/ingest-data/prometheus" title="Prometheus remote write">
+    Ingest Prometheus metrics with remote write.
+  </Card>
+  <Card href="/ingest-data/programming-languages" title="Programming languages">
+    Send telemetry directly from application code.
+  </Card>
+  <Card href="/ingest-data/ai-agents" title="AI infrastructure">
+    Observe agents, LLM gateways, runtimes, and coding assistants.
+  </Card>
+</Cards>
 
-Open the console at [http://localhost:8000](http://localhost:8000) and sign in with `admin` / `admin`. For other install options and a full walkthrough, see the [Docker quickstart](/quickstart/docker).
+## Work with each signal
 
-## Editions
+- **Logs:** Work with events that range from unstructured text to JSON with changing fields. Parseable can read selected columns from wide or sparse events, while [LogIQ](/user-guide/log-iq) can extract fields from verbose log strings. [Send OTLP logs](/ingest-data/otel/logs), then use the [log explorer](/user-guide/logs) or [SQL editor](/user-guide/sql-editor).
+- **Metrics:** Store numeric time series identified by labels. Parseable stores label values as column data for high-cardinality metrics and provides native PromQL. Send metrics with [OpenTelemetry](/ingest-data/otel/metrics) or [Prometheus remote write](/ingest-data/prometheus), then [explore metrics](/user-guide/metrics) or [query with PromQL](/user-guide/promql).
+- **Traces:** Connect spans by trace ID for specific trace lookup and service-level analysis, including latency and error rates. Parseable supports both patterns on the same columnar data. [Send OTLP traces](/ingest-data/otel/traces), then use [traces](/user-guide/traces) or [APM](/user-guide/apm).
+- **Agent telemetry:** Bring activity from AI agents and LLM infrastructure into the same observability foundation. Follow the [AI infrastructure guides](/ingest-data/ai-agents) and [agent observability](/user-guide/agent-observability) to inspect it.
 
-Parseable is available in three editions. <a href="/docs/editions/compare">Compare editions ↗︎</a>
+## Keep working
 
-<Accordions type="single">
-    <Accordion title="Parseable Cloud">Fully managed cloud platform with all advanced features</Accordion>
-    <Accordion title="Parseable Enterprise">Mission critical deployments with advanced features - deploy anywhere</Accordion>
-    <Accordion title="Parseable OSS">The open-source core, free to self-host</Accordion>
-</Accordions>
+- **Investigate and share:** [Build dashboards](/user-guide/dashboards), [set alerts](/user-guide/alerting), or [connect an integration](/integrations).
+- **Deploy and manage:** Follow the [self-hosted installation guide](/self-hosted/installation), then review [configuration](/self-hosted/configuration) and [access control](/user-guide/rbac).
+- **Use developer tools:** Find endpoints in the [API reference](/api), or use the [MCP server](/mcp) to investigate telemetry with an AI client.
+- **Find a cause:** If data is missing, check the [ingestion overview](/ingestion), your source guide above, and [API key setup](/user-guide/api-keys).
 
-<Callout title="Tip">
-Working with an AI assistant? Point it at [parseable.com/llms.txt](https://www.parseable.com/llms.txt), or use **Copy Markdown** on any documentation page.
-</Callout>
+## Read with an AI agent
 
-
-## Next steps
-
-<a href="/docs/architecture" title='Architecture'>
-Learn about the telemetry data lake architecture
-</a>
-
-<a href="/docs/get-started" title='Get started'>
-Start with Parseable Cloud or run it on your laptop
-</a>
-
-<a href="/docs/ingestion" title='Ingest data'>
-Send telemetry data into Parseable
-</a>
-
-<a href="/docs/features" title='Features'>
-PromQL, alerting, dashboards, anomaly detection
-</a>
-
-<a href="/docs/integrations" title='Integrations'>
-Integrate with your existing tools and workflows
-</a>
+Use [the full documentation as text](/llms-full.txt), or **Copy Markdown** on any page. Individual pages also have `.mdx` text endpoints, such as [/docs/pb-cli/install.mdx](/pb-cli/install.mdx). For terminal workflows, see [pb CLI for agents](/pb-cli/agents).

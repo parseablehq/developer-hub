@@ -7,8 +7,6 @@
     "installation",
     "aws",
     "configuration",
-    "storage-targets",
-    "metrics",
-    "telemetry"
+    "storage-targets"
   ]
 }
