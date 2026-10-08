@@ -21,7 +21,7 @@ curl -fsSL https://logg.ing/install | bash
 For Windows users
 
 ```bash
-powershell -c "irm https://logg.ing/install-windows | iex"
+powershell -NoProfile -Command "irm https://logg.ing/install-windows | Out-String | iex"
 ```
 
 Once you have Parseable running, send an event with the command below. This will send logs to the demo stream. You can see the logs in the dashboard.
