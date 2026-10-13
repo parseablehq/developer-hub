@@ -22,7 +22,11 @@ Parseable is written in Rust for predictable performance without garbage collect
 
 You can use the self-hosted core as a single binary, run a managed [Cloud workspace](/quickstart/cloud), or choose [Enterprise](/editions/compare) for advanced deployments. See the [edition comparison](/editions/compare) for details.
 
-## Send data from your stack
+<Callout title="For Windows users">
+```bash
+powershell -NoProfile -Command "irm https://logg.ing/install-windows | Out-String | iex"
+```
+</Callout>
 
 The [ingestion overview](/ingestion) explains the available protocols. Start with the source you already have:
 

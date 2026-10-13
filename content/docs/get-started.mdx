@@ -18,7 +18,15 @@ redirect_from:
 
 Follow one of these guides to start an instance. For a local binary or Docker instance, continue below to send your first event. For Cloud, use the ingestion endpoint and credentials shown in your workspace instead of the local values.
 
-## Send your first event
+```bash
+curl -fsSL https://logg.ing/install | bash
+```
+
+For Windows users
+
+```bash
+powershell -NoProfile -Command "irm https://logg.ing/install-windows | Out-String | iex"
+```
 
 The local instance listens on port `8000`. Send one JSON event to the `demo` dataset:
 
