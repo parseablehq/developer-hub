@@ -1,0 +1,69 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="roughen">
+      <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="7" result="noise" />
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.6" xChannelSelector="R" yChannelSelector="G" />
+    </filter>
+    <marker id="arrow" markerWidth="13" markerHeight="13" refX="10" refY="6.5" orient="auto" markerUnits="strokeWidth">
+      <path d="M2 2 L10 6.5 L2 11" stroke="#2f3136" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+    </marker>
+    <style>
+      .title { font: 700 34px "Comic Sans MS", "Bradley Hand", "Trebuchet MS", sans-serif; fill: #24262b; }
+      .label { font: 600 26px "Comic Sans MS", "Bradley Hand", "Trebuchet MS", sans-serif; fill: #24262b; }
+      .small { font: 500 21px "Comic Sans MS", "Bradley Hand", "Trebuchet MS", sans-serif; fill: #3b3f45; }
+      .tiny { font: 500 18px "Comic Sans MS", "Bradley Hand", "Trebuchet MS", sans-serif; fill: #555b63; }
+      .box { fill: #fffdf8; stroke: #2f3136; stroke-width: 2.5; filter: url(#roughen); }
+      .soft { fill: #f8fbff; stroke: #2f3136; stroke-width: 2.4; filter: url(#roughen); }
+      .greenBox { fill: #f8fff9; stroke: #31b85f; stroke-width: 2.5; stroke-dasharray: 13 13; filter: url(#roughen); }
+      .arrow { stroke: #2f3136; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; marker-end: url(#arrow); filter: url(#roughen); }
+      .thin { stroke: #555b63; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; filter: url(#roughen); }
+    </style>
+  </defs>
+
+  <rect width="1600" height="900" fill="#fbfaf7" />
+  <path d="M41 37 C295 23 1312 33 1557 42" stroke="#ede7dc" stroke-width="2" stroke-dasharray="3 12" />
+  <path d="M56 841 C392 858 1118 852 1544 837" stroke="#ede7dc" stroke-width="2" stroke-dasharray="3 12" />
+
+  <text x="78" y="86" class="title">Baseten to Parseable observability flow</text>
+
+  <rect x="64" y="170" width="380" height="520" rx="28" class="box" />
+  <text x="96" y="220" class="label">Baseten</text>
+  <text x="96" y="254" class="small">Dedicated Inference</text>
+
+  <rect x="104" y="330" width="286" height="82" rx="17" class="soft" />
+  <text x="132" y="365" class="label">Logs</text>
+  <text x="132" y="393" class="tiny">OTLP/HTTP /v1/logs</text>
+
+  <rect x="104" y="460" width="286" height="82" rx="17" class="soft" />
+  <text x="132" y="495" class="label">Traces</text>
+  <text x="132" y="523" class="tiny">OTLP/HTTP /v1/traces</text>
+
+  <rect x="104" y="590" width="286" height="82" rx="17" class="soft" />
+  <text x="132" y="625" class="label">Metrics</text>
+  <text x="132" y="653" class="tiny">Prometheus scrape</text>
+
+  <rect x="605" y="360" width="350" height="188" rx="27" class="box" />
+  <text x="646" y="425" class="label">OpenTelemetry</text>
+  <text x="684" y="463" class="label">Collector</text>
+
+  <path d="M392 372 C475 368 529 388 604 412" class="arrow" />
+  <path d="M392 501 C475 501 527 486 604 466" class="arrow" />
+  <path d="M392 630 C481 616 530 555 604 511" class="arrow" />
+
+  <rect x="1100" y="184" width="405" height="497" rx="29" class="greenBox" />
+  <text x="1141" y="234" class="label">Parseable</text>
+
+  <rect x="1160" y="330" width="260" height="76" rx="16" class="soft" />
+  <text x="1190" y="376" class="label">baseten-logs</text>
+
+  <rect x="1160" y="452" width="260" height="76" rx="16" class="soft" />
+  <text x="1190" y="498" class="label">baseten-traces</text>
+
+  <rect x="1160" y="574" width="260" height="76" rx="16" class="soft" />
+  <text x="1190" y="620" class="label">baseten-metrics</text>
+
+  <path d="M956 412 C1016 382 1061 371 1158 369" class="arrow" />
+  <path d="M956 455 C1020 457 1064 480 1158 489" class="arrow" />
+  <path d="M956 508 C1019 552 1066 605 1158 612" class="arrow" />
+
+</svg>
