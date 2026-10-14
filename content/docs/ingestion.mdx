@@ -4,22 +4,6 @@ redirect_from:
   - /ingestion
 ---
 
-Ingestion is the process of sending Telemetry signals (Metrics, Events, Logs, Traces) into Parseable. 
-
-You can ingest data to Parseable in JSON format over HTTP(s). This means that any log agent, metric collector, or tracing library that can send data over HTTP in JSON format can be used to ingest data into Parseable.
-
-For log data you can use the HTTP output plugins of all the logging agents/shippers. You can also directly integrate Parseable with your application via the [ingestion API](/api/v1/ingestLogsWithHeaders).
-
-Parseable also supports OTel native data ingestion via Protobuf over HTTP. OpenTelemetry-compatible agents and libraries can send logs, metrics, and traces to the signal-specific OTLP endpoints: `/v1/logs`, `/v1/metrics`, and `/v1/traces`. Parseable derives the telemetry signal type from the endpoint path and uses `X-P-Stream` to choose the destination dataset.
-
-<Callout type="info">
-Field name starting with `@` is replaced with `_`. In case of key collision, the event is rejected.
-</Callout>
-
-<Callout type="info">
-When an incoming event has a field with a data type different from the existing schema, the field is automatically renamed with a type suffix (e.g., `body_timestamp_utf8`, `span_kind_int64`). This prevents ingestion failures where field types may vary between events.
-</Callout>
-
 ## Ingestion guides
 
 Choose the ingestion path that matches the system sending data to Parseable.
@@ -67,14 +51,26 @@ Choose the ingestion path that matches the system sending data to Parseable.
   <Card href="/ingest-data/cloud" title="Cloud">
     Ingest logs and events from AWS, Azure, Google Cloud, and Fly.io.
   </Card>
-  <Card href="/ingest-data/programming-languages" title="Programming Languages">
+  <Card href="/ingest-data/programming-languages" title="Programming Languages" className="col-span-2">
     Send telemetry directly from application code in Python, JavaScript, Go, Java, Rust, .NET, PHP, and Ruby.
   </Card>
 </Cards>
 
+You can ingest data to Parseable in JSON format over HTTP(s). This means that any log agent, metric collector, or tracing library that can send data over HTTP in JSON format can be used to ingest data into Parseable. For log data you can use the HTTP output plugins of all the logging agents/shippers. You can also directly integrate Parseable with your application via the [ingestion API](/api/v1/ingestLogsWithHeaders).
+
+Parseable also supports OTel native data ingestion via Protobuf over HTTP. OpenTelemetry-compatible agents and libraries can send logs, metrics, and traces to the signal-specific OTLP endpoints: `/v1/logs`, `/v1/metrics`, and `/v1/traces`. Parseable derives the telemetry signal type from the endpoint path and uses `X-P-Stream` to choose the destination dataset.
+
 ## Ingestion HTTP headers
 
 You can use HTTP headers to control how data is ingested and processed.
+
+<Callout type="info">
+Field name starting with `@` is replaced with `_`. In case of key collision, the event is rejected.
+</Callout>
+
+<Callout type="info">
+When an incoming event has a field with a data type different from the existing schema, the field is automatically renamed with a type suffix (e.g., `body_timestamp_utf8`, `span_kind_int64`). This prevents ingestion failures where field types may vary between events.
+</Callout>
 
 ### Required headers
 
