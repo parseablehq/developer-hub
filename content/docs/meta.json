@@ -54,13 +54,13 @@
     "self-hosted/telemetry",
     "---Self Hosted---",
     "self-hosted/installation",
-    "self-hosted/aws",
     "self-hosted/configuration",
     "self-hosted/storage-targets",
     "---Tools and reference---",
     "slack-bot",
     "query",
     "api",
+    "ingestion-reference",
     "benchmarks",
     "release-notes"
   ]

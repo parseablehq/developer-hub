@@ -5,20 +5,7 @@ import { createOpenAPI, openapiPlugin } from 'fumadocs-openapi/server';
 import type { Folder, Item, Node } from 'fumadocs-core/page-tree';
 import { createElement } from 'react';
 
-function findPage(nodes: Node[], url: string): Item | undefined {
-  for (const item of nodes) {
-    if (item.type === 'page' && item.url === url) {
-      return item;
-    }
-
-    if (item.type === 'folder') {
-      const child = findPage(item.children, url);
-      if (child) return child;
-    }
-  }
-}
-
-function hasQuickstartPages(item: Node): item is Folder {
+function isQuickstartFolder(item: Node): item is Folder {
   return (
     item.type === 'folder' &&
     item.children.some((child) => child.type === 'page' && child.url.startsWith('/quickstart/'))
@@ -69,61 +56,8 @@ export const source = loader({
         },
         root(node) {
           let children = node.children;
-          const quickstartIndex = children.findIndex(hasQuickstartPages);
-          const quickstartFolder = children[quickstartIndex];
-          const quickstartPage = children.find(
-            (item): item is Item => item.type === 'page' && item.url === '/get-started',
-          );
 
-          if (quickstartPage && quickstartFolder?.type === 'folder') {
-            const selfHostedInstall = findPage(children, '/self-hosted/installation');
-            const quickstartChildren: Node[] = [
-              ...quickstartFolder.children,
-              ...(selfHostedInstall
-                ? [
-                    {
-                      ...selfHostedInstall,
-                      $id: `${selfHostedInstall.$id ?? 'self-hosted-installation'}:quickstart`,
-                      name: 'Self Host',
-                    },
-                  ]
-                : []),
-            ];
-            const quickstartGroup: Folder = {
-              $id: `${node.$id ?? 'root'}:quickstart`,
-              type: 'folder',
-              name: createElement('span', { 'data-quickstart-sidebar': '' }, quickstartPage.name),
-              index: quickstartPage,
-              icon: quickstartPage.icon,
-              defaultOpen: false,
-              children: quickstartChildren,
-            };
-
-            const nextChildren = children.filter(
-              (item) => item !== quickstartPage && item !== quickstartFolder,
-            );
-            const insertAt = nextChildren.findIndex(
-              (item) => item.type === 'page' && item.url === '/mcp',
-            );
-            const safeInsertAt = insertAt === -1 ? nextChildren.length : insertAt;
-
-            children = [
-              ...nextChildren.slice(0, safeInsertAt),
-              quickstartGroup,
-              ...nextChildren.slice(safeInsertAt),
-            ];
-          }
-
-          children = children.map((item) => {
-            if (item.type === 'folder' && item.index?.url === '/integrations') {
-              return {
-                ...item.index,
-                name: 'Integrations',
-              };
-            }
-
-            return item;
-          });
+          children = children.filter((item) => !isQuickstartFolder(item));
 
           const ingestionIndex = children.findIndex(
             (item) => item.type === 'page' && item.url === '/ingestion',
@@ -138,9 +72,7 @@ export const source = loader({
             );
             const ingestionSectionEnd = nextSectionIndex === -1 ? children.length : nextSectionIndex;
             const ingestionPage = children[ingestionIndex];
-            const ingestionChildren = children
-              .slice(ingestionSectionIndex + 1, ingestionSectionEnd)
-              .filter((item) => !hasQuickstartPages(item));
+            const ingestionChildren = children.slice(ingestionSectionIndex + 1, ingestionSectionEnd);
 
             if (ingestionPage.type === 'page' && ingestionChildren.length > 0) {
               const ingestionGroup: Folder = {
@@ -148,7 +80,6 @@ export const source = loader({
                 type: 'folder',
                 name: 'Ingestion',
                 index: ingestionPage,
-                defaultOpen: true,
                 children: ingestionChildren,
               };
 
