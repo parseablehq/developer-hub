@@ -356,19 +356,13 @@ Open `baseten-traces` from the Traces page. The dataset shows Truss request span
 
 ## Dashboards
 
-After logs, traces, and metrics are flowing, create a Baseten inference dashboard to keep the main serving signals in one place. Use `baseten-metrics` for time-series charts, `baseten-logs` for deployment and serving events, and `baseten-traces` for span-level request investigation.
+The reusable [Baseten Observability dashboard](https://github.com/parseablehq/dashboards/tree/main/baseten-observability) is available in the `parseablehq/dashboards` repository.
 
-Start with an overview section for request size, GPU utilization, scrape health, incoming inference requests, and response size. This gives operators a quick read on whether the deployment is receiving traffic and whether the metrics scrape path is healthy.
+Import `baseten-observability-mixed.json`, then map its dataset variables to `baseten-metrics`, `baseten-logs`, and `baseten-traces`, or to your chosen dataset names. The dashboard combines request traffic, latency, concurrency, GPU capacity, pod readiness, logs, errors, and trace hotspots in one view.
 
 ![Baseten inference dashboard overview in Parseable](./static/baseten-dashboard-overview.png)
 
-Add a capacity and health section for GPU memory, pod readiness, and GPU utilization over time. These panels are useful while testing autoscaling behavior, confirming that a deployment has warmed up, and spotting unexpected resource usage.
-
 ![Baseten capacity and health dashboard in Parseable](./static/baseten-dashboard-capacity.png)
-
-Add a request section for incoming request rate, latency, concurrency, and time to first byte. These charts help connect model traffic with user-facing performance.
-
-![Baseten request and latency dashboard in Parseable](./static/baseten-dashboard-requests.png)
 
 ## Troubleshooting
 
