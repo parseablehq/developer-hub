@@ -71,7 +71,11 @@ Store the printed key securely. Baseten shows it once, and this key is only for 
 
 Create `otel-collector-config.yaml`:
 
-This example exports OTLP Protobuf from the Collector to Parseable. `X-P-Stream` selects the Parseable dataset, and `X-API-Key` carries a Parseable API key with ingest access.
+This example exports OTLP JSON from the Collector to Parseable. `X-P-Stream` selects the Parseable dataset, and `X-API-Key` carries a Parseable API key with ingest access.
+
+<Callout type="info">
+OTLP Protobuf ingestion is available in Parseable Cloud and Enterprise. If your Parseable deployment supports Protobuf, you can switch the Parseable exporters below to `encoding: proto` and `Content-Type: application/x-protobuf`.
+</Callout>
 
 ```yaml
 extensions:
@@ -109,27 +113,27 @@ processors:
 exporters:
   otlphttp/parseable_logs:
     endpoint: ${env:PARSEABLE_ENDPOINT}
-    encoding: proto
+    encoding: json
     headers:
       X-API-Key: ${env:PARSEABLE_API_KEY}
       X-P-Stream: ${env:PARSEABLE_LOGS_STREAM}
-      Content-Type: application/x-protobuf
+      Content-Type: application/json
 
   otlphttp/parseable_traces:
     endpoint: ${env:PARSEABLE_ENDPOINT}
-    encoding: proto
+    encoding: json
     headers:
       X-API-Key: ${env:PARSEABLE_API_KEY}
       X-P-Stream: ${env:PARSEABLE_TRACES_STREAM}
-      Content-Type: application/x-protobuf
+      Content-Type: application/json
 
   otlphttp/parseable_metrics:
     endpoint: ${env:PARSEABLE_ENDPOINT}
-    encoding: proto
+    encoding: json
     headers:
       X-API-Key: ${env:PARSEABLE_API_KEY}
       X-P-Stream: ${env:PARSEABLE_METRICS_STREAM}
-      Content-Type: application/x-protobuf
+      Content-Type: application/json
 
 service:
   extensions: [health_check]
