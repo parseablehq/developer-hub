@@ -35,6 +35,74 @@ function isOperatePage(item: Node): item is Item {
   );
 }
 
+function groupByUrls(nodes: Node[], urls: string[]): Item[] {
+  return urls
+    .map((url) => nodes.find((item): item is Item => item.type === 'page' && item.url === url))
+    .filter((item): item is Item => Boolean(item));
+}
+
+function groupCloudProviders(nodes: Node[]): Node[] {
+  return nodes.map((item) => {
+    if (item.type !== 'folder') return item;
+
+    const isCloudProviderFolder = item.children.some(
+      (child) => child.type === 'page' && child.url.startsWith('/ingest-data/cloud/'),
+    );
+
+    if (!isCloudProviderFolder) {
+      return {
+        ...item,
+        children: groupCloudProviders(item.children),
+      };
+    }
+
+    const awsPages = groupByUrls(item.children, [
+      '/ingest-data/cloud/aws-cloudwatch',
+      '/ingest-data/cloud/aws-lambda',
+      '/ingest-data/cloud/aws-data-firehose',
+      '/ingest-data/cloud/aws-kinesis',
+    ]);
+    const azurePages = groupByUrls(item.children, [
+      '/ingest-data/cloud/azure-event-hubs',
+      '/ingest-data/cloud/azure-api-service',
+      '/ingest-data/cloud/azure-service-bus',
+    ]);
+    const googlePages = groupByUrls(item.children, ['/ingest-data/cloud/gcp-pubsub']);
+    const flyPages = groupByUrls(item.children, ['/ingest-data/cloud/fly-io']);
+
+    return {
+      ...item,
+      children: [
+        { $id: 'cloud-providers:aws', type: 'folder', name: 'AWS', children: awsPages },
+        { $id: 'cloud-providers:azure', type: 'folder', name: 'Azure', children: azurePages },
+        { $id: 'cloud-providers:google', type: 'folder', name: 'Google Cloud', children: googlePages },
+        { $id: 'cloud-providers:fly', type: 'folder', name: 'Fly.io', children: flyPages },
+      ],
+    };
+  });
+}
+
+function makeFolderDropdownOnly(nodes: Node[], urls: string[]): Node[] {
+  return nodes.map((item) => {
+    if (item.type !== 'folder') return item;
+
+    const children = makeFolderDropdownOnly(item.children, urls);
+
+    if (item.index && urls.includes(item.index.url)) {
+      return {
+        ...item,
+        index: undefined,
+        children,
+      };
+    }
+
+    return {
+      ...item,
+      children,
+    };
+  });
+}
+
 // See https://fumadocs.vercel.app/docs/headless/source-api for more info
 export const source = loader({
   // Next.js adds the public `/docs` base path to generated links.
@@ -58,39 +126,19 @@ export const source = loader({
           let children = node.children;
 
           children = children.filter((item) => !isQuickstartFolder(item));
-
-          const ingestionIndex = children.findIndex(
-            (item) => item.type === 'page' && item.url === '/ingestion',
-          );
-          const ingestionSectionIndex = children.findIndex(
-            (item, index) => index > ingestionIndex && item.type === 'separator' && item.name === 'Ingestion',
-          );
-
-          if (ingestionIndex !== -1 && ingestionSectionIndex !== -1) {
-            const nextSectionIndex = children.findIndex(
-              (item, index) => index > ingestionSectionIndex && item.type === 'separator',
-            );
-            const ingestionSectionEnd = nextSectionIndex === -1 ? children.length : nextSectionIndex;
-            const ingestionPage = children[ingestionIndex];
-            const ingestionChildren = children.slice(ingestionSectionIndex + 1, ingestionSectionEnd);
-
-            if (ingestionPage.type === 'page' && ingestionChildren.length > 0) {
-              const ingestionGroup: Folder = {
-                $id: `${node.$id ?? 'root'}:ingestion`,
-                type: 'folder',
-                name: 'Ingestion',
-                index: ingestionPage,
-                children: ingestionChildren,
-              };
-
-              children = [
-                ...children.slice(0, ingestionIndex),
-                ingestionGroup,
-                ...children.slice(ingestionIndex + 1, ingestionSectionIndex),
-                ...children.slice(ingestionSectionEnd),
-              ];
+          children = children.map((item) => {
+            if (
+              item.type === 'folder' &&
+              item.index &&
+              ['/key-concepts', '/ingest-data/programming-languages'].includes(item.index.url)
+            ) {
+              return item.index;
             }
-          }
+
+            return item;
+          });
+          children = groupCloudProviders(children);
+          children = makeFolderDropdownOnly(children, ['/ingest-data/otel']);
 
           const signalStart = children.findIndex(
             (item) => item.type === 'page' && item.url === '/user-guide/logs',
