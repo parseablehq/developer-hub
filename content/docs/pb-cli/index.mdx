@@ -1,49 +1,68 @@
 ---
 title: pb CLI
 description: Query logs, explore metrics, tail live events, and manage Parseable from your terminal.
+icon: Terminal
 ---
+
+import { Activity, Bot, Command, Database, Download, Link, Radio, Search, ShieldCheck } from 'lucide-react';
 
 `pb` is the official command line interface for self-hosted Parseable and Parseable Cloud. It gives you a terminal-first way to connect to a server, run SQL and PromQL queries, tail live events, manage datasets, and work with users and roles.
 
 You can use it in scripts and CI, or open the interactive terminal views when you want to explore logs and metrics without switching to the browser.
 
-## Quick start
+## Start here
+
+<Cards>
+  <Card href="/pb-cli/install" icon={<Download className="size-5" />} title="Install pb">
+    Install on macOS, Linux, or Windows.
+  </Card>
+  <Card href="/pb-cli/connect" icon={<Link className="size-5" />} title="Connect to a server">
+    Authenticate and save a server profile.
+  </Card>
+</Cards>
+
+## Query and monitor
+
+<Cards>
+  <Card href="/pb-cli/query" icon={<Search className="size-5" />} title="Query logs with SQL">
+    Search datasets, save queries, or use the interactive table.
+  </Card>
+  <Card href="/pb-cli/promql" icon={<Activity className="size-5" />} title="Query metrics with PromQL">
+    Run expressions and explore metric series.
+  </Card>
+  <Card href="/pb-cli/tail" icon={<Radio className="size-5" />} title="Tail live events" className="col-span-full">
+    Stream new log events as they arrive.
+  </Card>
+</Cards>
+
+## Manage and automate
+
+<Cards>
+  <Card href="/pb-cli/datasets" icon={<Database className="size-5" />} title="Manage datasets">
+    Create, inspect, and remove datasets.
+  </Card>
+  <Card href="/pb-cli/admin" icon={<ShieldCheck className="size-5" />} title="Manage users and roles">
+    Configure access to your Parseable instance.
+  </Card>
+  <Card href="/pb-cli/aliases" icon={<Command className="size-5" />} title="Aliases and reference">
+    Find short commands and the full command surface.
+  </Card>
+  <Card href="/pb-cli/agents" icon={<Bot className="size-5" />} title="Use pb with AI agents">
+    Set up read-only agent access through a saved profile.
+  </Card>
+</Cards>
+
+## First commands
+
+After installing `pb`, connect to your Parseable server and check the active profile. The [connection guide](/pb-cli/connect) covers self-hosted and Cloud authentication.
 
 ```bash
-# Connect to a Parseable server
 pb login
-
-# Open the interactive SQL table view
-pb sql run -i
-
-# Run SQL directly
+pb status
 pb sql run "SELECT * FROM backend WHERE status >= 500" --from=1h
-
-# Open the interactive PromQL table view
-pb promql run -i
-
-# Run PromQL directly
 pb promql run "rate(http_requests_total[5m])" --dataset otel_metrics --from=1h
-
-# Stream live events
 pb tail backend
 ```
-
-## Commands
-
-| Command | Description |
-|---|---|
-| `pb login` | Start an interactive wizard to connect to a Parseable server and save the connection as a profile |
-| `pb cloud profile` | Add a Parseable Cloud profile with a Cloud API key |
-| `pb profile` | Add, list, switch, update, and remove saved server profiles |
-| `pb status` | Verify the active connection and display server version information |
-| `pb sql` | Run SQL queries, save SQL queries, and open the interactive SQL table view |
-| `pb promql` | Run PromQL range and instant queries, explore labels and series, and inspect cardinality |
-| [`pb tail`](/pb-cli/tail) | Stream live log events from a dataset in real time as newline-delimited JSON |
-| [`pb dataset`](/pb-cli/datasets) | List, create, inspect, and delete log, metrics, and traces datasets |
-| [`pb user`](/pb-cli/admin) | Create users, assign roles, and manage user access |
-| [`pb role`](/pb-cli/admin) | Define roles with specific privilege levels and dataset scopes |
-| `pb version` | Print the CLI version and build commit |
 
 ## Interactive mode
 
@@ -80,12 +99,3 @@ pb sql run "SELECT * FROM logs LIMIT 50" --from=1h -i
 pb sql run "SELECT level, count(*) FROM logs GROUP BY level" --from=1h --output json
 pb promql run "up" --dataset otel_metrics --instant --output json
 ```
-
-## Getting started
-
-1. [Install pb](/pb-cli/install) - install with the script, Homebrew, or a release archive
-2. [Connect to a server](/pb-cli/connect) - authenticate and save a server profile
-3. [Run a SQL query](/pb-cli/query) - query logs with `pb sql`
-4. [Run a PromQL query](/pb-cli/promql) - query metrics with `pb promql`
-5. [Use aliases](/pb-cli/aliases) - learn the short command forms such as `ls`, `rm`, `stat`, and `set-url`
-6. [Use pb with AI agents](/pb-cli/agents) - configure safe, read-only agent access

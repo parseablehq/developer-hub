@@ -88,6 +88,7 @@ const URL_MAPPINGS: Array<{ pattern: RegExp; replacement: string }> = [
   { pattern: /^\/OpenTelemetry\//, replacement: '/ingest-data/otel/' },
   
   // get-started / quickstart
+  { pattern: /^\/introduction\/?$/, replacement: '/' },
   { pattern: /^\/docker-quick-start/, replacement: '/quickstart/docker' },
   { pattern: /^\/get-started\/docker-quick-start/, replacement: '/quickstart/docker' },
   
