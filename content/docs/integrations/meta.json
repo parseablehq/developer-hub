@@ -1,10 +1,10 @@
 {
   "title": "Integrations",
   "pages": [
-    "application-platforms",
-    "alerting",
+    "visualization",
     "auth",
-    "data-platforms",
-    "visualization"
+    "alerting",
+    "application-platforms",
+    "data-platforms"
   ]
 }

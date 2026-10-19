@@ -1,12 +1,12 @@
 {
   "title": "Agent frameworks",
   "pages": [
-    "[Pydantic AI](/ingest-data/ai-agents/pydantic-ai)",
-    "[Restate](/ingest-data/ai-agents/restate-openai-agents)",
     "[CrewAI](/ingest-data/ai-agents/crewai)",
-    "[n8n](/ingest-data/ai-agents/n8n)",
+    "[Restate](/ingest-data/ai-agents/restate-openai-agents)",
     "[Mastra](/ingest-data/ai-agents/mastra)",
+    "[n8n](/ingest-data/ai-agents/n8n)",
     "[Hermes Agent](/ingest-data/ai-agents/hermes)",
+    "[Pydantic AI](/ingest-data/ai-agents/pydantic-ai)",
     "[OpenLIT](/ingest-data/ai-agents/openlit)",
     "[LangChain](/ingest-data/ai-agents/langchain)",
     "[LlamaIndex](/ingest-data/ai-agents/llamaindex)",

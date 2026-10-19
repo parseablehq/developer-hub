@@ -1,5 +1,6 @@
 ---
 title: Executable Binary
+description: Start a local Parseable instance from the single binary.
 sidebar_position: 2
 redirect_from:
   - /quickstart/binary
@@ -7,42 +8,21 @@ redirect_from:
 
 ## Start Parseable
 
-Download the relevant binary and start Parseable in local-store mode with the following commands:
+Install the binary and start Parseable in local-store mode:
 
 ```sh
 curl -fsSL https://logg.ing/install | bash
 parseable local-store
 ```
 
-This will start Parseable on port 8000. You can access the Parseable Console at [http://localhost:8000](http://localhost:8000).
+On Windows, use the installation script in PowerShell:
 
-## Ingest data
-
-Send your first log event to the demo dataset using below command.
-
-```bash
-curl --location --request POST \
-'http://localhost:8000/api/v1/ingest' \
---header 'X-P-Stream: demo' \
---header 'Authorization: Basic YWRtaW46YWRtaW4=' \
---header 'Content-Type: application/json' \
---data-raw '[
-    {
-        "id": "434a5f5e-2f5f-11ed-a261-0242ac120002",
-        "datetime": "2023-01-05T07:20:50.52Z",
-        "host": "153.10.110.81",
-        "user-identifier": "Mozilla/5.0 (Windows NT 6.1; Win64; x64) Firefox/64.0",
-        "method": "PUT",
-        "status": 500,
-        "referrer": "http://www.google.com/"
-    }
-]'
+```powershell
+powershell -c "irm https://logg.ing/install-windows | iex"
 ```
 
-Parseable uses datasets to organize log data. Here we posted a sample log data to the demo dataset, by adding the header `X-P-Stream: demo` in the request.
+The local instance listens on port `8000`. Open [the Parseable console](http://localhost:8000) and sign in with the default credentials, `admin:admin`.
 
-## Query data
+## Verify and continue
 
-To query the data via Console, login at http://localhost:8000. Default username and password is `admin:admin`. Then select the demo dataset under the log explorer page.
-
-![Query data](./static/log-explorer.png)
+When the console loads, follow the [quickstart](/get-started) to send one event to the `demo` dataset and confirm it appears in the log explorer. For production deployment options, see [self-hosted installation](/self-hosted/installation).
