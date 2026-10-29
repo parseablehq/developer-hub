@@ -37,8 +37,8 @@ export default async function Page(props: {
         style: "clerk",
       }}
     >
-      <DocsTitle>{page.data.title}</DocsTitle>
-      <div className="flex flex-row gap-2 items-center mb-4">
+      <div className="mb-4 flex w-full items-center justify-between gap-4">
+        <DocsTitle className="min-w-0">{page.data.title}</DocsTitle>
         <CopyPageDropdown
           slug={params.slug ?? []}
           filePath={`${params.slug?.join("/") || "index"}.mdx`}
