@@ -11,17 +11,37 @@ Parseable supports ingesting logs, metrics, and traces from agents that teams al
 
 Use this section when you already have an agent running, or when you want to pick one for a new deployment.
 
-| Agent | Good fit |
-| --- | --- |
-| [Apache Log4j 2](/ingest-data/logging-agents/apache-log-4j) | Java application logs sent directly from the app over HTTP. |
-| [Filebeat](/ingest-data/logging-agents/filebeat) | Existing Beats pipelines where Filebeat ships logs to Logstash, and Logstash forwards them to Parseable. |
-| [Fluent Bit](/ingest-data/logging-agents/fluent-bit) | Lightweight container, Kubernetes, host, and edge log collection. |
-| [Fluentd](/ingest-data/logging-agents/fluentd) | Existing Fluentd pipelines that need an HTTP destination for Parseable. |
-| [Logstash](/ingest-data/logging-agents/logstash) | Filter-heavy log pipelines and Beats ingestion before sending data to Parseable. |
-| [OpenTelemetry Collector](/ingest-data/logging-agents/otel-collector) | Logs, metrics, and traces pipelines built around OpenTelemetry receivers, processors, and exporters. |
-| [Prometheus](/ingest-data/logging-agents/prometheus) | Metrics ingestion through Prometheus Remote Write. |
-| [Promtail](/ingest-data/logging-agents/promtail) | Existing Loki-style log pipelines that can be routed through the OpenTelemetry Collector. |
-| [Syslog-ng](/ingest-data/logging-agents/syslog) | Network, host, and appliance logs collected through syslog. |
-| [Vector](/ingest-data/logging-agents/vector) | High-throughput log pipelines with transforms before HTTP delivery. |
+<Cards>
+  <Card href="/ingest-data/logging-agents/apache-log-4j" title="Apache Log4j 2" icon={<IntegrationLogo src="apache.svg" alt="Apache Log4j 2" />}>
+    Send Java application logs directly from the app over HTTP.
+  </Card>
+  <Card href="/ingest-data/logging-agents/filebeat" title="Filebeat" icon={<IntegrationLogo src="beats.svg" alt="Filebeat" />}>
+    Use existing Beats pipelines where Filebeat ships logs to Logstash before forwarding to Parseable.
+  </Card>
+  <Card href="/ingest-data/logging-agents/fluent-bit" title="Fluent Bit" icon={<IntegrationLogo src="fluent-bit.svg" alt="Fluent Bit" />}>
+    Collect lightweight container, Kubernetes, host, and edge logs.
+  </Card>
+  <Card href="/ingest-data/logging-agents/fluentd" title="Fluentd" icon={<IntegrationLogo src="fluentd.svg" alt="Fluentd" />}>
+    Keep existing Fluentd pipelines and add Parseable as an HTTP destination.
+  </Card>
+  <Card href="/ingest-data/logging-agents/logstash" title="Logstash" icon={<IntegrationLogo src="logstash.svg" alt="Logstash" />}>
+    Run filter-heavy log pipelines and Beats ingestion before sending data to Parseable.
+  </Card>
+  <Card href="/ingest-data/logging-agents/otel-collector" title="OpenTelemetry Collector" icon={<IntegrationLogo src="opentelemetry.svg" alt="OpenTelemetry Collector" />}>
+    Build logs, metrics, and traces pipelines around OpenTelemetry receivers, processors, and exporters.
+  </Card>
+  <Card href="/ingest-data/logging-agents/prometheus" title="Prometheus" icon={<IntegrationLogo src="prometheus.svg" alt="Prometheus" />}>
+    Ingest metrics through Prometheus Remote Write.
+  </Card>
+  <Card href="/ingest-data/logging-agents/promtail" title="Promtail" icon={<IntegrationLogo src="loki.svg" alt="Promtail" />}>
+    Route existing Loki-style log pipelines through the OpenTelemetry Collector.
+  </Card>
+  <Card href="/ingest-data/logging-agents/syslog" title="Syslog-ng" icon={<IntegrationLogo src="syslog-ng.svg" alt="Syslog-ng" />}>
+    Collect network, host, appliance, and security logs through syslog.
+  </Card>
+  <Card href="/ingest-data/logging-agents/vector" title="Vector" icon={<IntegrationLogo src="vector.svg" alt="Vector" />}>
+    Run high-throughput log pipelines with transforms before HTTP delivery.
+  </Card>
+</Cards>
 
 If you are starting fresh on Kubernetes, Fluent Bit or the OpenTelemetry Collector is usually the simplest place to begin. If your team already runs Filebeat, Fluentd, Logstash, Promtail, Syslog-ng, or Vector, keep that pipeline and update only the output stage that sends data to Parseable.

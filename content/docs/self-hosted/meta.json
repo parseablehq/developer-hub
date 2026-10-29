@@ -5,10 +5,7 @@
   "defaultOpen": true,
   "pages": [
     "installation",
-    "aws",
     "configuration",
-    "storage-targets",
-    "metrics",
-    "telemetry"
+    "storage-targets"
   ]
 }

@@ -1,21 +1,6 @@
 ---
 title: AI Infrastructure
-description: Send telemetry from agent frameworks, sandboxes, LLM runtimes, and gateways to Parseable
 ---
-
-import {
-  IconBrandOpenai,
-  IconBrandGithub,
-  IconBrain,
-  IconCode,
-  IconLink,
-  IconRobot,
-  IconRoute,
-  IconServer,
-  IconSettingsAutomation,
-  IconTimeline,
-  IconUsers,
-} from '@tabler/icons-react';
 
 AI systems are usually made of more than one model call. A request can move through an agent framework, a gateway, a sandbox, a workflow runtime, a hosted model API, or a self-hosted inference server before the user sees the final answer.
 
@@ -27,65 +12,79 @@ Agent frameworks usually carry the highest-level application context. They can s
 
 <Cards>
   <Card
-    title="Pydantic AI"
-    href="/ingest-data/ai-agents/pydantic-ai"
-    icon={<IconRobot />}
-  >
-    Capture agent, model, and tool-call telemetry from Pydantic AI applications.
-  </Card>
-  <Card
-    title="Restate"
-    href="/ingest-data/ai-agents/restate-openai-agents"
-    icon={<IconRoute />}
-  >
-    Trace durable agent execution, model calls, tools, retries, and recovery.
-  </Card>
-  <Card
     title="CrewAI"
     href="/ingest-data/ai-agents/crewai"
-    icon={<IconUsers />}
+    icon={<IntegrationLogo src="crewai.svg" alt="CrewAI" />}
   >
     Observe CrewAI crews, agents, tasks, LLM calls, and errors.
   </Card>
   <Card
-    title="n8n"
-    href="/ingest-data/ai-agents/n8n"
-    icon={<IconSettingsAutomation />}
+    title="Restate"
+    href="/ingest-data/ai-agents/restate-openai-agents"
+    icon={<IntegrationLogo src="restate.jpg" alt="Restate" />}
   >
-    Observe n8n workflow automation through traces and related telemetry.
+    Trace durable agent execution, model calls, tools, retries, and recovery.
   </Card>
   <Card
     title="Mastra"
     href="/ingest-data/ai-agents/mastra"
-    icon={<IconBrain />}
+    icon={<IntegrationLogo src="mastra.svg" alt="Mastra" />}
   >
     Send Mastra agent logs, traces, and metrics to Parseable.
   </Card>
   <Card
+    title="n8n"
+    href="/ingest-data/ai-agents/n8n"
+    icon={<IntegrationLogo src="n8n.svg" alt="n8n" />}
+  >
+    Observe n8n workflow automation through traces and related telemetry.
+  </Card>
+  <Card
+    title="Hermes Agent"
+    href="/ingest-data/ai-agents/hermes"
+    icon={<IntegrationLogo src="hermes-agent.svg" alt="Hermes Agent" mono />}
+  >
+    Observe Hermes Agent sessions and tool activity.
+  </Card>
+  <Card
+    title="Pydantic AI"
+    href="/ingest-data/ai-agents/pydantic-ai"
+    icon={<IntegrationLogo src="pydantic.svg" alt="Pydantic AI" />}
+  >
+    Capture agent, model, and tool-call telemetry from Pydantic AI applications.
+  </Card>
+  <Card
+    title="OpenLIT"
+    href="/ingest-data/ai-agents/openlit"
+    icon={<IntegrationLogo src="openlit.png" alt="OpenLIT" />}
+  >
+    Send OpenLIT traces and metrics to Parseable.
+  </Card>
+  <Card
     title="LangChain"
     href="/ingest-data/ai-agents/langchain"
-    icon={<IconLink />}
+    icon={<IntegrationLogo src="langchain.svg" alt="LangChain" />}
   >
     Send LangChain application telemetry to Parseable.
   </Card>
   <Card
     title="LlamaIndex"
     href="/ingest-data/ai-agents/llamaindex"
-    icon={<IconBrain />}
+    icon={<IntegrationLogo src="llamaindex.png" alt="LlamaIndex" />}
   >
     Observe LlamaIndex retrieval and generation workflows.
   </Card>
   <Card
     title="AutoGen"
     href="/ingest-data/ai-agents/autogen"
-    icon={<IconUsers />}
+    icon={<IntegrationLogo src="microsoft.svg" alt="AutoGen" />}
   >
     Track multi-agent AutoGen activity and failures.
   </Card>
   <Card
     title="DSPy"
     href="/ingest-data/ai-agents/dspy"
-    icon={<IconCode />}
+    icon={<IntegrationLogo src="dspy.png" alt="DSPy" />}
   >
     Monitor DSPy programs and prompt optimization workflows.
   </Card>
@@ -99,63 +98,70 @@ Coding assistants emit agent-level telemetry from interactive development sessio
   <Card
     title="Claude Code"
     href="/ingest-data/ai-agents/coding-assistants/claude-code"
-    icon={<IconRobot />}
+    icon={<IntegrationLogo src="anthropic.svg" alt="Claude Code" mono />}
   >
     Export Claude Code events, metrics and optional traces to Parseable.
   </Card>
   <Card
     title="GitHub Copilot"
     href="/ingest-data/ai-agents/coding-assistants/github-copilot"
-    icon={<IconBrandGithub />}
+    icon={<IntegrationLogo src="githubcopilot.svg" alt="GitHub Copilot" mono />}
   >
     Export GitHub Copilot agent traces to Parseable.
   </Card>
   <Card
     title="OpenAI Codex"
     href="/ingest-data/ai-agents/coding-assistants/codex"
-    icon={<IconBrandOpenai />}
+    icon={<IntegrationLogo src="openai.svg" alt="OpenAI Codex" mono />}
   >
     Export Codex logs, traces and metrics directly to Parseable.
   </Card>
 </Cards>
 
-## Sandboxes and runtimes
+## Sandboxes
 
-Sandboxes and execution runtimes are where agent work becomes real system activity. These guides focus on telemetry from code execution, durable workflows, serverless jobs, and workflow orchestration layers.
+Sandboxes show what happens when agents execute code and jobs in isolated environments. These guides cover sandbox activity, logs, traces, and metrics.
 
 <Cards>
   <Card
-    title="Temporal"
-    href="/ingest-data/ai-agents/temporal"
-    icon={<IconTimeline />}
-  >
-    Observe Temporal workflows, activities, SDK telemetry, and metrics.
-  </Card>
-  <Card
     title="Daytona"
     href="/ingest-data/ai-agents/daytona"
-    icon={<IconServer />}
+    icon={<IntegrationLogo src="daytona.png" alt="Daytona" />}
   >
     Capture SDK traces and sandbox logs, traces, and metrics.
   </Card>
   <Card
     title="Modal"
     href="/ingest-data/ai-agents/modal"
-    icon={<IconServer />}
+    icon={<IntegrationLogo src="modal.svg" alt="Modal" />}
   >
     Send serverless Python logs, traces, and metrics through OpenTelemetry.
+  </Card>
+</Cards>
+
+## Agent runtimes
+
+Agent runtimes carry work across steps, retries, and long-running workflows. Use these guides to follow execution and diagnose failures across the workflow lifecycle.
+
+<Cards>
+  <Card
+    title="Temporal"
+    href="/ingest-data/ai-agents/temporal"
+    icon={<IntegrationLogo src="temporal.svg" alt="Temporal" mono />}
+  >
+    Observe Temporal workflows, activities, SDK telemetry, and metrics.
   </Card>
   <Card
     title="DBOS"
     href="/ingest-data/ai-agents/dbos"
-    icon={<IconTimeline />}
+    icon={<IntegrationLogo src="dbos.png" alt="DBOS" />}
   >
     Observe durable workflows with logs, traces, and Conductor metrics.
   </Card>
   <Card
     title="Restate"
     href="/ingest-data/ai-agents/restate"
-    icon={<IconTimeline />}
+    icon={<IntegrationLogo src="restate.jpg" alt="Restate" />}
   >
     Send durable execution workflow traces and service logs to Parseable.
   </Card>
@@ -169,35 +175,35 @@ LLM integrations help when you want to observe model-facing traffic directly. Th
   <Card
     title="LiteLLM SDK"
     href="/ingest-data/ai-agents/litellm-sdk"
-    icon={<IconCode />}
+    icon={<IntegrationLogo src="litellm.svg" alt="LiteLLM SDK" />}
   >
     Observe LiteLLM SDK usage from application code.
   </Card>
   <Card
     title="OpenAI"
     href="/ingest-data/ai-agents/openai"
-    icon={<IconBrandOpenai />}
+    icon={<IntegrationLogo src="openai.svg" alt="OpenAI" mono />}
   >
     Log OpenAI API calls, responses, latency, and token usage.
   </Card>
   <Card
     title="Anthropic"
     href="/ingest-data/ai-agents/anthropic"
-    icon={<IconRobot />}
+    icon={<IntegrationLogo src="anthropic.svg" alt="Anthropic" mono />}
   >
     Capture Claude API calls, responses, errors, and token usage.
   </Card>
   <Card
     title="Baseten"
     href="/ingest-data/ai-agents/baseten"
-    icon={<IconServer />}
+    icon={<IntegrationLogo src="baseten.svg" alt="Baseten" />}
   >
     Send Baseten deployment logs, traces, and metrics to Parseable.
   </Card>
   <Card
     title="vLLM"
     href="/ingest-data/ai-agents/vllm"
-    icon={<IconServer />}
+    icon={<IntegrationLogo src="vllm.svg" alt="vLLM" />}
   >
     Monitor self-hosted vLLM inference serving.
   </Card>
@@ -211,21 +217,21 @@ Gateways sit between applications and model providers. They are useful when team
   <Card
     title="OpenRouter"
     href="/ingest-data/ai-agents/openrouter"
-    icon={<IconRoute />}
+    icon={<IntegrationLogo src="openrouter.svg" alt="OpenRouter" />}
   >
     Send OpenRouter traces and dashboard telemetry to Parseable.
   </Card>
   <Card
     title="LiteLLM Gateway"
     href="/ingest-data/gateways/litellm"
-    icon={<IconRoute />}
+    icon={<IntegrationLogo src="litellm.svg" alt="LiteLLM Gateway" />}
   >
     Observe LiteLLM Gateway traces and Prometheus metrics.
   </Card>
   <Card
     title="Cloudflare AI Gateway"
     href="/ingest-data/gateways/cloudflare-ai-gateway"
-    icon={<IconRoute />}
+    icon={<IntegrationLogo src="cloudflare.svg" alt="Cloudflare AI Gateway" />}
   >
     Observe Cloudflare AI Gateway traces, model usage, latency, cost, and errors.
   </Card>

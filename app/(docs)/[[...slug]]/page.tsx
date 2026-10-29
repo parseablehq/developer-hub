@@ -2,7 +2,6 @@ import { source } from "@/lib/source";
 import {
   DocsPage,
   DocsBody,
-  DocsDescription,
   DocsTitle,
 } from "fumadocs-ui/page";
 import { notFound, redirect } from "next/navigation";
@@ -26,10 +25,6 @@ export default async function Page(props: {
   if (!page) notFound();
 
   const MDXContent = page.data.body;
-  const description = getPageDescription(
-    page.data.title,
-    page.data.description,
-  );
 
   return (
     <DocsPage
@@ -42,9 +37,8 @@ export default async function Page(props: {
         style: "clerk",
       }}
     >
-      <DocsTitle>{page.data.title}</DocsTitle>
-      <DocsDescription>{description}</DocsDescription>
-      <div className="flex flex-row gap-2 items-center mb-4">
+      <div className="mb-4 flex w-full items-center justify-between gap-4">
+        <DocsTitle className="min-w-0">{page.data.title}</DocsTitle>
         <CopyPageDropdown
           slug={params.slug ?? []}
           filePath={`${params.slug?.join("/") || "index"}.mdx`}
@@ -73,12 +67,12 @@ export async function generateMetadata(props: {
 }) {
   const params = await props.params;
 
-  // Handle root /docs path - will redirect, but provide metadata just in case
+  // Handle the root /docs path with homepage-specific metadata.
   if (!params.slug || params.slug.length === 0) {
     return {
-      title: "Parseable Documentation",
+      title: "Home",
       description:
-        "Explore Parseable documentation for installation, telemetry ingestion, querying, integrations, and operating an observability data lake.",
+        "Understand Parseable's data lake architecture and find the right guide for your task.",
     };
   }
 

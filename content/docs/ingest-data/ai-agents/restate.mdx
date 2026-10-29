@@ -1,6 +1,5 @@
 ---
 title: Restate
-description: Ship Restate workflow traces and service logs to Parseable via an OpenTelemetry Collector
 ---
 
 [Restate](https://restate.dev/) is a durable execution engine that handles retries, state, and orchestration for workflows and services. Restate exports **traces** natively via OTLP. Service **logs** are emitted through the OpenTelemetry Logs SDK in your application code. Both signals flow through a single OpenTelemetry Collector that authenticates against Parseable and routes each signal to its own stream.

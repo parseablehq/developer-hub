@@ -1,6 +1,5 @@
 ---
 title: Amazon MSK on EKS
-description: Connect Parseable ingestors running in Amazon EKS to Amazon MSK with IAM authentication
 ---
 
 If your applications are already publishing JSON records to Amazon MSK, this setup lets Parseable read them directly from Kafka without adding another moving part in the middle. Parseable ingestors run on EKS, use EKS Pod Identity for AWS IAM authentication, and connect to MSK with short-lived credentials instead of long-lived AWS keys or Kafka secrets.

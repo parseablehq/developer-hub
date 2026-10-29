@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Check, Copy, ExternalLink, MessageCircle } from 'lucide-react';
+import { useState } from 'react';
+import { Check, Copy } from 'lucide-react';
 
 interface CopyPageDropdownProps {
   slug: string[];
@@ -14,33 +14,6 @@ const cache = new Map<string, string>();
 const GitHubIcon = () => (
   <svg className="size-4" viewBox="0 0 24 24" fill="currentColor">
     <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-  </svg>
-);
-
-// Scira AI icon (from Fumadocs - sparkle/star pattern)
-const SciraIcon = () => (
-  <svg className="size-4" viewBox="0 0 910 934" fill="none">
-    <path
-      d="M647.664 197.775C569.13 189.049 525.5 145.419 516.774 66.8849C508.048 145.419 464.418 189.049 385.884 197.775C464.418 206.501 508.048 250.131 516.774 328.665C525.5 250.131 569.13 206.501 647.664 197.775Z"
-      fill="currentColor"
-      stroke="currentColor"
-      strokeWidth="8"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M516.774 304.217C510.299 275.491 498.208 252.087 480.335 234.214C462.462 216.341 439.058 204.251 410.333 197.775C439.059 191.3 462.462 179.209 480.335 161.336C498.208 143.463 510.299 120.06 516.774 91.334C523.25 120.059 535.34 143.463 553.213 161.336C571.086 179.209 594.49 191.3 623.216 197.775C594.49 204.251 571.086 216.341 553.213 234.214C535.34 252.087 523.25 275.491 516.774 304.217Z"
-      fill="currentColor"
-      stroke="currentColor"
-      strokeWidth="8"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M760.632 764.337C720.719 814.616 669.835 855.1 611.872 882.692C553.91 910.285 490.404 924.255 426.213 923.533C362.022 922.812 298.846 907.419 241.518 878.531C184.19 849.643 134.228 808.026 95.4548 756.863C56.6815 705.7 30.1238 646.346 17.8129 583.343C5.50207 520.339 7.76433 455.354 24.4266 393.359C41.089 331.364 71.7099 274.001 113.947 225.658C156.184 177.315 208.919 139.273 268.117 114.442"
-      stroke="currentColor"
-      strokeWidth="30"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
   </svg>
 );
 
@@ -59,20 +32,7 @@ const ClaudeIcon = () => (
 );
 
 export function CopyPageDropdown({ slug, filePath }: CopyPageDropdownProps) {
-  const [isOpenDropdownOpen, setIsOpenDropdownOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const openDropdownRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (openDropdownRef.current && !openDropdownRef.current.contains(event.target as Node)) {
-        setIsOpenDropdownOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const currentUrl = typeof window !== 'undefined' 
     ? window.location.href 
@@ -108,127 +68,81 @@ export function CopyPageDropdown({ slug, filePath }: CopyPageDropdownProps) {
 
   const handleOpenInGitHub = () => {
     window.open(githubEditUrl, '_blank');
-    setIsOpenDropdownOpen(false);
-  };
-
-  const handleOpenInSciraAI = async () => {
-    const content = await getPageContent();
-    const prompt = `Please help me understand this Parseable documentation page (${currentUrl}):\n\n${content}`;
-    window.open(`https://scira.ai/search?q=${encodeURIComponent(prompt)}`, '_blank');
-    setIsOpenDropdownOpen(false);
   };
 
   const handleOpenInChatGPT = async () => {
     const content = await getPageContent();
     const prompt = `Please help me understand this Parseable documentation page (${currentUrl}):\n\n${content}`;
     window.open(`https://chatgpt.com/?q=${encodeURIComponent(prompt)}`, '_blank');
-    setIsOpenDropdownOpen(false);
   };
 
   const handleOpenInClaude = async () => {
     const content = await getPageContent();
     const prompt = `Please help me understand this Parseable documentation page (${currentUrl}):\n\n${content}`;
     window.open(`https://claude.ai/new?q=${encodeURIComponent(prompt)}`, '_blank');
-    setIsOpenDropdownOpen(false);
-  };
-
-  const handleOpenInT3Chat = async () => {
-    const content = await getPageContent();
-    const prompt = `Please help me understand this Parseable documentation page (${currentUrl}):\n\n${content}`;
-    window.open(`https://t3.chat/?q=${encodeURIComponent(prompt)}`, '_blank');
-    setIsOpenDropdownOpen(false);
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex shrink-0 items-center gap-2">
       {/* Copy Markdown Button */}
-      <button
-        onClick={handleCopyMarkdown}
-        className="inline-flex items-center gap-1.5 px-2 py-1 text-xs rounded-md border border-fd-border bg-fd-secondary/50 text-fd-muted-foreground hover:bg-fd-accent hover:text-fd-accent-foreground transition-colors"
-      >
-        {copied ? (
-          <Check className="size-3 text-green-500" />
-        ) : (
-          <Copy className="size-3" />
-        )}
-        Copy Markdown
-      </button>
-
-      {/* Open Dropdown */}
-      <div className="relative" ref={openDropdownRef}>
+      <div className="group relative">
         <button
-          onClick={() => setIsOpenDropdownOpen(!isOpenDropdownOpen)}
-          className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-md border border-fd-border bg-fd-secondary/50 text-fd-muted-foreground hover:bg-fd-accent hover:text-fd-accent-foreground transition-colors"
+          type="button"
+          onClick={handleCopyMarkdown}
+          aria-label={copied ? "Copied Markdown" : "Copy page as Markdown"}
+          className="inline-flex size-7 items-center justify-center rounded-md border border-fd-border bg-fd-secondary/50 text-fd-muted-foreground hover:bg-fd-accent hover:text-fd-accent-foreground transition-colors"
         >
-          Open
-          <ChevronDown className={`size-3 transition-transform ${isOpenDropdownOpen ? 'rotate-180' : ''}`} />
+          {copied ? (
+            <Check className="size-4 text-green-500" />
+          ) : (
+            <Copy className="size-4" />
+          )}
         </button>
+        <span role="tooltip" className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-fd-popover px-2 py-1 text-xs text-fd-popover-foreground opacity-0 shadow-md transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+          {copied ? "Copied!" : "Copy page as Markdown"}
+        </span>
+      </div>
 
-        {isOpenDropdownOpen && (
-          <div className="absolute right-0 top-full mt-1 w-52 rounded-lg border border-fd-border bg-fd-popover shadow-lg z-50">
-            <div className="py-1">
-              {/* Open in GitHub */}
-              <button
-                onClick={handleOpenInGitHub}
-                className="w-full flex items-center justify-between gap-2 px-3 py-2 text-sm hover:bg-fd-accent transition-colors text-left"
-              >
-                <div className="flex items-center gap-2">
-                  <GitHubIcon />
-                  <span>Open in GitHub</span>
-                </div>
-                <ExternalLink className="size-3 text-fd-muted-foreground" />
-              </button>
+      <div className="group relative">
+        <button
+          type="button"
+          onClick={handleOpenInGitHub}
+          aria-label="View page source on GitHub"
+          className="inline-flex size-7 items-center justify-center rounded-md border border-fd-border bg-fd-secondary/50 text-fd-muted-foreground hover:bg-fd-accent hover:text-fd-accent-foreground transition-colors"
+        >
+          <GitHubIcon />
+        </button>
+        <span role="tooltip" className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-fd-popover px-2 py-1 text-xs text-fd-popover-foreground opacity-0 shadow-md transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+          View page source on GitHub
+        </span>
+      </div>
 
-              {/* Open in Scira AI */}
-              <button
-                onClick={handleOpenInSciraAI}
-                className="w-full flex items-center justify-between gap-2 px-3 py-2 text-sm hover:bg-fd-accent transition-colors text-left"
-              >
-                <div className="flex items-center gap-2">
-                  <SciraIcon />
-                  <span>Open in Scira AI</span>
-                </div>
-                <ExternalLink className="size-3 text-fd-muted-foreground" />
-              </button>
+      <div className="group relative">
+        <button
+          type="button"
+          onClick={handleOpenInChatGPT}
+          aria-label="Ask OpenAI about this page"
+          className="inline-flex size-7 items-center justify-center rounded-md border border-fd-border bg-fd-secondary/50 text-fd-muted-foreground hover:bg-fd-accent hover:text-fd-accent-foreground transition-colors"
+        >
+          <ChatGPTIcon />
+        </button>
+        <span role="tooltip" className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-fd-popover px-2 py-1 text-xs text-fd-popover-foreground opacity-0 shadow-md transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+          Ask OpenAI about this page
+        </span>
+      </div>
 
-              {/* Open in ChatGPT */}
-              <button
-                onClick={handleOpenInChatGPT}
-                className="w-full flex items-center justify-between gap-2 px-3 py-2 text-sm hover:bg-fd-accent transition-colors text-left"
-              >
-                <div className="flex items-center gap-2">
-                  <ChatGPTIcon />
-                  <span>Open in ChatGPT</span>
-                </div>
-                <ExternalLink className="size-3 text-fd-muted-foreground" />
-              </button>
-
-              {/* Open in Claude */}
-              <button
-                onClick={handleOpenInClaude}
-                className="w-full flex items-center justify-between gap-2 px-3 py-2 text-sm hover:bg-fd-accent transition-colors text-left"
-              >
-                <div className="flex items-center gap-2">
-                  <ClaudeIcon />
-                  <span>Open in Claude</span>
-                </div>
-                <ExternalLink className="size-3 text-fd-muted-foreground" />
-              </button>
-
-              {/* Open in T3 Chat */}
-              <button
-                onClick={handleOpenInT3Chat}
-                className="w-full flex items-center justify-between gap-2 px-3 py-2 text-sm hover:bg-fd-accent transition-colors text-left"
-              >
-                <div className="flex items-center gap-2">
-                  <MessageCircle className="size-4" />
-                  <span>Open in T3 Chat</span>
-                </div>
-                <ExternalLink className="size-3 text-fd-muted-foreground" />
-              </button>
-            </div>
-          </div>
-        )}
+      <div className="group relative">
+        <button
+          type="button"
+          onClick={handleOpenInClaude}
+          aria-label="Ask Claude about this page"
+          className="inline-flex size-7 items-center justify-center rounded-md border border-fd-border bg-fd-secondary/50 text-fd-muted-foreground hover:bg-fd-accent hover:text-fd-accent-foreground transition-colors"
+        >
+          <ClaudeIcon />
+        </button>
+        <span role="tooltip" className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-fd-popover px-2 py-1 text-xs text-fd-popover-foreground opacity-0 shadow-md transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+          Ask Claude about this page
+        </span>
       </div>
     </div>
   );
