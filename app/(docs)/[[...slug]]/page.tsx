@@ -2,7 +2,6 @@ import { source } from "@/lib/source";
 import {
   DocsPage,
   DocsBody,
-  DocsDescription,
   DocsTitle,
 } from "fumadocs-ui/page";
 import { notFound, redirect } from "next/navigation";
@@ -26,10 +25,6 @@ export default async function Page(props: {
   if (!page) notFound();
 
   const MDXContent = page.data.body;
-  const description = getPageDescription(
-    page.data.title,
-    page.data.description,
-  );
 
   return (
     <DocsPage
@@ -43,7 +38,6 @@ export default async function Page(props: {
       }}
     >
       <DocsTitle>{page.data.title}</DocsTitle>
-      <DocsDescription>{description}</DocsDescription>
       <div className="flex flex-row gap-2 items-center mb-4">
         <CopyPageDropdown
           slug={params.slug ?? []}

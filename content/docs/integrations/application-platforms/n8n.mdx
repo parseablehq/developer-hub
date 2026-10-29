@@ -1,6 +1,5 @@
 ---
 title: n8n community node
-description: Query and ingest Parseable data from n8n workflows
 ---
 
 import { Step, Steps } from 'fumadocs-ui/components/steps';
@@ -25,7 +24,7 @@ PromQL requires Parseable Cloud or Enterprise. SQL queries and JSON ingestion wo
 - A Parseable Cloud workspace or self-hosted Parseable deployment
 - A Parseable API key with access to the datasets used by the workflow
 
-Give the API key the permissions required by the workflow. A workflow that reads records needs query access. A workflow that sends events needs ingest access. See [API keys](/docs/user-guide/api-keys) for role examples.
+Give the API key the permissions required by the workflow. A workflow that reads records needs query access. A workflow that sends events needs ingest access. See [API keys](/user-guide/api-keys) for role examples.
 
 ## Install the node
 
@@ -96,7 +95,7 @@ Select **Ingest Events**, choose the target dataset and pass a JSON object or ar
 {{$json}}
 ```
 
-Use this operation for workflow events and records. To collect n8n execution traces and platform logs, follow the [n8n observability guide](/docs/ingest-data/ai-agents/n8n).
+Use this operation for workflow events and records. To collect n8n execution traces and platform logs, follow the [n8n observability guide](/ingest-data/ai-agents/n8n).
 
 ## Use Parseable with an AI Agent
 

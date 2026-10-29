@@ -1,6 +1,5 @@
 ---
 title: Redis
-description: Send Redis logs, metrics, and traces to Parseable with OpenTelemetry
 ---
 
 Redis often sits on the fast path for application traffic, so small changes in latency, memory, or command behavior can matter quickly. This guide shows how to send Redis logs, metrics, and traces to Parseable using a Redis primary with two replicas, one `redis_exporter` per node, an OpenTelemetry Collector, and a continuously running client workload.
