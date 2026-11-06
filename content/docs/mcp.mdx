@@ -19,7 +19,7 @@ AI client
   v
 Parseable MCP Server
   |
-  | Parseable API request with X-API-Key
+  | Parseable API request with Authorization: Bearer <token>
   v
 Parseable
 ```
@@ -137,7 +137,7 @@ For a self-hosted Parseable target:
       "url": "https://mcp.example.com/mcp",
       "headers": {
         "X-Parseable-URL": "https://parseable.example.com",
-        "X-API-Key": "your-parseable-api-key"
+        "Authorization": "Bearer your-parseable-api-key"
       }
     }
   }
@@ -154,7 +154,7 @@ For Parseable Cloud:
       "url": "https://mcp.parseable.com/mcp",
       "headers": {
         "X-Parseable-Mode": "cloud",
-        "X-API-Key": "your-parseable-cloud-api-key"
+        "Authorization": "Bearer your-parseable-cloud-api-key"
       }
     }
   }
