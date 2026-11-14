@@ -61,6 +61,7 @@
     "---Self Hosted---",
     "self-hosted/installation",
     "self-hosted/configuration",
+    "self-hosted/observability-as-code",
     "self-hosted/storage-targets",
     "---Tools and reference---",
     "slack-bot",
