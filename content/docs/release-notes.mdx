@@ -2,6 +2,65 @@
 title: Release notes
 ---
 
+## v3.2.7
+
+November 17, 2026
+
+Parseable v3.2.7 adds new visualizations, persistent user preferences, improved alert and API key management, faster ingestion, and more resilient stream deletion. Enterprise deployments also gain AI-assisted platform insights, dashboard workflows, distributed PromQL improvements, and license management through the UI.
+
+### Features
+
+- <EnterpriseBadge /> **AI platform summary:** Get an AI-generated overview of platform health and telemetry on the home page with suggested follow-up actions for faster investigation.
+- <EnterpriseBadge /> **Safer AI-assisted actions:** Mutation tools added to qna agent called in keystone that allows CRUD operations on dashboards and alerts.
+- <EnterpriseBadge /> **AI dashboard workflows:** Explain existing dashboard tiles and preview AI-generated dashboards in keystone.
+- **New chart types:** Build scatter, bubble, and Sankey charts in dashboards manually or using AI in dashboards or keystone.
+- **Persistent user preferences:** Save user-level settings such as default timezone and restore them across sessions.
+- **Alert portability and stable IDs:** Import or export alerts feature added to alerts.
+- **Flexible API key management:** Supply custom API key values, update key names or values, filter keys by multiple privileges (used in MCP connect), and create writer or ingestor keys directly (used in onboarding flow).
+- <EnterpriseBadge /> **License management experience:** Upload license file via UI instead of setting the envs for license json and signature files, hence updating the cluster with new license without restarting the cluster.
+- **Unified settings navigation:** Access general, access-management, agent, billing, license, and cluster settings unified in one place.
+- **Find in data:** Perform text search within the loaded data to locate matching values faster during investigation.
+- **Resilient stream deletion:** Stream deletion now runs asynchronously and resumes safely after service restarts.
+- **Process CPU metric:** Monitor process CPU consumption through a new usage-in-cores metric.
+
+### Improvements
+
+- **Faster JSON ingestion:** Optimized JSON parsing and combined staging writes improve ingestion throughput and reduce write overhead.
+- **Lower query processing overhead:** Streamed query batches are reused without unnecessary reparsing.
+- <EnterpriseBadge /> **Distributed PromQL execution:** Improved distributed planning, Arrow-based data transfer, aggregation, and batched requests increase PromQL scalability.
+- **Streamlined table controls:** Sorting, pinning, and column visibility now use consistent interactions across supported tables.
+- <EnterpriseBadge /> **Clearer LLM setup:** AI-enabled screens now provide consistent empty states and direct guidance when no LLM provider is configured.
+- **Improved onboarding:** Direct ingestor-key setup reduces configuration steps.
+- <EnterpriseBadge /> **Pro workspace onboarding:** Pro workspace creation reduces configuration steps.
+- **Reduced redundant requests:** Removed unnecessary query calls and improved metrics request batching to lower UI and backend load.
+
+### Fixes
+
+- **Timestamp ordering:** `ORDER BY p_timestamp` now returns correctly ordered results even when Parquet file ordering cannot be verified.
+- **Stream deletion safety:** Fixed ingestion, staging, recreation, and cleanup races that could resurrect or modify a stream while deletion was in progress.
+- <EnterpriseBadge /> **Tenant-aware retention:** Retention configuration now resolves the correct tenant-specific storage path.
+- **Expired OpenID sessions:** Sessions without refresh tokens now expire cleanly with `401 Unauthorized` instead of causing an OpenID failure.
+- <EnterpriseBadge /> **System-role user groups:** User groups can now be created and updated correctly when system roles are assigned.
+- **Alert ID validation:** Duplicate alert or target identifiers are rejected to prevent ambiguous configurations.
+- <EnterpriseBadge /> **Distributed query planning:** Corrected planner behavior for distributed query execution.
+- **Metrics reliability:** Fixed metrics loading, no-data refresh behavior, and JSON result processing in metrics and dashboard views.
+- **Dashboard reliability:** Fixed dashboard import behavior and list sorting across paginated results.
+- <EnterpriseBadge /> **PromQL validation:** Invalid PromQL queries are blocked before execution with clearer feedback.
+- <EnterpriseBadge /> **Platform summary states:** Fixed summary error handling, empty responses, and home-overview settings behavior.
+- <EnterpriseBadge /> **AI-generated artifacts:** Validated dashboards and tiles are no longer lost during multi-step AI conversations.
+- <EnterpriseBadge /> **Alert tools:** Fixed Enterprise alert-tool execution and related result handling.
+- **Trace investigation:** Trace error-sidebar queries no longer apply an incorrect time filter.
+- **Date and time selection:** Changing a date now preserves the selected time value.
+- **Navigation links:** Fixed command-palette, global-search, getting-started, and invite-user links.
+- **UI polish:** Fixed clipped badges, recent-item card orientation, and several chart and settings display issues.
+
+### Dependencies
+
+- <EnterpriseBadge /> **Pillow:** Upgraded Pillow from v12.3.0 to v13.0.0 to include current security fixes.
+- <EnterpriseBadge /> **Python:** Upgraded the release build and environment setup from Python 3.10 to Python 3.11.
+- **Rust dependencies:** Updated `rustls` from v0.23.40 to v0.23.46, `zip` from v8.6.0 to v9.0.5, and `xxhash-rust` from v0.8.15 to v0.8.16.
+- **Prism dependencies:** Updated Zod from v3.25.76 to v4.6.7 and refreshed supporting build and source-map packages.
+
 ## v3.0
 
 August 9, 2026
