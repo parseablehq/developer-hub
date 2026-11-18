@@ -53,15 +53,18 @@ You can use it in scripts and CI, or open the interactive terminal views when yo
 
 ## First commands
 
-After installing `pb`, connect to your Parseable server and check the active profile. The [connection guide](/pb-cli/connect) covers self-hosted and Cloud authentication.
+If you followed the [local quickstart](/docs/get-started), you already have a `demo` dataset. Connect to that server, then list datasets and query the event you sent. The [connection guide](/docs/pb-cli/connect) covers self-hosted and Cloud authentication; for Cloud, use a dataset in your workspace instead of `demo`.
 
 ```bash
 pb login
 pb status
-pb sql run "SELECT * FROM backend WHERE status >= 500" --from=1h
-pb promql run "rate(http_requests_total[5m])" --dataset otel_metrics --from=1h
-pb tail backend
+pb dataset list
+pb sql run "SELECT * FROM demo" --from=1h
 ```
+
+The quickstart creates a logs dataset, not a metrics dataset. To run PromQL, first ingest metrics and use a dataset and metric name that exist on your server. See [Query metrics with PromQL](/docs/pb-cli/promql).
+
+To watch new events in `demo`, run `pb tail demo`, then send another event to that dataset.
 
 ## Interactive mode
 
