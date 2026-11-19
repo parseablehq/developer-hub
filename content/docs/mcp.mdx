@@ -100,7 +100,7 @@ npx -y @parseable/parseable-mcp-server@latest init \
   --api-key "$PARSEABLE_API_KEY"
 ```
 
-The interactive setup shows the clients supported by the version you are installing.
+The interactive setup shows the clients supported by the version you are installing. The optional `--tool-profile` flag accepts `core` or `full`; when omitted, it defaults to `full`.
 
 ## Manual local configuration
 
@@ -162,6 +162,21 @@ For Parseable Cloud:
 ```
 
 Do not send credentials to an MCP endpoint you do not trust. The MCP server uses the supplied API key to call Parseable on your behalf.
+
+## Tool profiles
+
+Profiles restrict the tools available to clients:
+
+| Profile | Exposed tools | Best for |
+| --- | --- | --- |
+| `core` | `list_datasets`, `get_dataset_schema`, and `query_sql` | Focused, read-only dataset discovery and SQL investigation. |
+| `full` | Every tool returned by Parseable | Investigations that need metrics, alerts, access review, cluster status, or other advanced tools. |
+
+The default profile is `full`. To set core profile for local connections use `PARSEABLE_TOOL_PROFILE=core` or `--tool-profile core` in `init`. To set core profile for remote connections, include `X-Parseable-Tool-Profile: core` in the request headers. To use the full profile explicitly, or if the profile is not set, the full profile will be used.
+
+The profile will affect both discovery of tools and calling them. If a tool is excluded via the `core` profile, it will not be possible to call that tool. Invalid profiles will be rejected. For remote HTTP connections, invalid profiles will result in `400 Bad Request`.
+
+Profiles should not be used as a replacement for RBAC within Parseable. API keys should always be used, and only contain the permissions required by the client.
 
 ## What the tools can do
 
@@ -249,6 +264,7 @@ Parseable MCP Server does not store telemetry data, query history, result sets, 
 ## Troubleshooting
 
 - If the tools do not appear in your client, restart the MCP client after running setup.
+- If only three tools appear, the connection is using the `core` tool profile. Remove the profile setting or change it to `full` to expose the complete catalog.
 - If the local server does not start, check that `PARSEABLE_URL` and `PARSEABLE_API_KEY` are present in the generated client configuration.
 - If you get `401` or `403`, check the API key first. `401` usually means the key is missing, invalid, or rotated. `403` means the key is valid but does not have permission for that dataset or action.
 - If a dataset is missing, check the dataset name and the roles assigned to the API key.
