@@ -117,6 +117,7 @@ This section lists all the environment variables applicable to the OIDC mode. Th
 | `P_OIDC_ISSUER` | `Yes` | The OIDC issuer URL, typically provided by your identity provider. It points to the OIDC authorization server. Should support discovery protocol. | `-` | `https://accounts.google.com` |
 | `P_ORIGIN_URI` | `Yes` | The URI where Parseable is hosted or accessible. This should be the base URL of your Parseable instance. | `-` | `https://demo.parseable.com/` |
 | `P_OIDC_SCOPE` | `No` | OIDC scope to request from the identity provider. | `openid profile email offline_access` | `openid profile email` |
+| `P_OIDC_SYNC_ROLES` | `No` | Replace an OIDC user's roles at every login with the roles matching their identity-provider groups, so removing a user from a group revokes the role. When `false`, group roles are added and existing roles are kept. | `false` | `true` |
 
 Refer to [OIDC](/user-guide/openid) section for more details.
 

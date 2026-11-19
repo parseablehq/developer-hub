@@ -53,6 +53,7 @@ Console and login endpoints:
 | `P_OIDC_ISSUER` | Yes | Issuer URL for the identity provider. The issuer must support OIDC discovery. | `""` | `https://accounts.google.com` |
 | `P_ORIGIN_URI` | Yes | Public base URL where users access Parseable. This is used to build the callback URL. | `""` | `https://demo.parseable.com/` |
 | `P_OIDC_SCOPE` | No | OIDC scopes requested during login. Keep the default unless your provider requires a different scope set. | `openid profile email offline_access` | `openid profile email groups` |
+| `P_OIDC_SYNC_ROLES` | No | Make the identity provider's groups the source of truth for OIDC users' roles. See [Keep roles in sync with the identity provider](#keep-roles-in-sync-with-the-identity-provider). | `false` | `true` |
 
 <Callout type="info">
   Parseable builds the OIDC callback URL from `P_ORIGIN_URI`. Do not set
@@ -126,6 +127,21 @@ If a reverse proxy terminates TLS, configure it to preserve the original host
 and protocol headers. `P_ORIGIN_URI` must be the same public HTTPS URL that is
 used to register the redirect URI in the identity provider.
 
+## When the identity provider is unavailable
+
+Parseable fetches the provider's discovery document when it starts. If the
+provider can't be reached, for example because it is down or still starting,
+Parseable starts anyway and retries discovery in the background, waiting longer
+between attempts up to one minute. Until discovery succeeds:
+
+- Ingestion, queries and basic-auth logins work as usual.
+- SSO login (`/api/v1/o/login`) returns `503 Service Unavailable` with the
+  message "The OIDC provider is not reachable yet; try again shortly".
+
+SSO login starts working as soon as the provider answers; no restart is needed.
+Parseable logs each failed attempt and logs `OIDC provider discovered; OIDC
+login is enabled` once it succeeds.
+
 ## Privilege Management with OIDC
 
 After a user signs in through OIDC, Parseable still needs to decide what that
@@ -180,3 +196,26 @@ role permissions during login.
 Per-user customization is not available for OIDC users. If a user needs a
 different permission set, create a new role and manage that assignment from the
 identity provider.
+
+### Keep roles in sync with the identity provider
+
+By default, the roles that match a user's groups are **added** at each login, and
+roles the user already has are kept. This preserves any role an admin assigned
+in Parseable, but it also means that removing a user from a group in the
+identity provider does not remove the matching Parseable role.
+
+Set `P_OIDC_SYNC_ROLES=true` when the identity provider should decide access on
+its own, for example when offboarding someone from a group must revoke their
+access:
+
+- At every login, the user's roles are replaced by exactly the roles that match
+  their current groups.
+- If no group matches, the user gets the default OIDC role, if one is set, and
+  no roles otherwise.
+- Roles assigned to an OIDC user inside Parseable are removed at their next
+  login, so manage all access through groups in the identity provider.
+- A native user with the same email address no longer lends its roles to the
+  OIDC user.
+
+The change applies at the user's next login. An existing session keeps the roles
+it was created with until it expires.
