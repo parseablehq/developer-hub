@@ -1,13 +1,13 @@
 ---
-title: Kubernetes (Enterprise)
+title: Enterprise without a license
 ---
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 
 <OfferingPills enterprise className="mb-4" />
 
-This guide installs Parseable Enterprise in distributed mode on Kubernetes. The installation creates ingestor, querier, and Prism pods.
+You can install and use Parseable Enterprise with a 50 GB ingestion limit without providing a license. If you have a license, follow the [licensed Enterprise guide](/self-hosted/installation/distributed/k8s-helm-enterprise-license).
 
-To install Parseable OSS, use the [distributed OSS Kubernetes guide](/self-hosted/installation/distributed/k8s-helm-oss).
+To run OSS instead, configure the chart using its [values.yaml](https://github.com/parseablehq/helm-charts/blob/main/charts/parseable/values.yaml).
 
 ## Prerequisites
 
@@ -17,9 +17,10 @@ Before you begin, make sure you have:
 - Helm 3 or later
 - A Kubernetes storage class
 - An existing, empty object-store bucket with access credentials
-- `parseable_license.json` and `parseable_license.sig` from Parseable
 
-A valid Enterprise license is required to run Parseable Enterprise. If you do not have a license, contact [sales@parseable.com](mailto:sales@parseable.com); the Enterprise deployment cannot run without it.
+<Callout type="warning">
+  Upgrade to a Parseable Helm chart release that supports Enterprise without a license before applying these values. Use Enterprise image `v3.2.7` or later. Updating only the image tag on an older chart is not enough.
+</Callout>
 
 Confirm the Kubernetes context and find an available storage class:
 
@@ -52,7 +53,7 @@ installation and replace `parseable` in the commands below with that namespace.
 
 Choose exactly one object store below. Replace every `<...>` placeholder in the selected option before running the command.
 
-After completing one option, continue to step 4.
+After completing one option, continue to step 3.
 
 ### Option A: MinIO
 
@@ -214,16 +215,7 @@ rm parseable-env-secret
 </Step>
 <Step>
 
-## 4. Create Enterprise Secrets
-
-Create the license Secret. Replace `<license-directory>` with the directory containing both license files:
-
-```bash
-kubectl create secret generic parseable-license \
-  --namespace parseable \
-  --from-file=parseable_license.json='<license-directory>/parseable_license.json' \
-  --from-file=parseable_license.sig='<license-directory>/parseable_license.sig'
-```
+## 4. Create the Enterprise cluster Secret
 
 Create a random 16-character shared Secret for communication between Enterprise pods:
 
@@ -275,14 +267,8 @@ parseable:
     enabled: true
     image:
       repository: quay.io/parseablehq/parseable-enterprise
-      tag: "" # Defaults to the Helm chart appVersion
-      pullPolicy: IfNotPresent
-    license:
-      secretName: parseable-license-new
-      dataKey: parseable_license.json
-      signature:
-        source: file
-        key: parseable_license.sig
+      tag: "v3.2.7" # Must be v3.2.7 or later
+      pullPolicy: Always
 
   distributed:
     ingestor:
@@ -291,11 +277,11 @@ parseable:
         RUST_LOG: warn
       resources:
         requests:
-          cpu: 500m
-          memory: 1Gi
-        limits:
           cpu: 1
-          memory: 4Gi
+          memory: 512Mi
+        limits:
+          cpu: 2
+          memory: 2Gi
       persistence:
         staging:
           enabled: true
@@ -309,17 +295,17 @@ parseable:
         RUST_LOG: warn
       resources:
         requests:
-          cpu: 500m
-          memory: 1Gi
-        limits:
           cpu: 1
-          memory: 4Gi
+          memory: 512Mi
+        limits:
+          cpu: 2
+          memory: 2Gi
       persistence:
         hotTier:
           enabled: true
           storageClass: <storage-class>
           accessMode: ReadWriteOnce
-          size: 50Gi
+          size: 15Gi
 
     prism:
       replicas: 1
@@ -327,22 +313,24 @@ parseable:
         RUST_LOG: warn
       resources:
         requests:
-          cpu: 500m
-          memory: 1Gi
-        limits:
           cpu: 1
+          memory: 512Mi
+        limits:
+          cpu: 2
           memory: 2Gi
+      persistence:
+        enabled: false
+      cache:
+        enabled: true
+        storageClass: <storage-class>
+        accessMode: ReadWriteOnce
+        size: 5Gi
 ```
+
+Set `parseable.store.type` for the object store from step 2, keep the Secret names from steps 3 and 4, and replace each `<storage-class>` with a class from `kubectl get storageclass`. For Google Cloud Storage, also add `parseable.store.gcsCredentials` for the service-account Secret. Adjust replicas, CPU, memory, and volume sizes for your workload.
 
 To enable OIDC, add the variables under `parseable.distributed.prism.env`. See
 the [OIDC guide](/user-guide/openid).
-
-Before continuing:
-
-1. Set `parseable.store.type` for the object store selected in step 3.
-2. If you selected Google Cloud Storage, uncomment the `gcsCredentials` block.
-3. Replace both `<storage-class>` placeholders with a storage class returned by `kubectl get storageclass`.
-4. Adjust replicas, CPU, memory, and volume sizes for your workload.
 
 You can render the chart before installing it:
 
@@ -427,7 +415,7 @@ kubectl logs statefulset/parseable-querier --namespace parseable
 kubectl logs statefulset/parseable-ingestor --namespace parseable
 ```
 
-- License errors usually indicate missing, incorrectly named, or invalid license files.
+- If an image older than `v3.2.7` fails without a license, use the [licensed Enterprise guide](/self-hosted/installation/distributed/k8s-helm-enterprise-license).
 - `Pending` PVCs usually indicate an invalid storage class or unavailable volume provisioner.
 - `CreateContainerConfigError` usually indicates a missing Secret or Secret key.
 - Object-store authentication errors usually indicate incorrect credentials, permissions, endpoint, bucket, or container values.
