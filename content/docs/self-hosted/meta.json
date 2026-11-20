@@ -6,6 +6,7 @@
   "pages": [
     "installation",
     "configuration",
+    "observability-as-code",
     "storage-targets"
   ]
 }
