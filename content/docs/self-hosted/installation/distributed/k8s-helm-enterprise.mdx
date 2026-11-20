@@ -80,7 +80,8 @@ helm install \
   --set persistence.storageClass=<storage-class> \
   --set resources.requests.memory=128Mi \
   --set mode=standalone \
-  minio minio/minio
+  --set image.repository=docker.io/openebs/minio \
+  --set mcImage.repository=docker.io/openebs/mc
 ```
 
 Forward the MinIO console port:
@@ -277,21 +278,23 @@ parseable:
       tag: "" # Defaults to the Helm chart appVersion
       pullPolicy: IfNotPresent
     license:
-      secretName: parseable-license
-      mountPath: /tmp/license
+      secretName: parseable-license-new
       dataKey: parseable_license.json
-      signatureKey: parseable_license.sig
+      signature:
+        source: file
+        key: parseable_license.sig
+
   distributed:
     ingestor:
-      replicas: 3
+      replicas: 1
       env:
         RUST_LOG: warn
       resources:
         requests:
-          cpu: 250m
+          cpu: 500m
           memory: 1Gi
         limits:
-          cpu: 500m
+          cpu: 1
           memory: 4Gi
       persistence:
         staging:
@@ -306,10 +309,10 @@ parseable:
         RUST_LOG: warn
       resources:
         requests:
-          cpu: 250m
+          cpu: 500m
           memory: 1Gi
         limits:
-          cpu: 500m
+          cpu: 1
           memory: 4Gi
       persistence:
         hotTier:
@@ -327,7 +330,7 @@ parseable:
           cpu: 500m
           memory: 1Gi
         limits:
-          cpu: "1"
+          cpu: 1
           memory: 2Gi
 ```
 
@@ -345,6 +348,7 @@ You can render the chart before installing it:
 
 ```bash
 helm template parseable parseable/parseable \
+  --repo https://charts.parseable.com \
   --namespace parseable \
   --values ./enterprise-values.yaml
 ```
@@ -367,6 +371,7 @@ cluster.
 
 ```bash
 helm upgrade --install parseable parseable/parseable \
+  --repo https://charts.parseable.com \
   --namespace parseable \
   --values ./enterprise-values.yaml \
   --wait \

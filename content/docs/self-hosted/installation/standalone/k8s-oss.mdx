@@ -94,7 +94,8 @@ helm install \
   --set persistence.storageClass=<storage-class> \
   --set resources.requests.memory=128Mi \
   --set mode=standalone \
-  minio minio/minio
+  --set image.repository=docker.io/openebs/minio \
+  --set mcImage.repository=docker.io/openebs/mc
 ```
 
 Forward the MinIO console port:
@@ -308,6 +309,7 @@ You can render the chart before installing it:
 
 ```bash
 helm template parseable parseable/parseable \
+  --repo https://charts.parseable.com \
   --namespace parseable \
   --values ./standalone-values.yaml
 ```
@@ -340,6 +342,7 @@ cluster.
 
 ```bash
 helm upgrade --install parseable parseable/parseable \
+  --repo https://charts.parseable.com \
   --namespace parseable \
   --values ./standalone-values.yaml \
   --wait \
