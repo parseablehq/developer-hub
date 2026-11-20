@@ -1,0 +1,10 @@
+{
+  "title": "Distributed Installation",
+  "pages": [
+    "k8s-helm-enterprise",
+    "k8s-helm-enterprise-license",
+    "docker-compose",
+    "linux",
+    "railway"
+  ]
+}
