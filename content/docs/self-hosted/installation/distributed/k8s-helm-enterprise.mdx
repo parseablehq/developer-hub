@@ -26,7 +26,6 @@ Confirm the Kubernetes context and find an available storage class:
 
 ```bash
 kubectl config current-context
-kubectl get nodes
 kubectl get storageclass
 ```
 
@@ -68,12 +67,12 @@ Replace `<storage-class>` with one of the storage class names returned by `kubec
 
 ```bash
 helm repo add minio https://charts.min.io/
-helm install \
+helm upgrade --install minio minio/minio \
   --namespace minio \
   --create-namespace \
-  --set buckets[0].name=parseable \
-  --set buckets[0].policy=none \
-  --set buckets[0].purge=false \
+  --set 'buckets[0].name=parseable' \
+  --set 'buckets[0].policy=none' \
+  --set 'buckets[0].purge=false' \
   --set rootUser=minioadmin \
   --set rootPassword=minioadmin \
   --set replicas=1 \
