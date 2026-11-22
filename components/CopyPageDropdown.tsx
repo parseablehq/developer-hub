@@ -34,14 +34,17 @@ const ClaudeIcon = () => (
 export function CopyPageDropdown({ slug, filePath }: CopyPageDropdownProps) {
   const [copied, setCopied] = useState(false);
 
-  const currentUrl = typeof window !== 'undefined' 
-    ? window.location.href 
-    : `https://parseable.com/docs/${slug.join('/')}`;
+  // Derive the page URLs from the route params rather than window.location.
+  // During client-side navigation, the component can render before the browser
+  // URL is updated, which would otherwise use the previous page in the prompt.
+  const pagePath = `/docs${slug.length > 0 ? `/${slug.map(encodeURIComponent).join('/')}` : ''}`;
+  const origin = typeof window !== 'undefined'
+    ? window.location.origin
+    : 'https://parseable.com';
+  const currentUrl = `${origin}${pagePath}`;
 
   // Use the new .mdx endpoint for LLM-friendly markdown
-  const markdownUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}${window.location.pathname}.mdx`
-    : `https://parseable.com/docs/${slug.join('/')}.mdx`;
+  const markdownUrl = `${currentUrl}.mdx`;
 
   const githubEditUrl = `https://github.com/parseablehq/developer-hub/blob/main/content/docs/${filePath}`;
 
