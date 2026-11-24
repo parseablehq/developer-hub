@@ -25,7 +25,7 @@ Add an HTTP appender to your `log4j2.xml` file. The appender sends JSON records 
           url="http://<parseable-ingestor-endpoint>:8000/api/v1/ingest"
           method="POST">
       <Property name="Content-Type" value="application/json" />
-      <Property name="X-API-Key" value="<parseable-api-key>" />
+      <Property name="Authorization" value="Bearer <parseable-api-key>" />
       <Property name="X-P-Stream" value="java-app-logs" />
       <JsonLayout compact="true"
                   eventEol="true"

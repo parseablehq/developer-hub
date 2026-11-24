@@ -27,10 +27,10 @@ An API key has:
 
 - a **key id** (`keyId`) — a stable identifier used for management operations
 - a **key name** (`keyName`) — a human-readable label, must be unique within the tenant/organization
-- a **secret value** (`apiKey`) — a UUID, sent on each request via the `X-API-Key` header
+- a **secret value** (`apiKey`) — a UUID, sent on each request as a Bearer token in the `Authorization` header
 - a set of **roles** — pre-existing roles that grant privileges (same roles used for Native and OAuth users)
 
-When a request arrives with an `X-API-Key` header, Parseable looks up the key, resolves its roles into permissions, and authorizes the request the same way it authorizes any other user.
+When a request arrives with an `Authorization: Bearer <api-key>` header, Parseable looks up the key, resolves its roles into permissions, and authorizes the request the same way it authorizes any other user.
 
 ### Create an API key
 
@@ -119,13 +119,13 @@ curl -X DELETE \
 
 ### Use an API key
 
-Send the secret value in the `X-API-Key` header. This replaces the `Authorization: Basic ...` header — do not send both.
+Send the secret value as a Bearer token in the `Authorization` header. This replaces the `Authorization: Basic ...` header — do not send both.
 
 ### Ingest logs
 
 ```sh
 curl -X POST https://<parseable-prism-host>/api/v1/ingest \
-  -H "X-API-Key: 9b2f8c4e-1d6a-4f2b-8e7c-3a5d9c1b7e4f" \
+  -H "Authorization: Bearer 9b2f8c4e-1d6a-4f2b-8e7c-3a5d9c1b7e4f" \
   -H "X-P-Stream: frontend" \
   -H "Content-Type: application/json" \
   -d '[{"level":"info","message":"hello"}]'
@@ -135,7 +135,7 @@ curl -X POST https://<parseable-prism-host>/api/v1/ingest \
 
 ```sh
 curl -X POST https://<parseable-host>/api/v1/query \
-  -H "X-API-Key: 9b2f8c4e-1d6a-4f2b-8e7c-3a5d9c1b7e4f" \
+  -H "Authorization: Bearer 9b2f8c4e-1d6a-4f2b-8e7c-3a5d9c1b7e4f" \
   -H "Content-Type: application/json" \
   -d '{
     "query": "SELECT * FROM frontend",

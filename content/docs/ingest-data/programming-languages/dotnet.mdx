@@ -325,7 +325,7 @@ Parseable exposes ingested OpenTelemetry metrics through the PromQL API. Use the
 
 ```bash
 curl -G "https://query.example.com/prometheus/api/v1/query" \
-  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
+  -H "Authorization: Bearer ${PARSEABLE_API_KEY}" \
   --data-urlencode "stream=dotnet-metrics" \
   --data-urlencode 'query=sum by ("service.name") (process.memory.usage)'
 ```
@@ -334,7 +334,7 @@ For range queries:
 
 ```bash
 curl -G "https://query.example.com/prometheus/api/v1/query_range" \
-  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
+  -H "Authorization: Bearer ${PARSEABLE_API_KEY}" \
   --data-urlencode "stream=dotnet-metrics" \
   --data-urlencode 'query=sum by ("service.name") (process.runtime.dotnet.thread_pool.threads.count)' \
   --data-urlencode "start=2026-01-01T00:00:00Z" \
@@ -346,7 +346,7 @@ If a PromQL query returns no data, first list available metric names for the dat
 
 ```bash
 curl -G "https://query.example.com/prometheus/api/v1/label/__name__/values" \
-  -H "X-API-Key: ${PARSEABLE_API_KEY}" \
+  -H "Authorization: Bearer ${PARSEABLE_API_KEY}" \
   --data-urlencode "stream=dotnet-metrics"
 ```
 

@@ -19,9 +19,9 @@ When an incoming event has a field with a data type different from the existing 
 | Header | Description | Example | Possible Values |
 |--------|-------------|---------|-----------------|
 | `X-P-Stream` | Target dataset name. Creates the dataset if it doesn't exist. | `nginx-logs` | Valid dataset name |
-| `X-API-Key` | API key used to authorize the request | `px_api_key` | Valid Parseable API key |
+| `Authorization` | Bearer API key used to authorize the request | `Bearer px_api_key` | `Bearer <api-key>` |
 | `X-P-Tenant-ID` | Target tenant ID. | `tenant-123` | Valid tenant ID - only applicable for multi-tenant setups (for example Parseable Cloud) |
-| `Content-Type` | Content type of the request body | `application/json` | `application/json`,`application/protobuf` |
+| `Content-Type` | Content type of the request body | `application/json` | `application/json`,`application/x-protobuf` |
 
 ### Optional headers
 

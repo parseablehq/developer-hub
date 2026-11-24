@@ -431,14 +431,14 @@ The producer identity needs `kafka-cluster:Connect`, `kafka-cluster:DescribeTopi
 Parseable creates the stream lazily after the first record is consumed and the batch is flushed. You can verify that the stream appeared with:
 
 ```bash
-curl --header "X-API-Key: $PARSEABLE_API_KEY" \
+curl --header "Authorization: Bearer $PARSEABLE_API_KEY" \
   "https://<parseable-host>/api/v1/logstream"
 ```
 
 Then run a small query to confirm the test record is present:
 
 ```bash
-curl --header "X-API-Key: $PARSEABLE_API_KEY" \
+curl --header "Authorization: Bearer $PARSEABLE_API_KEY" \
   --header 'Content-Type: application/json' \
   --data '{"query":"SELECT * FROM \"<topic>\" LIMIT 10","startTime":"10m","endTime":"now"}' \
   "https://<parseable-host>/api/v1/query"

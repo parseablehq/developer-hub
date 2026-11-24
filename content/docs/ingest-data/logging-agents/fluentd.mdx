@@ -32,7 +32,7 @@ This example tails application logs, parses each line as JSON, and forwards the 
   http_method post
   content_type application/json
   json_array true
-  headers {"X-API-Key":"<parseable-api-key>","X-P-Stream":"fluentd-logs"}
+  headers {"Authorization":"Bearer <parseable-api-key>","X-P-Stream":"fluentd-logs"}
 
   <format>
     @type json
@@ -52,4 +52,4 @@ Keep your existing `<filter>` blocks if you already use Fluentd to add Kubernete
 
 Restart Fluentd and check its own logs for output errors. Then open the `fluentd-logs` dataset in Parseable and confirm that new events appear after Fluentd flushes its buffer.
 
-If the dataset is empty, verify that the tail path matches real files, the parser matches the log format, and the output block includes both `X-API-Key` and `X-P-Stream`.
+If the dataset is empty, verify that the tail path matches real files, the parser matches the log format, and the output block includes both `Authorization: Bearer <api-key>` and `X-P-Stream`.

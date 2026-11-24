@@ -4,7 +4,7 @@ redirect_from:
   - /OpenTelemetry/traces
 ---
 
-Parseable enables ingesting the OpenTelemetry traces sent from the OTEL collectors in the JSON format. In order to do so, Parseable exposes default endpoint /v1/traces at which the OTEL collector sends the span data.
+Parseable ingests OpenTelemetry traces over HTTP in JSON or Protocol Buffers format through the `/v1/traces` endpoint.
 
 Below is the sample configuration of the OTEL collector to send the traces to Parseable
 
@@ -27,9 +27,7 @@ service:
     traces:
       exporters: [otlp_http/parseabletraces]
 ```
-## Support for Protocol Buffers
-
-<OfferingPills cloud enterprise className="mb-4" />
+## Protocol Buffers
 
 Parseable also supports ingesting the OpenTelemetry Traces sent from the OTEL collectors in the Protocol Buffers format. Below is an example configuration of the OTEL collector to send the traces to Parseable in the Protocol Buffers format.
 

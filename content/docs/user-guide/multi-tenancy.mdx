@@ -44,7 +44,7 @@ At a high level, a request moves through these steps:
 Client request
   |
   |  x-p-tenant: acme
-  |  x-api-key: ...
+  |  authorization: Bearer ...
   v
 Auth middleware
   |
@@ -88,7 +88,7 @@ In multi tenant mode, ingestion requests must include `x-p-tenant`.
 curl -X POST "https://parseable.example.com/api/v1/ingest" \
   -H "x-p-tenant: acme" \
   -H "x-p-stream: app-logs" \
-  -H "x-api-key: ${PARSEABLE_API_KEY}" \
+  -H "Authorization: Bearer ${PARSEABLE_API_KEY}" \
   -H "content-type: application/json" \
   -d '[{"level":"info","message":"checkout started"}]'
 ```
@@ -99,13 +99,13 @@ If a request uses Basic Auth, Parseable also checks that the authenticated user 
 
 ## API keys
 
-API keys are tenant-scoped in multi tenant mode. When a request carries `x-api-key`, Parseable uses the incoming `x-p-tenant` value as the tenant hint and looks for the API key user inside that tenant.
+API keys are tenant-scoped in multi tenant mode. When a request carries `Authorization: Bearer <api-key>`, Parseable uses the incoming `x-p-tenant` value as the tenant hint and looks for the API key user inside that tenant.
 
 That means a multi tenant API key request needs both headers:
 
 ```bash
 x-p-tenant: acme
-x-api-key: <tenant-api-key>
+Authorization: Bearer <tenant-api-key>
 ```
 
 If `P_MULTI_TENANCY=true` and the tenant hint is missing, the API key cannot be resolved. In single-tenant mode, API keys are looked up under the default tenant.
@@ -185,6 +185,6 @@ Suspension is checked during request authorization. If a tenant's ingest service
 ## Troubleshooting
 
 - If ingestion fails with a missing tenant error, check that the request includes `x-p-tenant`.
-- If an API key request fails, check that both `x-api-key` and `x-p-tenant` are present. API keys are resolved inside the tenant named by `x-p-tenant`.
+- If an API key request fails, check that both `Authorization: Bearer <api-key>` and `x-p-tenant` are present. API keys are resolved inside the tenant named by `x-p-tenant`.
 - If `x-p-tenant` is rejected, check whether the deployment is running in single-tenant mode. Single-tenant deployments do not expect tenant headers from clients.
 - If a user can log in but cannot see expected datasets, check the user's tenant and role assignment.

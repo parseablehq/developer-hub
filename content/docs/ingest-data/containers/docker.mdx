@@ -168,7 +168,7 @@ pipeline:
       port: 8000
       uri: /api/v1/ingest
       format: json
-      header: X-API-Key <parseable-api-key>
+      header: Authorization Bearer <parseable-api-key>
       header: X-P-Stream docker-logs
 ```
 
@@ -229,7 +229,7 @@ pipeline:
       port: 8000
       uri: /api/v1/ingest
       format: json
-      header: X-API-Key <parseable-api-key>
+      header: Authorization Bearer <parseable-api-key>
       header: X-P-Stream docker-logs
 ```
 
@@ -297,7 +297,7 @@ class ParseableHandler(logging.Handler):
                 self.url,
                 json=self.buffer,
                 headers={
-                    "X-API-Key": self.api_key,
+                    "Authorization": f"Bearer {self.api_key}",
                     "X-P-Stream": self.dataset,
                 }
             )
@@ -350,7 +350,7 @@ for event in client.events(decode=True):
             f"{PARSEABLE_URL}/api/v1/ingest",
             json=[log_entry],
             headers={
-                "X-API-Key": PARSEABLE_API_KEY,
+                "Authorization": f"Bearer {PARSEABLE_API_KEY}",
                 "X-P-Stream": STREAM,
             }
         )
