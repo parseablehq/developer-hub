@@ -70,10 +70,10 @@ Store the printed key securely. Baseten shows it once, and this key is only for 
 
 Create `otel-collector-config.yaml`:
 
-This example exports OTLP JSON from the Collector to Parseable. `X-P-Stream` selects the Parseable dataset, and `X-API-Key` carries a Parseable API key with ingest access.
+This example exports OTLP JSON from the Collector to Parseable. `X-P-Stream` selects the Parseable dataset, and `Authorization: Bearer <api-key>` carries a Parseable API key with ingest access.
 
 <Callout type="info">
-OTLP Protobuf ingestion is available in Parseable Cloud and Enterprise. If your Parseable deployment supports Protobuf, you can switch the Parseable exporters below to `encoding: proto` and `Content-Type: application/x-protobuf`.
+OTLP Protobuf ingestion is available in Parseable OSS, Cloud, and Enterprise. To use it, switch the Parseable exporters below to `encoding: proto` and `Content-Type: application/x-protobuf`.
 </Callout>
 
 ```yaml
@@ -114,7 +114,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      X-API-Key: ${env:PARSEABLE_API_KEY}
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: ${env:PARSEABLE_LOGS_STREAM}
       Content-Type: application/json
 
@@ -122,7 +122,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      X-API-Key: ${env:PARSEABLE_API_KEY}
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: ${env:PARSEABLE_TRACES_STREAM}
       Content-Type: application/json
 
@@ -130,7 +130,7 @@ exporters:
     endpoint: ${env:PARSEABLE_ENDPOINT}
     encoding: json
     headers:
-      X-API-Key: ${env:PARSEABLE_API_KEY}
+      Authorization: "Bearer ${env:PARSEABLE_API_KEY}"
       X-P-Stream: ${env:PARSEABLE_METRICS_STREAM}
       Content-Type: application/json
 
@@ -371,7 +371,7 @@ Import `baseten-observability-mixed.json`, then map its dataset variables to `ba
 | Baseten connection test fails for a custom domain | Baseten can still export logs to custom endpoints even when the dashboard test does not support that domain. Verify delivery in Parseable with a real prediction request. |
 | No traces in Parseable | Confirm `runtime.enable_tracing_data: true`, the trace endpoint includes `/v1/traces`, the updated deployment is active, and the Collector is reachable over HTTPS. |
 | No metrics in Parseable | Confirm `BASETEN_METRICS_EXPORT_KEY` is a `workspace-export-metrics` key and the Collector has been running for at least one scrape interval. |
-| `401` from Parseable | Check `PARSEABLE_API_KEY`, the `X-API-Key` header, and that you are using the Parseable ingest endpoint. |
+| `401` from Parseable | Check `PARSEABLE_API_KEY`, the `Authorization: Bearer <api-key>` header, and that you are using the Parseable ingest endpoint. |
 | `429` from Baseten metrics | Use a `60s` scrape interval and reduce the number of collectors scraping the organization metrics endpoint. |
 | The deployment is costing money while testing | Deactivate or scale down the Baseten deployment when you are done generating telemetry. Reactivate it before sending more test inference requests. |
 

@@ -106,7 +106,7 @@ kubectl get pods -n pai-system
 
 ### Create a Parseable credentials secret
 
-For new setups, use an API key. PAI reads the `apiKey` value from the secret and sends it to Parseable as the `x-api-key` header.
+For new setups, use an API key. PAI reads the `apiKey` value from the secret and sends it to Parseable as `Authorization: Bearer <api-key>`.
 
 ```bash
 kubectl create secret generic parseable-creds \
@@ -275,7 +275,7 @@ Signal-level headers override global headers with the same key. PAI-generated he
 
 ### Encoding
 
-`spec.target.encoding` controls the OTLP HTTP wire format. Use `json` unless you know your Parseable deployment supports protobuf ingestion for the relevant signal.
+`spec.target.encoding` controls the OTLP HTTP wire format. Parseable OSS, Cloud, and Enterprise support both `json` and `proto` for logs, metrics, and traces.
 
 ```yaml
 spec:

@@ -50,7 +50,7 @@ In Kubernetes, Fluent Bit usually runs as a DaemonSet. It reads `/var/log/contai
     Format        json
     Compress      gzip
     Header        Content-Type application/json
-    Header        X-API-Key <parseable-api-key>
+    Header        Authorization Bearer <parseable-api-key>
     Header        X-P-Stream kubernetes-logs
 ```
 
@@ -70,7 +70,7 @@ config:
         Format        json
         Compress      gzip
         Header        Content-Type application/json
-        Header        X-API-Key <parseable-api-key>
+        Header        Authorization Bearer <parseable-api-key>
         Header        X-P-Stream kubernetes-logs
 ```
 
@@ -112,7 +112,7 @@ For Docker hosts, Fluent Bit can tail container log files directly. Mount `/var/
     Format        json
     Compress      gzip
     Header        Content-Type application/json
-    Header        X-API-Key <parseable-api-key>
+    Header        Authorization Bearer <parseable-api-key>
     Header        X-P-Stream docker-logs
 ```
 

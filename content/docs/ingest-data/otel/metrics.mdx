@@ -4,7 +4,7 @@ redirect_from:
   - /OpenTelemetry/metrics
 ---
 
-You can ingest OpenTelemetry metrics sent from the OTEL collectors in the JSON format to Parseable. In order to do so, use the default endpoint `/v1/metrics` at which the OTEL collector sends the metric data.
+Parseable ingests OpenTelemetry metrics over HTTP in JSON or Protocol Buffers format through the `/v1/metrics` endpoint.
 
 Here is a sample configuration of the OTEL collector to send the metrics to Parseable
 
@@ -26,9 +26,7 @@ service:
       exporters: [otlphttp/parseablemetrics]
 ```
 
-## Support for Protocol Buffers
-
-<OfferingPills cloud enterprise className="mb-4" />
+## Protocol Buffers
 
 Parseable also supports ingesting the OpenTelemetry Metrics sent from the OTEL collectors in the Protocol Buffers format. Below is an example configuration of the OTEL collector to send the metrics to Parseable in the Protocol Buffers format.
 

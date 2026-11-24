@@ -228,7 +228,7 @@ What's new:
 
 Access Management is now the central place to manage users, roles, and API keys in Parseable. With this release, teams can create scoped API keys for programmatic access without relying on personal user credentials.
 
-API keys are built for log forwarders, CLI tools, automation scripts, AI agents, dashboards, CI jobs, and other workloads where Basic Auth or OIDC is not the right fit. Each key inherits permissions from assigned roles and can be used through the `X-API-Key` header.
+API keys are built for log forwarders, CLI tools, automation scripts, AI agents, dashboards, CI jobs, and other workloads where Basic Auth or OIDC is not the right fit. Each key inherits permissions from assigned roles and can be sent as a Bearer token in the `Authorization` header.
 
 What's new:
 
@@ -236,7 +236,7 @@ What's new:
 - Assign one or more roles to every API key.
 - Use dataset-scoped keys for ingestion agents, query agents, dashboards, and automation workflows.
 - Revoke keys independently without affecting users or other workloads.
-- Use API keys for supported ingestion and query workflows through the `X-API-Key` header.
+- Use API keys for supported ingestion and query workflows through the `Authorization: Bearer <api-key>` header.
 
 ![API Keys Access Management](./release-notes/static/access-management-api-keys.webp)
 

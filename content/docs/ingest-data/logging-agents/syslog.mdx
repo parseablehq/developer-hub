@@ -22,7 +22,7 @@ destination d_parseable {
     method("POST")
     headers(
       "Content-Type: application/json"
-      "X-API-Key: <parseable-api-key>"
+      "Authorization: Bearer <parseable-api-key>"
       "X-P-Stream: syslog-ng-logs"
     )
     body("$(format-json --scope rfc5424 --scope nv-pairs)")

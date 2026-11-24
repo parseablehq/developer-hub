@@ -416,7 +416,7 @@ Publish one valid JSON record with a separately authorized producer:
 The Parseable stream is created lazily after the record is consumed and its batch is flushed. Query it:
 
 ```bash
-curl --header "X-API-Key: $PARSEABLE_API_KEY" \
+curl --header "Authorization: Bearer $PARSEABLE_API_KEY" \
   --header 'Content-Type: application/json' \
   --data '{"query":"SELECT * FROM \"<topic>\" LIMIT 10","startTime":"10m","endTime":"now"}' \
   "https://<parseable-host>/api/v1/query"
