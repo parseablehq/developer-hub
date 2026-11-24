@@ -1,15 +1,53 @@
 ---
-title: Observability as code with Helm
-description: Create Parseable datasets, API keys, dashboards, and alerts from Helm values and ConfigMaps.
+title: Manage Resources with Helm
+description: Configure an Enterprise license, datasets, API keys, dashboards, alert targets, and alerts with Helm.
 ---
 
-This document covers observability as code using the Parseable Helm chart. It explains how to configure datasets, API keys, dashboards, alert targets, and alerts.
+Use the Parseable Helm chart to manage datasets, API keys, dashboards, alert targets, and alerts from `values.yaml`.
 
-First, [install Parseable OSS](/docs/self-hosted/installation/distributed/k8s-helm-oss) or [install Parseable Enterprise](/docs/self-hosted/installation/distributed/k8s-helm-enterprise). You need `helm` and `kubectl` configured for that cluster, the namespace where Parseable runs, and the `values.yaml` file you already use to install Parseable. The examples use release `parseable` and namespace `parseable`; change those names to match your installation. The provisioning Jobs use the administrator credentials already configured in the installation's `parseable.store.secretName` Secret.
+## Prerequisites
+
+- A Parseable installation: [OSS](/self-hosted/installation/distributed/k8s-helm-oss) or [Enterprise](/self-hosted/installation/distributed/k8s-helm-enterprise).
+- `helm` and `kubectl` access to the cluster, and the `values.yaml` used for that installation.
+- Administrator credentials in the Secret referenced by `parseable.store.secretName`. The provisioning Jobs use these credentials.
+
+The examples use release and namespace `parseable`; replace these with yours.
+
+**How the values work:**
+
+- `enabled: true` applies the `items` list. Resources missing from that list are removed, including ones created in the UI.
+- Omit a section or set `enabled: false` to leave that resource type unchanged. Check [later upgrades](#what-happens-on-later-upgrades) before removing items.
+
+## Enterprise license (optional)
+
+You can upload an Enterprise license in the Parseable UI. For Helm setup, use image `v3.2.7` or later and store the license JSON in a Secret:
+
+```bash
+kubectl create secret generic parseable-license \
+  --namespace parseable \
+  --from-file=parseable_license.json=./parseable_license.json
+```
+
+Add the Secret reference to your existing `parseable.enterprise` settings in `values.yaml`:
+
+```yaml
+parseable:
+  enterprise:
+    enabled: true
+    image:
+      tag: "v3.2.7" # Or a later Enterprise image version.
+    license:
+      secretName: parseable-license
+      dataKey: parseable_license.json
+```
+
+- Helm uploads the license on each install or upgrade.
+- If the Secret key is missing or the license is rejected, fix the error and rerun Helm.
+- Without a license file, omit the `license` block.
 
 ## 1. Create a dataset
 
-Start with a dataset for the data you want to collect. In your existing `values.yaml`, add `datasets` under the `parseable:` key, alongside settings such as `deploymentMode` and `store`:
+Add `datasets` under the existing `parseable:` key in `values.yaml`:
 
 ```yaml
 parseable:
@@ -21,14 +59,17 @@ parseable:
 
   # Add the dataset below under the same parseable: key.
   datasets:
-    - name: payment-logs
-      telemetryType: logs
-      logSource: json
-      retention:
-        durationDays: 30d
-      # Enterprise only: enable when the querier has enough usable disk.
-      # smartCache:
-      #   size: 10Gi
+    enabled: true
+    items:
+      - name: payment-logs
+        telemetryType: logs
+        logSource: json
+        retention:
+          duration: 30d
+          action: delete
+        # Enterprise only: enable when the querier has enough usable disk.
+        # smartCache:
+        #   size: 10Gi
 ```
 
 | Field | Required? | Values and later changes |
@@ -36,36 +77,28 @@ parseable:
 | `name` | Yes | Dataset name, such as `payment-logs`. Choose it carefully; renaming is not supported. |
 | `telemetryType` | Yes | `logs`, `metrics`, or `traces`. Cannot change for an existing dataset. |
 | `logSource` | Yes | `json`, `otel-logs`, `otel-metrics`, or `otel-traces`. An OTel source must match its telemetry type. Helm rejects a source absent from the existing dataset. |
-| `retention.durationDays` | No | `1d` to `3650d`. Omit `retention` to leave the current rule unchanged; use `durationDays: ""` or `durationDays: 0d` to remove it. |
+| `retention.duration` / `.action` | No | `duration` is `1d` to `3650d`; `action` is `delete`. Omit `retention` to leave it unchanged. Use `duration: ""` or `duration: 0d` with `action: delete` to remove it. |
 | `tags` | No | `agent-observability` requires `traces` with `otel-traces`. Enterprise reconciles tags on upgrade; OSS sets them on creation. |
 | `smartCache.size` | No | Enterprise only; at least `10Gi` and enough usable querier disk. Omit `smartCache` to leave it unchanged; use `size: ""` or `size: 0Gi` to remove it. |
 
 <Callout type="warn">
-Dataset names cannot be renamed. Keep the original name in `values.yaml`. Replacing it with a new name creates a new dataset and deletes the old dataset and its data.
+Keep dataset names unchanged. Replacing a name creates a new dataset and deletes the old dataset and its data.
 </Callout>
 
 ## 2. Create API keys
 
-Next, configure API keys for ingestion and queries. Add `apiKeys` under the same `parseable:` block in `values.yaml`, keeping the dataset and your existing installation settings:
+Add `apiKeys` under the same `parseable:` key:
 
 ```yaml
 parseable:
   # Existing installation settings stay here.
-  datasets:
-    - name: payment-logs
-      telemetryType: logs
-      logSource: json
-      retention:
-        durationDays: 30d
-      # Enterprise only:
-      # smartCache:
-      #   size: 10Gi
-
   apiKeys:
-    - name: payment-ingest
-      apiKeyType: ingestor
-    - name: payment-query
-      apiKeyType: query
+    enabled: true
+    items:
+      - name: payment-ingest
+        apiKeyType: ingestor
+      - name: payment-query
+        apiKeyType: query
 ```
 
 | `apiKeyType` | Access |
@@ -76,7 +109,10 @@ parseable:
 These are the two supported key types. Parseable assigns their global roles automatically; you do not configure roles for these keys in Helm.
 
 <Callout type="warn">
-If you omit `secretKeyRef`, Parseable generates a new API key and Helm prints it when the key is created. CI runs will include that value in their logs. To provide your own key instead, use the Secret approach below. Existing key values are not printed again on later upgrades.
+
+Without `secretKeyRef`, Helm prints the generated key once. CI logs may retain it.
+To supply a key, use a Secret as shown below.
+
 </Callout>
 
 ### Provide your own key value
@@ -99,50 +135,75 @@ Then add a `secretKeyRef` to the API key entry:
 
 ```yaml
   apiKeys:
-    - name: payment-ingest
-      apiKeyType: ingestor
-      secretKeyRef:
-        name: parseable-api-keys
-        key: PAYMENT_INGEST_KEY
+    enabled: true
+    items:
+      - name: payment-ingest
+        apiKeyType: ingestor
+        secretKeyRef:
+          name: parseable-api-keys
+          key: PAYMENT_INGEST_KEY
+      - name: payment-query
+        apiKeyType: query
 ```
 
 `secretKeyRef.name` identifies the Kubernetes Secret; `secretKeyRef.key` identifies the field inside it. The value must be a hyphenated UUID v4.
 
 ## 3. Import a dashboard
 
-To manage a dashboard with Helm, create it in the Parseable UI and export its JSON. Save a ConfigMap as `payments-dashboard.yaml`:
-
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: payments-dashboard # Becomes the dashboard title in Parseable.
-  namespace: parseable
-  labels:
-    # Choose any label and value; Helm imports only ConfigMaps that match the values below.
-    parseable_dashboard: "1"
-data:
-  dashboard.json: |
-    {"tiles": [], "tags": [], "sections": [], "variables": []}
-```
-
-Replace the example JSON in `dashboard.json` with the full JSON exported from Parseable. Apply the ConfigMap with `kubectl apply -f ./payments-dashboard.yaml`.
-
-Add this to your existing `values.yaml`:
+Create a dashboard in the UI and export its JSON. Replace the sample names and JSON below with your own. For inline JSON:
 
 ```yaml
 parseable:
   # Keep your existing installation settings here.
   dashboards:
     enabled: true
-    label: parseable_dashboard # Matches the ConfigMap label name.
-    labelValue: "1"          # Matches its value.
+    items:
+      - name: payments-dashboard
+        json: |
+          {"tiles": [], "tags": [], "sections": [], "variables": []}
 ```
 
-Helm imports every matching ConfigMap in the release namespace. Each needs exactly one `.json` data field; multiple ConfigMaps can share the label.
+`name` is the title shown in Parseable. Helm creates a ConfigMap for each inline dashboard.
+
+If you prefer to keep the JSON in a separate ConfigMap, this example uses `traffic-analytics-dashboard.yaml`:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: traffic-analytics-dashboard
+  namespace: parseable
+data:
+  dashboard.json: |
+    {"tiles": [], "tags": [], "sections": [], "variables": []}
+```
+
+Replace the example JSON with the full export, then run `kubectl apply -f ./traffic-analytics-dashboard.yaml`. Add it as another item:
+
+```yaml
+  dashboards:
+    enabled: true
+    items:
+      - name: payments-dashboard
+        json: |
+          {"tiles": [], "tags": [], "sections": [], "variables": []}
+      - name: Traffic Analytics
+        configMap: traffic-analytics-dashboard
+        namespace: parseable
+```
+
+Here, `name` sets the dashboard title in Parseable; `configMap` names the Kubernetes ConfigMap that holds its JSON.
+
+For a ConfigMap source:
+
+- Set `namespace`, even for the Helm release namespace.
+- Put one JSON entry under `data`. The key can have any name.
 
 <Callout type="warn">
-With `dashboards.enabled: true`, removing a matching ConfigMap deletes its dashboard. If no ConfigMaps match, Helm deletes all existing dashboards, including dashboards created in the UI. To leave dashboards untouched, omit `dashboards` or set `enabled: false`.
+
+Dashboards absent from `items` are deleted from Parseable, including UI-created ones.
+`items: []` deletes all dashboards. External ConfigMaps stay in Kubernetes.
+
 </Callout>
 
 ## 4. Create an alert target
@@ -167,17 +228,19 @@ Replace the example URL with your real endpoint. Add the target under `parseable
 parseable:
   # Keep your existing installation settings here.
   targets:
-    - id: 01H7Z0XQ9G6K3JY1F5Z2X8V4E3
-      title: payments-webhook
-      type: webhook
-      endpointSecretRef:
-        name: parseable-alert-targets
-        key: PAYMENTS_WEBHOOK_URL
+    enabled: true
+    items:
+      - id: 01H7Z0XQ9G6K3JY1F5Z2X8V4E3
+        title: payments-webhook
+        type: webhook
+        endpointSecretRef:
+          name: parseable-alert-targets
+          key: PAYMENTS_WEBHOOK_URL
 ```
 
 | Field | Required? | Values and use |
 | --- | --- | --- |
-| `id` | Yes | 26-character ULID. Keep it the same in the target and alert JSON. |
+| `id` | Yes | Generate a 26-character ULID for this target and keep it unchanged. |
 | `title` | Yes | Unique target name shown in Parseable. Cannot be changed in place. |
 | `type` | Yes | `webhook`, `slack`, or `alertManager`. |
 | `endpointSecretRef.name` / `.key` | Yes | Secret and key containing the endpoint URL. |
@@ -202,7 +265,21 @@ This also applies the dataset, API key, and dashboard settings already in `value
 
 ## 5. Create an alert
 
-Once the target appears in Parseable, create an alert in the UI and select it. Export the alert JSON and save the ConfigMap below as `payment-alert.yaml`. The exported JSON already references the selected target:
+Create an alert in the UI, select the target, and export its JSON. The short JSON below is an example; replace it with the full export. For inline JSON:
+
+```yaml
+parseable:
+  # Keep your existing installation settings here.
+  alerts:
+    enabled: true
+    items:
+      - json: |
+          {"title": "payment-volume", "targets": ["01H7Z0XQ9G6K3JY1F5Z2X8V4E3"]}
+```
+
+The `targets` list uses the target ULID from step 4. Helm creates a ConfigMap for inline JSON.
+
+To keep a different alert's JSON in a separate ConfigMap, save this example as `payment-alert.yaml`:
 
 ```yaml
 apiVersion: v1
@@ -210,86 +287,87 @@ kind: ConfigMap
 metadata:
   name: payment-errors
   namespace: parseable
-  labels:
-    parseable_alert: "1"
 data:
   alert.json: |
-    {
-      "title": "payment-errors",
-      "severity": "high",
-      "query": "SELECT COUNT(*) AS count FROM \"payment-logs\"",
-      "queryType": "code",
-      "datasets": ["payment-logs"],
-      "alertType": "threshold",
-      "anomalyConfig": null,
-      "forecastConfig": null,
-      "thresholdConfig": {"operator": ">", "value": 0},
-      "evalConfig": {
-        "rollingWindow": {"evalStart": "5m", "evalEnd": "now", "evalFrequency": 10}
-      },
-      "notificationConfig": {"interval": 1},
-      "targets": ["01H7Z0XQ9G6K3JY1F5Z2X8V4E3"]
-    }
+    {"title": "payment-errors", "targets": ["01H7Z0XQ9G6K3JY1F5Z2X8V4E3"]}
 ```
 
-Apply the ConfigMap, then add the selector under `parseable:` in `values.yaml`:
-
-```bash
-kubectl apply -f ./payment-alert.yaml
-```
+Replace the sample JSON with that alert's complete export, then run `kubectl apply -f ./payment-alert.yaml`. Add it as another item:
 
 ```yaml
   alerts:
     enabled: true
-    label: parseable_alert
-    labelValue: "1"
+    items:
+      - json: |
+          {"title": "payment-volume", "targets": ["01H7Z0XQ9G6K3JY1F5Z2X8V4E3"]}
+      - configMap: payment-errors
+        namespace: parseable
 ```
 
-Add the matching label to every alert ConfigMap you want Helm to import. With the settings above, the Job selects ConfigMaps labeled `parseable_alert=1` and reads each `alert.json`.
+For a ConfigMap source:
+
+- Set `namespace`, even for the Helm release namespace.
+- Put one JSON entry under `data`. Its key can have any name; no label is needed.
+- `targets` must contain target ULIDs.
 
 ## 6. Apply the configuration
 
-At this point, your existing `values.yaml` has all five resource settings under its original `parseable:` block. The relevant part looks like this; keep your deployment, storage, and other settings in the file too:
+The full `parseable:` block now looks like this. Keep your deployment and storage settings. Replace the short JSON examples with complete exports before applying:
 
 ```yaml
 parseable:
   # Your existing installation settings remain here.
   datasets:
-    - name: payment-logs
-      telemetryType: logs
-      logSource: json
-      retention:
-        durationDays: 30d
-      # Enterprise only:
-      # smartCache:
-      #   size: 10Gi
+    enabled: true
+    items:
+      - name: payment-logs
+        telemetryType: logs
+        logSource: json
+        retention:
+          duration: 30d
+          action: delete
+        # Enterprise only:
+        # smartCache:
+        #   size: 10Gi
 
   apiKeys:
-    - name: payment-ingest
-      apiKeyType: ingestor
-    - name: payment-query
-      apiKeyType: query
+    enabled: true
+    items:
+      - name: payment-ingest
+        apiKeyType: ingestor
+      - name: payment-query
+        apiKeyType: query
 
   dashboards:
     enabled: true
-    label: parseable_dashboard
-    labelValue: "1"
+    items:
+      - name: payments-dashboard
+        json: |
+          {"tiles": [], "tags": [], "sections": [], "variables": []}
+      - name: Traffic Analytics
+        configMap: traffic-analytics-dashboard
+        namespace: parseable
 
   targets:
-    - id: 01H7Z0XQ9G6K3JY1F5Z2X8V4E3
-      title: payments-webhook
-      type: webhook
-      endpointSecretRef:
-        name: parseable-alert-targets
-        key: PAYMENTS_WEBHOOK_URL
+    enabled: true
+    items:
+      - id: 01H7Z0XQ9G6K3JY1F5Z2X8V4E3
+        title: payments-webhook
+        type: webhook
+        endpointSecretRef:
+          name: parseable-alert-targets
+          key: PAYMENTS_WEBHOOK_URL
 
   alerts:
     enabled: true
-    label: parseable_alert
-    labelValue: "1"
+    items:
+      - json: |
+          {"title": "payment-volume", "targets": ["01H7Z0XQ9G6K3JY1F5Z2X8V4E3"]}
+      - configMap: payment-errors
+        namespace: parseable
 ```
 
-After applying the alert ConfigMap, run the same Helm upgrade again:
+After applying the dashboard and alert ConfigMaps, run the same Helm upgrade again:
 
 ```bash
 helm upgrade --install parseable parseable/parseable \
@@ -299,18 +377,20 @@ helm upgrade --install parseable parseable/parseable \
   --timeout 10m
 ```
 
-The second upgrade imports the alert and reconciles the resources already configured.
+This upgrade imports the alert and reconciles the resources already configured.
 
 ## What happens on later upgrades?
 
-When a field is absent from `values.yaml`, its Job does not manage that resource. When a list is present, Parseable reconciles the listed resources with its current state, including resources created in the UI. Review removals before upgrading:
+An omitted or disabled section leaves its resources unchanged. With `enabled: true`, `items` is the complete desired list. Review removals before upgrading:
 
-| Resource | Omitted from values | Empty list or removed entry |
+| Resource | Omitted or disabled | `items: []` or removed entry |
 | --- | --- | --- |
-| `datasets` | Datasets are left alone. | `datasets: []` deletes all deletable user datasets. Removing one entry deletes that dataset and its data. |
-| `apiKeys` | Keys are left alone. | `apiKeys: []` revokes all API keys. Removing one entry revokes that key. |
-| `targets` | Targets are left alone. | `targets: []` deletes targets. Removing an entry deletes that target after alerts are reconciled; the server rejects deletion while an alert still uses it. |
-| `dashboards` | No dashboard Job runs. | With `enabled: true`, dashboards absent from matching ConfigMaps are deleted; no matches deletes all dashboards. |
-| `alerts` | No alert Job runs when `alerts` and `targets` are both absent. | With `enabled: true`, alerts absent from the selected ConfigMaps are deleted. If none match, all existing alerts are deleted. |
+| `datasets` | Datasets are left alone. | Deletes all deletable user datasets, or the removed dataset and its data. |
+| `apiKeys` | Keys are left alone. | Revokes all API keys, or the removed key. |
+| `targets` | Targets are left alone. | Requests deletion of all targets, or the removed target after alerts are reconciled. The server rejects deletion while an alert still uses it. |
+| `dashboards` | Dashboards are left alone. | Deletes all dashboards, or the removed dashboard, including UI-created ones. External Kubernetes ConfigMaps remain. |
+| `alerts` | Alerts are left alone. | Deletes all alerts, or the removed alert, including UI-created ones. External Kubernetes ConfigMaps remain. |
 
-Keep a target's ID the same when changing its endpoint or other settings. If an upgrade fails, fix the reported error and run the same Helm command again.
+Keep target IDs unchanged when editing targets. If an upgrade fails, fix the error and run the same Helm command again.
+
+Changing an external ConfigMap alone does not rerun the provisioning Job. Run `helm upgrade` to apply the updated JSON in Parseable.
