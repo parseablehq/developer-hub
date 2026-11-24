@@ -1,13 +1,9 @@
 ---
-title: Kubernetes (Try Enterprise)
+title: Kubernetes
 ---
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 
-<OfferingPills enterprise className="mb-4" />
-
-You can install and use Parseable Enterprise with a 50 GB ingestion limit without providing a license. If you have a license, follow the [licensed Enterprise guide](/self-hosted/installation/distributed/k8s-helm-enterprise-license).
-
-To run OSS instead, configure the chart using its [values.yaml](https://github.com/parseablehq/helm-charts/blob/main/charts/parseable/values.yaml).
+Install Parseable on Kubernetes with Helm. The Enterprise setup below lets you ingest up to 50 GB per month without a license file. If you want to use OSS, follow the [OSS setup steps](#install-parseable-oss).
 
 ## Prerequisites
 
@@ -404,7 +400,7 @@ kubectl logs statefulset/parseable-querier --namespace parseable
 kubectl logs statefulset/parseable-ingestor --namespace parseable
 ```
 
-- If an image older than `v3.2.7` fails without a license, use the [licensed Enterprise guide](/self-hosted/installation/distributed/k8s-helm-enterprise-license).
+- An Enterprise image older than `v3.2.7` requires a license file. Use `v3.2.7` or later for the setup above.
 - `Pending` PVCs usually indicate an invalid storage class or unavailable volume provisioner.
 - `CreateContainerConfigError` usually indicates a missing Secret or Secret key.
 - Object-store authentication errors usually indicate incorrect credentials, permissions, endpoint, bucket, or container values.
@@ -412,3 +408,24 @@ kubectl logs statefulset/parseable-ingestor --namespace parseable
 
 </Step>
 </Steps>
+
+## Install Parseable OSS
+
+To install Parseable OSS in distributed mode, use the [OSS distributed example values](https://github.com/parseablehq/helm-charts/blob/main/charts/parseable/examples/oss-distributed.yaml). This deploys an ingestor and a querier.
+
+1. Complete steps 1 and 2 above to create the namespace and choose an object store.
+2. In step 3, create only `parseable-env-secret` (and `parseable-gcs-key` if you use Google Cloud Storage). Skip `parseable-cluster-secret`.
+3. Complete step 4 to add the Parseable Helm repository. Save the linked values file as `oss-distributed.yaml`, set the object store, and replace `<storage-class>` with your StorageClass.
+
+4. Install with the OSS values:
+
+   ```bash
+   helm upgrade --install parseable parseable/parseable \
+     --repo https://charts.parseable.com \
+     --namespace parseable \
+     --values ./oss-distributed.yaml \
+     --wait \
+     --timeout 10m
+   ```
+
+5. Verify the ingestor and querier pods with `kubectl get pods -n parseable`. To open the console, run `kubectl port-forward service/parseable-querier-service 8000:80 -n parseable`, then visit `http://localhost:8000`.

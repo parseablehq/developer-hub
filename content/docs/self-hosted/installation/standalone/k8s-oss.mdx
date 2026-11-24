@@ -216,15 +216,6 @@ kubectl create secret generic parseable-gcs-key \
   --from-file=key.json='<path-to-service-account-json>'
 ```
 
-Confirm that the required Secrets exist without displaying their values:
-
-```bash
-kubectl get secret parseable-env-secret --namespace parseable
-kubectl get secret parseable-gcs-key --namespace parseable
-```
-
-The second command is required only for Google Cloud Storage.
-
 Delete the local plaintext configuration file after creating the Secret:
 
 ```bash
