@@ -113,7 +113,7 @@ EOF
   that match your MinIO deployment.
 </Callout>
 
-Use `s3-store` in [`enterprise-values.yaml`](#6-create-enterprise-valuesyaml).
+Use `s3-store` in [`enterprise-values.yaml`](#5-create-enterprise-valuesyaml).
 
 ### Option B: Amazon S3
 
@@ -138,7 +138,7 @@ EOF
   [S3 IRSA guide](/self-hosted/storage-targets/aws-s3#kubernetes-with-irsa).
 </Callout>
 
-Use `s3-store` in [`enterprise-values.yaml`](#6-create-enterprise-valuesyaml).
+Use `s3-store` in [`enterprise-values.yaml`](#5-create-enterprise-valuesyaml).
 
 ### Option C: Google Cloud Storage
 
@@ -160,7 +160,7 @@ Keep the service-account JSON file ready. You will create its Kubernetes Secret 
 The service-account JSON file is a credential. Store it securely and never commit it to source control.
 </Callout>
 
-Use `gcs-store` in [`enterprise-values.yaml`](#6-create-enterprise-valuesyaml).
+Use `gcs-store` in [`enterprise-values.yaml`](#5-create-enterprise-valuesyaml).
 
 ### Option D: Azure Blob Storage
 
@@ -178,21 +178,24 @@ azr.url=<azr.url>
 EOF
 ```
 
-Use `blob-store` in [`enterprise-values.yaml`](#6-create-enterprise-valuesyaml).
+Use `blob-store` in [`enterprise-values.yaml`](#5-create-enterprise-valuesyaml).
 
 </Step>
 <Step>
 
-## 3. Create the Kubernetes Secret
+## 3. Create the Kubernetes Secrets
 
-After creating the file for your selected object store, review it and create the Kubernetes Secret:
+Create one Secret for the object-store and administrator credentials, then another for communication between Enterprise pods. The generated cluster secret stays the same on later Helm upgrades.
 
 ```bash
 chmod 600 parseable-env-secret
-
 kubectl create secret generic parseable-env-secret \
   --namespace parseable \
   --from-env-file=parseable-env-secret
+
+kubectl create secret generic parseable-cluster-secret \
+  --namespace parseable \
+  --from-literal=cluster-secret="$(openssl rand -hex 16)"
 ```
 
 If you selected Google Cloud Storage, also create the service-account key Secret:
@@ -205,7 +208,7 @@ kubectl create secret generic parseable-gcs-key \
 
 You can add supported environment variables to `parseable-env-secret` as needed. See the [environment variables documentation](/self-hosted/configuration).
 
-After confirming that the Kubernetes Secret exists, delete the local plaintext file:
+After confirming that the Kubernetes Secrets exist, delete the local plaintext file:
 
 ```bash
 rm parseable-env-secret
@@ -214,20 +217,7 @@ rm parseable-env-secret
 </Step>
 <Step>
 
-## 4. Create the Enterprise cluster Secret
-
-Create a random 16-character shared Secret for communication between Enterprise pods:
-
-```bash
-kubectl create secret generic parseable-cluster-secret \
-  --namespace parseable \
-  --from-literal=cluster-secret="$(openssl rand -hex 8)"
-```
-
-</Step>
-<Step>
-
-## 5. Add the Parseable Helm repository
+## 4. Add the Parseable Helm repository
 
 ```bash
 helm repo add parseable https://charts.parseable.com
@@ -237,7 +227,7 @@ helm repo update parseable
 </Step>
 <Step>
 
-## 6. Create `enterprise-values.yaml`
+## 5. Create `enterprise-values.yaml`
 
 Create a file named `enterprise-values.yaml`:
 
@@ -326,7 +316,7 @@ parseable:
         size: 5Gi
 ```
 
-Set `parseable.store.type` for the object store from step 2, keep the Secret names from steps 3 and 4, and replace each `<storage-class>` with a class from `kubectl get storageclass`. For Google Cloud Storage, also add `parseable.store.gcsCredentials` for the service-account Secret. Adjust replicas, CPU, memory, and volume sizes for your workload.
+Set `parseable.store.type` for the object store from step 2 and replace each `<storage-class>` with a class from `kubectl get storageclass`. For Google Cloud Storage, uncomment `parseable.store.gcsCredentials` for the service-account Secret. Adjust replicas, CPU, memory, and volume sizes for your workload.
 
 To enable OIDC, add the variables under `parseable.distributed.prism.env`. See
 the [OIDC guide](/user-guide/openid).
@@ -354,7 +344,7 @@ cluster.
 </Step>
 <Step>
 
-## 7. Install Parseable Enterprise
+## 6. Install Parseable Enterprise
 
 ```bash
 helm upgrade --install parseable parseable/parseable \
@@ -368,7 +358,7 @@ helm upgrade --install parseable parseable/parseable \
 </Step>
 <Step>
 
-## 8. Verify the installation
+## 7. Verify the installation
 
 ```bash
 helm status parseable --namespace parseable
@@ -382,7 +372,7 @@ ingestor replica and one hot-tier PVC is created for each querier replica.
 </Step>
 <Step>
 
-## 9. Access Parseable
+## 8. Access Parseable
 
 Forward the Prism service:
 
@@ -392,7 +382,7 @@ kubectl port-forward \
   --namespace parseable
 ```
 
-Open `http://localhost:8000` and sign in with the administrator credentials used in `parseable-env-secret`.
+Open `http://localhost:8000` and sign in with the administrator credentials in `parseable-env-secret`.
 
 Send ingestion traffic inside the cluster to:
 
@@ -403,7 +393,7 @@ http://parseable-ingestor-service.parseable.svc.cluster.local
 </Step>
 <Step>
 
-## 10. Troubleshooting
+## 9. Troubleshooting
 
 Start with Prism, then the querier, and then the ingestors:
 
