@@ -73,15 +73,13 @@ export function CopyPageDropdown({ slug, filePath }: CopyPageDropdownProps) {
     window.open(githubEditUrl, '_blank');
   };
 
-  const handleOpenInChatGPT = async () => {
-    const content = await getPageContent();
-    const prompt = `Please help me understand this Parseable documentation page (${currentUrl}):\n\n${content}`;
+  const handleOpenInChatGPT = () => {
+    const prompt = `Please help me understand this Parseable documentation page: ${currentUrl}`;
     window.open(`https://chatgpt.com/?q=${encodeURIComponent(prompt)}`, '_blank');
   };
 
-  const handleOpenInClaude = async () => {
-    const content = await getPageContent();
-    const prompt = `Please help me understand this Parseable documentation page (${currentUrl}):\n\n${content}`;
+  const handleOpenInClaude = () => {
+    const prompt = `Please help me understand this Parseable documentation page: ${currentUrl}`;
     window.open(`https://claude.ai/new?q=${encodeURIComponent(prompt)}`, '_blank');
   };
 
