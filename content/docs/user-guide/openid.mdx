@@ -54,6 +54,15 @@ Console and login endpoints:
 | `P_ORIGIN_URI` | Yes | Public base URL where users access Parseable. This is used to build the callback URL. | `""` | `https://demo.parseable.com/` |
 | `P_OIDC_SCOPE` | No | OIDC scopes requested during login. Keep the default unless your provider requires a different scope set. | `openid profile email offline_access` | `openid profile email groups` |
 
+<Callout type="warning">
+  Include `offline_access` in `P_OIDC_SCOPE` when OIDC sessions need to be
+  refreshed. If a session needs refresh but its refresh token is missing or
+  empty, Parseable removes the session and returns HTTP 401 Unauthorized. The
+  response asks the user to sign in again and tells administrators to configure
+  the `offline_access` scope. When a refresh token is present, existing refresh
+  behavior is unchanged.
+</Callout>
+
 <Callout type="info">
   Parseable builds the OIDC callback URL from `P_ORIGIN_URI`. Do not set
   `P_OIDC_REDIRECT_URI`. In your identity provider, register the redirect URI as

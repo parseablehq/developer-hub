@@ -36,6 +36,15 @@ When a request arrives with an `X-API-Key` header, Parseable looks up the key, r
 
 Roles must already exist in the tenant/organization. See [RBAC](/user-guide/rbac) for how to create roles.
 
+The request can include an optional `apiKey` value. A supplied value must be a hyphenated UUID v4 with the RFC 4122 variant. If you omit `apiKey`, Parseable generates the value.
+
+You can also use the optional `apiKeyType` field instead of `roles`:
+
+- `ingestor` grants global ingestion access to all datasets.
+- `query` grants global reader access to all datasets.
+
+Do not combine `apiKeyType` with explicit `roles`. Duplicate API-key names or values return `409 Conflict`.
+
 ```sh
 curl -X POST https://<parseable-prism-host>/api/prism/v1/apikeys \
   -u admin:admin \
@@ -67,6 +76,15 @@ Copy the `apiKey` value somewhere safe before you leave the response. Subsequent
 ```sh
 curl https://<parseable-prism-host>/api/prism/v1/apikeys -u admin:admin
 ```
+
+Use the existing `priviledge` parameter to filter by one or more comma-separated privileges:
+
+```sh
+curl "https://<parseable-prism-host>/api/prism/v1/apikeys?priviledge=reader,ingestor" \
+  -u admin:admin
+```
+
+Supported values are `reader`, `ingestor`, `admin`, `writer`, and `editor`. Unknown values are rejected.
 
 Each entry returns the metadata, but `apiKey` is masked to its last four characters:
 
@@ -105,6 +123,21 @@ curl https://<parseable-prism-host>/api/prism/v1/apikeys/01ARZ3NDEKTSV4RRFFQ69G5
   "createdAt": "2026-04-30T10:30:00Z",
   "modifiedAt": "2026-04-30T10:30:00Z"
 }
+```
+
+### Update an API key
+
+Use `PATCH /api/prism/v1/apikeys/{key_id}` to update `keyName`, `apiKey`, or both. Updating a key does not change its identity or roles. An empty patch returns `400 Bad Request`.
+
+```sh
+curl -X PATCH \
+  https://<parseable-prism-host>/api/prism/v1/apikeys/01ARZ3NDEKTSV4RRFFQ69G5FAV \
+  -u admin:admin \
+  -H "Content-Type: application/json" \
+  -d '{
+    "keyName": "frontend-ingest-rotated",
+    "apiKey": "7f43c681-a2e9-4bd5-91c7-5e086d9a3f20"
+  }'
 ```
 
 ### Delete an API key
@@ -153,6 +186,8 @@ In multi-tenant deployments, also send the tenant header:
 ### Scoping access via roles
 
 Because API keys reuse the role system, you can pick any role supported by Parseable RBAC. The role JSON is identical to what you would assign to a Native user — see [RBAC](/user-guide/rbac) for the full schema.
+
+Role listings also include the server-managed `__global_ingestor__` and `__global_querier__` roles. You cannot delete these roles or modify their privileges.
 
 #### Global ingestion key
 
