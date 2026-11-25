@@ -41,3 +41,11 @@ For a local self-hosted instance, authenticate with your configured Parseable cr
 ```bash
 curl -u admin:admin http://localhost:8000/api/v1/metrics
 ```
+
+### Process CPU usage
+
+The `parseable_process_cpu_usage_cores` metric reports the average number of CPU cores used by Parseable over the last minute. CPU usage is sampled every five seconds, and the metric averages the latest 12 samples. The existing process CPU percentage metric remains unchanged.
+
+On Linux, CPU usage and quota are read from the same process cgroup. Parseable prefers cgroup v2 and falls back to cgroup v1. If the Linux CPU quota is unlimited, the CPU limit falls back to the detected CPU count.
+
+On non-Linux systems, the CPU limit is the detected CPU count, and usage in cores is derived from the process CPU percentage.

@@ -180,7 +180,7 @@ Profiles should not be used as a replacement for RBAC within Parseable. API keys
 
 ## What the tools can do
 
-Parseable MCP Server exposes 27 built-in tools around the same objects you already work with in Parseable. Some tools only read data, while a few can change alert state or create alert resources. The exact result still depends on the API key. If the key cannot access a dataset or action in Parseable, the MCP tool cannot access it either.
+Parseable MCP Server exposes read and action tools around the same objects you already work with in Parseable. `GET /api/prism/v1/llm/tools/list` returns the complete OSS tool catalog. The exact result of a tool call still depends on the API key. If the key cannot access a dataset or action in Parseable, the MCP tool cannot access it either.
 
 | Group | Tool | What it does |
 | --- | --- | --- |
@@ -199,9 +199,17 @@ Parseable MCP Server exposes 27 built-in tools around the same objects you alrea
 |  | `disable_alert` | Disables an existing alert. |
 |  | `evaluate_alert` | Evaluates an alert immediately. This can send real notifications if the condition matches. |
 |  | `create_alert` | Creates a new alert through a guided flow that collects the required alert fields. |
+|  | `update_alert` | Updates an alert. Requires `alertId` and a complete `spec`. |
+|  | `delete_alert` | Deletes an alert by resource ID. |
 | Alert targets | `list_alert_targets` | Lists configured notification targets such as Slack, webhook, or Alertmanager targets. |
 |  | `get_alert_target` | Returns the full configuration for a specific alert target. |
 |  | `create_alert_target` | Creates a new notification target for alert delivery. |
+|  | `update_alert_target` | Updates an alert target. Requires `targetId` and a complete `spec`. |
+|  | `delete_alert_target` | Deletes an alert target by resource ID. |
+| Dashboards and tiles | `save_tile` | Saves a tile. |
+|  | `create_dashboard` | Creates a dashboard. |
+|  | `update_dashboard` | Updates a dashboard. Requires `dashboardId` and a complete `dashboard`. |
+|  | `delete_dashboard` | Deletes a dashboard by resource ID. |
 | Access review | `list_users` | Lists users visible to the API key. |
 |  | `get_user_roles` | Shows the roles assigned to a specific user. |
 |  | `list_roles` | Lists the roles configured in Parseable. |
@@ -240,6 +248,10 @@ The MCP server can help inspect existing alerts and alert targets. It can also h
 
 Be careful with alert evaluation. Evaluating an alert can trigger real notifications, so review the action before confirming it in your MCP client.
 
+The action catalog also supports updating and deleting alerts; creating, updating, and deleting alert targets; saving tiles; and creating, updating, and deleting dashboards. Delete actions require the corresponding resource ID. Create and save actions do not require an `idempotencyKey`.
+
+Calls made directly to external action endpoints are treated as confirmed by the calling client. Alert and alert-target actions enforce `PutAlert` or `DeleteAlert` as appropriate. Dashboard actions enforce ownership or administrator authorization and the corresponding RBAC actions.
+
 ### Review access
 
 You can ask the client to list users, inspect roles assigned to a user, and compare those roles with the default role. This is useful when an API key or user can see less data than expected.
@@ -256,7 +268,7 @@ For long investigations, keep time windows narrow first. Increase the range only
 
 - Use API keys with the smallest set of roles needed for the workflow, and store them in your MCP client configuration or a secrets manager. Do not commit them to source control.
 - Use HTTPS for remote MCP and Parseable connections, and do not connect an AI client to an MCP endpoint you do not operate or trust.
-- Review state-changing actions such as alert creation, alert enablement, alert disablement, and alert evaluation before confirming them.
+- Review state-changing actions such as alert creation, update, deletion, enablement, disablement, and evaluation; alert-target changes; tile saving; and dashboard changes before calling them. External action endpoint calls are treated as confirmed by the calling client.
 - Rotate the API key in Parseable if it is exposed.
 
 Parseable MCP Server does not store telemetry data, query history, result sets, credentials, or user preferences. Parseable remains the system that authenticates the key and enforces permissions.

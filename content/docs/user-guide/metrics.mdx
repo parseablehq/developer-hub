@@ -50,11 +50,17 @@ Each individual card in the main grid acts as a standalone monitoring panel for 
 Selecting a metric card directly will trigger a comprehensive breakdown view, which also includes quick-access options to analyze additional related telemetry signals.
 </Callout>
 
+Chart grids initially render up to 40 metrics and append no more than 40 metrics at a time. Use the focusable `Load more metrics` button to reveal the next batch. Additional metrics also load automatically when this control approaches the viewport.
+
+Metric cards enable PromQL queries only while they are visible. Identical cards continue to share requests and cached results. Scheduled dashboard and metric-card PromQL requests are limited to five concurrent requests.
+
 ### Exploring data with PromQL
 
 <OfferingPills cloud enterprise className="mb-4" />
 
 ![Metrics explorer page overview](../static/metrics_promql.png)
+
+Metrics Explore validates PromQL in the browser before starting a query. If any PromQL editor contains a validation error, Metrics Explore does not start the query and hides results until all validation errors are resolved. Blank PromQL displays `Query is empty.`, while parser errors display `PromQL syntax error.` Use the `Fix with AI` action to help resolve client-side validation errors.
 
 Additionally, Parseable enterprise includes a [built-in PromQL engine](https://www.parseable.com/docs/user-guide/promql) that lets you query metrics stored in Parseable using the standard Prometheus Query Language. 
 

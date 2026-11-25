@@ -57,6 +57,9 @@ The chart builder follows a 3-step process to create powerful visualizations:
 - **Donut**: Similar to pie with a hollow center
 - **Query Value**: For displaying single metric values
 - **Gauge**: For showing progress or thresholds
+- **Scatter**: For plotting unconnected points using a numeric or time-based X field and a numeric Y field
+- **Bubble**: For plotting values using X, Y, and Radius fields
+- **Sankey**: For visualizing flows between sources and targets
 
 **Dataset Selection:**
 Choose your data source from the dropdown menu (e.g., vLLMmetrics or your custom log streams).
@@ -90,6 +93,26 @@ The configuration options vary based on your selected chart type:
 - **Note**: These visualizations display single values, no grouping or sorting needed
 
 ![](../static/gauage-plot-style.png)
+
+#### For Scatter Charts:
+- **X**: Select a numeric or time-based field
+- **Y**: Select a numeric field
+- Points are plotted without connecting lines
+- Scatter charts are unavailable for PromQL and metrics chart creation
+
+#### For Bubble Charts:
+- **X**: Select a numeric, date/time, or categorical field
+- **Y**: Select a numeric field
+- **Radius**: Select a numeric field
+
+#### For Sankey Charts:
+- **Source**: Select the source field
+- **Target**: Select the target field
+- **Flow**: Select the numeric flow field
+- Rows are excluded when Source or Target is empty, Flow is non-numeric, or Flow is less than or equal to zero
+- Duplicate Source-Target pairs are combined by summing Flow
+- Sankey charts are unavailable for PromQL metrics
+- Alerts cannot be created for Sankey dashboard tiles
 
 ### Step 3: Style Your Visualization
 
@@ -127,7 +150,7 @@ Dashboard tiles can be dragged and repositioned anywhere on the dashboard. You c
 
 ## Visualization Types
 
-Parseable offers eight distinct visualization types, each optimized for different data patterns:
+Parseable offers multiple visualization types optimized for different data patterns:
 
 ### Time-Series Charts
 - **Timeseries**: Specialized for temporal data with automatic time formatting
@@ -158,7 +181,20 @@ These charts support full configuration: Y-axis plotting, filtering, grouping, a
   - Access via the Table button in any chart builder
   - Export capabilities for further analysis
 
+### Relationship and Flow Charts
+- **Scatter**: Plot unconnected points using a numeric or time-based X field and a numeric Y field
+- **Bubble**: Plot values using selectable X, Y, and Radius fields. X can be numeric, date/time, or categorical; Y and Radius must be numeric
+- **Sankey**: Visualize flow using Source, Target, and Flow mappings
+
 Each visualization includes customizable styling options for colors, labels, and formatting to match your dashboard aesthetic.
+
+## Importing and Exporting Dashboards
+
+Dashboard exports include the dashboard-level `timeRange`. Dashboard imports accept an optional `timeRange` and can contain an empty `tiles` array.
+
+Imported dashboard variables can use the `promql_query` type, with optional `promqlQuery`, `promqlQueryDataset`, and `promqlQueryLabel` fields. Imported tiles can use the `scatter` and `sankey` chart types.
+
+If an import is invalid, Parseable displays the collected schema validation issue messages.
 
 ## Time Range
 

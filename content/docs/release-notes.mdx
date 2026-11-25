@@ -6,60 +6,55 @@ title: Release notes
 
 November 17, 2026
 
-Parseable v3.2.7 adds new visualizations, persistent user preferences, improved alert and API key management, faster ingestion, and more resilient stream deletion. Enterprise deployments also gain AI-assisted platform insights, dashboard workflows, distributed PromQL improvements, and license management through the UI.
+Parseable v3.2.7 adds new visualization, automation, preference, licensing, and observability capabilities across OSS and Enterprise. It also improves ingestion and query behavior while fixing authentication, deletion, ordering, navigation, and dashboard issues.
 
 ### Features
 
-- <EnterpriseBadge /> **AI platform summary:** Get an AI-generated overview of platform health and telemetry on the home page with suggested follow-up actions for faster investigation.
-- <EnterpriseBadge /> **Safer AI-assisted actions:** Mutation tools added to qna agent called in keystone that allows CRUD operations on dashboards and alerts.
-- <EnterpriseBadge /> **AI dashboard workflows:** Explain existing dashboard tiles and preview AI-generated dashboards in keystone.
-- **New chart types:** Build scatter, bubble, and Sankey charts in dashboards manually or using AI in dashboards or keystone.
-- **Persistent user preferences:** Save user-level settings such as default timezone and restore them across sessions.
-- **Alert portability and stable IDs:** Import or export alerts feature added to alerts.
-- **Flexible API key management:** Supply custom API key values, update key names or values, filter keys by multiple privileges (used in MCP connect), and create writer or ingestor keys directly (used in onboarding flow).
-- <EnterpriseBadge /> **License management experience:** Upload license file via UI instead of setting the envs for license json and signature files, hence updating the cluster with new license without restarting the cluster.
-- **Unified settings navigation:** Access general, access-management, agent, billing, license, and cluster settings unified in one place.
-- **Find in data:** Perform text search within the loaded data to locate matching values faster during investigation.
-- **Resilient stream deletion:** Stream deletion now runs asynchronously and resumes safely after service restarts.
-- **Process CPU metric:** Monitor process CPU consumption through a new usage-in-cores metric.
+- **Expanded MCP action tools:** MCP clients can now manage alerts, alert targets, tiles, and dashboards through externally callable action tools with authorization and confirmation handling.
+- <EnterpriseBadge /> **Interactive Keystone actions:** Enterprise Keystone conversations can request missing input, pause for mutation confirmation, preview generated dashboards or tiles, and report terminal interaction outcomes.
+- <EnterpriseBadge /> **AI platform summaries:** Enterprise users can generate, schedule, configure, and investigate AI platform summaries containing health information, operational highlights, and suggested questions.
+- **Saved user preferences:** Users can persist tenant-scoped preferences through new APIs and select a default timezone that applies across dates, charts, and queries.
+- **Typed and editable API keys:** API keys can use caller-provided UUID values, receive global ingestion or query access through a type, and have their names or values updated without changing identity or roles.
+- **Asynchronous dataset deletion:** Dataset deletion now returns HTTP 202, hides and blocks the deleting dataset, performs cleanup in the background, and resumes interrupted deletion after restart.
+- **New dashboard chart types:** Dashboard and SQL workflows add scatter, bubble, and Sankey visualizations with chart-specific mappings and validation.
+- **Alert import and export:** Users can import alerts from JSON and export existing alerts without server-managed identity and version fields.
+- **Custom alert identities:** Alert creation can accept a caller-provided ID and rejects duplicate alert IDs, alert titles, target IDs, and target names within a tenant.
+- **Process CPU core metric:** A new Prometheus metric reports average process CPU usage in cores over the last minute with container CPU limits considered where available.
+- **Explore loaded log data:** Logs Explore now provides a Find in data field that highlights matches within currently loaded records.
+- <EnterpriseBadge /> **Self-hosted license management:** Eligible self-hosted users can upload a combined signed license file, inspect license and quota status, and receive live license-state notices.
+- **Paid Cloud workspace creation:** Parseable Cloud can create paid Pro workspaces after collecting a payment method and can display platform fees in billing.
 
 ### Improvements
 
-- **Faster JSON ingestion:** Optimized JSON parsing and combined staging writes improve ingestion throughput and reduce write overhead.
-- **Lower query processing overhead:** Streamed query batches are reused without unnecessary reparsing.
-- <EnterpriseBadge /> **Distributed PromQL execution:** Improved distributed planning, Arrow-based data transfer, aggregation, and batched requests increase PromQL scalability.
-- **Streamlined table controls:** Sorting, pinning, and column visibility now use consistent interactions across supported tables.
-- <EnterpriseBadge /> **Clearer LLM setup:** AI-enabled screens now provide consistent empty states and direct guidance when no LLM provider is configured.
-- **Improved onboarding:** Direct ingestor-key setup reduces configuration steps.
-- <EnterpriseBadge /> **Pro workspace onboarding:** Pro workspace creation reduces configuration steps.
-- **Reduced redundant requests:** Removed unnecessary query calls and improved metrics request batching to lower UI and backend load.
+- <EnterpriseBadge /> **Smarter distributed query selection:** Enterprise queries now choose distributed processing from querier count, candidate data size, and configured CPU limits instead of fixed file thresholds.
+- <EnterpriseBadge /> **Spill-capable PromQL aggregation:** Eligible Enterprise PromQL aggregations can use distributed sorting with memory accounting and disk spilling before results are merged.
+- **Faster JSON ingestion:** Compatible JSON ingestion requests can reuse existing schemas, skip unnecessary flattening, and combine up to eight concurrent staging writes.
+- **Faster streamed SQL output:** Streamed SQL responses now use Arrow JSON formatting directly while retaining batch arrays, newline delimiters, and omitted null properties.
+- **Broader API-key filtering:** API-key listings can filter by multiple comma-separated privileges and MCP Connect can select reader, editor, writer, or admin keys.
+- **Improved dashboard organization:** Dashboard sorting now applies before pagination with sortable columns, ownership filtering, adaptive page sizing, and consistent default ordering.
+- **Richer dashboard portability:** Dashboard import and export now preserve time ranges, accept PromQL query variables, allow empty dashboards, and show detailed validation issues.
+- **Proactive PromQL validation:** Alerts and Metrics Explore now validate PromQL before execution and present syntax errors without running invalid queries.
+- **More efficient metrics rendering:** Metrics and dashboard charts now limit PromQL concurrency, load visible content progressively, and avoid several unnecessary requests.
+- **Reorganized settings navigation:** Settings now uses a persistent grouped sidebar with updated routes for preferences, access management, clusters, billing, licensing, and the Oncall agent.
+- **Assignable global system roles:** User groups can now receive the global ingestor and querier roles and inherit their corresponding dataset permissions.
+- <EnterpriseBadge /> **Explain dashboard tiles:** Eligible Enterprise dashboard tiles can open a new Keystone conversation using the tile datasets and current time range.
+- **Persistent Explore table layout:** Logs Explore now stores visible columns, pinned columns, and sorting together for each user and dataset and synchronizes changes between browser tabs.
 
 ### Fixes
 
-- **Timestamp ordering:** `ORDER BY p_timestamp` now returns correctly ordered results even when Parquet file ordering cannot be verified.
-- **Stream deletion safety:** Fixed ingestion, staging, recreation, and cleanup races that could resurrect or modify a stream while deletion was in progress.
-- <EnterpriseBadge /> **Tenant-aware retention:** Retention configuration now resolves the correct tenant-specific storage path.
-- **Expired OpenID sessions:** Sessions without refresh tokens now expire cleanly with `401 Unauthorized` instead of causing an OpenID failure.
-- <EnterpriseBadge /> **System-role user groups:** User groups can now be created and updated correctly when system roles are assigned.
-- **Alert ID validation:** Duplicate alert or target identifiers are rejected to prevent ambiguous configurations.
-- <EnterpriseBadge /> **Distributed query planning:** Corrected planner behavior for distributed query execution.
-- **Metrics reliability:** Fixed metrics loading, no-data refresh behavior, and JSON result processing in metrics and dashboard views.
-- **Dashboard reliability:** Fixed dashboard import behavior and list sorting across paginated results.
-- <EnterpriseBadge /> **PromQL validation:** Invalid PromQL queries are blocked before execution with clearer feedback.
-- <EnterpriseBadge /> **Platform summary states:** Fixed summary error handling, empty responses, and home-overview settings behavior.
-- <EnterpriseBadge /> **AI-generated artifacts:** Validated dashboards and tiles are no longer lost during multi-step AI conversations.
-- <EnterpriseBadge /> **Alert tools:** Fixed Enterprise alert-tool execution and related result handling.
-- **Trace investigation:** Trace error-sidebar queries no longer apply an incorrect time filter.
-- **Date and time selection:** Changing a date now preserves the selected time value.
-- **Navigation links:** Fixed command-palette, global-search, getting-started, and invite-user links.
-- **UI polish:** Fixed clipped badges, recent-item card orientation, and several chart and settings display issues.
+- **Safe expired OIDC sessions:** Expired OIDC sessions without a refresh token now return HTTP 401 and request a new sign-in instead of causing a panic.
+- **Correct ordered query results:** Queries requiring ordering now retain an explicit sort so inconsistent Parquet metadata cannot produce out-of-order results.
+- **Tenant-safe retention cleanup:** Retention cleanup now includes the tenant prefix when deleting data for non-default tenants.
+- **Safe unauthenticated SSE registration:** SSE registration without authentication now returns the authentication error instead of panicking.
+- **Preserved dashboard time ranges:** Dashboard queries now follow the dashboard picker or URL time range instead of being pinned by generated or saved tile snapshots.
+- **Stable Metrics Explore state:** Metrics Explore now shows loading state correctly and preserves restored or deep-linked PromQL queries until the selected dataset changes.
+- **Correct settings shortcuts:** Command-palette and onboarding shortcuts now open the current Metrics, Settings, Roles, and Users routes.
+- **Readable badge text:** Badge text is no longer vertically clipped while existing whitespace, truncation, and minimum-width behavior remains unchanged.
+- <EnterpriseBadge /> **Resilient platform overview:** Enterprise landing pages retain the regular overview and provide recovery controls when a platform summary is missing or cannot be loaded.
 
 ### Dependencies
 
-- <EnterpriseBadge /> **Pillow:** Upgraded Pillow from v12.3.0 to v13.0.0 to include current security fixes.
-- <EnterpriseBadge /> **Python:** Upgraded the release build and environment setup from Python 3.10 to Python 3.11.
-- **Rust dependencies:** Updated `rustls` from v0.23.40 to v0.23.46, `zip` from v8.6.0 to v9.0.5, and `xxhash-rust` from v0.8.15 to v0.8.16.
-- **Prism dependencies:** Updated Zod from v3.25.76 to v4.6.7 and refreshed supporting build and source-map packages.
+No customer-facing changes in this category.
 
 ## v3.0
 

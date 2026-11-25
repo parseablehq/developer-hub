@@ -126,12 +126,23 @@ Refer to [OIDC](/user-guide/openid) section for more details.
 
 This section lists environment variables that apply only to Parseable Enterprise deployments.
 
+Enterprise licenses are supplied as one combined signed license file. The separate `P_LICENSE_DATA_FILE_PATH` and `P_LICENSE_SIGNATURE_FILE_PATH` files are no longer used.
+
+Enterprise builds without an embedded verification key use a keyless default 50 GB license that cannot be upgraded by uploading a license. Builds with an embedded verification key use an upgradable default 50 GB license.
+
+`LICENSE_VERIFICATION_URL` is embedded at build time. It can be an orchestrator origin or a URL ending in `/api/v1/licenses/verify`. The URL must use HTTPS, except for loopback development, and cannot contain credentials, a query, or a fragment.
+
+`LICENSE_VERIFICATION_ENABLED` controls outbound license verification and reporting. It defaults to enabled when absent or invalid, and its value is cached until the process restarts. Setting it to `false` disables periodic reports, verification before installation, and invalid-license reporting. License uploads continue without a remote result.
+
+With multiple queriers, query distribution is used when candidate file size is at least 50% of `PROCESS_MEMORY_LIMIT_BYTES`, or when `PROCESS_CPU_LIMIT_CORES` is nonzero and the file count exceeds that limit.
+
+The sorted fused PromQL execution path is enabled by default. Set `P_PROMQL_SORTED_FUSED` to `false` or `0` to use the prior load-then-fold path. The value is read once per process.
+
 | Variable Name | Required | Description | Default | Example |
 | --- | --- | --- | --- | --- |
 | `P_CLUSTER_SECRET` | `Yes` | Shared secret used to authenticate inter-node communication within a Parseable Enterprise cluster. The server fails to start if this is not set. | `-` | `<random-256-bit-secret>` |
-| `P_LICENSE_DATA_FILE_PATH` | `Yes` | Local path to the Parseable Enterprise license data file (JSON). | `-` | `/etc/parseable/license.json` |
-| `P_LICENSE_SIGNATURE_FILE_PATH` | `Yes`* | Local path to the raw (binary) license signature file. *Either this or `P_LICENSE_SIGNATURE_BASE64` must be set.* | `-` | `/etc/parseable/license.sig` |
-| `P_LICENSE_SIGNATURE_BASE64` | `Yes`* | Base64-encoded license signature provided inline as an environment variable. Takes priority over `P_LICENSE_SIGNATURE_FILE_PATH` when both are set. | `-` | `MEUCIQDx...==` |
+| `LICENSE_VERIFICATION_ENABLED` | `No` | Enable outbound license verification and reporting. The value is cached until the process restarts. | `true` | `false` |
+| `P_PROMQL_SORTED_FUSED` | `No` | Enable the sorted fused PromQL execution path. Set to `false` or `0` to use the prior load-then-fold path. The value is read once per process. | enabled | `false` |
 | `P_DB_CONNECTION_STRING` | `No` | PostgreSQL connection string used for storing Parseable Enterprise metadata. Set `DB_SSL_ROOT_CERT` to a CA cert path to enable TLS. | `-` | `postgresql://user:pass@host:5432/parseable` |
 | `P_INGESTOR_URL_INFO` | `No` | Public ingestor URL exposed by the `/about` endpoint and used by the OTel generator. Set this to the externally reachable URL of your ingestor(s). | `-` | `https://ingest.example.com` |
 | `P_SERVER_LOGS_FILE_PATH` | `No` | File path where Parseable server logs are written. If unset, server logs are not persisted to file. | `-` | `/var/log/parseable/server.log` |

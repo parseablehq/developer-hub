@@ -19,5 +19,14 @@ _openapi:
 Run a SQL query in Parseable.
 The dataset is selected inside the SQL statement itself, typically in the `FROM` clause.
 
+## Streaming responses
+
+Streaming query responses contain independently emitted batches. Each batch is a JSON array and ends with a newline. Non-streaming query responses are unchanged.
+
+The `sendNull` option has no effect on streaming responses. Properties with null values remain omitted.
+
+Streamed numbers use Arrow JSON formatting. For example, a Float64 value of `1e+300` may be emitted as `1.0e300`. Streamed decimal values preserve their declared precision and scale, so `9.468` may be emitted as `9.4680000000`.
+
+Queries that require ordering retain an explicit sort, including ordered queries that use `LIMIT`.
 
 <APIPage document={"./public/parseable-api-schema-cleaned.yaml"} operations={[{"path":"/api/v1/query","method":"post"}]} />

@@ -100,6 +100,12 @@ This section highlights endpoints related to querying and ingesting logs. Admins
 | Query | POST /query | ✓ | ✓ | ✓ | ✓ | x |
 | QueryLLM | POST /llm | ✓ | ✓ | ✓ | ✓ | x |
 
+### Global system roles
+
+Role listings include the server-managed `__global_ingestor__` and `__global_querier__` roles. You can create or update user groups with these roles; other server-internal roles cannot be assigned to groups.
+
+Members of a group assigned `__global_querier__` can query all streams, including when they receive the role only through group membership. Global system roles cannot be deleted, and their privileges cannot be modified.
+
 ### Get started
 
 #### Creating a Role

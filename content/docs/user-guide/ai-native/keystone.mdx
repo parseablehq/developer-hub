@@ -66,6 +66,21 @@ Once you validate the selection
 - Raw data results from the query
 - Optional visualizations (charts/graphs) for clearer understanding
 
+### Interactive questions and confirmations
+
+Keystone can pause a Q&A request when it needs more information or approval. The originating Q&A SSE request remains open while the interaction is pending and resumes after it is resolved.
+
+For missing parameters, the `request_user_input` tool displays an `input.required` interaction with a `select`, `combobox`, or `text` question. It collects information needed to continue and is not used to approve actions. Answers are submitted to `/api/v1/llm/{llmKey}/agents/qna/input` with the `interactionId`, `conversationId`, and an `answers` object.
+
+Mutation tools pause for final approval with an `action.confirmation_required` interaction. Generated dashboard and tile confirmation requests include a preview that you can review before approving or denying the action. Decisions are submitted to `/api/v1/llm/{llmKey}/agents/qna/confirm` with the `confirmationId`, `conversationId`, and boolean `approved` value.
+
+The interaction SSE events are:
+
+- `input.required` and `input.resolved`
+- `action.confirmation_required` and `action.confirmation_resolved`
+
+The `input.required` and `action.confirmation_required` events include `timeoutSeconds`. Rejecting a mutation or allowing its confirmation to expire prevents Keystone from retrying the same or an equivalent mutation. Rejected or expired interactions return a terminal answer, including successful earlier mutation tools and execution counts when applicable.
+
 ## Configuration
 
 To enable Keystone, configure your LLM provider in your Parseable instance:
