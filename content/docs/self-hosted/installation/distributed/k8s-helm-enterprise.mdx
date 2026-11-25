@@ -1,13 +1,9 @@
 ---
-title: Kubernetes (Enterprise)
+title: Kubernetes
 ---
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 
-<OfferingPills enterprise className="mb-4" />
-
-This guide installs Parseable Enterprise in distributed mode on Kubernetes. The installation creates ingestor, querier, and Prism pods.
-
-To install Parseable OSS, use the [distributed OSS Kubernetes guide](/self-hosted/installation/distributed/k8s-helm-oss).
+Install Parseable on Kubernetes with Helm. The Enterprise setup below lets you ingest up to 50 GB per month without a license file. If you want to use OSS, follow the [OSS setup steps](#install-parseable-oss).
 
 ## Prerequisites
 
@@ -17,15 +13,15 @@ Before you begin, make sure you have:
 - Helm 3 or later
 - A Kubernetes storage class
 - An existing, empty object-store bucket with access credentials
-- `parseable_license.json` and `parseable_license.sig` from Parseable
 
-A valid Enterprise license is required to run Parseable Enterprise. If you do not have a license, contact [sales@parseable.com](mailto:sales@parseable.com); the Enterprise deployment cannot run without it.
+<Callout type="warning">
+  Upgrade to a Parseable Helm chart release that supports Enterprise without a license before applying these values. Use Enterprise image `v3.2.7` or later. Updating only the image tag on an older chart is not enough.
+</Callout>
 
 Confirm the Kubernetes context and find an available storage class:
 
 ```bash
 kubectl config current-context
-kubectl get nodes
 kubectl get storageclass
 ```
 
@@ -52,7 +48,7 @@ installation and replace `parseable` in the commands below with that namespace.
 
 Choose exactly one object store below. Replace every `<...>` placeholder in the selected option before running the command.
 
-After completing one option, continue to step 4.
+After completing one option, continue to step 3.
 
 ### Option A: MinIO
 
@@ -67,12 +63,12 @@ Replace `<storage-class>` with one of the storage class names returned by `kubec
 
 ```bash
 helm repo add minio https://charts.min.io/
-helm install \
+helm upgrade --install minio minio/minio \
   --namespace minio \
   --create-namespace \
-  --set buckets[0].name=parseable \
-  --set buckets[0].policy=none \
-  --set buckets[0].purge=false \
+  --set 'buckets[0].name=parseable' \
+  --set 'buckets[0].policy=none' \
+  --set 'buckets[0].purge=false' \
   --set rootUser=minioadmin \
   --set rootPassword=minioadmin \
   --set replicas=1 \
@@ -80,7 +76,8 @@ helm install \
   --set persistence.storageClass=<storage-class> \
   --set resources.requests.memory=128Mi \
   --set mode=standalone \
-  minio minio/minio
+  --set image.repository=docker.io/openebs/minio \
+  --set mcImage.repository=docker.io/openebs/mc
 ```
 
 Forward the MinIO console port:
@@ -112,7 +109,7 @@ EOF
   that match your MinIO deployment.
 </Callout>
 
-Use `s3-store` in [`enterprise-values.yaml`](#6-create-enterprise-valuesyaml).
+Use `s3-store` in [`enterprise-values.yaml`](#5-create-enterprise-valuesyaml).
 
 ### Option B: Amazon S3
 
@@ -137,7 +134,7 @@ EOF
   [S3 IRSA guide](/self-hosted/storage-targets/aws-s3#kubernetes-with-irsa).
 </Callout>
 
-Use `s3-store` in [`enterprise-values.yaml`](#6-create-enterprise-valuesyaml).
+Use `s3-store` in [`enterprise-values.yaml`](#5-create-enterprise-valuesyaml).
 
 ### Option C: Google Cloud Storage
 
@@ -159,7 +156,7 @@ Keep the service-account JSON file ready. You will create its Kubernetes Secret 
 The service-account JSON file is a credential. Store it securely and never commit it to source control.
 </Callout>
 
-Use `gcs-store` in [`enterprise-values.yaml`](#6-create-enterprise-valuesyaml).
+Use `gcs-store` in [`enterprise-values.yaml`](#5-create-enterprise-valuesyaml).
 
 ### Option D: Azure Blob Storage
 
@@ -177,21 +174,24 @@ azr.url=<azr.url>
 EOF
 ```
 
-Use `blob-store` in [`enterprise-values.yaml`](#6-create-enterprise-valuesyaml).
+Use `blob-store` in [`enterprise-values.yaml`](#5-create-enterprise-valuesyaml).
 
 </Step>
 <Step>
 
-## 3. Create the Kubernetes Secret
+## 3. Create the Kubernetes Secrets
 
-After creating the file for your selected object store, review it and create the Kubernetes Secret:
+Create one Secret for the object-store and administrator credentials, then another for communication between Enterprise pods. The generated cluster secret stays the same on later Helm upgrades.
 
 ```bash
 chmod 600 parseable-env-secret
-
 kubectl create secret generic parseable-env-secret \
   --namespace parseable \
   --from-env-file=parseable-env-secret
+
+kubectl create secret generic parseable-cluster-secret \
+  --namespace parseable \
+  --from-literal=cluster-secret="$(openssl rand -hex 16)"
 ```
 
 If you selected Google Cloud Storage, also create the service-account key Secret:
@@ -204,7 +204,7 @@ kubectl create secret generic parseable-gcs-key \
 
 You can add supported environment variables to `parseable-env-secret` as needed. See the [environment variables documentation](/self-hosted/configuration).
 
-After confirming that the Kubernetes Secret exists, delete the local plaintext file:
+After confirming that the Kubernetes Secrets exist, delete the local plaintext file:
 
 ```bash
 rm parseable-env-secret
@@ -213,29 +213,7 @@ rm parseable-env-secret
 </Step>
 <Step>
 
-## 4. Create Enterprise Secrets
-
-Create the license Secret. Replace `<license-directory>` with the directory containing both license files:
-
-```bash
-kubectl create secret generic parseable-license \
-  --namespace parseable \
-  --from-file=parseable_license.json='<license-directory>/parseable_license.json' \
-  --from-file=parseable_license.sig='<license-directory>/parseable_license.sig'
-```
-
-Create a random 16-character shared Secret for communication between Enterprise pods:
-
-```bash
-kubectl create secret generic parseable-cluster-secret \
-  --namespace parseable \
-  --from-literal=cluster-secret="$(openssl rand -hex 8)"
-```
-
-</Step>
-<Step>
-
-## 5. Add the Parseable Helm repository
+## 4. Add the Parseable Helm repository
 
 ```bash
 helm repo add parseable https://charts.parseable.com
@@ -245,7 +223,7 @@ helm repo update parseable
 </Step>
 <Step>
 
-## 6. Create `enterprise-values.yaml`
+## 5. Create `enterprise-values.yaml`
 
 Create a file named `enterprise-values.yaml`:
 
@@ -274,25 +252,21 @@ parseable:
     enabled: true
     image:
       repository: quay.io/parseablehq/parseable-enterprise
-      tag: "" # Defaults to the Helm chart appVersion
-      pullPolicy: IfNotPresent
-    license:
-      secretName: parseable-license
-      mountPath: /tmp/license
-      dataKey: parseable_license.json
-      signatureKey: parseable_license.sig
+      tag: "v3.2.7" # Must be v3.2.7 or later
+      pullPolicy: Always
+
   distributed:
     ingestor:
-      replicas: 3
+      replicas: 1
       env:
         RUST_LOG: warn
       resources:
         requests:
-          cpu: 250m
-          memory: 1Gi
+          cpu: 1
+          memory: 512Mi
         limits:
-          cpu: 500m
-          memory: 4Gi
+          cpu: 2
+          memory: 2Gi
       persistence:
         staging:
           enabled: true
@@ -306,17 +280,17 @@ parseable:
         RUST_LOG: warn
       resources:
         requests:
-          cpu: 250m
-          memory: 1Gi
+          cpu: 1
+          memory: 512Mi
         limits:
-          cpu: 500m
-          memory: 4Gi
+          cpu: 2
+          memory: 2Gi
       persistence:
         hotTier:
           enabled: true
           storageClass: <storage-class>
           accessMode: ReadWriteOnce
-          size: 50Gi
+          size: 15Gi
 
     prism:
       replicas: 1
@@ -324,27 +298,30 @@ parseable:
         RUST_LOG: warn
       resources:
         requests:
-          cpu: 500m
-          memory: 1Gi
+          cpu: 1
+          memory: 512Mi
         limits:
-          cpu: "1"
+          cpu: 2
           memory: 2Gi
+      persistence:
+        enabled: false
+      cache:
+        enabled: true
+        storageClass: <storage-class>
+        accessMode: ReadWriteOnce
+        size: 5Gi
 ```
+
+Set `parseable.store.type` for the object store from step 2 and replace each `<storage-class>` with a class from `kubectl get storageclass`. For Google Cloud Storage, uncomment `parseable.store.gcsCredentials` for the service-account Secret. Adjust replicas, CPU, memory, and volume sizes for your workload.
 
 To enable OIDC, add the variables under `parseable.distributed.prism.env`. See
 the [OIDC guide](/user-guide/openid).
 
-Before continuing:
-
-1. Set `parseable.store.type` for the object store selected in step 3.
-2. If you selected Google Cloud Storage, uncomment the `gcsCredentials` block.
-3. Replace both `<storage-class>` placeholders with a storage class returned by `kubectl get storageclass`.
-4. Adjust replicas, CPU, memory, and volume sizes for your workload.
-
 You can render the chart before installing it:
 
 ```bash
-helm template parseable parseable/parseable \
+helm template parseable parseable \
+  --repo https://charts.parseable.com \
   --namespace parseable \
   --values ./enterprise-values.yaml
 ```
@@ -363,20 +340,20 @@ cluster.
 </Step>
 <Step>
 
-## 7. Install Parseable Enterprise
+## 6. Install Parseable Enterprise
 
 ```bash
-helm upgrade --install parseable parseable/parseable \
+helm upgrade --install parseable parseable \
+  --repo https://charts.parseable.com \
   --namespace parseable \
   --values ./enterprise-values.yaml \
-  --wait \
-  --timeout 10m
+  --wait --timeout 10m  
 ```
 
 </Step>
 <Step>
 
-## 8. Verify the installation
+## 7. Verify the installation
 
 ```bash
 helm status parseable --namespace parseable
@@ -390,7 +367,7 @@ ingestor replica and one hot-tier PVC is created for each querier replica.
 </Step>
 <Step>
 
-## 9. Access Parseable
+## 8. Access Parseable
 
 Forward the Prism service:
 
@@ -400,7 +377,7 @@ kubectl port-forward \
   --namespace parseable
 ```
 
-Open `http://localhost:8000` and sign in with the administrator credentials used in `parseable-env-secret`.
+Open `http://localhost:8000` and sign in with the administrator credentials in `parseable-env-secret`.
 
 Send ingestion traffic inside the cluster to:
 
@@ -411,7 +388,7 @@ http://parseable-ingestor-service.parseable.svc.cluster.local
 </Step>
 <Step>
 
-## 10. Troubleshooting
+## 9. Troubleshooting
 
 Start with Prism, then the querier, and then the ingestors:
 
@@ -422,7 +399,7 @@ kubectl logs statefulset/parseable-querier --namespace parseable
 kubectl logs statefulset/parseable-ingestor --namespace parseable
 ```
 
-- License errors usually indicate missing, incorrectly named, or invalid license files.
+- An Enterprise image older than `v3.2.7` requires a license file. Use `v3.2.7` or later for the setup above.
 - `Pending` PVCs usually indicate an invalid storage class or unavailable volume provisioner.
 - `CreateContainerConfigError` usually indicates a missing Secret or Secret key.
 - Object-store authentication errors usually indicate incorrect credentials, permissions, endpoint, bucket, or container values.
@@ -430,3 +407,23 @@ kubectl logs statefulset/parseable-ingestor --namespace parseable
 
 </Step>
 </Steps>
+
+## Install Parseable OSS
+
+To install Parseable OSS in distributed mode, use the [OSS distributed example values](https://github.com/parseablehq/helm-charts/blob/main/charts/parseable/examples/oss-distributed.yaml). This deploys an ingestor and a querier.
+
+1. Complete steps 1 and 2 above to create the namespace and choose an object store.
+2. In step 3, create only `parseable-env-secret` (and `parseable-gcs-key` if you use Google Cloud Storage). Skip `parseable-cluster-secret`.
+3. Complete step 4 to add the Parseable Helm repository. Save the linked values file as `oss-distributed.yaml`, set the object store, and replace `<storage-class>` with your StorageClass.
+
+4. Install with the OSS values:
+
+```bash
+helm upgrade --install parseable parseable \
+  --repo https://charts.parseable.com \
+  --namespace parseable \
+  --values ./oss-distributed.yaml \
+  --wait --timeout 10m   
+```
+
+5. Verify the ingestor and querier pods with `kubectl get pods -n parseable`. To open the console, run `kubectl port-forward service/parseable-querier-service 8000:80 -n parseable`, then visit `http://localhost:8000`.

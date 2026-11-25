@@ -25,7 +25,6 @@ Confirm the Kubernetes context and find an available storage class:
 
 ```bash
 kubectl config current-context
-kubectl get nodes
 kubectl get storageclass
 ```
 
@@ -81,12 +80,12 @@ Replace `<storage-class>` with one of the storage class names returned by `kubec
 
 ```bash
 helm repo add minio https://charts.min.io/
-helm install \
+helm upgrade --install minio minio/minio \
   --namespace minio \
   --create-namespace \
-  --set buckets[0].name=parseable \
-  --set buckets[0].policy=none \
-  --set buckets[0].purge=false \
+  --set 'buckets[0].name=parseable' \
+  --set 'buckets[0].policy=none' \
+  --set 'buckets[0].purge=false' \
   --set rootUser=minioadmin \
   --set rootPassword=minioadmin \
   --set replicas=1 \
@@ -94,7 +93,8 @@ helm install \
   --set persistence.storageClass=<storage-class> \
   --set resources.requests.memory=128Mi \
   --set mode=standalone \
-  minio minio/minio
+  --set image.repository=docker.io/openebs/minio \
+  --set mcImage.repository=docker.io/openebs/mc
 ```
 
 Forward the MinIO console port:
@@ -216,15 +216,6 @@ kubectl create secret generic parseable-gcs-key \
   --from-file=key.json='<path-to-service-account-json>'
 ```
 
-Confirm that the required Secrets exist without displaying their values:
-
-```bash
-kubectl get secret parseable-env-secret --namespace parseable
-kubectl get secret parseable-gcs-key --namespace parseable
-```
-
-The second command is required only for Google Cloud Storage.
-
 Delete the local plaintext configuration file after creating the Secret:
 
 ```bash
@@ -307,7 +298,8 @@ Before continuing:
 You can render the chart before installing it:
 
 ```bash
-helm template parseable parseable/parseable \
+helm template parseable parseable \
+  --repo https://charts.parseable.com \
   --namespace parseable \
   --values ./standalone-values.yaml
 ```
@@ -339,11 +331,11 @@ cluster.
 ## 6. Install Parseable
 
 ```bash
-helm upgrade --install parseable parseable/parseable \
+  helm upgrade --install parseable parseable \
+  --repo https://charts.parseable.com \
   --namespace parseable \
   --values ./standalone-values.yaml \
-  --wait \
-  --timeout 10m
+  --wait --timeout 10m
 ```
 
 </Step>
