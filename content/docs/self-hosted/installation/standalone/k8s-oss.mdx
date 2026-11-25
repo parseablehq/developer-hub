@@ -298,7 +298,7 @@ Before continuing:
 You can render the chart before installing it:
 
 ```bash
-helm template parseable parseable/parseable \
+helm template parseable parseable \
   --repo https://charts.parseable.com \
   --namespace parseable \
   --values ./standalone-values.yaml
@@ -331,12 +331,11 @@ cluster.
 ## 6. Install Parseable
 
 ```bash
-helm upgrade --install parseable parseable/parseable \
+  helm upgrade --install parseable parseable \
   --repo https://charts.parseable.com \
   --namespace parseable \
   --values ./standalone-values.yaml \
-  --wait \
-  --timeout 10m
+  --wait --timeout 10m
 ```
 
 </Step>
