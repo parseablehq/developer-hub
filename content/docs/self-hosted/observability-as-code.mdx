@@ -370,11 +370,11 @@ parseable:
 After applying the dashboard and alert ConfigMaps, run the same Helm upgrade again:
 
 ```bash
-helm upgrade --install parseable parseable/parseable \
+helm upgrade --install parseable parseable \
+  --repo https://charts.parseable.com \
   --namespace parseable \
   --values ./values.yaml \
-  --wait \
-  --timeout 10m
+  --wait --timeout 10m
 ```
 
 This upgrade imports the alert and reconciles the resources already configured.
