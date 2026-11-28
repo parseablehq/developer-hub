@@ -66,6 +66,10 @@ Once you validate the selection
 - Raw data results from the query
 - Optional visualizations (charts/graphs) for clearer understanding
 
+## Ownership and access
+
+Within each tenant, Keystones, their tags, and associated conversations are scoped to the user who owns them. Users cannot retrieve, update, list, or delete another user's Keystones. Q&A agents and continued conversations are also restricted to their owning user and tenant.
+
 ## Configuration
 
 To enable Keystone, configure your LLM provider in your Parseable instance:

@@ -51,6 +51,13 @@ For real-time connectivity to Parseable, we recommend using [Apache Superset](/i
 
 Parseable exposes an Arrow Flight endpoint on port 8002 (`P_FLIGHT_PORT`) for high-performance data transfer. You can build a custom pipeline to fetch data via Arrow Flight and load into your Looker-connected data warehouse.
 
+When using Arrow Flight `get_schema`:
+
+- Provide a valid session key. A missing or invalid session key returns an unauthenticated status.
+- The authenticated session key determines the tenant used for schema lookup.
+- The session must have the `GetSchema` action for the requested stream. If authorization fails, `get_schema` returns permission denied.
+- The Flight descriptor path must not be empty. An empty path returns invalid argument with `Flight descriptor path must not be empty`.
+
 ## Best Practices
 
 1. **Schedule Data Exports** - Set up automated pipelines to export Parseable data to your data warehouse

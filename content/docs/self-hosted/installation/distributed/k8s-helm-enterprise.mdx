@@ -237,6 +237,8 @@ kubectl create secret generic parseable-cluster-secret \
 
 ## 5. Add the Parseable Helm repository
 
+OSS and Enterprise Kubernetes deployments use the shared Helm chart from [`parseablehq/helm-charts`](https://github.com/parseablehq/helm-charts). There is no separate Helm chart in the Enterprise repository.
+
 ```bash
 helm repo add parseable https://charts.parseable.com
 helm repo update parseable

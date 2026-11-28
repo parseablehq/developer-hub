@@ -96,6 +96,19 @@ If you are deciding where to start, the simplest rule is this:
   </Card>
 </Cards>
 
+## Enterprise Panorama Forecast-Model APIs
+
+Parseable Enterprise exposes the following forecast-model routes through the Panorama API. All routes require the `Query` permission.
+
+- `GET /models` lists the Chronos-Bolt Tiny, Small, and Base models. Each entry includes `model`, `displayName`, `sizeBytes`, `downloadable`, `status`, `downloadedBytes`, `isDefault`, and an optional `error`.
+- `POST /models/{model}/download` downloads a model.
+- `GET /models/{model}/status` returns a model's status. Possible statuses include `deleting`.
+- `DELETE /models/{model}/delete` deletes a model. After successful deletion, its status resets to `notStarted`.
+
+Only `chronos-bolt-base` is downloadable or deletable. Embedded models cannot be downloaded or deleted.
+
+Deleting the current default model returns HTTP 409 with the code `forecastModelIsDefault`. Deleting a model during an active download returns HTTP 409 with the code `forecastModelDownloadActive`.
+
 ## Authentication
 
 These endpoints require authentication. This reference uses API keys so new integrations can start with the recommended machine-to-machine flow.

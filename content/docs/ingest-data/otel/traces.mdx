@@ -4,7 +4,7 @@ redirect_from:
   - /OpenTelemetry/traces
 ---
 
-Parseable enables ingesting the OpenTelemetry traces sent from the OTEL collectors in the JSON format. In order to do so, Parseable exposes default endpoint /v1/traces at which the OTEL collector sends the span data.
+Parseable ingests OpenTelemetry traces from OTEL collectors through the `/v1/traces` endpoint. The endpoint accepts `Content-Type: application/json` and `Content-Type: application/x-protobuf`. A missing or unsupported `Content-Type` returns a request error stating that `application/json` or `application/x-protobuf` is expected.
 
 Below is the sample configuration of the OTEL collector to send the traces to Parseable
 
@@ -29,9 +29,7 @@ service:
 ```
 ## Support for Protocol Buffers
 
-<OfferingPills cloud enterprise className="mb-4" />
-
-Parseable also supports ingesting the OpenTelemetry Traces sent from the OTEL collectors in the Protocol Buffers format. Below is an example configuration of the OTEL collector to send the traces to Parseable in the Protocol Buffers format.
+Parseable supports ingesting OpenTelemetry traces sent from OTEL collectors in Protocol Buffers format. Protobuf trace requests are decoded as `ExportTraceServiceRequest`. Below is an example configuration of the OTEL collector to send traces to Parseable in Protocol Buffers format.
 
 ```yaml
 exporters:
@@ -50,6 +48,10 @@ service:
     traces:
       exporters: [otlp_http/parseabletraces]
 ```
+
+## Dataset tags
+
+Dataset tags supplied through the `dataset-tags` header are applied when ingestion creates streams. The `agent-observability` tag is accepted only for the `otel-traces` log source; other uses are rejected.
 
 ## Data Flattening
 The OpenTelemetry traces that are in the form of a nested JSON. When the log event is received at `/v1/traces` endpoint, Parseable will flatten the nested JSON to a flat JSON object. This is done to make the data more queryable and filterable. Here's a quick comparison of the nested JSON and the flattened JSON:

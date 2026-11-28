@@ -80,6 +80,8 @@ Datasets by default have dynamic schema. This means you don't need to define a s
 
 Log data formats evolve over time, and users prefer a dynamic schema approach, where they don't have to worry about schema changes, and they are still able to ingest events to a given dataset.
 
+In distributed deployments, ingestors reconcile unresolved field names and types with a single schema authority before writing Parquet. If an incoming value conflicts with an existing field's type, Parseable routes it to a typed sibling column. The sibling column's suffix reflects the stored Arrow type, including nested list element types. For example, V1 numbers use `_float64`, and timestamps can use `_timestamp_ms`. If that sibling name is already occupied by an incompatible type, Parseable chains the name to create another typed sibling column.
+
 <Callout type="info">
 For dynamic schema, Parseable doesn't allow changing the type of an existing column whose type is already set. For example, if a column is detected as string in the first event, it can't be changed to int or timestamp in a later event. If you'd like to enforce a specific schema, please use static schema.
 </Callout>

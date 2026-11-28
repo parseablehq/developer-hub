@@ -7,7 +7,7 @@ redirect_from:
   - /opentelemetry/opentelemetry-logs
 ---
 
-Parseable enables ingesting the OpenTelemetry logs sent from the OTEL collectors in the JSON format. In order to do so, Parseable exposes default endpoint /v1/logs at which the OTEL collector sends the log data.
+Parseable enables ingesting OpenTelemetry logs sent from OTEL collectors in JSON or Protocol Buffers format. Parseable exposes the `/v1/logs` endpoint, which accepts `Content-Type: application/json` and `Content-Type: application/x-protobuf`.
 
 Below is the sample configuration of the OTEL collector to send the logs to Parseable
 
@@ -31,9 +31,11 @@ service:
 
 ## Support for Protocol Buffers
 
-<OfferingPills cloud enterprise className="mb-4" />
+Parseable supports ingesting OpenTelemetry logs sent from OTEL collectors in the Protocol Buffers format. Protobuf requests are decoded as `ExportLogsServiceRequest`.
 
-Parseable also supports ingesting the OpenTelemetry logs sent from the OTEL collectors in the Protocol Buffers format. Below is an example configuration of the OTEL collector to send the logs to Parseable in the Protocol Buffers format.
+Requests with a missing or unsupported `Content-Type` return a request error stating that `application/json` or `application/x-protobuf` is expected. Protobuf request bodies larger than the configured maximum event payload size are rejected before decoding. Malformed protobuf requests return an error containing `Failed to decode protobuf message`.
+
+Below is an example configuration of the OTEL collector to send the logs to Parseable in the Protocol Buffers format.
 
 ```yaml
 exporters:
