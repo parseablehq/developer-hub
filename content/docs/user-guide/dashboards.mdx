@@ -26,6 +26,16 @@ Charts can be added to dashboards from multiple sources:
 - **Keystone**: AI-generated insights can be added as dashboard tiles
 - **Chart Builder**: Build visualizations using the built-in chart builder
 
+### AI-Generated Heatmap Tiles
+
+AI-generated dashboard and standalone tiles can use `chartType: "heatmap"`. Heatmaps require SQL/code tiles; PromQL heatmap tiles are rejected.
+
+The heatmap configuration requires:
+
+- A non-empty categorical or time-bucket field in `config.axes.x.field`
+- Exactly one numeric field in `config.axes.y.field`
+- At least one non-empty categorical field in `config.axes.groupBy.field`
+
 ## Chart Builder Types
 
 There are two ways to build charts:
@@ -57,6 +67,7 @@ The chart builder follows a 3-step process to create powerful visualizations:
 - **Donut**: Similar to pie with a hollow center
 - **Query Value**: For displaying single metric values
 - **Gauge**: For showing progress or thresholds
+- **Heatmap**: For displaying values across time and categories with a color scale
 
 **Dataset Selection:**
 Choose your data source from the dropdown menu (e.g., vLLMmetrics or your custom log streams).
@@ -74,6 +85,15 @@ The configuration options vary based on your selected chart type:
 - **X-Axis**: Select the dimension field (e.g., `aggregation_temporality`)
 
 ![](../static/timeseries-plot.png)
+
+#### For Heatmaps:
+- Select a time field
+- Select a numeric value and aggregation
+- Add at least one group-by category
+
+PromQL heatmaps require matrix or range-query results containing multiple time series. Vector results are not plotted as heatmaps.
+
+Heatmaps display a color scale. They do not use the standard chart legend or crosshair.
 
 #### For Pie and Donut Charts:
 - **Plot**: Select the field to visualize
@@ -127,7 +147,7 @@ Dashboard tiles can be dragged and repositioned anywhere on the dashboard. You c
 
 ## Visualization Types
 
-Parseable offers eight distinct visualization types, each optimized for different data patterns:
+Parseable offers nine distinct visualization types, each optimized for different data patterns:
 
 ### Time-Series Charts
 - **Timeseries**: Specialized for temporal data with automatic time formatting
@@ -152,6 +172,9 @@ These charts support full configuration: Y-axis plotting, filtering, grouping, a
 - **Gauge**: Visual progress indicator with thresholds
   - Supports: Plot selection, aggregation, filtering
   - Best for: Performance indicators, threshold monitoring
+
+### Heatmaps
+- **Heatmap**: Display aggregated numeric values across time and grouped categories using a color scale
 
 ### Data Table
 - **Simple Table**: Raw data view with sorting and filtering

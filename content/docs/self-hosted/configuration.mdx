@@ -28,6 +28,8 @@ This document lists all the environment variables and HTTP headers supported by 
 | `P_CPU_THRESHOLD` | `No` | Specify the CPU threshold to use for Parseable server. | `100` | `80` |
 | `P_ENABLE_MULTIPART` | `No` | Enable multipart uploads to object store (S3, GCS, Azure Blob Store). When disabled, files are uploaded as a single object regardless of size. | `true` | `false` |
 | `P_MULTIPART_MIN_SIZE` | `No` | Minimum file size (in bytes) for multipart uploads to object store. Files smaller than this are uploaded as a single object. Minimum allowed value is `26214400` (25 MB). Will be effective only if `P_ENABLE_MULTIPART` is `true`. | `26214400` | `52428800` |
+| `P_MAX_CONCURRENT_OBJECT_STORE_UPLOADS` | `No` | Process-wide limit for concurrent object-store uploads. Missing, invalid, or zero values use the default. | `100` | `50` |
+| `P_MAX_CONCURRENT_STREAM_SYNCS` | `No` | Process-wide limit for concurrent stream syncs. Missing, invalid, or zero values use the default. | `16` | `8` |
 | `P_MAX_EVENT_PAYLOAD_SIZE` | `No` | Maximum allowed event payload size in bytes for ingest endpoints. | `10485760` | `20971520` |
 | `P_MAX_FLATTEN_LEVEL` | `No` | Maximum level of flattening allowed for events. Prevents nested list type fields from getting created. | `10` | `5` |
 | `P_QUERY_MEMORY_LIMIT` | `No` | Set a fixed memory limit for query in GiB. | `-` | `4` |
@@ -47,6 +49,11 @@ This document lists all the environment variables and HTTP headers supported by 
 | `P_HOT_TIER_DIR` | `No` | Path on the query node (or standalone node), where the Parseable server would store recent data. Refer [Hot Tier documentation](/user-guide/smart-cache) for details. | `-` | `/home/user/hot-tier` |
 | `P_MAX_DISK_USAGE_PERCENT` | `No` | Maximum percentage of total disk that should be used for hot tier. Refer [Hot Tier documentation](/user-guide/smart-cache) for details. | `80` | `70` |
 | `P_INGESTOR_ENDPOINT` | `No` | Endpoint (IP, DNS or URL and Port, without the scheme) of the ingestor. If set, the query node will use this address to access this Ingestor. If not set, the query node will use the P_ADDR value if set. If `P_ADDR` is also not set, then defaults to `0.0.0.0:8000`. You can also set this variable to point to another environment variable. For example, if `P_INGESTOR_ENDPOINT` is set to `$HOSTNAME:$PORT`, Parseable process will look for environment variables `HOSTNAME` and `PORT` and replace their values in the `P_INGESTOR_ENDPOINT`. | `0.0.0.0:8000` | `ingestor1.parseable.svc.cluster.local` |
+| `P_QUERIER_ENDPOINT` | `Yes` in query mode | Required query-mode address in `<ip address / DNS>:<port>` format. | `-` | `-` |
+| `P_PRISM_ENDPOINT` | `Yes` in Prism mode | Required Prism-mode address in `<ip address / DNS>:<port>` format. Prism refuses to start when this value is empty. | `-` | `-` |
+| `P_SCHEMA_RESOLUTION` | `No` | Enable schema resolution for distributed ingestors. | `true` | `false` |
+| `P_SCHEMA_RESOLVE_MAX_DEFERRED_CYCLES` | `No` | Number of failed schema-resolution cycles allowed before ingestion for the stream returns HTTP 503. Set to `0` to never reject ingestion for this reason. | `3` | `0` |
+| `P_SCHEMA_RESOLVE_CONCURRENCY` | `No` | Maximum number of concurrent schema-resolution requests from one ingestor. Must be at least `1`. | `8` | `4` |
 
 ### Applicable to the S3 storage mode
 
@@ -128,7 +135,7 @@ This section lists environment variables that apply only to Parseable Enterprise
 
 | Variable Name | Required | Description | Default | Example |
 | --- | --- | --- | --- | --- |
-| `P_CLUSTER_SECRET` | `Yes` | Shared secret used to authenticate inter-node communication within a Parseable Enterprise cluster. The server fails to start if this is not set. | `-` | `<random-256-bit-secret>` |
+| `P_CLUSTER_SECRET` | `Yes` for distributed modes | Shared secret used to authenticate inter-node communication within a Parseable Enterprise cluster. Distributed modes require this value. Interactive standalone startup does not prompt for it. | `-` | `<random-256-bit-secret>` |
 | `P_LICENSE_DATA_FILE_PATH` | `Yes` | Local path to the Parseable Enterprise license data file (JSON). | `-` | `/etc/parseable/license.json` |
 | `P_LICENSE_SIGNATURE_FILE_PATH` | `Yes`* | Local path to the raw (binary) license signature file. *Either this or `P_LICENSE_SIGNATURE_BASE64` must be set.* | `-` | `/etc/parseable/license.sig` |
 | `P_LICENSE_SIGNATURE_BASE64` | `Yes`* | Base64-encoded license signature provided inline as an environment variable. Takes priority over `P_LICENSE_SIGNATURE_FILE_PATH` when both are set. | `-` | `MEUCIQDx...==` |

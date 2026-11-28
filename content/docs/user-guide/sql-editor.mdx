@@ -11,16 +11,19 @@ Parseable provides a powerful SQL editor that allows you to query your telemetry
 ## Getting Started
 
 1. Navigate to the SQL Editor in the Parseable UI
-2. Select your dataset from the dropdown
-3. Write your SQL query
+2. Browse datasets and their schemas in the sidebar
+3. Write your SQL query. Autocomplete suggests available datasets and fields from loaded schemas
 4. Click "Run" to execute
+
+You can also start with one of six templates: `Recent events`, `Total count`, `Events over time`, `Latest 10 rows`, `Daily trend`, or `Unique values`. Selecting a template fills the editor and runs the query against the first available dataset.
 
 ## Features
 
 - **Full SQL Support** - Use standard SQL queries to analyze your data
-- **Auto-completion** - Intelligent suggestions as you type
+- **Auto-completion** - Get suggestions for available datasets and loaded schema fields
 - **Query History** - Access your previous queries
 - **Export Results** - Download query results in various formats
+- **Multiple tabs** - Open up to 12 SQL editor tabs. At the limit, the New tab button is disabled and shows `Maximum of 12 tabs reached`
 
 ## Example Queries
 
@@ -109,6 +112,12 @@ To get the query result fields as a part of query API response, add the query pa
 http://localhost:8000/api/v1/query?fields=true
 ```
 
+## Visualize Query Results
+
+SQL results support Line, Bar, Stacked bar, Area, Pie, Donut, Query value, Gauge, Table, Bubble, Scatter, Sankey, and Heatmap views.
+
+A heatmap requires an X-axis field, a numeric value field, and at least one group-by field to use as the Y-axis category. Use the `X`, `Y`, and `Value` controls to configure the heatmap. Heatmaps do not display the standard legend or crosshair.
+
 ## Add Charts to Dashboard
 
 After running a query, you can visualize the results and add them directly to a dashboard.
@@ -125,7 +134,7 @@ Use the filter panel to slice and dice your data, and group results by any field
 
 ## Query Library
 
-Save queries you want to reuse in the Library for quick access.
+Saved SQL queries are available in a searchable query-library sheet. Use the Save and Update controls to create and update saved queries.
 
 ![Query Library](../release-notes/static/query-library.png)
 

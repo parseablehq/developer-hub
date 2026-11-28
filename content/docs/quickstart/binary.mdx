@@ -7,18 +7,22 @@ redirect_from:
 
 ## Start Parseable
 
-Install the binary and start Parseable in local-store mode:
+The default installation scripts, `scripts/download.sh` and `scripts/download.ps1`, download Parseable Enterprise and install the executable as `parseable-enterprise`. Install it and start Parseable in local-store mode:
 
 ```sh
 curl -fsSL https://logg.ing/install | bash
-parseable local-store
+parseable-enterprise local-store
 ```
 
-On Windows, use the installation script in PowerShell:
+On Windows x86_64, use the Enterprise installation script in PowerShell:
 
 ```powershell
 powershell -c "irm https://logg.ing/install-windows | iex"
 ```
+
+For Parseable OSS, use `scripts/download-oss.sh` or `scripts/download-oss.ps1`. These installers install the executable as `parseable`, which you can start in local-store mode with `parseable local-store`.
+
+The shell installers support Linux x86_64, Linux ARM64, and macOS ARM64 release assets. Linux release binaries require glibc; the shell installers reject Alpine Linux and other musl-based systems.
 
 The local instance listens on port `8000`. Open [the Parseable console](http://localhost:8000) and sign in with the default credentials, `admin:admin`.
 

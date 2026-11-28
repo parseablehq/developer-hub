@@ -22,6 +22,19 @@ must expose its metadata at a discovery URL such as
 Parseable uses that metadata to find the authorization, token, userinfo, logout,
 and JWKS endpoints required for the login flow.
 
+## OIDC discovery availability
+
+If OIDC discovery fails during startup, Parseable logs the failure instead of
+terminating. Ingestion and basic-auth access can remain available while OIDC
+discovery is pending.
+
+Parseable retries discovery after 1 second, using exponential backoff capped at
+60 seconds. When discovery succeeds, OIDC login is enabled without restarting
+Parseable.
+
+While discovery is pending, `/api/v1/o/login` returns HTTP 503 with the message
+`The OIDC provider is not reachable yet; try again shortly`.
+
 ## Prerequisites
 
 Before you start, keep these values ready:

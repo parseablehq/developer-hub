@@ -2,6 +2,53 @@
 title: Release notes
 ---
 
+## v3.2.8
+
+November 28, 2026
+
+Parseable v3.2.8 adds OTLP protobuf ingestion, heatmap visualizations, distributed schema resolution, expanded SQL workflows, and Enterprise forecasting model management and standalone deployment. It also strengthens authorization, improves operational resilience, and fixes PromQL, dashboard, metrics, and settings behavior.
+
+### Features
+
+- **OTLP protobuf ingestion:** OTLP log, metric, and trace endpoints now accept Protocol Buffers in addition to JSON.
+- **Distributed schema resolution:** Distributed ingestors can reconcile new field names and types with a schema authority before writing data.
+- <EnterpriseBadge /> **Enterprise standalone mode:** Enterprise can run ingestion, querying, Prism, PromQL, alerts, RBAC, and control APIs together in one process with local or object storage.
+- **Heatmap visualizations:** Dashboards and the SQL editor can display heatmaps, including AI-generated heatmaps in Enterprise.
+- <EnterpriseBadge /> **Forecast model management:** Enterprise users can select, download, monitor, retry, and delete supported Chronos-Bolt forecasting models from My preferences.
+- **Expanded SQL workspace:** The SQL editor now provides dataset and schema browsing, starter templates, a saved-query library, and additional result visualizations.
+- **Revamped command palette:** The command palette now groups datasets, filters, and alerts and provides quick actions for alerts, dashboards, and Keystones.
+- **Table reset controls:** Logs Explore, SQL results, and Agent Runs now provide controls for restoring table defaults.
+- **Separate edition installers:** Dedicated scripts now install OSS as `parseable`, while the default scripts install Enterprise as `parseable-enterprise`.
+
+### Improvements
+
+- **Resilient OIDC startup:** Parseable can start while OIDC discovery is unavailable and enable OIDC login after background discovery succeeds.
+- **Standalone query handling:** Standalone queries remain local, no longer require a cluster-secret prompt, and can run in Logs Explore before `latestEventAt` is available.
+- **Configurable storage concurrency:** Operators can configure process-wide limits for object-store uploads and stream synchronization.
+- **Stronger resource authorization:** Dataset, PromQL, Arrow Flight schema, and AI-resource access now use tighter permission, tenant, and user ownership boundaries.
+- <EnterpriseBadge /> **Improved PromQL execution:** Histogram queries can use sorted execution paths and `topk` now selects winners independently at each timestamp.
+- <EnterpriseBadge /> **Unlimited trial streams:** Free and ProTrial plans no longer limit users to five user-created streams.
+- <EnterpriseBadge /> **Shared Kubernetes chart:** OSS and Enterprise Kubernetes deployments now use the shared Helm chart.
+- **Safer alert targets:** Outbound alert validation now treats well-known and local-use NAT64 prefixes as private ranges requiring explicit authorization and allowlisting.
+- **Clearer statistics fallback:** Dataset statistics requests now return HTTP 200 with an empty object when collection is disabled or statistics are not yet available.
+- **Improved SQL workflows:** SQL tabs, saved-query actions, field controls, chart validation, and result-table layouts now provide more consistent editing behavior.
+- <EnterpriseBadge /> **Paid Pro workspace flow:** New cloud workspaces now use the Pro plan flow with work-email validation instead of offering a trial-plan choice.
+
+### Fixes
+
+- <EnterpriseBadge /> **Stale metric handling:** Stale OTLP histogram and summary points no longer appear as counter resets or distort affected PromQL calculations.
+- **Cluster metrics collection:** Cluster metrics now work when the serving node uses TLS or runs in standalone mode.
+- **Dashboard chart correctness:** Dashboard previews, pie and donut mappings, exclusion filters, and chart field selection now behave correctly.
+- **Chart interaction fixes:** Chart range selection now clears stale hover state, and SQL chart clearing and value validation behave correctly.
+- **Metrics grouping preserved:** Switching Metrics views now preserves and restores selected grouping fields.
+- **Settings state corrections:** Settings now opens the appropriate default section and shows clearer access-denied states without changing the `/settings` URL.
+- **Typed filter removal:** Invalid custom values for typed filters remain removable instead of being converted to null.
+- **Retention editor initialization:** The retention editor now initializes from the dataset's saved retention duration.
+
+### Dependencies
+
+- <EnterpriseBadge /> **Native forecasting runtime:** Enterprise forecasting now uses native Rust inference instead of an embedded Python runtime and bundles the Tiny and Small model assets.
+
 ## v3.2.7
 
 November 17, 2026

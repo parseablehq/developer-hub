@@ -252,6 +252,10 @@ All metrics listed in [librdkafka's statistics documentation](https://github.com
 
 #### Security Layer: Configurable authentication.
 
+##### Schema Resolution
+
+When distributed schema resolution blocks a stream, Kafka ingestion pauses the affected partition. The connector retries the blocked records every 60 seconds without committing their offsets. After the records are accepted, ingestion resumes for the partition.
+
 ##### Error Handling
 
 | Error Type | Handling Strategy |

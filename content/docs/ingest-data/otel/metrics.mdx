@@ -4,7 +4,7 @@ redirect_from:
   - /OpenTelemetry/metrics
 ---
 
-You can ingest OpenTelemetry metrics sent from the OTEL collectors in the JSON format to Parseable. In order to do so, use the default endpoint `/v1/metrics` at which the OTEL collector sends the metric data.
+You can ingest OpenTelemetry metrics sent from OTEL collectors to the `/v1/metrics` endpoint. The endpoint accepts requests with `Content-Type: application/json` or `Content-Type: application/x-protobuf`. A missing or unsupported `Content-Type` returns a request error indicating that `application/json` or `application/x-protobuf` is expected.
 
 Here is a sample configuration of the OTEL collector to send the metrics to Parseable
 
@@ -28,9 +28,7 @@ service:
 
 ## Support for Protocol Buffers
 
-<OfferingPills cloud enterprise className="mb-4" />
-
-Parseable also supports ingesting the OpenTelemetry Metrics sent from the OTEL collectors in the Protocol Buffers format. Below is an example configuration of the OTEL collector to send the metrics to Parseable in the Protocol Buffers format.
+Parseable supports ingesting OpenTelemetry metrics sent from OTEL collectors in the Protocol Buffers format. Requests with `Content-Type: application/x-protobuf` are decoded as `ExportMetricsServiceRequest`. Below is an example configuration of the OTEL collector to send metrics to Parseable in the Protocol Buffers format.
 
 ```yaml
 exporters:
@@ -329,5 +327,7 @@ Flattened JSON
 All the resource attributes are stored as key-value pair where each attribute key becomes the field and the value, which may be of one of `stringValue/intValue/doubleValue etc`, becomes the value for that particular field.
 
 Each metric record has data which is one of `sum` `gauge` `histogram` `exponentialHistogram` `summary` type.
+
+Flattened summary and exponential-histogram rows include `data_point_flags` and `data_point_flags_description`. A `data_point_flags` value of `1` has the description `NO_RECORDED_VALUE_MASK`.
 
 Each data has one or more data points. Each data point is stored as individual record in Parseable and all resource attributes, scope name, version, other metric elements such as metric name, description, metadata etc are copied in each ingested record. In the above example, there are 2 dataPoints under `sum` record, thus, Parseable stores the incoming event as 2 records making it simpler to query and analyse.

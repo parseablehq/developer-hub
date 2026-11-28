@@ -34,6 +34,8 @@ Parseable standalone server can be run with local store argument to use the disk
 
 The Standalone variant of the Parseable Observability Platform is designed for quick value realization, making it ideal for hobbyists and first-time users. In this mode Parseable operates with a single ingestion node, handling all data ingestion from various data sources. This setup is ideal for smaller workloads or testing environments where high availability and horizontal scaling are not primary concerns. 
 
+In the Enterprise edition, standalone mode runs ingestion, query, Prism, PromQL, alerts, RBAC, and control APIs in one server process. It supports both `local-store` and object-store backends. SQL, PromQL, counts, context, APM, agent-observability, and internal queries execute locally. The combined server mounts the ingestion API, Prometheus remote-write API, and OTLP ingestion APIs.
+
 - [Kubernetes](/self-hosted/installation/standalone/k8s-oss)
 - [Docker](/self-hosted/installation/standalone/docker)
 - [Bare Metal and VMs](/self-hosted/installation/standalone/linux)

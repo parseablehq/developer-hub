@@ -43,7 +43,7 @@ A useful side benefit: the same plugin lets you build dashboards from logs, trac
 
 ## API Endpoints
 
-All endpoints require the `Authorization` header with a valid Parseable credential (basic auth). All query and metadata endpoints require the `Query` action permission. The remote write endpoint requires the `Ingest` action permission.
+All endpoints require the `Authorization` header with a valid Parseable credential (basic auth). All query and metadata endpoints require the `Query` action permission. Instant queries, range queries, series and label metadata APIs, TSDB status, and cardinality endpoints authorize access to the requested stream. The remote write endpoint requires the `Ingest` action permission.
 
 ### Instant Query
 
@@ -386,6 +386,8 @@ label_join(up, "job_instance", "/", "job", "instance")
 - `histogram_sum(v range-vector)` — sum from histogram data.
 - `histogram_fraction(lower scalar, upper scalar, v range-vector)` — estimated fraction of observations between bounds.
 
+Flagged histogram points emit stale markers for bucket, count, and sum series. Flagged summary points emit stale markers for available quantile, count, and sum series. Compact histogram queries omit rows marked stale.
+
 ```
 histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job))
 ```
@@ -421,7 +423,7 @@ Aggregation operators take a vector and aggregate across series. All support `by
 | `stddev`                          | Population standard deviation                             |
 | `stdvar`                          | Population variance                                       |
 | `quantile(φ, v)`                  | φ-quantile across series (0 ≤ φ ≤ 1)                      |
-| `topk(k, v)`                      | Top K series by value                                     |
+| `topk(k, v)`                      | Top K series by value, selected independently at each timestamp. Equal values favor the series later in the group order |
 | `bottomk(k, v)`                   | Bottom K series by value                                  |
 | `count_values("label", v)`        | Count series with each distinct value                     |
 | `group`                           | Returns 1 for each distinct label set                     |
@@ -541,6 +543,7 @@ All errors follow a consistent JSON format.
 | Error Type    | HTTP Status | Description                                              |
 |---------------|-------------|----------------------------------------------------------|
 | `bad_data`    | 400 / 422   | Invalid PromQL syntax or malformed parameters            |
+| `unauthorized`| 401         | Access to the requested stream is not authorized         |
 | `execution`   | 500         | Internal error during query evaluation                   |
 | `not_found`   | 404         | Referenced stream or dataset does not exist              |
 | `timeout`     | 503         | Query exceeded the timeout limit                         |
@@ -557,6 +560,8 @@ These variables tune Parseable's PromQL query engine — query splitting, per-qu
 | `P_PROMQL_MAX_CONCURRENT_SPLITS` | `No` | Maximum number of split sub-queries executed concurrently for a single PromQL request. | `8` | `16` |
 | `P_PROMQL_ALIGN_QUERIES_WITH_STEP` | `No` | When `true`, range query `start`/`end` are floored to step boundaries to improve cache hit rates on jittered Grafana refreshes. | `true` | `false` |
 | `P_PROMQL_PARTITION_OVERLAP_MINS` | `No` | Overlap window (in minutes) applied when fetching data across partition boundaries. | `5` | `10` |
+
+The sorted fused query path is controlled by `P_PROMQL_SORTED_FUSED`. Set it to `false` or `0` to disable that path.
 
 ### Per-query limits
 
